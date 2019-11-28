@@ -19,6 +19,9 @@ helm init -c
 
 ./eventstreams-local-build.sh
 
+echo "Transfer Strimzi artifact to Artifactory..."
+mvn deploy -s ./eventstreams-settings.xml -DskipTests
+
 docker login -u="${ARTIFACTORY_USERNAME}" -p="${ARTIFACTORY_PASSWORD}" "${destination_registry}"
 
 KAFKA_IMAGE="${destination_registry}/strimzi/kafka-${B_ARCH}:${TAG}"

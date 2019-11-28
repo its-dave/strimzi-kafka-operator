@@ -115,13 +115,9 @@
     </properties>
 
     <distributionManagement>
-        <snapshotRepository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-        </snapshotRepository>
         <repository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+            <id>artifactory</id>
+            <url>https://eu.artifactory.swg-devops.com:443/artifactory/hyc-qp-maven-local/</url>
         </repository>
     </distributionManagement>
 
