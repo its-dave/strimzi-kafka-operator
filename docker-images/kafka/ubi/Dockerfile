@@ -1,3 +1,19 @@
+FROM registry.access.redhat.com/ubi7/ubi-minimal AS stunnel-builder
+
+ENV STUNNEL_VERSION="5.56"
+
+RUN microdnf -y install gettext nmap-ncat net-tools bind-utils && microdnf clean all -y
+
+# stunnel
+COPY downloads/stunnel /usr/local/bin/stunnel
+
+RUN microdnf -y install make gcc openssl-devel \
+    && tar xvfz /usr/local/bin/stunnel/stunnel-${STUNNEL_VERSION}.tar.gz \
+    && cd stunnel-${STUNNEL_VERSION} \
+    && ./configure \
+    && make \
+    && make install
+
 FROM strimzi/base:latest
 
 ARG KAFKA_DIST_DIR
@@ -5,21 +21,9 @@ ARG KAFKA_VERSION
 ARG THIRD_PARTY_LIBS
 ARG strimzi_version
 
-ENV STUNNEL_VERSION="5.56"
+COPY --from=stunnel-builder /usr/local/bin/stunnel /usr/bin/stunnel
 
 RUN microdnf -y install gettext nmap-ncat net-tools bind-utils && microdnf clean all -y
-# stunnel
-RUN microdnf -y install make gcc openssl-devel \
-    && curl -LO https://www.stunnel.org/downloads/stunnel-${STUNNEL_VERSION}.tar.gz \
-    && tar xvfz stunnel-${STUNNEL_VERSION}.tar.gz \
-    && cd stunnel-${STUNNEL_VERSION} \
-    && ./configure \
-    && make \
-    && make install \
-    && cp /usr/local/bin/stunnel /usr/bin/stunnel \
-    && cd .. \
-    && rm -rf stunnel-${STUNNEL_VERSION} \
-    && microdnf remove make gcc openssl-devel
 
 #####
 # Add Kafka

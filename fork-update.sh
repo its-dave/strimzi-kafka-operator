@@ -96,7 +96,7 @@ if [ $commandResult != 0 ]; then
   exit 1
 fi
 
-echo "Running push origin +${MASTER_IBM_RANCH}..."
+echo "Running push origin +${MASTER_IBM_BRANCH}..."
 git push origin +${MASTER_IBM_BRANCH}
 commandResult=$?
 
