@@ -5,4 +5,6 @@ RUN microdnf -y update \
     && microdnf -y install hostname openssl tar vi which java-${JAVA_VERSION}-openjdk-headless \
     && microdnf -y clean all
 
+COPY downloads/tini /usr/bin/
+
 LABEL JAVA_VERSION=${JAVA_VERSION}

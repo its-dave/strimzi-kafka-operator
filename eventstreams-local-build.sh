@@ -4,8 +4,29 @@ set -e
 
 curl -v -H "X-JFrog-Art-Api:${ARTIFACTORY_PASSWORD}" -o /tmp/kafka_2.12-2.3.1.tgz "https://na.artifactory.swg-devops.com/artifactory/hyc-qp-artifacts-generic-local/kafka-vnext/2019-11-25-14.57.14-4d30d3c/kafka_2.12-2.3.1.tgz"
 
+# Create a backup of kafka-versions.yaml
+mv kafka-versions.yaml kafka-versions.yaml.bk
 # Move Event Streams version to kafka-versions.yaml to use EventStreams supported Kafka binaries
-mv eventstreams-kafka-versions.yaml kafka-versions.yaml
+cp eventstreams-kafka-versions.yaml kafka-versions.yaml
+
+function cleanup {
+    mv kafka-versions.yaml.bk kafka-versions.yaml
+}
+
+trap cleanup EXIT
+
+function cleanup {
+    mv kafka-versions.yaml eventstreams-kafka-versions.yaml
+    mv kafka-versions.yaml.bk kafka-versions.yaml
+}
+
+trap cleanup EXIT
+
+(cd docker-images/base ; 
+echo "Pull tini from Artifactory..." ; 
+curl -u "${ARTIFACTORY_USERNAME}:${ARTIFACTORY_PASSWORD}" -o "tini-0.18.sh" "https://eu.artifactory.swg-devops.com/artifactory/hyc-qp-artifacts-generic-local/scripts/tini/tini-0.18.sh" ;
+chmod +x tini-0.18.sh ;
+./tini-0.18.sh ; )
 
 (cd docker-images/kafka ; 
 echo "Pull stunnel from Artifactory..." ; 
