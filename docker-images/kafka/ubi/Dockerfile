@@ -1,27 +1,25 @@
-FROM registry.access.redhat.com/ubi7/ubi-minimal AS stunnel-builder
+FROM strimzi/base:latest
 
 ENV STUNNEL_VERSION="5.56"
 
 RUN microdnf -y install gettext nmap-ncat net-tools bind-utils && microdnf clean all -y
 
 # stunnel
-COPY downloads/stunnel/stunnel /usr/local/bin/stunnel
+COPY downloads/stunnel /tmp/stunnel
 
 RUN microdnf -y install make gcc openssl-devel \
-    && tar xvfz /usr/local/bin/stunnel/stunnel-${STUNNEL_VERSION}.tar.gz \
+    && tar xvfz /tmp/stunnel/stunnel-${STUNNEL_VERSION}.tar.gz \
     && cd stunnel-${STUNNEL_VERSION} \
     && ./configure \
     && make \
-    && make install
-
-FROM strimzi/base:latest
+    && make install \
+    && rm -rf stunnel-${STUNNEL_VERSION} /tmp/stunnel \
+    && microdnf -y remove make gcc openssl-devel
 
 ARG KAFKA_DIST_DIR
 ARG KAFKA_VERSION
 ARG THIRD_PARTY_LIBS
 ARG strimzi_version
-
-COPY --from=stunnel-builder /usr/local/bin/stunnel /usr/bin/stunnel
 
 RUN microdnf -y install gettext nmap-ncat net-tools bind-utils && microdnf clean all -y
 
