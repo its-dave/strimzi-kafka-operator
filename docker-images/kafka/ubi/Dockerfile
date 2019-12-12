@@ -13,6 +13,8 @@ RUN microdnf -y install make gcc openssl-devel \
     && ./configure \
     && make \
     && make install \
+    # make install places stunnel in /usr/local/bin but references in scripts use /usr/bin
+    && cp /usr/local/bin/stunnel /usr/bin/stunnel \
     && rm -rf stunnel-${STUNNEL_VERSION} /tmp/stunnel \
     && microdnf -y remove make gcc openssl-devel
 
