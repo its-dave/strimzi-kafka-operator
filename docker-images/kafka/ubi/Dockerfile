@@ -5,7 +5,7 @@ ENV STUNNEL_VERSION="5.56"
 RUN microdnf -y install gettext nmap-ncat net-tools bind-utils && microdnf clean all -y
 
 # stunnel
-COPY downloads/stunnel /usr/local/bin/stunnel
+COPY downloads/stunnel/stunnel /usr/local/bin/stunnel
 
 RUN microdnf -y install make gcc openssl-devel \
     && tar xvfz /usr/local/bin/stunnel/stunnel-${STUNNEL_VERSION}.tar.gz \
