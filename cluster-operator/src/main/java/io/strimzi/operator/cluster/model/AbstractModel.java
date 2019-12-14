@@ -1133,6 +1133,7 @@ public abstract class AbstractModel {
 
     @SafeVarargs
     protected static Map<String, String> mergeLabelsOrAnnotations(Map<String, String> internal, Map<String, String>... templates) {
+
         Map<String, String> merged = new HashMap<>();
 
         if (internal != null) {

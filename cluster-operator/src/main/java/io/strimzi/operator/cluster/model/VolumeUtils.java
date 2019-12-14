@@ -125,7 +125,8 @@ public class VolumeUtils {
 
         int mode = 0444;
         if (isOpenshift) {
-            mode = 0440;
+            // We do not run as root so breaks is not read for anyone
+            // mode = 0440;
         }
 
         SecretVolumeSource secretVolumeSource = new SecretVolumeSourceBuilder()
