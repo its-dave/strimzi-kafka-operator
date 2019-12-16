@@ -2,7 +2,7 @@
 
 set -e
 
-curl -v -H "X-JFrog-Art-Api:${ARTIFACTORY_PASSWORD}" -o /tmp/kafka_2.12-2.3.1.tgz "https://na.artifactory.swg-devops.com/artifactory/hyc-qp-artifacts-generic-local/kafka-vnext/2019-11-25-14.57.14-4d30d3c/kafka_2.12-2.3.1.tgz"
+curl -v -H "X-JFrog-Art-Api:${ARTIFACTORY_PASSWORD}" -o /tmp/kafka_2.12-2.3.1.tgz "https://na.artifactory.swg-devops.com/artifactory/hyc-qp-artifacts-generic-local/kafka-vnext/2019-12-11-11.29.29-2d2c435-exp/kafka_2.12-2.3.1.tgz"
 
 # Create a backup of kafka-versions.yaml
 mv kafka-versions.yaml kafka-versions.yaml.bk
