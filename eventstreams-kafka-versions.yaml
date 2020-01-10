@@ -18,11 +18,11 @@
 #   <checksum> is the SHA512 checksum of the Kafka binary which is specified in the 'url' field.
 #   <third-party-libs> is the version string for the third party libraries
 
-- version: 2.3.1
-  format: 2.3
-  protocol: 2.3
-  url: file://localhost/tmp/kafka_2.12-2.3.1.tgz
-  checksum: 26f8723a70d33fdefe4184bd999fc69ed766f00e15ac470bf993cfcbf4fb0c7e6ae497b954cc416cd5c943e256a5e4faf9d8f26e1216fe8ec1163e136e0f6fc7
+- version: 2.4.0
+  format: 2.4
+  protocol: 2.4
+  url: file://localhost/tmp/kafka_2.12-2.4.0.tgz
+  checksum: 9477d2429575e40a042e9bcd1ba75948bca03efd29ff18e491dc0635c438c10cfe4e05986512562ee7215ea15a8f756298629bdd136fffaa17bfcea77af991cf
   zookeeper: 3.4.14
   third-party-libs: 2.3.x
   default: true 
