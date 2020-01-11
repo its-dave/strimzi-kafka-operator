@@ -22,12 +22,6 @@ function cleanup {
 
 trap cleanup EXIT
 
-(cd docker-images/base ; 
-echo "Pull tini from Artifactory..." ; 
-curl -u "${ARTIFACTORY_USERNAME}:${ARTIFACTORY_PASSWORD}" -o "tini-0.18.sh" "https://eu.artifactory.swg-devops.com/artifactory/hyc-qp-artifacts-generic-local/scripts/tini/tini-0.18.sh" ;
-chmod +x tini-0.18.sh ;
-./tini-0.18.sh ; )
-
 (cd docker-images/kafka ; 
 echo "Pull stunnel from Artifactory..." ; 
 curl -u "${ARTIFACTORY_USERNAME}:${ARTIFACTORY_PASSWORD}" -o "stunnel-5.56.sh" "https://eu.artifactory.swg-devops.com/artifactory/hyc-qp-artifacts-generic-local/scripts/stunnel/stunnel-5.56.sh" ;

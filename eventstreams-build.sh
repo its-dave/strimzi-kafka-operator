@@ -17,12 +17,12 @@ chmod 700 get_helm.sh
 ./get_helm.sh
 helm init -c
 
+docker login -u="${ARTIFACTORY_USERNAME}" -p="${ARTIFACTORY_PASSWORD}" "${destination_registry}"
+
 ./eventstreams-local-build.sh
 
 echo "Transfer Strimzi artifact to Artifactory..."
 mvn deploy -s ./eventstreams-settings.xml -DskipTests
-
-docker login -u="${ARTIFACTORY_USERNAME}" -p="${ARTIFACTORY_PASSWORD}" "${destination_registry}"
 
 KAFKA_IMAGE="${destination_registry}/strimzi/kafka-${B_ARCH}:${TAG}"
 OPERATOR_IMAGE="${destination_registry}/strimzi/operator-${B_ARCH}:${TAG}"

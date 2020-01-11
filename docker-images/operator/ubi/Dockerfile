@@ -18,4 +18,4 @@ LABEL name="strimzi-operator" \
       summary="Strimzi Kafka Operator" \
       description="Strimzi Kafka Operator is a high-throughput, fault-tolerant, pub-sub technology for building event-driven applications. It is built on top of Apache Kafka(R)"
 
-USER 1001
+USER ${user}

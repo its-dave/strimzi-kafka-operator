@@ -1,13 +1,12 @@
 FROM strimzi/base:latest
 
 ENV STUNNEL_VERSION="5.56"
-
-RUN microdnf -y install gettext nmap-ncat net-tools bind-utils && microdnf clean all -y
+ARG STUNNEL_BUILD_DEPS="gcc openssl-devel"
 
 # stunnel
 COPY downloads/stunnel /tmp/stunnel
 
-RUN microdnf -y install make gcc openssl-devel \
+RUN microdnf install --nodocs gettext net-tools bind-utils ${STUNNEL_BUILD_DEPS} \
     && tar xvfz /tmp/stunnel/stunnel-${STUNNEL_VERSION}.tar.gz \
     && cd stunnel-${STUNNEL_VERSION} \
     && ./configure \
@@ -16,14 +15,13 @@ RUN microdnf -y install make gcc openssl-devel \
     # make install places stunnel in /usr/local/bin but references in scripts use /usr/bin
     && cp /usr/local/bin/stunnel /usr/bin/stunnel \
     && rm -rf stunnel-${STUNNEL_VERSION} /tmp/stunnel \
-    && microdnf -y remove make gcc openssl-devel
+    && microdnf remove ${STUNNEL_BUILD_DEPS} \
+    && microdnf clean all
 
 ARG KAFKA_DIST_DIR
 ARG KAFKA_VERSION
 ARG THIRD_PARTY_LIBS
 ARG strimzi_version
-
-RUN microdnf -y install gettext nmap-ncat net-tools bind-utils && microdnf clean all -y
 
 #####
 # Add Kafka
@@ -87,4 +85,4 @@ LABEL name="strimzi-kafka" \
       summary="Strimzi Kafka Operator" \
       description="Strimzi Kafka Operator is a high-throughput, fault-tolerant, pub-sub technology for building event-driven applications. It is built on top of Apache Kafka(R)"
 
-USER 1001
+USER ${user}

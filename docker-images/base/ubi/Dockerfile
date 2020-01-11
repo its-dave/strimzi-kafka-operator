@@ -1,10 +1,6 @@
-FROM registry.access.redhat.com/ubi8/ubi-minimal
-ARG JAVA_VERSION
+ARG B_ARCH
+ARG JRE_IMAGE_TAG
+FROM hyc-qp-stable-docker-local.artifactory.swg-devops.com/openjdk-8-jre-ubi7-icp-linux-${B_ARCH}:${JRE_IMAGE_TAG}
 
-RUN microdnf -y update \
-    && microdnf -y install hostname openssl tar vi which java-${JAVA_VERSION}-openjdk-headless \
-    && microdnf -y clean all
-
-COPY downloads/tini /usr/bin/
-
-LABEL JAVA_VERSION=${JAVA_VERSION}
+RUN microdnf install --nodocs hostname openssl which && \
+    microdnf clean all
