@@ -83,7 +83,7 @@ COPY LICENSE /licenses/LICENSE
 
 LABEL name="strimzi-kafka" \
       vendor="CNCF" \
-      release="2.3.0" \
+      release="2.4.0" \
       summary="Strimzi Kafka Operator" \
       description="Strimzi Kafka Operator is a high-throughput, fault-tolerant, pub-sub technology for building event-driven applications. It is built on top of Apache Kafka(R)"
 
