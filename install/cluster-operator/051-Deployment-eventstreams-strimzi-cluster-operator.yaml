@@ -17,7 +17,7 @@ spec:
         strimzi.io/kind: cluster-operator
     spec:
       imagePullSecrets:
-        - name: regcred
+        - name: ibm-entitlement-key
       serviceAccountName: strimzi-cluster-operator
       containers:
         - name: strimzi-cluster-operator
@@ -64,7 +64,7 @@ spec:
             - name: STRIMZI_LOG_LEVEL
               value: INFO
             - name: STRIMZI_IMAGE_PULL_SECRETS
-              value: regcred
+              value: ibm-entitlement-key
           livenessProbe:
             httpGet:
               path: /healthy
