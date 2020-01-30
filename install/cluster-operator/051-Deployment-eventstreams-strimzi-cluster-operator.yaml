@@ -21,7 +21,7 @@ spec:
       serviceAccountName: strimzi-cluster-operator
       containers:
         - name: strimzi-cluster-operator
-          image: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator-amd64:2020-01-29-12.23.30-906711c
+          image: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator-amd64:2020-01-30-21.18.25-ac44897
           args:
             - /opt/strimzi/bin/cluster_operator_run.sh
           env:
@@ -34,33 +34,38 @@ spec:
             - name: STRIMZI_OPERATION_TIMEOUT_MS
               value: "300000"
             - name: STRIMZI_DEFAULT_TLS_SIDECAR_ENTITY_OPERATOR_IMAGE
-              value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka-amd64:2020-01-29-12.23.30-906711c
+              value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka-amd64:2020-01-30-21.18.25-ac44897
             - name: STRIMZI_DEFAULT_TLS_SIDECAR_KAFKA_IMAGE
-              value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka-amd64:2020-01-29-12.23.30-906711c
+              value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka-amd64:2020-01-30-21.18.25-ac44897
             - name: STRIMZI_DEFAULT_TLS_SIDECAR_ZOOKEEPER_IMAGE
-              value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka-amd64:2020-01-29-12.23.30-906711c
+              value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka-amd64:2020-01-30-21.18.25-ac44897
             - name: STRIMZI_DEFAULT_KAFKA_EXPORTER_IMAGE
-              value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka-amd64:2020-01-29-12.23.30-906711c
+              value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka-amd64:2020-01-30-21.18.25-ac44897
             - name: STRIMZI_KAFKA_IMAGES
               value: |
-                2.4.0=hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka-amd64:2020-01-29-12.23.30-906711c
+                2.4.0=hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka-amd64:2020-01-30-21.18.25-ac44897
             - name: STRIMZI_KAFKA_CONNECT_IMAGES
               value: |
-                2.4.0=hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka-amd64:2020-01-29-12.23.30-906711c
+                2.4.0=hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka-amd64:2020-01-30-21.18.25-ac44897
             - name: STRIMZI_KAFKA_CONNECT_S2I_IMAGES
               value: |
-                2.4.0=hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka-amd64:2020-01-29-12.23.30-906711c
+                2.4.0=hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka-amd64:2020-01-30-21.18.25-ac44897
             - name: STRIMZI_KAFKA_MIRROR_MAKER_IMAGES
               value: |
-                2.4.0=hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka-amd64:2020-01-29-12.23.30-906711c
+                2.4.0=hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka-amd64:2020-01-30-21.18.25-ac44897
+            - name: STRIMZI_KAFKA_MIRROR_MAKER_2_IMAGES
+              value: |
+                2.4.0=hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka-amd64:2020-01-30-21.18.25-ac44897
             - name: STRIMZI_DEFAULT_TOPIC_OPERATOR_IMAGE
-              value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator-amd64:2020-01-29-12.23.30-906711c
+              value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator-amd64:2020-01-30-21.18.25-ac44897
             - name: STRIMZI_DEFAULT_USER_OPERATOR_IMAGE
-              value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator-amd64:2020-01-29-12.23.30-906711c
+              value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator-amd64:2020-01-30-21.18.25-ac44897
             - name: STRIMZI_DEFAULT_KAFKA_INIT_IMAGE
-              value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator-amd64:2020-01-29-12.23.30-906711c
+              value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator-amd64:2020-01-30-21.18.25-ac44897
             - name: STRIMZI_DEFAULT_KAFKA_BRIDGE_IMAGE
               value: strimzi/kafka-bridge:latest
+            - name: STRIMZI_DEFAULT_JMXTRANS_IMAGE
+              value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/jmxtrans:latest
             - name: STRIMZI_LOG_LEVEL
               value: INFO
             - name: STRIMZI_IMAGE_PULL_SECRETS
