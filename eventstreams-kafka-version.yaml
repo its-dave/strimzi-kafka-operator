@@ -23,6 +23,6 @@
   protocol: 2.4
   url: file://localhost/tmp/kafka_2.12-2.4.0.tgz
   checksum: 9477d2429575e40a042e9bcd1ba75948bca03efd29ff18e491dc0635c438c10cfe4e05986512562ee7215ea15a8f756298629bdd136fffaa17bfcea77af991cf
-  zookeeper: 3.4.14
+  zookeeper: 3.5.6
   third-party-libs: 2.4.x
   default: true
