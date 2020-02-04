@@ -1,0 +1,83 @@
+/*
+ * IBM Confidential
+ * OCO Source Materials
+ *
+ * 5737-H33
+ *
+ * (C) Copyright IBM Corp. 2019  All Rights Reserved.
+ *
+ * The source code for this program is not published or otherwise
+ * divested of its trade secrets, irrespective of what has been
+ * deposited with the U.S. Copyright Office.
+ */
+
+package com.ibm.eventstreams.controller;
+
+import org.junit.jupiter.api.Test;
+
+import java.util.Collections;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
+public class EventStreamsOperatorConfigTest {
+
+    @Test
+    public void testCreatesImageLookupFromEnvMap() {
+
+        Map<String, String> envMap = Stream
+            .of(new String[][]{
+                {EventStreamsOperatorConfig.EVENTSTREAMS_DEFAULT_ADMIN_API_IMAGE, "api"},
+                {EventStreamsOperatorConfig.EVENTSTREAMS_DEFAULT_ADMIN_PROXY_IMAGE, "proxy"},
+                {EventStreamsOperatorConfig.EVENTSTREAMS_DEFAULT_ADMIN_UI_IMAGE, "ui"},
+                {EventStreamsOperatorConfig.EVENTSTREAMS_DEFAULT_ADMIN_UI_REDIS_IMAGE, "ui-redis" },
+                {EventStreamsOperatorConfig.EVENTSTREAMS_DEFAULT_COLLECTOR_IMAGE, "collector"},
+                {EventStreamsOperatorConfig.EVENTSTREAMS_DEFAULT_REST_PRODUCER_IMAGE, "rest_producer"},
+                {EventStreamsOperatorConfig.EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_AVRO_IMAGE, "schema_avro"},
+                {EventStreamsOperatorConfig.EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_IMAGE, "schema"}
+            })
+            .collect(Collectors.toMap(pair -> pair[0], pair -> pair[1]));
+
+        EventStreamsOperatorConfig eventStreamsOperatorConfig = EventStreamsOperatorConfig.fromMap(envMap);
+
+        EventStreamsOperatorConfig.ImageLookup imageConfig = eventStreamsOperatorConfig.getImages();
+
+        assertThat(imageConfig.getAdminApiImage().get(),
+                   is(envMap.get(EventStreamsOperatorConfig.EVENTSTREAMS_DEFAULT_ADMIN_API_IMAGE)));
+        assertThat(imageConfig.getAdminProxyImage().get(),
+                   is(envMap.get(EventStreamsOperatorConfig.EVENTSTREAMS_DEFAULT_ADMIN_PROXY_IMAGE)));
+        assertThat(imageConfig.getAdminUIImage().get(),
+                   is(envMap.get(EventStreamsOperatorConfig.EVENTSTREAMS_DEFAULT_ADMIN_UI_IMAGE)));
+        assertThat(imageConfig.getAdminUIRedisImage().get(),
+                   is(envMap.get(EventStreamsOperatorConfig.EVENTSTREAMS_DEFAULT_ADMIN_UI_REDIS_IMAGE)));
+        assertThat(imageConfig.getCollectorImage().get(),
+                   is(envMap.get(EventStreamsOperatorConfig.EVENTSTREAMS_DEFAULT_COLLECTOR_IMAGE)));
+        assertThat(imageConfig.getRestProducerImage().get(),
+                   is(envMap.get(EventStreamsOperatorConfig.EVENTSTREAMS_DEFAULT_REST_PRODUCER_IMAGE)));
+        assertThat(imageConfig.getSchemaRegistryAvroImage().get(),
+                   is(envMap.get(EventStreamsOperatorConfig.EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_AVRO_IMAGE)));
+        assertThat(imageConfig.getSchemaRegistryImage().get(),
+                   is(envMap.get(EventStreamsOperatorConfig.EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_IMAGE)));
+    }
+
+    @Test
+    public void testImagesAreEmptyIfNotInEnvMap() {
+        EventStreamsOperatorConfig eventStreamsOperatorConfig = EventStreamsOperatorConfig.fromMap(
+            Collections.emptyMap());
+
+        EventStreamsOperatorConfig.ImageLookup imageConfig = eventStreamsOperatorConfig.getImages();
+
+        assertThat(imageConfig.getAdminApiImage(), is(Optional.empty()));
+        assertThat(imageConfig.getAdminProxyImage(), is(Optional.empty()));
+        assertThat(imageConfig.getAdminUIImage(), is(Optional.empty()));
+        assertThat(imageConfig.getAdminUIRedisImage(), is(Optional.empty()));
+        assertThat(imageConfig.getCollectorImage(), is(Optional.empty()));
+        assertThat(imageConfig.getRestProducerImage(), is(Optional.empty()));
+        assertThat(imageConfig.getSchemaRegistryAvroImage(), is(Optional.empty()));
+        assertThat(imageConfig.getSchemaRegistryImage(), is(Optional.empty()));
+    }
+}

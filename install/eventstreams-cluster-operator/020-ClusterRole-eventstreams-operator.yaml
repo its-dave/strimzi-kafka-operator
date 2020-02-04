@@ -1,0 +1,92 @@
+###############################################################################
+#
+# Licensed Materials - Property of IBM
+#
+# 5737-H33
+#
+# (C) Copyright IBM Corp. 2019  All Rights Reserved.
+#
+# US Government Users Restricted Rights - Use, duplication or
+# disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+#
+###############################################################################
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: eventstreams-operator
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - services
+      - configmaps
+      - pods
+      - serviceaccounts
+      - persistentvolumeclaims
+    verbs:
+      - "*"
+  - apiGroups:
+      - ""
+    resources:
+      - namespaces
+    verbs:
+      - get
+  - apiGroups:
+      - apps
+    resources:
+      - statefulsets
+      - replicasets
+      - deployments
+    verbs:
+      - "*"
+  - apiGroups:
+      - extensions
+    resources:
+      - statefulsets
+      - deployments
+      - networkpolicies
+    verbs:
+      - "*"
+  - apiGroups:
+      - rbac.authorization.k8s.io
+    resources:
+      - rolebindings
+    verbs:
+      - get
+      - create
+      - patch
+  - apiGroups:
+      - networking.k8s.io
+    resources:
+      - networkpolicies
+    verbs:
+      - get
+      - create
+      - patch
+  - apiGroups:
+      - monitoring.coreos.com
+    resources:
+      - servicemonitors
+    verbs:
+      - get
+      - create
+  - apiGroups:
+      - eventstreams.ibm.com
+    resources:
+      - "*"
+    verbs:
+      - "*"
+  - apiGroups:
+      - kafka.strimzi.io
+    resources:
+      - "*"
+      - "kafkausers"
+      - "kafkausers/status"
+    verbs:
+      - "*"
+  - apiGroups:
+      - route.openshift.io
+    resources:
+      - "routes"
+    verbs:
+      - "*"

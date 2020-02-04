@@ -1,0 +1,530 @@
+/*
+ * IBM Confidential
+ * OCO Source Materials
+ *
+ * 5737-H33
+ *
+ * (C) Copyright IBM Corp. 2019  All Rights Reserved.
+ *
+ * The source code for this program is not published or otherwise
+ * divested of its trade secrets, irrespective of what has been
+ * deposited with the U.S. Copyright Office.
+ */
+package com.ibm.eventstreams.api.model;
+
+import com.ibm.eventstreams.api.Labels;
+import com.ibm.eventstreams.api.Listener;
+import com.ibm.eventstreams.api.model.utils.ModelUtils;
+import com.ibm.eventstreams.api.spec.EventStreams;
+import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
+import com.ibm.eventstreams.controller.EventStreamsOperatorConfig;
+import io.fabric8.kubernetes.api.model.Container;
+import io.fabric8.kubernetes.api.model.EnvVar;
+import io.fabric8.kubernetes.api.model.EnvVarBuilder;
+import io.fabric8.kubernetes.api.model.LocalObjectReference;
+import io.fabric8.kubernetes.api.model.LocalObjectReferenceBuilder;
+import io.fabric8.kubernetes.api.model.Quantity;
+import io.fabric8.kubernetes.api.model.ResourceRequirements;
+import io.fabric8.kubernetes.api.model.ResourceRequirementsBuilder;
+import io.fabric8.kubernetes.api.model.Service;
+import io.fabric8.kubernetes.api.model.apps.Deployment;
+import io.fabric8.kubernetes.api.model.networking.NetworkPolicy;
+import io.fabric8.kubernetes.api.model.networking.NetworkPolicyPeer;
+import io.fabric8.openshift.api.model.Route;
+import io.strimzi.api.kafka.model.ExternalLogging;
+import io.strimzi.api.kafka.model.InlineLogging;
+import io.strimzi.api.kafka.model.storage.EphemeralStorageBuilder;
+import io.strimzi.api.kafka.model.template.PodTemplateBuilder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.endsWith;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.startsWith;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.emptyIterableOf;
+import static org.hamcrest.Matchers.hasItem;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
+public class SchemaRegistryModelTest {
+
+    private final String instanceName = "test-instance";
+    private final String componentPrefix = instanceName + "-" + AbstractModel.APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME;
+    private final int defaultReplicas = 1;
+
+    @Mock
+    private EventStreamsOperatorConfig.ImageLookup imageConfig;
+
+    private EventStreamsBuilder createDefaultEventStreams() {
+        return ModelUtils.createDefaultEventStreams(instanceName)
+                .editSpec()
+                    .withNewSchemaRegistry()
+                        .withReplicas(defaultReplicas)
+                        .withNewAvro()
+                        .endAvro()
+                        .withStorage(new EphemeralStorageBuilder().build())
+                    .endSchemaRegistry()
+                .endSpec();
+    }
+
+    private SchemaRegistryModel createDefaultSchemaRegistryModel() {
+        EventStreams eventStreamsResource = createDefaultEventStreams().build();
+        return new SchemaRegistryModel(eventStreamsResource, imageConfig);
+    }
+
+    @Test
+    public void testDefaultBuilder() {
+        SchemaRegistryModel schemaRegistryModel = createDefaultSchemaRegistryModel();
+
+        Deployment schemaRegistryDeployment = schemaRegistryModel.getDeployment();
+        assertThat(schemaRegistryDeployment.getMetadata().getName(), startsWith(componentPrefix));
+        assertThat(schemaRegistryDeployment.getSpec().getReplicas(), is(defaultReplicas));
+
+        Service schemaRegistryInternalService = schemaRegistryModel.getInternalService();
+        assertThat(schemaRegistryInternalService.getMetadata().getName(), startsWith(componentPrefix));
+        assertThat(schemaRegistryInternalService.getMetadata().getName(), endsWith(AbstractSecureEndpointModel.INTERNAL_SERVICE_POSTFIX));
+
+        Service schemaRegistryExternalService = schemaRegistryModel.getExternalService();
+        assertThat(schemaRegistryExternalService.getMetadata().getName(), startsWith(componentPrefix));
+        assertThat(schemaRegistryExternalService.getMetadata().getName(), endsWith(AbstractSecureEndpointModel.EXTERNAL_SERVICE_POSTFIX));
+
+        NetworkPolicy schemaRegistryNetworkPolicy = schemaRegistryModel.getNetworkPolicy();
+        String expectedNetworkPolicyName = componentPrefix + "-network-policy";
+        assertThat(schemaRegistryNetworkPolicy.getMetadata().getName(), is(expectedNetworkPolicyName));
+        assertThat(schemaRegistryNetworkPolicy.getKind(), is("NetworkPolicy"));
+
+        assertThat(schemaRegistryNetworkPolicy.getSpec().getIngress().size(), is(Listener.enabledListeners().size() + 1));
+        List<Listener> listeners = Listener.enabledListeners();
+        listeners.add(Listener.podToPodListener(false));
+        List<Integer> listenerPorts = listeners.stream().map(Listener::getPort).collect(Collectors.toList());
+        schemaRegistryNetworkPolicy.getSpec().getIngress().forEach(ingress -> {
+            assertThat(ingress.getFrom(), is(emptyIterableOf(NetworkPolicyPeer.class)));
+            assertThat(ingress.getPorts().size(), is(1));
+            assertThat(listenerPorts, hasItem(ingress.getPorts().get(0).getPort().getIntVal()));
+        });
+        assertThat(schemaRegistryNetworkPolicy.getSpec().getEgress().size(), is(0));
+
+        assertThat(schemaRegistryNetworkPolicy.getSpec().getPodSelector().getMatchLabels().size(), is(1));
+        assertThat(schemaRegistryNetworkPolicy
+            .getSpec()
+            .getPodSelector()
+            .getMatchLabels()
+            .get(Labels.COMPONENT_LABEL), is(SchemaRegistryModel.COMPONENT_NAME));
+
+        Map<String, Route> schemaRegistryRoutes = schemaRegistryModel.getRoutes();
+        schemaRegistryRoutes.forEach((key, route) -> {
+            assertThat(route.getMetadata().getName(), startsWith(componentPrefix));
+            assertThat(route.getMetadata().getName(), containsString(key));
+        });
+    }
+
+    @Test
+    public void testDefaultResourceRequirements() {
+        SchemaRegistryModel schemaRegistryModel = createDefaultSchemaRegistryModel();
+        List<Container> containerList = schemaRegistryModel.getDeployment().getSpec().getTemplate().getSpec().getContainers();
+        containerList.forEach(container -> {
+            assertThat(container.getResources().getRequests().get("cpu").getAmount(), is("500m"));
+            assertThat(container.getResources().getRequests().get("memory").getAmount(), is("256Mi"));
+            assertThat(container.getResources().getLimits().get("cpu").getAmount(), is("500m"));
+            assertThat(container.getResources().getLimits().get("memory").getAmount(), is("256Mi"));
+        });
+    }
+
+    @Test
+    public void testCustomResourceRequirements() {
+        ResourceRequirements customResourceRequirements = new ResourceRequirementsBuilder()
+                .addToRequests("memory", new Quantity("450Mi"))
+                .addToLimits("cpu", new Quantity("100m"))
+                .build();
+        ResourceRequirements customAvroResourceRequirements = new ResourceRequirementsBuilder()
+                .addToRequests("cpu", new Quantity("100m"))
+                .addToLimits("memory", new Quantity("50Mi"))
+                .build();
+
+        EventStreams eventStreamsResource = createDefaultEventStreams()
+                .editSpec()
+                    .editSchemaRegistry()
+                        .withResources(customResourceRequirements)
+                        .editAvro()
+                            .withResources(customAvroResourceRequirements)
+                        .endAvro()
+                    .endSchemaRegistry()
+                .endSpec()
+                .build();
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(eventStreamsResource, Mockito.mock(
+            EventStreamsOperatorConfig.ImageLookup.class));
+
+        List<Container> containerList = schemaRegistryModel.getDeployment().getSpec().getTemplate().getSpec().getContainers();
+
+        Map<String, ResourceRequirements> resourceRequirements = containerList.stream()
+                .collect(Collectors.toMap(Container::getName, Container::getResources));
+
+
+        ResourceRequirements schemaResources = resourceRequirements.get(SchemaRegistryModel.COMPONENT_NAME);
+        assertThat(schemaResources.getRequests().get("cpu").getAmount(), is("500m"));
+        assertThat(schemaResources.getRequests().get("memory").getAmount(), is("450Mi"));
+        assertThat(schemaResources.getLimits().get("cpu").getAmount(), is("100m"));
+        assertThat(schemaResources.getLimits().get("memory").getAmount(), is("256Mi"));
+
+        ResourceRequirements avroResources = resourceRequirements.get(SchemaRegistryModel.AVRO_SERVICE_CONTAINER_NAME);
+        assertThat(avroResources.getRequests().get("cpu").getAmount(), is("100m"));
+        assertThat(avroResources.getRequests().get("memory").getAmount(), is("256Mi"));
+        assertThat(avroResources.getLimits().get("cpu").getAmount(), is("500m"));
+        assertThat(avroResources.getLimits().get("memory").getAmount(), is("50Mi"));
+    }
+
+    @Test
+    public void testImageOverride() {
+        String schemaImage = "schema-image:latest";
+        String avroImage = "avro-image:latest";
+
+        EventStreams instance = createDefaultEventStreams()
+                .editSpec()
+                    .editSchemaRegistry()
+                        .withImage(schemaImage)
+                        .withNewAvro()
+                            .withImage(avroImage)
+                        .endAvro()
+                    .endSchemaRegistry()
+                .endSpec()
+                .build();
+
+        Map<String, String> expectedImages = new HashMap<>();
+        expectedImages.put(SchemaRegistryModel.COMPONENT_NAME, schemaImage);
+        expectedImages.put(SchemaRegistryModel.AVRO_SERVICE_CONTAINER_NAME, avroImage);
+
+        List<Container> containers = new SchemaRegistryModel(instance, imageConfig).getDeployment().getSpec().getTemplate()
+                .getSpec().getContainers();
+
+        ModelUtils.assertCorrectImageOverridesOnContainers(containers, expectedImages);
+    }
+
+    @Test
+    public void testOperatorImageOverride() {
+        String schemaImage = "component-schema-image:latest";
+        String avroImage = "component-avro-image:latest";
+
+        when(imageConfig.getSchemaRegistryImage()).thenReturn(Optional.of(schemaImage));
+        when(imageConfig.getSchemaRegistryAvroImage()).thenReturn(Optional.of(avroImage));
+
+        SchemaRegistryModel model = createDefaultSchemaRegistryModel();
+        List<Container> containers = model.getDeployment().getSpec().getTemplate()
+                .getSpec().getContainers();
+
+        Map<String, String> expectedImages = new HashMap<>();
+        expectedImages.put(SchemaRegistryModel.COMPONENT_NAME, schemaImage);
+        expectedImages.put(SchemaRegistryModel.AVRO_SERVICE_CONTAINER_NAME, avroImage);
+
+        ModelUtils.assertCorrectImageOverridesOnContainers(containers, expectedImages);
+    }
+
+    @Test
+    public void testOperatorImageOverrideTakesPrecedenceOverComponentLevelOverride() {
+        String schemaImage = "component-schema-image:latest";
+        String avroImage = "component-avro-image:latest";
+
+        String schemaImageFromEnv = "env-schema-image:latest";
+        String avroImageFromEnv = "env-avro-image:latest";
+
+        when(imageConfig.getSchemaRegistryImage()).thenReturn(Optional.of(schemaImageFromEnv));
+        when(imageConfig.getSchemaRegistryAvroImage()).thenReturn(Optional.of(avroImageFromEnv));
+
+        EventStreams instance = createDefaultEventStreams()
+                .editSpec()
+                    .editSchemaRegistry()
+                        .withImage(schemaImage)
+                        .withNewAvro()
+                            .withImage(avroImage)
+                        .endAvro()
+                    .endSchemaRegistry()
+                .endSpec()
+                .build();
+
+        List<Container> containers = new SchemaRegistryModel(instance, imageConfig).getDeployment().getSpec().getTemplate()
+                .getSpec().getContainers();
+
+        Map<String, String> expectedImages = new HashMap<>();
+        expectedImages.put(SchemaRegistryModel.COMPONENT_NAME, schemaImage);
+        expectedImages.put(SchemaRegistryModel.AVRO_SERVICE_CONTAINER_NAME, avroImage);
+
+        ModelUtils.assertCorrectImageOverridesOnContainers(containers, expectedImages);
+    }
+
+    @Test
+    public void testPodServiceAccountContainsUserSuppliedPullSecret() {
+
+        EventStreamsBuilder defaultEs = createDefaultEventStreams();
+        LocalObjectReference imagePullSecretOverride = new LocalObjectReferenceBuilder()
+            .withName("component-image-secret")
+            .build();
+
+        EventStreams eventStreams = defaultEs
+            .editSpec()
+                .editSchemaRegistry()
+                    .editOrNewTemplate()
+                        .withPod(new PodTemplateBuilder()
+                                        .withImagePullSecrets(imagePullSecretOverride)
+                                        .build()
+                        )
+                    .endTemplate()
+                .endSchemaRegistry()
+            .endSpec()
+            .build();
+
+        assertThat(new SchemaRegistryModel(eventStreams, imageConfig).getServiceAccount()
+                        .getImagePullSecrets(), contains(imagePullSecretOverride));
+    }
+
+    @Test
+    public void testPodServiceAccountContainsGlobalSuppliedPullSecret() {
+
+        EventStreamsBuilder defaultEs = createDefaultEventStreams();
+        LocalObjectReference imagePullSecretOverride = new LocalObjectReferenceBuilder()
+            .withName("global-image-secret")
+            .build();
+
+        EventStreams eventStreams = defaultEs
+            .editSpec()
+                .withNewImages()
+                    .withPullSecrets(imagePullSecretOverride)
+                .endImages()
+            .endSpec()
+            .build();
+
+        assertThat(new SchemaRegistryModel(eventStreams, imageConfig).getServiceAccount()
+                        .getImagePullSecrets(), contains(imagePullSecretOverride));
+    }
+
+    @Test
+    public void testPodServiceAccountContainsMergeOfPullSecrets() {
+
+        EventStreamsBuilder defaultEs = createDefaultEventStreams();
+        LocalObjectReference globalPullSecretOverride = new LocalObjectReferenceBuilder()
+            .withName("global-image-secret")
+            .build();
+
+        LocalObjectReference componentPullSecretOverride = new LocalObjectReferenceBuilder()
+            .withName("component-image-secret")
+            .build();
+
+        EventStreams eventStreams = defaultEs
+            .editSpec()
+                .withNewImages()
+                    .withPullSecrets(globalPullSecretOverride)
+                .endImages()
+                .editSchemaRegistry()
+                    .withNewTemplate()
+                        .withPod(new PodTemplateBuilder().withImagePullSecrets(componentPullSecretOverride).build())
+                    .endTemplate()
+                .endSchemaRegistry()
+            .endSpec()
+            .build();
+
+        assertThat(new SchemaRegistryModel(eventStreams, imageConfig).getServiceAccount()
+                        .getImagePullSecrets(), containsInAnyOrder(globalPullSecretOverride, componentPullSecretOverride));
+    }
+
+    @Test
+    public void testDefaultLogging() {
+        EventStreams defaultEs = createDefaultEventStreams().build();
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig);
+
+        EnvVar expectedEnvVar = new EnvVarBuilder()
+                .withName(SchemaRegistryModel.LOG_LEVEL_ENV_NAME)
+                .withValue("INFO")
+                .build();
+        List<EnvVar> envVars = schemaRegistryModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().stream().filter(container -> SchemaRegistryModel.COMPONENT_NAME.equals(container.getName())).findFirst().get().getEnv();
+
+        assertThat(envVars, hasItem(expectedEnvVar));
+    }
+
+    @Test
+    public void testOverrideLoggingInLine() {
+        Map<String, String> loggers = new HashMap<>();
+        loggers.put("logger.one", "DEBUG");
+        loggers.put("logger.two", "TRACE");
+        InlineLogging logging = new InlineLogging();
+        logging.setLoggers(loggers);
+
+        EventStreams defaultEs = createDefaultEventStreams()
+                .editSpec()
+                    .editSchemaRegistry()
+                        .withLogging(logging)
+                    .endSchemaRegistry()
+                .endSpec()
+                .build();
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig);
+
+        EnvVar expectedEnvVar = new EnvVarBuilder()
+                .withName(SchemaRegistryModel.LOG_LEVEL_ENV_NAME)
+                .withValue("DEBUG")
+                .build();
+        List<EnvVar> envVars = schemaRegistryModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().stream().filter(container -> SchemaRegistryModel.COMPONENT_NAME.equals(container.getName())).findFirst().get().getEnv();
+
+        assertThat(envVars, hasItem(expectedEnvVar));
+    }
+
+    @Test
+    public void testUsesDefaultLoggingIfNoLoggers() {
+        InlineLogging logging = new InlineLogging();
+
+        EventStreams defaultEs = createDefaultEventStreams()
+                .editSpec()
+                    .editSchemaRegistry()
+                        .withLogging(logging)
+                    .endSchemaRegistry()
+                .endSpec()
+                .build();
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig);
+
+        EnvVar expectedEnvVar = new EnvVarBuilder()
+                .withName(SchemaRegistryModel.LOG_LEVEL_ENV_NAME)
+                .withValue("INFO")
+                .build();
+        List<EnvVar> envVars = schemaRegistryModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().stream().filter(container -> SchemaRegistryModel.COMPONENT_NAME.equals(container.getName())).findFirst().get().getEnv();
+
+        assertThat(envVars, hasItem(expectedEnvVar));
+    }
+
+    @Test
+    public void testOverrideLoggingExternalIsIgnored() {
+        ExternalLogging logging = new ExternalLogging();
+
+        EventStreams defaultEs = createDefaultEventStreams()
+                .editSpec()
+                    .editSchemaRegistry()
+                        .withLogging(logging)
+                    .endSchemaRegistry()
+                .endSpec()
+                .build();
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig);
+
+        EnvVar expectedEnvVar = new EnvVarBuilder()
+                .withName(SchemaRegistryModel.LOG_LEVEL_ENV_NAME)
+                .withValue("INFO")
+                .build();
+        List<EnvVar> envVars = schemaRegistryModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().stream().filter(container -> SchemaRegistryModel.COMPONENT_NAME.equals(container.getName())).findFirst().get().getEnv();
+
+        assertThat(envVars, hasItem(expectedEnvVar));
+    }
+
+    @Test
+    public void testAvroDefaultLogging() {
+        EventStreams defaultEs = createDefaultEventStreams().build();
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig);
+
+        EnvVar expectedEnvVar = new EnvVarBuilder()
+                .withName(SchemaRegistryModel.AVRO_LOG_LEVEL_ENV_NAME)
+                .withValue("info")
+                .build();
+        List<EnvVar> envVars = schemaRegistryModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().stream().filter(container -> SchemaRegistryModel.AVRO_SERVICE_CONTAINER_NAME.equals(container.getName())).findFirst().get().getEnv();
+
+        assertThat(envVars, hasItem(expectedEnvVar));
+    }
+
+    @Test
+    public void testOverrideAvroLoggingInLine() {
+        Map<String, String> loggers = new HashMap<>();
+        loggers.put("logger.one", "TRACE");
+        loggers.put("logger.two", "INFO");
+        InlineLogging logging = new InlineLogging();
+        logging.setLoggers(loggers);
+
+        EventStreams defaultEs = createDefaultEventStreams()
+                .editSpec()
+                    .editSchemaRegistry()
+                        .editAvro()
+                            .withLogging(logging)
+                        .endAvro()
+                    .endSchemaRegistry()
+                .endSpec()
+                .build();
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig);
+
+        EnvVar expectedEnvVar = new EnvVarBuilder()
+                .withName(SchemaRegistryModel.AVRO_LOG_LEVEL_ENV_NAME)
+                .withValue("TRACE")
+                .build();
+        List<EnvVar> envVars = schemaRegistryModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().stream().filter(container -> SchemaRegistryModel.AVRO_SERVICE_CONTAINER_NAME.equals(container.getName())).findFirst().get().getEnv();
+
+        assertThat(envVars, hasItem(expectedEnvVar));
+    }
+
+    @Test
+    public void testUsesAvroDefaultLoggingIfNoLoggers() {
+        InlineLogging logging = new InlineLogging();
+
+        EventStreams defaultEs = createDefaultEventStreams()
+                .editSpec()
+                    .editSchemaRegistry()
+                        .editAvro()
+                            .withLogging(logging)
+                        .endAvro()
+                    .endSchemaRegistry()
+                .endSpec()
+                .build();
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig);
+
+        EnvVar expectedEnvVar = new EnvVarBuilder()
+                .withName(SchemaRegistryModel.AVRO_LOG_LEVEL_ENV_NAME)
+                .withValue("info")
+                .build();
+        List<EnvVar> envVars = schemaRegistryModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().stream().filter(container -> SchemaRegistryModel.AVRO_SERVICE_CONTAINER_NAME.equals(container.getName())).findFirst().get().getEnv();
+
+        assertThat(envVars, hasItem(expectedEnvVar));
+    }
+
+    @Test
+    public void testOverrideAvroLoggingExternalIsIgnored() {
+        ExternalLogging logging = new ExternalLogging();
+
+        EventStreams defaultEs = createDefaultEventStreams()
+                .editSpec()
+                    .editSchemaRegistry()
+                        .editAvro()
+                            .withLogging(logging)
+                        .endAvro()
+                    .endSchemaRegistry()
+                .endSpec()
+                .build();
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig);
+
+        EnvVar expectedEnvVar = new EnvVarBuilder()
+                .withName(SchemaRegistryModel.AVRO_LOG_LEVEL_ENV_NAME)
+                .withValue("info")
+                .build();
+        List<EnvVar> envVars = schemaRegistryModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().stream().filter(container -> SchemaRegistryModel.AVRO_SERVICE_CONTAINER_NAME.equals(container.getName())).findFirst().get().getEnv();
+
+        assertThat(envVars, hasItem(expectedEnvVar));
+    }
+
+    @Test
+    public void testCreateSchemaRegistryRouteWithTlsEncryption() {
+        EventStreams eventStreams = createDefaultEventStreams().build();
+        assertThat(new SchemaRegistryModel(eventStreams, imageConfig).getRoutes().get(Listener.EXTERNAL_TLS_NAME).getSpec().getTls().getTermination(), is("passthrough"));
+    }
+
+    @Test
+    public void testGenerationIdLabelOnDeployment() {
+        EventStreams eventStreams = createDefaultEventStreams().build();
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(eventStreams, imageConfig);
+
+        assertThat(schemaRegistryModel.getDeployment("newID").getMetadata().getLabels().containsKey(AbstractSecureEndpointModel.CERT_GENERATION_KEY), is(true));
+        assertThat(schemaRegistryModel.getDeployment("newID").getMetadata().getLabels().get(AbstractSecureEndpointModel.CERT_GENERATION_KEY), is("newID"));
+        assertThat(schemaRegistryModel.getDeployment("newID").getSpec().getTemplate().getMetadata().getLabels().containsKey(AbstractSecureEndpointModel.CERT_GENERATION_KEY), is(true));
+        assertThat(schemaRegistryModel.getDeployment("newID").getSpec().getTemplate().getMetadata().getLabels().get(AbstractSecureEndpointModel.CERT_GENERATION_KEY), is("newID"));
+    }
+}

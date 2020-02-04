@@ -13,7 +13,7 @@ ifneq ($(RELEASE_VERSION),latest)
   GITHUB_VERSION = $(RELEASE_VERSION)
 endif
 
-SUBDIRS=kafka-agent mirror-maker-agent tracing-agent crd-annotations test crd-generator api mockkube certificate-manager operator-common config-model config-model-generator cluster-operator topic-operator user-operator kafka-init docker-images helm-charts install examples
+SUBDIRS=kafka-agent mirror-maker-agent tracing-agent crd-annotations test crd-generator api mockkube certificate-manager operator-common config-model config-model-generator cluster-operator topic-operator user-operator kafka-init eventstreams-cluster-operator docker-images helm-charts install examples
 DOCKER_TARGETS=docker_build docker_push docker_tag
 
 all: prerequisites_check $(SUBDIRS)
@@ -58,7 +58,7 @@ release_maven:
 	mvn versions:set -DnewVersion=$(shell echo $(RELEASE_VERSION) | tr a-z A-Z)
 	mvn versions:commit
 
-release_pkg: helm_pkg	
+release_pkg: helm_pkg
 	tar -z -cf ./strimzi-$(RELEASE_VERSION).tar.gz strimzi-$(RELEASE_VERSION)/
 	zip -r ./strimzi-$(RELEASE_VERSION).zip strimzi-$(RELEASE_VERSION)/
 	rm -rf ./strimzi-$(RELEASE_VERSION)

@@ -1,6 +1,6 @@
 PROJECT_NAME=cluster-operator
 
-docker_build: java_build
+docker_build: java_install
 
 docker_tag:
 

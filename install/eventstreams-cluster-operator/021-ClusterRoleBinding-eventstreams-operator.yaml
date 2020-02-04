@@ -1,0 +1,24 @@
+###############################################################################
+#
+# Licensed Materials - Property of IBM
+#
+# 5737-H33
+#
+# (C) Copyright IBM Corp. 2019  All Rights Reserved.
+#
+# US Government Users Restricted Rights - Use, duplication or
+# disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+#
+###############################################################################
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: eventstreams-operator
+subjects:
+  - kind: ServiceAccount
+    name: strimzi-cluster-operator
+    namespace: myproject
+roleRef:
+  kind: ClusterRole
+  name: eventstreams-operator
+  apiGroup: rbac.authorization.k8s.io

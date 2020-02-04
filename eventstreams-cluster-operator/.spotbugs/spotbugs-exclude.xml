@@ -1,0 +1,9 @@
+<!--&lt;!&ndash; <?xml version="1.0" encoding="UTF-8"?>-->
+<FindBugsFilter>
+  <Match>
+      <Class name="~com\.ibm\.eventstreams\.api\.spec\..+(Doneable|Builder|FluentImpl)(\$.*)?" />
+  </Match>
+  <Match>
+      <Class name="~com\.ibm\.eventstreams\.api\.status\..+(Doneable|Builder|FluentImpl)(\$.*)?" />
+  </Match>
+</FindBugsFilter>

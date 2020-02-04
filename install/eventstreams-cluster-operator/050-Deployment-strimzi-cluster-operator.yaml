@@ -1,0 +1,120 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: strimzi-cluster-operator
+  labels:
+    app: strimzi
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: strimzi-cluster-operator
+      strimzi.io/kind: cluster-operator
+  template:
+    metadata:
+      labels:
+        name: strimzi-cluster-operator
+        strimzi.io/kind: cluster-operator
+    spec:
+      imagePullSecrets:
+        - name: regcred
+      serviceAccountName: strimzi-cluster-operator
+      containers:
+      - name: strimzi-cluster-operator
+        image: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator:combined2
+        imagePullPolicy: Always
+        args:
+        - /opt/strimzi/bin/eventstreams_cluster_operator_run.sh
+        env:
+        - name: STRIMZI_IMAGE_PULL_SECRETS
+          value: regcred
+        - name: STRIMZI_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: STRIMZI_FULL_RECONCILIATION_INTERVAL_MS
+          value: "120000"
+        - name: STRIMZI_OPERATION_TIMEOUT_MS
+          value: "300000"
+        - name: STRIMZI_DEFAULT_TLS_SIDECAR_ENTITY_OPERATOR_IMAGE
+          value: strimzi/kafka:latest-kafka-2.4.0
+        - name: STRIMZI_DEFAULT_TLS_SIDECAR_KAFKA_IMAGE
+          value: strimzi/kafka:latest-kafka-2.4.0
+        - name: STRIMZI_DEFAULT_TLS_SIDECAR_ZOOKEEPER_IMAGE
+          value: strimzi/kafka:latest-kafka-2.4.0
+        - name: STRIMZI_DEFAULT_KAFKA_EXPORTER_IMAGE
+          value: strimzi/kafka:latest-kafka-2.4.0
+        - name: STRIMZI_KAFKA_IMAGES
+          value: |
+            2.4.0=strimzi/kafka:latest-kafka-2.4.0
+        - name: STRIMZI_KAFKA_CONNECT_IMAGES
+          value: |
+            2.4.0=strimzi/kafka:latest-kafka-2.4.0
+        - name: STRIMZI_KAFKA_CONNECT_S2I_IMAGES
+          value: |
+            2.4.0=strimzi/kafka:latest-kafka-2.4.0
+        - name: STRIMZI_KAFKA_MIRROR_MAKER_IMAGES
+          value: |
+            2.4.0=strimzi/kafka:latest-kafka-2.4.0
+        - name: STRIMZI_KAFKA_MIRROR_MAKER_2_IMAGES
+          value: |
+            2.4.0=strimzi/kafka:latest-kafka-2.4.0
+        - name: STRIMZI_DEFAULT_TOPIC_OPERATOR_IMAGE
+          value: strimzi/operator:latest
+        - name: STRIMZI_DEFAULT_USER_OPERATOR_IMAGE
+          value: strimzi/operator:latest
+        - name: STRIMZI_DEFAULT_KAFKA_INIT_IMAGE
+          value: strimzi/operator:latest
+        - name: STRIMZI_DEFAULT_KAFKA_BRIDGE_IMAGE
+          value: strimzi/kafka-bridge:0.15.0
+        - name: STRIMZI_DEFAULT_JMXTRANS_IMAGE
+          value: strimzi/jmxtrans:latest
+        - name: STRIMZI_LOG_LEVEL
+          value: INFO
+        - name: EVENTSTREAMS_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: EVENTSTREAMS_FULL_RECONCILIATION_INTERVAL_MS
+          value: "120000"
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: EVENTSTREAMS_DEFAULT_REST_PRODUCER_IMAGE
+          value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-rest-producer-icp-linux-amd64:0.0.1-exp
+        - name: EVENTSTREAMS_DEFAULT_ADMIN_PROXY_IMAGE
+          value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-rest-proxy-icp-linux-amd64:2019-11-18-17.47.59-5d49861-exp
+        - name: EVENTSTREAMS_DEFAULT_ADMIN_API_IMAGE
+          value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-rest-icp-linux-amd64:2019-12-18-16.06.03-1c43bc7-exp
+        - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_IMAGE
+          value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-registry-icp-linux-amd64:2019-12-03-12.02.32-5f77276-dev
+        - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_AVRO_IMAGE
+          value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-avro-icp-linux-amd64:2019-10-02-12.55.11-89d5273
+        - name: EVENTSTREAMS_DEFAULT_ADMIN_UI_IMAGE
+          value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-ui-icp-linux-amd64:2020-01-06-09.27.14-e971d7f-dev
+        - name: EVENTSTREAMS_DEFAULT_ADMIN_UI_REDIS_IMAGE
+          value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-database-icp-linux-amd64:2019-10-14-13.15.56-ae55f14
+        - name: EVENTSTREAMS_DEFAULT_COLLECTOR_IMAGE
+          value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-collector-icp-linux-amd64:2019-12-17-10.29.48-c34db78
+        livenessProbe:
+          httpGet:
+            path: /healthy
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 30
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 256Mi
+          requests:
+            cpu: 200m
+            memory: 256Mi
+  strategy:
+    type: Recreate

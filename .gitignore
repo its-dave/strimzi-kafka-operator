@@ -52,3 +52,8 @@ systemtest/my-plugins/
 
 # VS Code History
 .history/*
+
+# EventStreams
+**/*/downloads
+kafka-versions.yaml.bk
+docker-images/kafka/stunnel-5.56.sh
