@@ -790,7 +790,9 @@ public class EventStreamsOperatorTest {
             assertThat("There is only one additional secret created", mockClient.secrets().list().getItems().size(), is(3));
             Secret firstSecret = mockClient.secrets().withName(endpointModel.getCertSecretName()).get();
             List<Secret> newClusterCA = new ArrayList<>(ModelUtils.generateClusterCa(NAMESPACE, CLUSTER_NAME, APP_NAME, ModelUtils.Certificates.NEW_CLUSTER_CA, ModelUtils.Keys.NEW_CLUSTER_CA_KEY));
-            mockClient.secrets().createOrReplace(newClusterCA.get(0), newClusterCA.get(1));
+            mockClient.secrets().createOrReplace(newClusterCA.get(0));
+            mockClient.secrets().createOrReplace(newClusterCA.get(1));
+
             reconciliationState.reconcileCerts(endpointModel, additionalHosts, Date::new).setHandler(ar2 -> {
                 assertThat("There is only one additional secret created", mockClient.secrets().list().getItems().size(), is(3));
                 Secret secondSecret = mockClient.secrets().withName(endpointModel.getCertSecretName()).get();

@@ -68,7 +68,7 @@ public class EventStreamsKafkaModelTest {
         Kafka kafka = createDefaultKafkaModel().getKafka();
 
         assertThat(kafka.getKind(), is("Kafka"));
-        assertThat(kafka.getApiVersion(), is("kafka.strimzi.io/v1beta1"));
+        assertThat(kafka.getApiVersion(), is("eventstreams.ibm.com/v1beta1"));
     }
 
     @Test

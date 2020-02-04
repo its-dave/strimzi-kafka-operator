@@ -101,7 +101,7 @@ public class ReplicatorModelTest {
         KafkaConnect replicator = createDefaultReplicator();
 
         assertThat(replicator.getKind(), is("KafkaConnect"));
-        assertThat(replicator.getApiVersion(), is("kafka.strimzi.io/v1beta1"));
+        assertThat(replicator.getApiVersion(), is("eventstreams.ibm.com/v1beta1"));
 
         assertThat(replicator.getMetadata().getName(), startsWith(componentPrefix));
         assertThat(replicator.getSpec().getReplicas(), is(defaultReplicas));

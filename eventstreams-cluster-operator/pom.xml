@@ -13,10 +13,6 @@
     <artifactId>eventstreams-cluster-operator</artifactId>
     <properties>
         <main.class>com.ibm.eventstreams.Main</main.class>
-<!--        <strimzi.crd-generator.version>0.17.0-SNAPSHOT</strimzi.crd-generator.version>-->
-<!--        <strimzi.api.version>0.17.0-SNAPSHOT</strimzi.api.version>-->
-<!--        <strimzi.cluster.version>0.17.0-SNAPSHOT</strimzi.cluster.version>-->
-<!--        <strimzi.operator-common.version>0.17.0-SNAPSHOT</strimzi.operator-common.version>-->
         <jacoco.version>0.8.5</jacoco.version>
         <spotbugs.version>3.1.12</spotbugs.version>
         <vertx.version>3.8.4</vertx.version>
@@ -30,7 +26,6 @@
             <artifactId>vertx-core</artifactId>
             <version>${vertx.version}</version>
         </dependency>
-
         <!-- Add hazelcast deps if you want it clusterable -->
         <dependency>
             <groupId>io.vertx</groupId>
@@ -42,14 +37,6 @@
             <artifactId>vertx-web</artifactId>
             <version>${vertx.version}</version>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>io.strimzi</groupId>-->
-<!--            <artifactId>certificate-manager</artifactId>-->
-<!--        </dependency>-->
-<!--        <dependency>-->
-<!--            <groupId>io.strimzi</groupId>-->
-<!--            <artifactId>config-model</artifactId>-->
-<!--        </dependency>-->
         <dependency>
             <groupId>io.fabric8</groupId>
             <artifactId>kubernetes-client</artifactId>
@@ -155,19 +142,6 @@
     </dependencies>
 
     <build>
-<!--        <pluginManagement>-->
-<!--            <plugins>-->
-<!--                <plugin>-->
-<!--                    <artifactId>maven-compiler-plugin</artifactId>-->
-<!--                    <version>3.1</version>-->
-<!--                    <configuration>-->
-<!--                        <source>1.8</source>-->
-<!--                        <target>1.8</target>-->
-<!--                    </configuration>-->
-<!--                </plugin>-->
-<!--            </plugins>-->
-<!--        </pluginManagement>-->
-
         <plugins>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -217,35 +191,35 @@
                     </execution>
                 </executions>
             </plugin>
-<!--            <plugin>-->
-<!--                <groupId>org.apache.maven.plugins</groupId>-->
-<!--                <artifactId>maven-checkstyle-plugin</artifactId>-->
-<!--                <version>3.0.0</version>-->
-<!--                <executions>-->
-<!--                    <execution>-->
-<!--                        <phase>test</phase>-->
-<!--                        <goals>-->
-<!--                            <goal>check</goal>-->
-<!--                        </goals>-->
-<!--                    </execution>-->
-<!--                </executions>-->
-<!--                <configuration>-->
-<!--&lt;!&ndash;                    <configLocation>.checkstyle/checkstyle.xml</configLocation>&ndash;&gt;-->
-<!--&lt;!&ndash;                    <headerLocation>.checkstyle/java.header</headerLocation>&ndash;&gt;-->
-<!--&lt;!&ndash;                    <suppressionsLocation>.checkstyle/suppressions.xml</suppressionsLocation>&ndash;&gt;-->
-<!--                    <includeTestSourceDirectory>true</includeTestSourceDirectory>-->
-<!--                    <encoding>UTF-8</encoding>-->
-<!--                    <consoleOutput>true</consoleOutput>-->
-<!--                    <failsOnError>true</failsOnError>-->
-<!--                </configuration>-->
-<!--                <dependencies>-->
-<!--                    <dependency>-->
-<!--                        <groupId>com.puppycrawl.tools</groupId>-->
-<!--                        <artifactId>checkstyle</artifactId>-->
-<!--                        <version>8.18</version>-->
-<!--                    </dependency>-->
-<!--                </dependencies>-->
-<!--            </plugin>-->
+    <!--            <plugin>-->
+    <!--                <groupId>org.apache.maven.plugins</groupId>-->
+    <!--                <artifactId>maven-checkstyle-plugin</artifactId>-->
+    <!--                <version>3.0.0</version>-->
+    <!--                <executions>-->
+    <!--                    <execution>-->
+    <!--                        <phase>test</phase>-->
+    <!--                        <goals>-->
+    <!--                            <goal>check</goal>-->
+    <!--                        </goals>-->
+    <!--                    </execution>-->
+    <!--                </executions>-->
+    <!--                <configuration>-->
+    <!--&lt;!&ndash;                    <configLocation>.checkstyle/checkstyle.xml</configLocation>&ndash;&gt;-->
+    <!--&lt;!&ndash;                    <headerLocation>.checkstyle/java.header</headerLocation>&ndash;&gt;-->
+    <!--&lt;!&ndash;                    <suppressionsLocation>.checkstyle/suppressions.xml</suppressionsLocation>&ndash;&gt;-->
+    <!--                    <includeTestSourceDirectory>true</includeTestSourceDirectory>-->
+    <!--                    <encoding>UTF-8</encoding>-->
+    <!--                    <consoleOutput>true</consoleOutput>-->
+    <!--                    <failsOnError>true</failsOnError>-->
+    <!--                </configuration>-->
+    <!--                <dependencies>-->
+    <!--                    <dependency>-->
+    <!--                        <groupId>com.puppycrawl.tools</groupId>-->
+    <!--                        <artifactId>checkstyle</artifactId>-->
+    <!--                        <version>8.18</version>-->
+    <!--                    </dependency>-->
+    <!--                </dependencies>-->
+    <!--            </plugin>-->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
