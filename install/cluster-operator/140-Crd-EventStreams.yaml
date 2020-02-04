@@ -61,15 +61,6 @@ spec:
                   type: string
                 bootstrapServers:
                   type: string
-                configStorageReplicationFactor:
-                  type: integer
-                  minimum: 1
-                offsetStorageReplicationFactor:
-                  type: integer
-                  minimum: 1
-                statusStorageReplicationFactor:
-                  type: integer
-                  minimum: 1
                 affinity:
                   type: object
                   properties:
@@ -467,6 +458,15 @@ spec:
                       pattern: '[0-9]+[mMgG]?'
                     gcLoggingEnabled:
                       type: boolean
+                    javaSystemProperties:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                          value:
+                            type: string
                 livenessProbe:
                   type: object
                   properties:
@@ -1007,6 +1007,8 @@ spec:
                                   - secretName
                                 disableTlsHostnameVerification:
                                   type: boolean
+                                enableECDSA:
+                                  type: boolean
                                 introspectionEndpointUri:
                                   type: string
                                 jwksEndpointUri:
@@ -1114,6 +1116,8 @@ spec:
                                   - key
                                   - secretName
                                 disableTlsHostnameVerification:
+                                  type: boolean
+                                enableECDSA:
                                   type: boolean
                                 introspectionEndpointUri:
                                   type: string
@@ -1238,6 +1242,8 @@ spec:
                                   - key
                                   - secretName
                                 disableTlsHostnameVerification:
+                                  type: boolean
+                                enableECDSA:
                                   type: boolean
                                 introspectionEndpointUri:
                                   type: string
@@ -1410,14 +1416,35 @@ spec:
                     authorization:
                       type: object
                       properties:
+                        clientId:
+                          type: string
+                        delegateToKafkaAcls:
+                          type: boolean
+                        disableTlsHostnameVerification:
+                          type: boolean
                         superUsers:
                           type: array
                           items:
                             type: string
+                        tlsTrustedCertificates:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              certificate:
+                                type: string
+                              secretName:
+                                type: string
+                            required:
+                            - certificate
+                            - secretName
+                        tokenEndpointUri:
+                          type: string
                         type:
                           type: string
                           enum:
                           - simple
+                          - keycloak
                       required:
                       - type
                     config:
@@ -1698,6 +1725,15 @@ spec:
                           pattern: '[0-9]+[mMgG]?'
                         gcLoggingEnabled:
                           type: boolean
+                        javaSystemProperties:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              name:
+                                type: string
+                              value:
+                                type: string
                     jmxOptions:
                       type: object
                       properties:
@@ -2560,6 +2596,15 @@ spec:
                           pattern: '[0-9]+[mMgG]?'
                         gcLoggingEnabled:
                           type: boolean
+                        javaSystemProperties:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              name:
+                                type: string
+                              value:
+                                type: string
                     resources:
                       type: object
                       properties:
@@ -4131,6 +4176,64 @@ spec:
                       enum:
                       - renew-certificate
                       - replace-key
+                jmxTrans:
+                  type: object
+                  properties:
+                    image:
+                      type: string
+                    outputDefinitions:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          outputType:
+                            type: string
+                          host:
+                            type: string
+                          port:
+                            type: integer
+                          flushDelayInSeconds:
+                            type: integer
+                          typeNames:
+                            type: array
+                            items:
+                              type: string
+                          name:
+                            type: string
+                        required:
+                        - outputType
+                        - name
+                    logLevel:
+                      type: string
+                    kafkaQueries:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          targetMBean:
+                            type: string
+                          attributes:
+                            type: array
+                            items:
+                              type: string
+                          outputs:
+                            type: array
+                            items:
+                              type: string
+                        required:
+                        - targetMBean
+                        - attributes
+                        - outputs
+                    resources:
+                      type: object
+                      properties:
+                        limits:
+                          type: object
+                        requests:
+                          type: object
+                  required:
+                  - outputDefinitions
+                  - kafkaQueries
                 kafkaExporter:
                   type: object
                   properties:
@@ -5684,6 +5787,8 @@ spec:
                                 type: string
               required:
               - replicas
+            appVersion:
+              type: string
             collector:
               type: object
               properties:
@@ -6928,50 +7033,41 @@ spec:
         status:
           type: object
           properties:
-            kafka:
+            kafkaListeners:
+              type: array
+              items:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  addresses:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        host:
+                          type: string
+                        port:
+                          type: integer
+                  certificates:
+                    type: array
+                    items:
+                      type: string
+            adminUiUrl:
+              type: string
+            routes:
+              type: object
+            customImages:
+              type: boolean
+            versions:
               type: object
               properties:
-                conditions:
+                availableAppVersions:
                   type: array
                   items:
-                    type: object
-                    properties:
-                      type:
-                        type: string
-                      status:
-                        type: string
-                      lastTransitionTime:
-                        type: string
-                      reason:
-                        type: string
-                      message:
-                        type: string
-                observedGeneration:
-                  type: integer
-                listeners:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      type:
-                        type: string
-                      addresses:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            host:
-                              type: string
-                            port:
-                              type: integer
-            adminRoute:
-              type: string
-            adminUiRoute:
-              type: string
-            versionID:
-              type: string
-            iamPresent:
-              type: boolean
+                    type: string
+                reconciledVersion:
+                  type: string
             conditions:
               type: array
               items:
@@ -6987,5 +7083,3 @@ spec:
                     type: string
                   message:
                     type: string
-            observedGeneration:
-              type: integer
