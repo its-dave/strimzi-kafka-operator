@@ -22,7 +22,7 @@ import static java.util.Collections.unmodifiableMap;
  */
 public class Labels {
 
-    public static final String STRIMZI_DOMAIN = "strimzi.io/";
+    public static final String STRIMZI_DOMAIN = "eventstreams.ibm.com/";
     public static final String KUBERNETES_DOMAIN = "app.kubernetes.io/";
 
     /**

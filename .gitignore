@@ -33,6 +33,7 @@ helm-charts/strimzi-kafka-operator-*.*.*.tgz
 
 docker-images/kafka/.*.tmp
 docker-images/kafka/tmp/**
+docker-images/kafka/downloads/**
 docker-images/operator/.*.tmp
 docker-images/operator/tmp/**
 docker-images/test-client/.*.tmp
