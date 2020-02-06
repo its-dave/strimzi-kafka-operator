@@ -5,7 +5,7 @@ source $(dirname $(realpath $0))/../tools/kafka-versions-tools.sh
 source $(dirname $(realpath $0))/../multi-platform-support.sh
 
 # Image directories
-base_images="base"
+base_images="base operator-init"
 java_images="operator jmxtrans"
 kafka_image="kafka"
 kafka_images="kafka test-client"

@@ -16,7 +16,7 @@ metadata:
   name: eventstreams-operator
 subjects:
   - kind: ServiceAccount
-    name: strimzi-cluster-operator
+    name: eventstreams-cluster-operator
     namespace: myproject
 roleRef:
   kind: ClusterRole
