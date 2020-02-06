@@ -51,7 +51,7 @@ public class EventStreamsVerticle extends AbstractVerticle {
     private final String namespace;
     private PlatformFeaturesAvailability pfa;
 
-    public static final int API_SERVER_PORT = 8080;
+    public static final int API_SERVER_PORT = 8081;
     private HttpServer httpServer;
     private static final String API_SSL_CERT_PATH = "/etc/eventstreams/tls.crt";
     private static final String API_SSL_KEY_PATH = "/etc/eventstreams/tls.key";

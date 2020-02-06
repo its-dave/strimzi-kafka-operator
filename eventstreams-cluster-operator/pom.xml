@@ -64,6 +64,10 @@
         </dependency>
         <dependency>
             <groupId>io.strimzi</groupId>
+            <artifactId>certificate-manager</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.strimzi</groupId>
             <artifactId>crd-generator</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>
@@ -278,7 +282,7 @@
                         <argument>io.strimzi.crdgenerator.CrdGenerator</argument>
                         <argument>--label</argument><argument>app:eventstreams</argument>
                         <argument>--yaml</argument>
-                        <argument>com.ibm.eventstreams.api.spec.EventStreams=${pom.basedir}${file.separator}/install/eventstreams-operator/040-Crd-EventStreams.yaml</argument>
+                        <argument>com.ibm.eventstreams.api.spec.EventStreams=${pom.basedir}/../install/cluster-operator/140-Crd-EventStreams.yaml</argument>
                     </arguments>
                 </configuration>
             </plugin>

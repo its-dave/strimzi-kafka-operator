@@ -1,6 +1,6 @@
 TOPDIR=$(dir $(lastword $(MAKEFILE_LIST)))
 
-include ./Makefile.os
+include ./Makefile.os ./Makefile.eventstreams
 
 GITHUB_VERSION ?= master
 RELEASE_VERSION ?= latest

@@ -1,0 +1,17 @@
+# Makefile.eventstreams contains the tasks for the Event Streams build pipeline
+B_ARCH ?= amd64
+JAVA_IMAGE_TAG_UBI7_OPENJDK8_JRE ?= latest
+export ALTERNATE_BASE ?= ubi
+
+export DOCKER_BUILD_ARGS := ${DOCKER_BUILD_ARGS} --build-arg B_ARCH=${B_ARCH} --build-arg JAVA_IMAGE_TAG_UBI7_OPENJDK8_JRE=${JAVA_IMAGE_TAG_UBI7_OPENJDK8_JRE}
+
+eventstreams_operator_build: eventstreams_java_build eventstreams_docker_build
+
+eventstreams_java_build:
+	$(MAKE) -C eventstreams-cluster-operator java_build
+
+eventstreams_docker_build:
+	DOCKER_BUILD_ARGS="${DOCKER_BUILD_ARGS} -f ${ALTERNATE_BASE}/Dockerfile" $(MAKE) -C docker-images/operator docker_build
+
+eventstreams_generate_crd:
+	cd eventstreams-cluster-operator && mvn exec:exec && echo "success!"
