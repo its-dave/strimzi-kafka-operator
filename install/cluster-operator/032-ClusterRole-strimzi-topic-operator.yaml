@@ -1,9 +1,9 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: strimzi-topic-operator
+  name: eventstreams-topic-operator
   labels:
-    app: strimzi
+    app: eventstreams
 rules:
 - apiGroups:
   - "kafka.strimzi.io"

@@ -1,22 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: strimzi-cluster-operator
+  name: eventstreams-cluster-operator
   labels:
-    app: strimzi
+    app: eventstreams
 spec:
   replicas: 1
   selector:
     matchLabels:
-      name: strimzi-cluster-operator
-      strimzi.io/kind: cluster-operator
+      name: eventstreams-cluster-operator
+      eventstreams.ibm.com/kind: cluster-operator
   template:
     metadata:
       labels:
-        name: strimzi-cluster-operator
-        strimzi.io/kind: cluster-operator
+        name: eventstreams-cluster-operator
+        eventstreams.ibm.com/kind: cluster-operator
     spec:
-      serviceAccountName: strimzi-cluster-operator
+      serviceAccountName: eventstreams-cluster-operator
       containers:
       - name: strimzi-cluster-operator
         image: strimzi/operator:latest
