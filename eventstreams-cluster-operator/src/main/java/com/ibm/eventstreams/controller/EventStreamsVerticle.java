@@ -26,6 +26,7 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServer;
@@ -73,7 +74,7 @@ public class EventStreamsVerticle extends AbstractVerticle {
     }
 
     @Override
-    public void start(Future<Void> start) {
+    public void start(Promise<Void> start) {
         try {
             log.info("EventStreamsVerticle for namespace {} started.", this.namespace);
             KubernetesDeserializer.registerCustomKind(EventStreams.RESOURCE_GROUP + "/" + EventStreams.V1BETA1, EventStreams.RESOURCE_KIND, EventStreams.class);
@@ -91,14 +92,15 @@ public class EventStreamsVerticle extends AbstractVerticle {
                             eventStreamsOperator.reconcileAll("timer", namespace, asyncHandler);
                         });
                         return startOperatorApiServer();
-                    }).compose(start::complete, start);
+                    })
+                    .setHandler(start);
         } catch (Exception e) {
             log.error("Failed to start EventStreamsVerticle", e);
         }
     }
 
     @Override
-    public void stop(Future<Void> stop) {
+    public void stop(Promise<Void> stop) {
         log.info("Stopping EventStreamsVerticle for namespace {}", namespace);
         vertx.cancelTimer(reconcileTimer);
         if (eventStreamsCRWatcher != null) {
@@ -116,7 +118,7 @@ public class EventStreamsVerticle extends AbstractVerticle {
     private Future<Void> startOperatorApiServer() {
         log.debug("Starting API server");
 
-        Future<Void> result = Future.future();
+        Promise<Void> result = Promise.promise();
 
         HttpServerOptions serverOptions = new HttpServerOptions();
         if (new File(API_SSL_CERT_PATH).exists() && new File(API_SSL_KEY_PATH).exists()) {
@@ -150,7 +152,7 @@ public class EventStreamsVerticle extends AbstractVerticle {
             }
         });
 
-        return result;
+        return result.future();
     }
 
 }

@@ -135,8 +135,8 @@ public class Main {
 
         logOperatorEnvVars();
         for (String namespace : config.getNamespaces()) {
-            Future<String> future = Future.future();
-            futures.add(future);
+            Promise<String> promise = Promise.promise();
+            futures.add(promise.future());
 
             EventStreamsVerticle eventStreamsVerticle = new EventStreamsVerticle(vertx,
                 client,
@@ -152,7 +152,7 @@ public class Main {
                         log.error("EventStreams Operator verticle in namespace {} failed to start", namespace, result.cause());
                         System.exit(1);
                     }
-                    future.handle(result);
+                    promise.handle(result);
                 });
         }
         return CompositeFuture.join(futures);

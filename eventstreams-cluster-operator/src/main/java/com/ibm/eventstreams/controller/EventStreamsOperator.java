@@ -148,7 +148,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
     }
 
     private Future<Void> reconcile(ReconciliationState reconcileState) {
-        Future<Void> chainFuture = Future.future();
+        Promise<Void> chainPromise = Promise.promise();
         customImageCount =  0;
 
         reconcileState.validateCustomResource()
@@ -166,10 +166,12 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 .compose(state -> state.createCollector())
                 .compose(state -> state.createOAuthClient())
                 .compose(state -> state.updateStatus())
-                .compose(state -> chainFuture.complete(), chainFuture);
+                .compose(state -> {
+                    chainPromise.complete();
+                    return Future.succeededFuture();
+                });
 
-        return chainFuture;
-
+        return chainPromise.future();
     }
 
     @Override
@@ -256,13 +258,13 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                     .withConditions(iamNotPresent)
                     .build();
                 instance.setStatus(informativeStatus);
-                Future<ReconciliationState> failReconcile = Future.future();
+                Promise<ReconciliationState> failReconcile = Promise.promise();
                 Future<ReconcileResult<EventStreams>> updateStatus = resourceOperator.createOrUpdate(instance);
                 updateStatus.onComplete(f -> {
                     log.info("IAM not present : " + f.succeeded());
                     failReconcile.fail("Exit Reconcile as IAM not present");
                 });
-                return failReconcile;
+                return failReconcile.future();
             }
             icpClusterData = icpConfigMap.getData();
 
@@ -633,7 +635,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         }
 
         Future<Void> createReplicatorSecretIfRequired(ReplicatorModel replicatorModel) {
-            Future<Void> createSecretFuture = Future.future();
+            Promise<Void> createSecretPromise = Promise.promise();
 
             String resourceName = instance.getMetadata().getName() + "-" + AbstractModel.APP_NAME + "-" + ReplicatorModel.REPLICATOR_SECRET_NAME;
 
@@ -642,22 +644,22 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                     if (getRes.result() == null) {
                         secretOperator.createOrUpdate(replicatorModel.getSecret()).setHandler(createSecretResult -> {
                             if (createSecretResult.succeeded()) {
-                                createSecretFuture.complete();
+                                createSecretPromise.complete();
                             } else {
                                 log.error("Failed to create  the Replicator Secret", getRes.cause());
-                                createSecretFuture.fail(createSecretResult.cause());
+                                createSecretPromise.fail(createSecretResult.cause());
                             }
                         });
                     } else {
                         log.debug("Replicator Secret Exists");
-                        createSecretFuture.complete();
+                        createSecretPromise.complete();
                     }
                 } else {
                     log.error("Failed to query for the Replicator Secret", getRes.cause());
-                    createSecretFuture.fail("Failed to query for the Replicator Secret" + getRes.cause());
+                    createSecretPromise.fail("Failed to query for the Replicator Secret" + getRes.cause());
                 }
             });
-            return createSecretFuture;
+            return createSecretPromise.future();
         }
 
         private Condition buildErrorCondition(String message) {
