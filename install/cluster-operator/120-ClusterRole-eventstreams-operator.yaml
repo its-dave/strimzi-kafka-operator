@@ -77,7 +77,7 @@ rules:
     verbs:
       - "*"
   - apiGroups:
-      - kafka.strimzi.io
+      - eventstreams.ibm.com
     resources:
       - "*"
       - "kafkausers"
@@ -90,3 +90,14 @@ rules:
       - "routes"
     verbs:
       - "*"
+  - apiGroups:
+      - "oidc.security.ibm.com"
+    resources:
+      - clients
+    verbs:
+      - get
+      - list
+      - create
+      - patch
+      - delete
+      - update

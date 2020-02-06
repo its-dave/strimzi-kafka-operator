@@ -19,6 +19,7 @@ import io.strimzi.api.kafka.model.AclRule;
 import io.strimzi.api.kafka.model.AclRuleBuilder;
 import io.strimzi.api.kafka.model.KafkaUser;
 import io.strimzi.api.kafka.model.KafkaUserBuilder;
+import io.strimzi.operator.common.model.Labels;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -49,7 +50,7 @@ public class InternalKafkaUserModel extends AbstractModel {
         aclList.add(rule1);
         
         Map<String, String> labels = new HashMap<>();
-        labels.put("strimzi.io/cluster", getResourcePrefix());
+        labels.put(Labels.STRIMZI_CLUSTER_LABEL, getResourcePrefix());
         
         kafkaUser = new KafkaUserBuilder()
         .withApiVersion(KafkaUser.RESOURCE_GROUP + "/" + KafkaUser.V1BETA1)

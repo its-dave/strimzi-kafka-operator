@@ -335,7 +335,7 @@ public class ReplicatorModel extends AbstractModel {
     private KafkaUser buildUser(List<AclRule> aclList, String kafkaUserName) {
 
         Map<String, String> labels = new HashMap<>();
-        labels.put("strimzi.io/cluster", getResourcePrefix());
+        labels.put(io.strimzi.operator.common.model.Labels.STRIMZI_CLUSTER_LABEL, getResourcePrefix());
 
         return new KafkaUserBuilder()
                 .withApiVersion(KafkaUser.RESOURCE_GROUP + "/" + KafkaUser.V1BETA1)
