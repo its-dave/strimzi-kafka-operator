@@ -6,7 +6,7 @@ spec:
   appVersion: "2020.1.1"
   images:
     pullSecrets:
-      - name: ibm-entitlement-key
+    - name: ibm-entitlement-key
   security:
     encryption: "TLS"
   architecture: "amd64"

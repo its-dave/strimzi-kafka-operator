@@ -17,7 +17,7 @@ spec:
         strimzi.io/kind: cluster-operator
     spec:
       imagePullSecrets:
-        - name: regcred
+      - name: ibm-entitlement-key
       serviceAccountName: strimzi-cluster-operator
       containers:
       - name: strimzi-cluster-operator
