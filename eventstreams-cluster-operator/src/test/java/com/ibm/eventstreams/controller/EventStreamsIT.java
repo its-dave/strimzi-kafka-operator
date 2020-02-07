@@ -40,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class EventStreamsIT {
 
     private static final String NAMESPACE = "es-it";
-    private static final String EVENTSTREAMS_CUSTOM_RESOURCE_DEFINITION = "install/eventstreams-operator/000-Crd-EventStreams.yaml";
+    private static final String EVENTSTREAMS_CUSTOM_RESOURCE_DEFINITION = System.getProperty("installDirectory") + "/cluster-operator/140-Crd-EventStreams.yaml";
     private static final String API_VERSION = "eventstreams.ibm.com/v1beta1";
     private static final String NAME = "my-es";
     private static final String ARCHITECTURE = "amd64";

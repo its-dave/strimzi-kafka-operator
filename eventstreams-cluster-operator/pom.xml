@@ -194,6 +194,9 @@
                             <goal>verify</goal>
                         </goals>
                         <configuration>
+                            <systemPropertyVariables>
+                                <installDirectory>${project.basedir}/../install</installDirectory>
+                            </systemPropertyVariables>
                             <includes>
                                 <include>**/IT.java</include>
                                 <include>**/*IT.java</include>
