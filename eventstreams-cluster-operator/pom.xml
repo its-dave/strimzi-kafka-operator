@@ -228,6 +228,14 @@
                 <version>${maven.dependency.version}</version>
                 <executions>
                     <execution>
+                        <id>copy-dependencies</id>
+                        <phase>package</phase>
+                    </execution>
+                    <execution>
+                        <id>set-classpath</id>
+                        <phase>package</phase>
+                    </execution>
+                    <execution>
                         <id>analyze</id>
                         <goals>
                             <goal>analyze-only</goal>
