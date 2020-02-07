@@ -13,24 +13,13 @@
     <artifactId>eventstreams-cluster-operator</artifactId>
     <properties>
         <main.class>com.ibm.eventstreams.Main</main.class>
-        <jacoco.version>0.8.5</jacoco.version>
-        <spotbugs.version>3.1.12</spotbugs.version>
-        <vertx.version>3.8.4</vertx.version>
-        <maven.surefire.version>2.22.1</maven.surefire.version>
-        <maven.failsafe.version>2.22.1</maven.failsafe.version>
+        <vertx.micrometer-metrics.version>3.8.4</vertx.micrometer-metrics.version>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-core</artifactId>
-            <version>${vertx.version}</version>
-        </dependency>
-        <!-- Add hazelcast deps if you want it clusterable -->
-        <dependency>
-            <groupId>io.vertx</groupId>
-            <artifactId>vertx-hazelcast</artifactId>
-            <version>${vertx.version}</version>
         </dependency>
         <dependency>
             <groupId>io.vertx</groupId>
@@ -74,18 +63,12 @@
         </dependency>
         <dependency>
             <groupId>io.strimzi</groupId>
-            <artifactId>crd-annotations</artifactId>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.strimzi</groupId>
             <artifactId>test</artifactId>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>io.sundr</groupId>
             <artifactId>builder-annotations</artifactId>
-<!--            <version>0.19.0</version>-->
             <scope>provided</scope>
             <exclusions>
                 <exclusion>
@@ -106,11 +89,6 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-engine</artifactId>
-            <version>5.5.1</version>
-        </dependency>
-        <dependency>
             <groupId>com.github.spotbugs</groupId>
             <artifactId>spotbugs-annotations</artifactId>
             <scope>provided</scope>
@@ -123,13 +101,12 @@
         <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-junit5</artifactId>
-            <version>${vertx.version}</version>
+            <version>${vertx-juni5.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-web-client</artifactId>
-            <version>${vertx.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -142,6 +119,37 @@
             <artifactId>mockito-junit-jupiter</artifactId>
             <version>2.23.4</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <version>${jupiter.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-yaml</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-micrometer-metrics</artifactId>
+            <version>${vertx.micrometer-metrics.version}</version>
         </dependency>
     </dependencies>
 
@@ -227,14 +235,24 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
+                <version>${maven.dependency.version}</version>
                 <executions>
                     <execution>
-                        <id>copy-dependencies</id>
-                        <phase>package</phase>
-                    </execution>
-                    <execution>
-                        <id>set-classpath</id>
-                        <phase>package</phase>
+                        <id>analyze</id>
+                        <goals>
+                            <goal>analyze-only</goal>
+                        </goals>
+                        <configuration>
+                            <failOnWarning>true</failOnWarning>
+                            <ignoredUnusedDeclaredDependencies>
+                                <ignoredUnusedDeclaredDependency>com.fasterxml.jackson.core:jackson-core:jar</ignoredUnusedDeclaredDependency>
+                                <ignoredUnusedDeclaredDependency>com.fasterxml.jackson.core:jackson-databind:jar</ignoredUnusedDeclaredDependency>
+                                <ignoredUnusedDeclaredDependency>com.fasterxml.jackson.core:jackson-annotations:jar</ignoredUnusedDeclaredDependency>
+                                <ignoredUnusedDeclaredDependency>com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:jar</ignoredUnusedDeclaredDependency>
+                                <ignoredUnusedDeclaredDependency>org.projectlombok:lombok:jar:1.18.4</ignoredUnusedDeclaredDependency>
+                                <ignoredUnusedDeclaredDependency>io.sundr:builder-annotations:jar:0.19.0:</ignoredUnusedDeclaredDependency>
+                            </ignoredUnusedDeclaredDependencies>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

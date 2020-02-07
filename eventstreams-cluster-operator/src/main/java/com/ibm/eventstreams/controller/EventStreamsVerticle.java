@@ -34,14 +34,14 @@ import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.net.PemKeyCertOptions;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 
 public class EventStreamsVerticle extends AbstractVerticle {
 
-    private static final Logger log = LoggerFactory.getLogger(EventStreamsVerticle.class);
+    private static final Logger log = LogManager.getLogger(EventStreamsVerticle.class);
     private final EventStreamsOperatorConfig.ImageLookup imageConfig;
     private RouteOperator routeOperator;
 

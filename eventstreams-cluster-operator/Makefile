@@ -1,5 +1,5 @@
 PROJECT_NAME=eventstreams-cluster-operator
-MVN_ARGS=-Dcheckstyle.skip -Dmdep.analyze.skip -DskipITs
+MVN_ARGS=-DskipIts
 
 docker_build: java_build
 
