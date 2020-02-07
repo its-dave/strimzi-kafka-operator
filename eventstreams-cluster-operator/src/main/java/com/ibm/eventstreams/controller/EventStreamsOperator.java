@@ -166,10 +166,8 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 .compose(state -> state.createCollector())
                 .compose(state -> state.createOAuthClient())
                 .compose(state -> state.updateStatus())
-                .compose(state -> {
-                    chainPromise.complete();
-                    return Future.succeededFuture();
-                });
+                .onSuccess(state -> chainPromise.complete())
+                .onFailure(t -> chainPromise.fail(t));
 
         return chainPromise.future();
     }

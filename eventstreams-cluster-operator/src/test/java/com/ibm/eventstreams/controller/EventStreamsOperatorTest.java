@@ -24,7 +24,6 @@ import static org.hamcrest.core.IsNull.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -327,7 +326,7 @@ public class EventStreamsOperatorTest {
 
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster).setHandler(ar -> {
             if (ar.succeeded()) {
-                fail("Test should fail as IAM is not present");
+                context.failNow(new Throwable("Test should fail as IAM is not present"));
             } else {
                 ArgumentCaptor<EventStreams> argument = ArgumentCaptor.forClass(EventStreams.class);
                 verify(esResourceOperator).createOrUpdate(argument.capture());
@@ -351,7 +350,7 @@ public class EventStreamsOperatorTest {
 
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster).setHandler(ar -> {
             if (ar.succeeded()) {
-                fail("Test should fail as IAM could not be retrieved");
+                context.failNow(new Throwable("Test should fail as IAM could not be retrieved"));
             } else {
                 assertTrue(ar.cause().toString().contains("Exit Reconcile as IAM not present"));
 
