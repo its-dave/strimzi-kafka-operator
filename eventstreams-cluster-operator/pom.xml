@@ -203,35 +203,21 @@
                     </execution>
                 </executions>
             </plugin>
-    <!--            <plugin>-->
-    <!--                <groupId>org.apache.maven.plugins</groupId>-->
-    <!--                <artifactId>maven-checkstyle-plugin</artifactId>-->
-    <!--                <version>3.0.0</version>-->
-    <!--                <executions>-->
-    <!--                    <execution>-->
-    <!--                        <phase>test</phase>-->
-    <!--                        <goals>-->
-    <!--                            <goal>check</goal>-->
-    <!--                        </goals>-->
-    <!--                    </execution>-->
-    <!--                </executions>-->
-    <!--                <configuration>-->
-    <!--&lt;!&ndash;                    <configLocation>.checkstyle/checkstyle.xml</configLocation>&ndash;&gt;-->
-    <!--&lt;!&ndash;                    <headerLocation>.checkstyle/java.header</headerLocation>&ndash;&gt;-->
-    <!--&lt;!&ndash;                    <suppressionsLocation>.checkstyle/suppressions.xml</suppressionsLocation>&ndash;&gt;-->
-    <!--                    <includeTestSourceDirectory>true</includeTestSourceDirectory>-->
-    <!--                    <encoding>UTF-8</encoding>-->
-    <!--                    <consoleOutput>true</consoleOutput>-->
-    <!--                    <failsOnError>true</failsOnError>-->
-    <!--                </configuration>-->
-    <!--                <dependencies>-->
-    <!--                    <dependency>-->
-    <!--                        <groupId>com.puppycrawl.tools</groupId>-->
-    <!--                        <artifactId>checkstyle</artifactId>-->
-    <!--                        <version>8.18</version>-->
-    <!--                    </dependency>-->
-    <!--                </dependencies>-->
-    <!--            </plugin>-->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>3.0.0</version>
+                <executions>
+                    <execution>
+                        <id>validate</id>
+                        <phase>validate</phase>
+                        <configuration>
+                            <headerLocation>.checkstyle/eventstreams/java.header</headerLocation>
+                            <suppressionsLocation>.checkstyle/eventstreams/suppressions.xml</suppressionsLocation>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>

@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE suppressions PUBLIC
+        "-//Puppy Crawl//DTD Suppressions 1.1//EN"
+        "http://www.puppycrawl.com/dtds/suppressions_1_1.dtd">
+
+<suppressions>
+
+    <!-- Note that [/\\] must be used as the path separator for cross-platform support -->
+
+    <suppress checks=".*"
+              files="com[/\\]ibm[/\\]eventstreams[/\\]api[/\\](spec|status)[/\\].*(Builder|Fluent|FluentImpl|Doneable)\.java"/>
+    <suppress checks=".*"
+              files="com[/\\]ibm[/\\]iam[/\\]api[/\\](spec|status)[/\\].*(Builder|Fluent|FluentImpl|Doneable)\.java"/>
+
+</suppressions>

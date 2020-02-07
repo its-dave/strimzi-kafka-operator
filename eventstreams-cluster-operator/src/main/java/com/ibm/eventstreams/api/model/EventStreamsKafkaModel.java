@@ -69,7 +69,8 @@ public class EventStreamsKafkaModel extends AbstractModel {
 
     private final Kafka kafka;
 
-    //CHECKSTYLE.OFF: MethodLength - Until we refactor if appropriate
+    // Suppress until we refactor if appropriate
+    @SuppressWarnings({"checkstyle:MethodLength"})
     public EventStreamsKafkaModel(EventStreams instance) {
         super(instance.getMetadata().getName(), instance.getMetadata().getNamespace(), STRIMZI_COMPONENT_NAME);
 
@@ -259,7 +260,6 @@ public class EventStreamsKafkaModel extends AbstractModel {
             .endSpec()
             .build();
     }
-    //CHECKSTYLE.ON: MethodLength - Until we refactor if appropriate
 
     /**
      * getKafkaInstanceName returns the name of the Kafka instance for the given EventStreams instance name
