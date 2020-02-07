@@ -5,7 +5,7 @@
     <parent>
         <groupId>io.strimzi</groupId>
         <artifactId>strimzi</artifactId>
-        <version>0.17.0-SNAPSHOT</version>
+        <version>0.18.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -206,14 +206,15 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
-                <version>3.0.0</version>
+                <version>${maven.checkstyle.version}</version>
                 <executions>
                     <execution>
                         <id>validate</id>
                         <phase>validate</phase>
                         <configuration>
-                            <headerLocation>.checkstyle/eventstreams/java.header</headerLocation>
-                            <suppressionsLocation>.checkstyle/eventstreams/suppressions.xml</suppressionsLocation>
+                            <configLocation>../.checkstyle/checkstyle.xml</configLocation>
+                            <headerLocation>../.checkstyle/eventstreams/java.header</headerLocation>
+                            <suppressionsLocation>../.checkstyle/eventstreams/suppressions.xml</suppressionsLocation>
                         </configuration>
                     </execution>
                 </executions>

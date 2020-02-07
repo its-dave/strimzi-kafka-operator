@@ -1,5 +1,5 @@
 PROJECT_NAME=eventstreams-cluster-operator
-MVN_ARGS=-DskipIts
+export MVN_ARGS := ${MVN_ARGS} -DskipITs
 
 docker_build: java_build
 
