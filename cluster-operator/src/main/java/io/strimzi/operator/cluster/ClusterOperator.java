@@ -4,6 +4,7 @@
  */
 package io.strimzi.operator.cluster;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.Watch;
 import io.micrometer.core.instrument.MeterRegistry;
