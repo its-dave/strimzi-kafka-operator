@@ -206,7 +206,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 .map(list -> list.stream().filter(con -> Optional.ofNullable(con.getReason()).orElse("").equals("Errored")).collect(Collectors.toList()))
                 .map(List::isEmpty)
                 .orElse(true);
-                
+
             // fail straight away if cr has errored conditions
             if (!isValidCR) {
                 return Future.failedFuture("Invalid Custom Resource");
@@ -304,7 +304,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             Future<Kafka> createdKafka = toFuture(() -> Crds.kafkaOperation(client)
                 .inNamespace(instance.getMetadata().getNamespace())
                 .createOrReplace(kafka.getKafka()));
-                
+
             return createdKafka.map(v -> this);
         }
 
@@ -434,7 +434,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                     .compose(secretResult -> deploymentOperator.createOrUpdate(schemaRegistry.getDeployment(secretResult.resource().getMetadata().getResourceVersion())))
                     .map(this);
         }
-        
+
         Future<ReconciliationState> createAdminUI() {
             List<Future> adminUIFutures = new ArrayList<>();
             AdminUIModel ui = new AdminUIModel(instance, imageConfig, pfa.hasRoutes(), icpClusterData);
@@ -527,7 +527,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
 
                 }
             }
-            
+
             return Future.succeededFuture(this);
         }
 
@@ -545,12 +545,12 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         }
 
         /**
-         * 
-         * 
+         *
+         *
          * End of ordered reconcilliation methods.
          * Supporting methods below
-         * 
-         * 
+         *
+         *
          */
 
         private <T> Future<T> toFuture(Supplier<T> createResource) {
