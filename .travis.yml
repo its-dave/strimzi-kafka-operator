@@ -12,12 +12,13 @@ services:
 before_install:
 - gem install asciidoctor
 install:
-- mvn -q install -DskipTests=true -Dmaven.javadoc.skip=true -B -V
+- mvn -q install -DskipTests=true -Dmaven.javadoc.skip=true -B -V -s eventstreams-cluster-operator/settings.xml
 before_script:
 - "./.travis/install_yq.sh"
 - "./.travis/setup-kubernetes.sh"
 script:
-- "./.travis/build.sh"
+#- "./.travis/build.sh"
+- make eventstreams_java_build
 cache:
   directories:
   - "$HOME/.m2"

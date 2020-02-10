@@ -1,5 +1,5 @@
 PROJECT_NAME=eventstreams-cluster-operator
-export MVN_ARGS := ${MVN_ARGS} -DskipITs
+export MVN_ARGS := ${MVN_ARGS} -DskipITs -s settings.xml -Dmaven.javadoc.skip=true
 
 docker_build: java_build
 

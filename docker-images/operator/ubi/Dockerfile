@@ -12,10 +12,10 @@ COPY tmp/lib/ lib/
 
 COPY LICENSE /licenses/LICENSE
 
-LABEL name="strimzi-operator" \
-      vendor="CNCF" \
-      release="2.4.0" \
-      summary="Strimzi Kafka Operator" \
-      description="Strimzi Kafka Operator is a high-throughput, fault-tolerant, pub-sub technology for building event-driven applications. It is built on top of Apache Kafka(R)"
+LABEL name="eventstreams-cluster-operator" \
+      vendor="IBM" \
+      release="2020.1.1" \
+      summary="Event Streams Kafka Operator" \
+      description="Event Streams Kafka Operator is a high-throughput, fault-tolerant, pub-sub technology for building event-driven applications. It is built on top of Apache Kafka(R) and Strimzi"
 
 USER ${user}
