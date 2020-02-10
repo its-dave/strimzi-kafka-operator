@@ -43,7 +43,7 @@ parameters:
   required: true
   value: ".*"
 objects:
-- apiVersion: kafka.strimzi.io/v1beta1
+- apiVersion: eventstreams.ibm.com/v1beta1
   kind: KafkaMirrorMaker
   metadata:
     name: mirror-maker

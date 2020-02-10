@@ -57,7 +57,11 @@ public class ExamplesTest {
     private void validateRecursively(File directory) {
         for (File f : directory.listFiles()) {
             if (f.isDirectory()) {
-                if (f.getAbsolutePath().contains("examples/metrics/grafana") || f.getAbsolutePath().contains("examples/metrics/prometheus"))  {
+                if (f.getAbsolutePath().contains("examples/metrics/grafana") || f.getAbsolutePath().contains("examples/metrics/prometheus") ||
+                    // TODO delete if/when eventstreams CRD moved to api project
+                    // This means that all examples in eventstreams folder are not validated
+                    f.getName().equals("eventstreams"))
+                {
                     continue;
                 } else {
                     validateRecursively(f);
