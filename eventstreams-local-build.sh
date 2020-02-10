@@ -38,4 +38,5 @@ if [[ "${DOCKER_BUILD_ARGS}" != *"JAVA_IMAGE_TAG_UBI7_OPENJDK8_JRE"* ]]; then
     DOCKER_BUILD_ARGS="${DOCKER_BUILD_ARGS} --build-arg JAVA_IMAGE_TAG_UBI7_OPENJDK8_JRE=latest"
 fi
 export DOCKER_BUILD_ARGS
-ALTERNATE_BASE=ubi MVN_ARGS=-DskipTests make docker_build
+MVN_ARGS=-DskipTests make docker_build
+git checkout -- install/
