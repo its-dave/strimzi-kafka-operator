@@ -614,7 +614,7 @@ public class AdminApiModelTest {
         AdminApiModel adminApiModel = new AdminApiModel(defaultEs, imageConfig, listeners, mockIcpClusterDataMap);
         String expectedRunAsKafkaBootstrap = runasHost + ":" + runasPort;
 
-        EnvVar kafkaBootstrapUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_URL").withValue(expectedRunAsKafkaBootstrap).build();
+        EnvVar kafkaBootstrapUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_SERVERS").withValue(expectedRunAsKafkaBootstrap).build();
 
         Container adminApiContainer = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(1);
 

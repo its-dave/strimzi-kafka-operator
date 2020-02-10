@@ -149,6 +149,9 @@ public class KafkaCluster extends AbstractModel {
     public static final int REPLICATION_PORT = 9091;
     protected static final String REPLICATION_PORT_NAME = "tcp-replication";
 
+    public static final int RUNAS_PORT = 8091;
+    protected static final String RUNAS_PORT_NAME = "tcp-runas";
+
     protected static final int CLIENT_TLS_PORT = 9093;
     protected static final String CLIENT_TLS_PORT_NAME = "tcp-clientstls";
 
@@ -823,8 +826,9 @@ public class KafkaCluster extends AbstractModel {
      * @return List with generated ports
      */
     private List<ServicePort> getServicePorts() {
-        List<ServicePort> ports = new ArrayList<>(4);
+        List<ServicePort> ports = new ArrayList<>(5);
         ports.add(createServicePort(REPLICATION_PORT_NAME, REPLICATION_PORT, REPLICATION_PORT, "TCP"));
+        ports.add(createServicePort(RUNAS_PORT_NAME, RUNAS_PORT, RUNAS_PORT, "TCP"));
 
         if (listeners != null && listeners.getPlain() != null) {
             ports.add(createServicePort(CLIENT_PORT_NAME, CLIENT_PORT, CLIENT_PORT, "TCP"));
@@ -847,8 +851,9 @@ public class KafkaCluster extends AbstractModel {
      * @return List with generated ports
      */
     private List<ServicePort> getHeadlessServicePorts() {
-        List<ServicePort> ports = new ArrayList<>(4);
+        List<ServicePort> ports = new ArrayList<>(5);
         ports.add(createServicePort(REPLICATION_PORT_NAME, REPLICATION_PORT, REPLICATION_PORT, "TCP"));
+        ports.add(createServicePort(RUNAS_PORT_NAME, RUNAS_PORT, RUNAS_PORT, "TCP"));
 
         if (listeners != null && listeners.getPlain() != null) {
             ports.add(createServicePort(CLIENT_PORT_NAME, CLIENT_PORT, CLIENT_PORT, "TCP"));
@@ -1391,8 +1396,9 @@ public class KafkaCluster extends AbstractModel {
     }
 
     private List<ContainerPort> getContainerPortList() {
-        List<ContainerPort> portList = new ArrayList<>(5);
+        List<ContainerPort> portList = new ArrayList<>(6);
         portList.add(createContainerPort(REPLICATION_PORT_NAME, REPLICATION_PORT, "TCP"));
+        portList.add(createContainerPort(RUNAS_PORT_NAME, RUNAS_PORT, "TCP"));
 
         if (listeners != null && listeners.getPlain() != null) {
             portList.add(createContainerPort(CLIENT_PORT_NAME, CLIENT_PORT, "TCP"));
@@ -2037,7 +2043,7 @@ public class KafkaCluster extends AbstractModel {
      * @return The network policy.
      */
     public NetworkPolicy generateNetworkPolicy(boolean namespaceAndPodSelectorNetworkPolicySupported) {
-        List<NetworkPolicyIngressRule> rules = new ArrayList<>(5);
+        List<NetworkPolicyIngressRule> rules = new ArrayList<>(6);
 
         NetworkPolicyIngressRule replicationRule = new NetworkPolicyIngressRuleBuilder()
                 .addNewPort()
@@ -2169,8 +2175,33 @@ public class KafkaCluster extends AbstractModel {
                 .endSpec()
                 .build();
 
+        // Add the RunAsNetwork Policy
+        rules.add(generateRunAsNetworkPolicy());
+
         log.trace("Created network policy {}", networkPolicy);
         return networkPolicy;
+    }
+
+    private NetworkPolicyIngressRule generateRunAsNetworkPolicy() {
+        NetworkPolicyIngressRule runAsRule = new NetworkPolicyIngressRuleBuilder()
+            .addNewPort()
+            .withNewPort(RUNAS_PORT)
+            .endPort()
+            .build();
+
+        NetworkPolicyPeer adminAPIPodPeer = new NetworkPolicyPeerBuilder()
+            .withNewPodSelector()
+            .addToMatchLabels(Labels.STRIMZI_NAME_LABEL, cluster + "-admin-api")
+            .endPodSelector()
+            .withNewNamespaceSelector()
+            .endNamespaceSelector()
+            .build();
+
+        List<NetworkPolicyPeer> runasAdminApiPortPeers = new ArrayList<>(1);
+        runasAdminApiPortPeers.add(adminAPIPodPeer);
+        runAsRule.setFrom(runasAdminApiPortPeers);
+
+        return runAsRule;
     }
 
     /**

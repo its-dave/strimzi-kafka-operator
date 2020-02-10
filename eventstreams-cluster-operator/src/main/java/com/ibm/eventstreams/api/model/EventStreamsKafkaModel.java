@@ -64,6 +64,7 @@ public class EventStreamsKafkaModel extends AbstractModel {
     public static final String ZOOKEEPER_COMPONENT_NAME = "zookeeper";
     private static final String ENTITY_OPERATOR_COMPONENT = "entity-operator";
     public static final int KAFKA_PORT = 9092;
+    public static final int KAFKA_RUNAS_PORT = 8091;
     public static final int KAFKA_PORT_TLS = 9093;
     public static final int ZOOKEEPER_PORT = 2181;
 

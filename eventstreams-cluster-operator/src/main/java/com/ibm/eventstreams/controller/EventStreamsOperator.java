@@ -109,8 +109,6 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
 
     private int customImageCount = 0;
 
-
-
     public EventStreamsOperator(Vertx vertx, KubernetesClient client, String kind, PlatformFeaturesAvailability pfa,
                                 EventStreamsResourceOperator resourceOperator,
                                 EventStreamsOperatorConfig.ImageLookup imageConfig,

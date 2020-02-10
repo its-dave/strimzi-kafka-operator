@@ -9,6 +9,7 @@ import io.strimzi.api.kafka.model.CertAndKeySecretSource;
 import io.strimzi.api.kafka.model.CruiseControlSpec;
 import io.strimzi.api.kafka.model.KafkaAuthorization;
 import io.strimzi.api.kafka.model.KafkaAuthorizationKeycloak;
+import io.strimzi.api.kafka.model.KafkaAuthorizationRunAs;
 import io.strimzi.api.kafka.model.KafkaAuthorizationSimple;
 import io.strimzi.api.kafka.model.KafkaResources;
 import io.strimzi.api.kafka.model.Rack;
@@ -154,6 +155,8 @@ public class KafkaBrokerConfigurationBuilder {
         securityProtocol.add("REPLICATION-9091:SSL");
         configureReplicationListener();
 
+        configureRunAsListener(listeners, advertisedListeners, securityProtocol, clusterName, namespace);
+
         if (kafkaListeners != null) {
             // PLAIN listener
             if (kafkaListeners.getPlain() != null) {
@@ -274,6 +277,46 @@ public class KafkaBrokerConfigurationBuilder {
         writer.println("listener.name.replication-9091.ssl.truststore.type=PKCS12");
         writer.println("listener.name.replication-9091.ssl.client.auth=required");
         writer.println();
+    }
+
+    /**
+     * Internal method which configures the runas listener. The runas listener configuration is currently
+     * static, it always uses TLS/SCRAM with TLS client auth.
+     */
+    private void configureRunAsListener(List<String> listeners, List<String> advertisedListeners, List<String> securityProtocol, String clusterName, String namespace) {
+
+        // Runas Listener. An EventStreams required listener used by the Rest Admin/Producer.
+        listeners.add("RUNAS-8091://0.0.0.0:8091");
+        advertisedListeners.add(String.format("RUNAS-8091://%s-${STRIMZI_BROKER_ID}.%s-brokers.%s.svc:8091", KafkaResources.kafkaStatefulSetName(clusterName), KafkaResources.kafkaStatefulSetName(clusterName), namespace));
+        securityProtocol.add("RUNAS-8091:SASL_SSL");
+
+        printSectionHeader("RunAs listener");
+        writer.println("listener.name.runas-8091.ssl.keystore.location=/tmp/kafka/cluster.keystore.p12");
+        writer.println("listener.name.runas-8091.ssl.keystore.password=${CERTS_STORE_PASSWORD}");
+        writer.println("listener.name.runas-8091.ssl.keystore.type=PKCS12");
+        writer.println("listener.name.runas-8091.ssl.truststore.location=/tmp/kafka/clients.truststore.p12");
+        writer.println("listener.name.runas-8091.ssl.truststore.password=${CERTS_STORE_PASSWORD}");
+        writer.println("listener.name.runas-8091.ssl.truststore.type=PKCS12");
+        writer.println("listener.name.runas-8091.ssl.client.auth=required");
+        writer.println("listener.name.runas-8091.runas.sasl.jaas.config=com.ibm.eventstreams.runas.authenticate.RunAsLoginModule required;");
+        writer.println("listener.name.runas-8091.scram-sha-512.sasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule required;");
+        writer.println("listener.name.runas-8091.sasl.enabled.mechanisms=RUNAS,SCRAM-SHA-512");
+
+        writer.println();
+    }
+
+    /**
+     * Internal method which configures the runas authorizer and principal builder.
+     */
+    private void configureRunAsAuthorization(KafkaAuthorization authorization, List<String> superUsers) {
+        KafkaAuthorizationRunAs runAsAuthz = (KafkaAuthorizationRunAs) authorization;
+        writer.println("authorizer.class.name=" + KafkaAuthorizationRunAs.AUTHORIZER_CLASS_NAME);
+        writer.println("principal.builder.class=" + KafkaAuthorizationRunAs.PRINCIPAL_BUILDER_CLASS_NAME);
+
+        // User configured super users
+        if (runAsAuthz.getSuperUsers() != null && runAsAuthz.getSuperUsers().size() > 0) {
+            superUsers.addAll(runAsAuthz.getSuperUsers().stream().map(e -> String.format("User:%s", e)).collect(Collectors.toList()));
+        }
     }
 
     /**
@@ -499,6 +542,9 @@ public class KafkaBrokerConfigurationBuilder {
             if (keycloakAuthz.getSuperUsers() != null && keycloakAuthz.getSuperUsers().size() > 0) {
                 superUsers.addAll(keycloakAuthz.getSuperUsers().stream().map(e -> String.format("User:%s", e)).collect(Collectors.toList()));
             }
+        } else if (KafkaAuthorizationRunAs.TYPE_RUNAS.equals(authorization.getType())) {
+            configureRunAsAuthorization(authorization, superUsers);
+
         }
     }
 

@@ -22,7 +22,8 @@ import java.util.Map;
         property = "type")
 @JsonSubTypes({
         @JsonSubTypes.Type(name = KafkaAuthorizationSimple.TYPE_SIMPLE, value = KafkaAuthorizationSimple.class),
-        @JsonSubTypes.Type(name = KafkaAuthorizationKeycloak.TYPE_KEYCLOAK, value = KafkaAuthorizationKeycloak.class)
+        @JsonSubTypes.Type(name = KafkaAuthorizationKeycloak.TYPE_KEYCLOAK, value = KafkaAuthorizationKeycloak.class),
+        @JsonSubTypes.Type(name = KafkaAuthorizationRunAs.TYPE_RUNAS, value = KafkaAuthorizationRunAs.class)
 })
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @EqualsAndHashCode

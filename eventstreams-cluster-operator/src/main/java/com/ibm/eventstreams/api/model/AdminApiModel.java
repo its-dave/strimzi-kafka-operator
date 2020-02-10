@@ -354,7 +354,7 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
             new EnvVarBuilder().withName("RELEASE").withValue(getInstanceName()).build(),
             new EnvVarBuilder().withName("LICENSE").withValue("accept").build(),
             new EnvVarBuilder().withName("NAMESPACE").withValue(getNamespace()).build(),
-            new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_URL").withValue(runasKafkaBootstrap).build(),
+            new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_SERVERS").withValue(runasKafkaBootstrap).build(),
             new EnvVarBuilder().withName("IAM_CLUSTER_NAME").withValue(icpClusterName).build(),
             new EnvVarBuilder().withName("SSL_TRUSTSTORE_PATH").withValue(CLUSTER_CERTIFICATE_PATH + File.separator + CA_P12).build(),
             new EnvVarBuilder()

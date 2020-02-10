@@ -1445,6 +1445,7 @@ spec:
                           enum:
                           - simple
                           - keycloak
+                          - runas
                       required:
                       - type
                     config:

@@ -1,8 +1,9 @@
 #!/bin/bash
 
 set -e
-
-curl -v -H "X-JFrog-Art-Api:${ARTIFACTORY_PASSWORD}" -o /tmp/kafka_2.12-2.4.0.tgz "https://na.artifactory.swg-devops.com/artifactory/hyc-qp-artifacts-generic-local/kafka-vnext/2020-01-06-16.30.09-660e601/kafka_2.12-2.4.0.tgz"
+KAFKA_VERSION="2.12-2.4.0"
+KAFKA_TAG="2020-02-05-17.15.32-78395e6"
+curl -v -H "X-JFrog-Art-Api:${ARTIFACTORY_PASSWORD}" -o /tmp/kafka_${KAFKA_VERSION}.tgz "https://hyc-qp-stable-docker-local.artifactory.swg-devops.com:443/artifactory/hyc-qp-artifacts-generic-local/kafka-vnext/${KAFKA_TAG}/kafka_${KAFKA_VERSION}.tgz"
 
 # Create a backup of kafka-versions.yaml
 mv kafka-versions.yaml kafka-versions.yaml.bk
