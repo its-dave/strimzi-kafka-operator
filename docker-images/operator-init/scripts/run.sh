@@ -18,8 +18,7 @@ set -e
 #
 # 1. Service
 # 2. ConfigMap
-# 3. Namespace labels
-# 4. ValidatingWebhookConfiguration
+# 3. ValidatingWebhookConfiguration
 #
 # All of these manually-created resources have the owner reference set to
 # point to the Event Streams Cluster Operator, so that they will be automatically
@@ -123,48 +122,7 @@ echo $cabundle
 echo "---------------------------------------------------------------"
 
 #
-# 3.  Namespace
-#
-#  A label is required in each of the namespaces that the operator is
-#  responsible for watching.
-#
-#  This is needed to allow the webhook to specify which namespaces to
-#  be used in.
-#
-
-if [[ -z $EVENTSTREAMS_NAMESPACE ]]
-then
-  echo "No list of namespaces provided, so getting list of all namespaces"
-  list_of_watched_namespaces=()
-  while IFS= read -r line; do
-    list_of_watched_namespaces+=( "${line:10}" )
-  done < <( kubectl get ns -o name )
-else
-  echo "Splitting list of comma-separated list of namespaces provided"
-  IFS=',' read -ra list_of_watched_namespaces <<< "$EVENTSTREAMS_NAMESPACE"
-fi
-
-for ns in "${list_of_watched_namespaces[@]}"
-do
-  if [[ $ns == kube* ]] || [[ $ns == openshift* ]] || [[ $ns == icp-system ]]
-  then
-  	echo "Skipping namespace $ns as a system namespace"
-  else
-    echo "Updating namespace $ns to restrict webhook operations"
-    kubectl label namespace $ns --overwrite \
-      eventstreams-enable-webhook-$EVENTSTREAMS_OPERATOR_NAMESPACE=$EVENTSTREAMS_OPERATOR_NAMESPACE
-
-    echo "Namespace definition"
-    kubectl get namespace $ns -o yaml
-  fi
-done
-
-
-
-echo "---------------------------------------------------------------"
-
-#
-# 4.  Validating Webhook
+# 3.  Validating Webhook
 #
 #  Defines a webhook rule for each endpoint implemented in the Operator.
 #
@@ -187,7 +145,6 @@ webhooks:
         apiVersions: ["v1beta1"]
         operations: ["CREATE"]
         resources: ["eventstreams"]
-        scope: "Namespaced"
     failurePolicy: Ignore
     clientConfig:
       service:
@@ -195,16 +152,12 @@ webhooks:
         name: eventstreams-cluster-operator
         path: /admissionwebhook/rejectlongnames
       caBundle: "$cabundle"
-    namespaceSelector:
-      matchLabels:
-        eventstreams-enable-webhook-$EVENTSTREAMS_OPERATOR_NAMESPACE: $EVENTSTREAMS_OPERATOR_NAMESPACE
   - name: eventstreams.ibm.com.rejectinvalidversions
     rules:
       - apiGroups: ["eventstreams.ibm.com"]
         apiVersions: ["v1beta1"]
         operations: ["CREATE", "UPDATE"]
         resources: ["eventstreams"]
-        scope: "Namespaced"
     failurePolicy: Ignore
     clientConfig:
       service:
@@ -212,9 +165,6 @@ webhooks:
         name: eventstreams-cluster-operator
         path: /admissionwebhook/rejectinvalidversions
       caBundle: "$cabundle"
-    namespaceSelector:
-      matchLabels:
-        eventstreams-enable-webhook-$EVENTSTREAMS_OPERATOR_NAMESPACE: $EVENTSTREAMS_OPERATOR_NAMESPACE
 EOF
 
 echo "Webhook config:"
