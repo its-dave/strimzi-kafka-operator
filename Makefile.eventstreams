@@ -11,6 +11,10 @@ export DOCKER_BUILD_ARGS := ${DOCKER_BUILD_ARGS}\
     --build-arg B_OS=${B_OS} --build-arg B_ARCH=${B_ARCH}
 export ALTERNATE_BASE ?= ubi
 
+eventstreams_build:
+	@[ "${ARTIFACTORY_PASSWORD}" ] || ( echo "ARTIFACTORY_PASSWORD is not set - Please set to Artifactory API Key"; exit 1 )
+	./eventstreams-local-build.sh
+
 eventstreams_operator_build: eventstreams_java_build eventstreams_docker_build
 
 eventstreams_java_build:

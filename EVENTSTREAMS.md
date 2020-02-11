@@ -15,7 +15,7 @@ This results in a single `Main` that runs two completely separate operators.
 
 To build the project from scratch run: 
 ```
-MVN_ARGS=-DskipTests make docker_build
+ARTIFACTORY_PASSWORD=<API_KEY> MVN_ARGS=-DskipTests make eventstreams_build
 ```
 This will build all of the Strimzi sub-modules in order and produce a set of images. The image `strimzi/operator:latest` will contain the eventstreams operator.
 Note: currently the Strimzi tests are broken, so we need to skip them.
