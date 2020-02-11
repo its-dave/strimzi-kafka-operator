@@ -12,29 +12,6 @@
  */
 package com.ibm.eventstreams.api.model;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.endsWith;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.startsWith;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.hasEntry;
-import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.emptyIterableOf;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.when;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Collections;
-import java.util.stream.Collectors;
-
 import com.ibm.eventstreams.Main;
 import com.ibm.eventstreams.api.Labels;
 import com.ibm.eventstreams.api.Listener;
@@ -46,12 +23,6 @@ import com.ibm.eventstreams.api.spec.ExternalAccessBuilder;
 import com.ibm.eventstreams.api.spec.SecuritySpec;
 import com.ibm.eventstreams.api.spec.SecuritySpecBuilder;
 import com.ibm.eventstreams.controller.EventStreamsOperatorConfig;
-
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.EnvVarBuilder;
@@ -72,6 +43,33 @@ import io.strimzi.api.kafka.model.InlineLogging;
 import io.strimzi.api.kafka.model.status.ListenerStatus;
 import io.strimzi.api.kafka.model.status.ListenerStatusBuilder;
 import io.strimzi.api.kafka.model.template.PodTemplateBuilder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.endsWith;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.startsWith;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.emptyIterableOf;
+import static org.hamcrest.Matchers.hasEntry;
+import static org.hamcrest.Matchers.hasItem;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 public class AdminApiModelTest {
@@ -193,108 +191,120 @@ public class AdminApiModelTest {
             assertThat(listenerPorts, hasItem(ingress.getPorts().get(0).getPort().getIntVal()));
         });
 
-        assertThat(networkPolicy.getSpec().getEgress().size(), is(6));
+        assertThat(networkPolicy.getSpec().getEgress().size(), is(7));
 
-        assertThat(networkPolicy.getSpec().getEgress().get(0).getPorts().size(), is(1));
-        assertThat(networkPolicy.getSpec()
-            .getEgress()
-            .get(0)
-            .getPorts()
-            .get(0)
-            .getPort()
-            .getIntVal(), is(EventStreamsKafkaModel.KAFKA_PORT));
-        assertThat(networkPolicy.getSpec().getEgress().get(0).getTo().size(), is(1));
-        assertThat(networkPolicy.getSpec()
-            .getEgress()
-            .get(0)
-            .getTo()
-            .get(0)
-            .getPodSelector()
-            .getMatchLabels()
-            .size(), is(1));
-        assertThat(networkPolicy.getSpec()
-            .getEgress()
-            .get(0)
-            .getTo()
-            .get(0)
-            .getPodSelector()
-            .getMatchLabels()
-            .get(Labels.COMPONENT_LABEL), is(EventStreamsKafkaModel.KAFKA_COMPONENT_NAME));
+        checkNetworkPolicy(networkPolicy, 0, 1, 1, 1, EventStreamsKafkaModel.KAFKA_PORT, EventStreamsKafkaModel.KAFKA_COMPONENT_NAME);
+        checkNetworkPolicy(networkPolicy, 1, 1, 1, 1, EventStreamsKafkaModel.KAFKA_RUNAS_PORT, EventStreamsKafkaModel.KAFKA_COMPONENT_NAME);
+        checkNetworkPolicy(networkPolicy, 2, 1, 1, 1, Listener.podToPodListener(false).getPort(), SchemaRegistryModel.COMPONENT_NAME);
+        checkNetworkPolicy(networkPolicy, 3, 1, 1, 1, EventStreamsKafkaModel.ZOOKEEPER_PORT, EventStreamsKafkaModel.ZOOKEEPER_COMPONENT_NAME);
+        checkNetworkPolicy(networkPolicy, 4, 1, 1, 1, ReplicatorModel.REPLICATOR_PORT, ReplicatorModel.COMPONENT_NAME);
 
-        assertThat(networkPolicy.getSpec().getEgress().get(1).getPorts().size(), is(1));
-        assertThat(networkPolicy.getSpec()
-            .getEgress()
-            .get(1)
-            .getPorts()
-            .get(0)
-            .getPort()
-            .getIntVal(), is(Listener.podToPodListener(false).getPort()));
-        assertThat(networkPolicy.getSpec().getEgress().get(1).getTo().size(), is(1));
         assertThat(networkPolicy
             .getSpec()
             .getEgress()
-            .get(1)
-            .getTo()
-            .get(0)
-            .getPodSelector()
-            .getMatchLabels()
-            .size(), is(1));
-        assertThat(networkPolicy.getSpec()
-            .getEgress()
-            .get(1)
-            .getTo()
-            .get(0)
-            .getPodSelector()
-            .getMatchLabels()
-            .get(Labels.COMPONENT_LABEL), is(SchemaRegistryModel.COMPONENT_NAME));
-
-        assertThat(networkPolicy.getSpec().getEgress().get(2).getPorts().size(), is(1));
-        assertThat(networkPolicy.getSpec()
-            .getEgress()
-            .get(2)
+            .get(5)
             .getPorts()
-            .get(0)
-            .getPort()
-            .getIntVal(), is(EventStreamsKafkaModel.ZOOKEEPER_PORT));
-        assertThat(networkPolicy.getSpec().getEgress().get(2).getTo().size(), is(1));
+            .size(), is(2));
         assertThat(networkPolicy
             .getSpec()
             .getEgress()
-            .get(2)
-            .getTo()
+            .get(5)
+            .getPorts()
             .get(0)
-            .getPodSelector()
-            .getMatchLabels()
-            .size(), is(1));
-        assertThat(networkPolicy.getSpec()
+            .getPort()
+            .getIntVal(), is(8443));
+        assertThat(networkPolicy
+            .getSpec()
             .getEgress()
-            .get(2)
+            .get(5)
+            .getPorts()
+            .get(1)
+            .getPort()
+            .getIntVal(), is(443));
+        assertThat(networkPolicy
+            .getSpec()
+            .getEgress()
+            .get(5)
             .getTo()
+            .size(), is(0));
+
+        assertThat(networkPolicy
+            .getSpec()
+            .getEgress()
+            .get(6)
+            .getPorts()
+            .size(), is(1));
+        assertThat(networkPolicy
+            .getSpec()
+            .getEgress()
+            .get(6)
+            .getPorts()
             .get(0)
+            .getPort()
+            .getIntVal(), is(53));
+        assertThat(networkPolicy
+            .getSpec()
+            .getEgress()
+            .get(6)
+            .getPorts()
+            .get(0)
+            .getProtocol(), is("UDP"));
+        assertThat(networkPolicy
+            .getSpec()
+            .getEgress()
+            .get(6)
+            .getTo()
+            .size(), is(0));
+
+        assertThat(networkPolicy
+            .getSpec()
             .getPodSelector()
-            .getMatchLabels()
-            .get(Labels.COMPONENT_LABEL), is(EventStreamsKafkaModel.ZOOKEEPER_COMPONENT_NAME));
-
-        assertThat(networkPolicy.getSpec().getEgress().get(3).getPorts().size(), is(1));
-        assertThat(networkPolicy.getSpec().getEgress().get(3).getPorts().get(0).getPort().getIntVal(), is(ReplicatorModel.REPLICATOR_PORT));
-        assertThat(networkPolicy.getSpec().getEgress().get(3).getTo().size(), is(1));
-        assertThat(networkPolicy.getSpec().getEgress().get(3).getTo().get(0).getPodSelector().getMatchLabels().size(), is(1));
-        assertThat(networkPolicy.getSpec().getEgress().get(3).getTo().get(0).getPodSelector().getMatchLabels().get(Labels.COMPONENT_LABEL), is(ReplicatorModel.COMPONENT_NAME));    
-
-        assertThat(networkPolicy.getSpec().getEgress().get(4).getPorts().size(), is(2));
-        assertThat(networkPolicy.getSpec().getEgress().get(4).getPorts().get(0).getPort().getIntVal(), is(8443));
-        assertThat(networkPolicy.getSpec().getEgress().get(4).getPorts().get(1).getPort().getIntVal(), is(443));
-        assertThat(networkPolicy.getSpec().getEgress().get(4).getTo().size(), is(0));
-
-        assertThat(networkPolicy.getSpec().getEgress().get(5).getPorts().size(), is(1));
-        assertThat(networkPolicy.getSpec().getEgress().get(5).getPorts().get(0).getPort().getIntVal(), is(53));
-        assertThat(networkPolicy.getSpec().getEgress().get(5).getPorts().get(0).getProtocol(), is("UDP"));
-        assertThat(networkPolicy.getSpec().getEgress().get(5).getTo().size(), is(0));
-
-        assertThat(networkPolicy.getSpec().getPodSelector().getMatchLabels(), hasEntry(is(Labels.COMPONENT_LABEL), is(AdminApiModel.COMPONENT_NAME)));
+            .getMatchLabels(), hasEntry(is(Labels.COMPONENT_LABEL), is(AdminApiModel.COMPONENT_NAME)));
 
         Route adminApiRoute = adminApiModel.getRoute();
         assertThat(adminApiRoute.getMetadata().getName(), startsWith(componentPrefix));
+    }
+
+    private void checkNetworkPolicy(NetworkPolicy networkPolicy, int egressIndex, int expectedNumberOfPorts, int expectedGetTo, int expectedMatchLabels, int expectedPort, String expectedComponentName) {
+
+        assertThat(networkPolicy
+            .getSpec()
+            .getEgress()
+            .get(egressIndex)
+            .getPorts()
+            .size(), is(expectedNumberOfPorts));
+        assertThat(networkPolicy
+            .getSpec()
+            .getEgress()
+            .get(egressIndex)
+            .getPorts()
+            .get(0)
+            .getPort()
+            .getIntVal(), is(expectedPort));
+        assertThat(networkPolicy
+            .getSpec()
+            .getEgress()
+            .get(egressIndex)
+            .getTo()
+            .size(), is(expectedGetTo));
+        assertThat(networkPolicy
+            .getSpec()
+            .getEgress()
+            .get(egressIndex)
+            .getTo()
+            .get(0)
+            .getPodSelector()
+            .getMatchLabels()
+            .size(), is(expectedMatchLabels));
+        assertThat(networkPolicy
+            .getSpec()
+            .getEgress()
+            .get(egressIndex)
+            .getTo()
+            .get(0)
+            .getPodSelector()
+            .getMatchLabels()
+            .get(Labels.COMPONENT_LABEL), is(expectedComponentName));
     }
 
     @Test
@@ -770,8 +780,8 @@ public class AdminApiModelTest {
         EventStreams eventStreams = createDefaultEventStreams().build();
         AdminApiModel adminApiModel = new AdminApiModel(eventStreams, imageConfig, null, mockIcpClusterDataMap);
 
-        EnvVar expectedEnvVarTrustStorePath = new EnvVarBuilder().withName("SSL_TRUSTSTORE_PATH").withValue(clusterCertPath + File.separator + AbstractModel.CA_P12).build();
-        EnvVar expectedEnvVarKeyStorePath = new EnvVarBuilder().withName("SSL_KEYSTORE_PATH").withValue(userCertPath + File.separator + AbstractModel.USER_P12).build();
+        EnvVar expectedEnvVarTrustStorePath = new EnvVarBuilder().withName("SSL_TRUSTSTORE_PATH").withValue(clusterCertPath + File.separator + "podtls.p12").build();
+        EnvVar expectedEnvVarKeyStorePath = new EnvVarBuilder().withName("SSL_KEYSTORE_PATH").withValue(userCertPath + File.separator + "podtls.p12").build();
         List<EnvVar> actualEnvVars = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(1).getEnv();
         assertThat(actualEnvVars, hasItem(expectedEnvVarTrustStorePath));
         assertThat(actualEnvVars, hasItem(expectedEnvVarKeyStorePath));

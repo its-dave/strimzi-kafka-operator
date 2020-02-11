@@ -56,6 +56,7 @@ import com.ibm.eventstreams.api.model.AdminApiModel;
 import com.ibm.eventstreams.api.model.AdminProxyModel;
 import com.ibm.eventstreams.api.model.AdminUIModel;
 import com.ibm.eventstreams.api.model.CertificateSecretModel;
+import com.ibm.eventstreams.api.model.ClusterSecretsModel;
 import com.ibm.eventstreams.api.model.CollectorModel;
 import com.ibm.eventstreams.api.model.ReplicatorModel;
 import com.ibm.eventstreams.api.model.RestProducerModel;
@@ -1239,6 +1240,7 @@ public class EventStreamsOperatorTest {
         expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + RestProducerModel.COMPONENT_NAME + "-" + CertificateSecretModel.CERT_SECRET_NAME_POSTFIX);
         expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME + "-" + CertificateSecretModel.CERT_SECRET_NAME_POSTFIX);
         expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + AdminApiModel.COMPONENT_NAME + "-" + CertificateSecretModel.CERT_SECRET_NAME_POSTFIX);
+        expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + ClusterSecretsModel.EVENTSTREAMS_IBMCLOUD_CA_CERT_SECRET_SUFFIX);
         return expectedSecrets;
     }
 

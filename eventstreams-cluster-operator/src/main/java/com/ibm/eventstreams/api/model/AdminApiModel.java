@@ -13,7 +13,6 @@
 package com.ibm.eventstreams.api.model;
 
 
-
 import com.ibm.eventstreams.Main;
 import com.ibm.eventstreams.api.Listener;
 import com.ibm.eventstreams.api.spec.ComponentSpec;
@@ -24,11 +23,6 @@ import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.spec.ImagesSpec;
 import com.ibm.eventstreams.api.spec.SecuritySpec;
 import com.ibm.eventstreams.controller.EventStreamsOperatorConfig;
-
-import io.fabric8.kubernetes.api.model.Service;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.ContainerBuilder;
 import io.fabric8.kubernetes.api.model.EnvVar;
@@ -39,6 +33,7 @@ import io.fabric8.kubernetes.api.model.ProbeBuilder;
 import io.fabric8.kubernetes.api.model.Quantity;
 import io.fabric8.kubernetes.api.model.ResourceRequirements;
 import io.fabric8.kubernetes.api.model.ResourceRequirementsBuilder;
+import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.ServiceAccount;
 import io.fabric8.kubernetes.api.model.Volume;
 import io.fabric8.kubernetes.api.model.VolumeBuilder;
@@ -55,6 +50,8 @@ import io.strimzi.api.kafka.model.InlineLogging;
 import io.strimzi.api.kafka.model.Logging;
 import io.strimzi.api.kafka.model.status.ListenerStatus;
 import io.strimzi.api.kafka.model.template.PodTemplate;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -79,17 +76,24 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
 
     private static final String CLUSTER_CA_VOLUME_MOUNT_NAME = "cluster-ca";
     private static final String CERTS_VOLUME_MOUNT_NAME = "certs";
+    private static final String IBMCLOUD_CA_VOLUME_MOUNT_NAME = "ibmcloud";
     public static final String ADMIN_CLUSTERROLE_NAME = "eventstreams-admin-clusterrole";
 
     private static final String CERTIFICATE_PATH = "/opt/ibm/adminapi";
     private static final String KAFKA_USER_CERTIFICATE_PATH = CERTIFICATE_PATH + File.separator + "user";
     private static final String CLUSTER_CERTIFICATE_PATH = CERTIFICATE_PATH + File.separator + "cluster";
+    private static final String IBMCLOUD_CA_CERTIFICATE_PATH = CERTIFICATE_PATH + File.separator + "ibmcloud-private";
+
+    private static final String CLIENT_ID_KEY = "CLIENT_ID";
+    private static final String CLIENT_SECRET_KEY = "CLIENT_SECRET";
 
     private String traceString = "*=info";
     private final String prometheusHost;
     private final String prometheusPort;
     private final String clusterCaCert;
     private final String icpClusterName;
+    private final String iamServerURL;
+    private final String ibmcloudCASecretName;
 
     private final Deployment deployment;
     private final ServiceAccount serviceAccount;
@@ -112,6 +116,9 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
         this.prometheusPort = icpClusterData.getOrDefault("cluster_router_https_port", "null");
         this.clusterCaCert = icpClusterData.getOrDefault("icp_public_cacert", "null");
         this.icpClusterName = icpClusterData.getOrDefault("cluster_name", "null");
+        this.iamServerURL = icpClusterData.getOrDefault("cluster_endpoint", "null");
+
+        ibmcloudCASecretName = ClusterSecretsModel.getIBMCloudSecretName(instance);
 
         Optional<ComponentSpec> adminApiSpec = Optional.ofNullable(instance.getSpec())
                 .map(EventStreamsSpec::getAdminApi);
@@ -144,7 +151,7 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
 
         deployment = createDeployment(getContainers(), getVolumes());
         serviceAccount = createServiceAccount();
-        
+
         roleBinding = createRoleBinding(
             new SubjectBuilder()
             .withKind("ServiceAccount")
@@ -166,23 +173,24 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
 
     private List<Volume> getVolumes() {
 
-        Volume certsVolume = new VolumeBuilder()
+        List<Volume> volumes = new ArrayList<Volume>();
+        volumes.add(new VolumeBuilder()
                 .withNewName(CERTS_VOLUME_MOUNT_NAME)
                 .withNewSecret()
                     .withNewSecretName(getCertSecretName()) //mount everything in the secret into this volume
                 .endSecret()
-                .build();
+                .build());
 
-        Volume clusterCa = new VolumeBuilder()
+        volumes.add(new VolumeBuilder()
             .withNewName(CLUSTER_CA_VOLUME_MOUNT_NAME)
             .withNewSecret()
                 .withNewSecretName(getResourcePrefix() + "-cluster-ca-cert")
                 .addNewItem().withNewKey(CA_CERT).withNewPath("podtls.crt").endItem()
                 .addNewItem().withNewKey(CA_P12).withNewPath("podtls.p12").endItem()
             .endSecret()
-            .build();
+            .build());
 
-        Volume replicatorSecret = new VolumeBuilder()
+        volumes.add(new VolumeBuilder()
             .withNewName(ReplicatorModel.REPLICATOR_SECRET_NAME)
             .withNewSecret()
                 .withNewSecretName(getResourcePrefix() + "-" + ReplicatorModel.REPLICATOR_SECRET_NAME)
@@ -190,10 +198,25 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
                 .withNewPath(ReplicatorModel.REPLICATOR_SECRET_KEY_NAME)
             .endItem()
             .endSecret()
-            .build();
+            .build());
 
+        volumes.add(createKafkaUserCertVolume());
 
-        return Arrays.asList(createKafkaUserCertVolume(), clusterCa, replicatorSecret, certsVolume);
+        // Add The IAM Specific Volumes.  If we need to build without IAM Support we can put a variable check
+        // here.
+        configureIAMSpecificVolumes(volumes);
+
+        return volumes;
+    }
+
+    private void configureIAMSpecificVolumes(List<Volume> volumes) {
+        volumes.add(new VolumeBuilder()
+            .withNewName(IBMCLOUD_CA_VOLUME_MOUNT_NAME)
+            .withNewSecret()
+            .withNewSecretName(ibmcloudCASecretName)
+            .addNewItem().withNewKey(CA_CERT).withNewPath(CA_CERT).endItem()
+            .endSecret()
+            .build());
     }
 
     private List<Container> getContainers() {
@@ -216,7 +239,7 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
                     .build()
         );
 
-        return new ContainerBuilder()
+        ContainerBuilder containerBuilder = new ContainerBuilder()
             .withName(ADMIN_API_CONTAINER_NAME)
             .withImage(getImage())
             .withEnv(envVars)
@@ -233,7 +256,7 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
             .endVolumeMount()
             .addNewVolumeMount()
                 .withNewName(CLUSTER_CA_VOLUME_MOUNT_NAME)
-                .withMountPath("/opt/ibm/adminapi/cluster")
+                .withMountPath(CLUSTER_CERTIFICATE_PATH)
                 .withNewReadOnly(true)
             .endVolumeMount()
             .addNewVolumeMount()
@@ -241,10 +264,24 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
                 .withMountPath("/etc/georeplication")
                 .withNewReadOnly(true)
             .endVolumeMount()
+
             .withResources(resourceRequirements)
             .withLivenessProbe(createLivenessProbe(Listener.podToPodListener(tlsEnabled()).getPort()))
-            .withReadinessProbe(createReadinessProbe(Listener.podToPodListener(tlsEnabled()).getPort()))
-            .build();
+            .withReadinessProbe(createReadinessProbe(Listener.podToPodListener(tlsEnabled()).getPort()));
+
+        // Add The IAM Specific Volume mount. If we need to build without IAM Support we can put a variable check
+        // here.
+        configureIAMSpecificVolumeMount(containerBuilder);
+
+        return containerBuilder.build();
+    }
+
+    private void configureIAMSpecificVolumeMount(ContainerBuilder builder) {
+        builder.addNewVolumeMount()
+            .withNewName(IBMCLOUD_CA_VOLUME_MOUNT_NAME)
+            .withMountPath(IBMCLOUD_CA_CERTIFICATE_PATH)
+            .withNewReadOnly(true)
+            .endVolumeMount();
     }
 
     private Container getRestContainer() {
@@ -349,36 +386,43 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
     private List<EnvVar> getAdminApiEnvVars(String runasKafkaBootstrap) {
         List<Listener> listeners = getListeners();
         listeners.add(Listener.podToPodListener(tlsEnabled()));
-        return Arrays.asList(
+        List<EnvVar> envVars = new ArrayList<EnvVar>();
+        envVars.addAll(Arrays.asList(
             new EnvVarBuilder().withName("ENDPOINTS").withValue(Listener.createEndpointsString(listeners)).build(),
             new EnvVarBuilder().withName("RELEASE").withValue(getInstanceName()).build(),
             new EnvVarBuilder().withName("LICENSE").withValue("accept").build(),
             new EnvVarBuilder().withName("NAMESPACE").withValue(getNamespace()).build(),
             new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_SERVERS").withValue(runasKafkaBootstrap).build(),
             new EnvVarBuilder().withName("IAM_CLUSTER_NAME").withValue(icpClusterName).build(),
-            new EnvVarBuilder().withName("SSL_TRUSTSTORE_PATH").withValue(CLUSTER_CERTIFICATE_PATH + File.separator + CA_P12).build(),
+            new EnvVarBuilder().withName("SSL_TRUSTSTORE_PATH").withValue(CLUSTER_CERTIFICATE_PATH + File.separator + "podtls.p12").build(),
             new EnvVarBuilder()
                 .withName("SSL_TRUSTSTORE_PASSWORD")
                 .withNewValueFrom()
                 .withNewSecretKeyRef()
-                .withName(getInternalKafkaUserSecretName())
+                .withName(getResourcePrefix() + "-cluster-ca-cert")
                 .withKey(CA_P12_PASS)
-                .withOptional(true)
                 .endSecretKeyRef()
                 .endValueFrom()
                 .build(),
-            new EnvVarBuilder().withName("SSL_KEYSTORE_PATH").withValue(KAFKA_USER_CERTIFICATE_PATH + File.separator + USER_P12).build(),
+            new EnvVarBuilder()
+                .withName("SSL_KEYSTORE_PATH")
+                .withValue(KAFKA_USER_CERTIFICATE_PATH + File.separator + "podtls.p12")
+                .build(),
             new EnvVarBuilder()
                 .withName("SSL_KEYSTORE_PASSWORD")
                 .withNewValueFrom()
                 .withNewSecretKeyRef()
-                .withName(getResourcePrefix() + "-cluster-ca-cert")
-                .withKey(CA_P12_PASS)
-                .withOptional(true)
+                .withName(getInternalKafkaUserSecretName())
+                .withKey(USER_P12_PASS)
                 .endSecretKeyRef()
                 .endValueFrom()
-                .build()
-        );
+                .build()));
+
+        // Add The IAM Specific Envars.  If we need to build without IAM Support we can put a variable check
+        // here.
+        configureIAMSpecificEnvVars(envVars);
+
+        return envVars;
     }
 
     public static int getServicePort(boolean tlsEnabled) {
@@ -480,6 +524,31 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
         return this.roleBinding;
     }
 
+    private void configureIAMSpecificEnvVars(List<EnvVar> envVars) {
+        envVars.addAll(Arrays.asList(
+            new EnvVarBuilder().withName("IAM_CLUSTER_NAME").withValue(icpClusterName).build(),
+            new EnvVarBuilder().withName("IAM_SERVER_URL").withValue(iamServerURL).build(),
+            new EnvVarBuilder().withName("IAM_SERVER_CA_CERT").withValue(IBMCLOUD_CA_CERTIFICATE_PATH + File.separator + CA_CERT).build(),
+            new EnvVarBuilder()
+                .withName("CLIENT_ID")
+                .withNewValueFrom()
+                .withNewSecretKeyRef()
+                .withName(getResourcePrefix() + "-oidc-secret")
+                .withKey(CLIENT_ID_KEY)
+                .endSecretKeyRef()
+                .endValueFrom()
+                .build(),
+            new EnvVarBuilder()
+                .withName("CLIENT_SECRET")
+                .withNewValueFrom()
+                .withNewSecretKeyRef()
+                .withName(getResourcePrefix() + "-oidc-secret")
+                .withKey(CLIENT_SECRET_KEY)
+                .endSecretKeyRef()
+                .endValueFrom()
+                .build()));
+    }
+
 
     private NetworkPolicy createNetworkPolicy() {
         List<NetworkPolicyIngressRule> ingressRules = new ArrayList<>(1);
@@ -490,8 +559,9 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
             ingressRules.add(createIngressRule(listener.getPort(), new HashMap<>()));
         });
 
-        List<NetworkPolicyEgressRule> egressRules = new ArrayList<>(4);  // TODO up this if add index
+        List<NetworkPolicyEgressRule> egressRules = new ArrayList<>(5);  // TODO up this if add index
         egressRules.add(createEgressRule(EventStreamsKafkaModel.KAFKA_PORT, EventStreamsKafkaModel.KAFKA_COMPONENT_NAME));
+        egressRules.add(createEgressRule(EventStreamsKafkaModel.KAFKA_RUNAS_PORT, EventStreamsKafkaModel.KAFKA_COMPONENT_NAME));
         egressRules.add(createEgressRule(Listener.podToPodListener(tlsEnabled()).getPort(), SchemaRegistryModel.COMPONENT_NAME));
         egressRules.add(createEgressRule(EventStreamsKafkaModel.ZOOKEEPER_PORT, EventStreamsKafkaModel.ZOOKEEPER_COMPONENT_NAME));
         egressRules.add(createEgressRule(ReplicatorModel.REPLICATOR_PORT, ReplicatorModel.COMPONENT_NAME));

@@ -67,7 +67,7 @@ public class ClientModelTest {
         ClientSpec spec = oidcClient.getSpec();
         assertThat(oidcClient.getSpec(), notNullValue());
         assertThat(spec.getClientId(), is(""));
-        assertThat(spec.getSecret(), is("test-oidc-secret"));
+        assertThat(spec.getSecret(), is("test-ibm-es-oidc-secret"));
         OidcLibertyClientSpec libClient = spec.getOidcLibertyClient();
         assertThat(libClient, notNullValue());
         assertThat(libClient.getPostLogoutRedirectURIs(), hasItem("my-route/console/logout"));

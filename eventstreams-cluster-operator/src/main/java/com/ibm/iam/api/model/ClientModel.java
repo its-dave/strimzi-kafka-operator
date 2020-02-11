@@ -23,7 +23,7 @@ import java.util.Map;
 
 public class ClientModel extends AbstractModel {
     private static final String COMPONENT_NAME = "oidc-client";
-    private static final String SECRET_POSTFIX = "-oidc-secret";
+    private static final String SECRET_POSTFIX = "oidc-secret";
     private Client client;
 
     public ClientModel(EventStreams instance, String routeHost) {
@@ -65,6 +65,6 @@ public class ClientModel extends AbstractModel {
     }
 
     public static String getSecretName(EventStreams instance) {
-        return instance.getMetadata().getName() + SECRET_POSTFIX;
+        return getDefaultResourceName(instance.getMetadata().getName(), SECRET_POSTFIX);
     }
 }

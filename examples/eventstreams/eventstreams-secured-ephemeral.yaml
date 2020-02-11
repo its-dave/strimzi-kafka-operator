@@ -1,0 +1,74 @@
+apiVersion: eventstreams.ibm.com/v1beta1
+kind: EventStreams
+metadata:
+  name: my-es
+spec:
+  appVersion: "2020.1.1"
+  images:
+    pullSecrets:
+    - name: ibm-entitlement-key
+  security:
+    encryption: "TLS"
+  architecture: "amd64"
+  adminApi:
+    replicas: 1
+  adminProxy:
+    replicas: 1
+  adminUI:
+    replicas: 1
+  restProducer:
+    replicas: 1
+  collector:
+    replicas: 1
+  schemaRegistry:
+    replicas: 1
+    storage:
+      type: ephemeral
+  replicator:
+    replicas: 1
+  strimziOverrides:
+    kafka:
+      metrics: {}
+      version: 2.4.0
+      replicas: 3
+      authorization:
+        type: runas
+      listeners:
+        external:
+          type: route
+          authentication:
+            type: scram-sha-512
+        plain: {}
+        tls:
+          authentication:
+            type: tls
+      config:
+        interceptor.class.names: "com.ibm.eventstreams.interceptors.metrics.ProducerMetricsInterceptor"
+        offsets.topic.replication.factor: 1
+        transaction.state.log.replication.factor: 1
+        transaction.state.log.min.isr: 1
+        log.message.format.version: "2.3"
+      storage:
+        type: ephemeral
+      resources:
+        requests:
+          memory: 100Mi
+          cpu: 100m
+        limits:
+          memory: 2Gi
+          cpu: 1000m
+    zookeeper:
+      metrics: {}
+      replicas: 3
+      storage:
+        type: ephemeral
+      resources:
+        requests:
+          memory: 100Mi
+          cpu: 100m
+        limits:
+          memory: 1Gi
+          cpu: 1000m
+    entityOperator:
+      topicOperator: {}
+      userOperator: {}

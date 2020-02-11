@@ -12,24 +12,13 @@
  */
 package com.ibm.eventstreams.controller;
 
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-
 import com.ibm.eventstreams.api.Listener;
 import com.ibm.eventstreams.api.model.AbstractModel;
 import com.ibm.eventstreams.api.model.AbstractSecureEndpointModel;
 import com.ibm.eventstreams.api.model.AdminApiModel;
 import com.ibm.eventstreams.api.model.AdminProxyModel;
 import com.ibm.eventstreams.api.model.AdminUIModel;
+import com.ibm.eventstreams.api.model.ClusterSecretsModel;
 import com.ibm.eventstreams.api.model.CollectorModel;
 import com.ibm.eventstreams.api.model.EventStreamsKafkaModel;
 import com.ibm.eventstreams.api.model.InternalKafkaUserModel;
@@ -47,11 +36,6 @@ import com.ibm.iam.api.model.ClientModel;
 import com.ibm.iam.api.spec.Client;
 import com.ibm.iam.api.spec.ClientDoneable;
 import com.ibm.iam.api.spec.ClientList;
-
-import io.fabric8.openshift.api.model.Route;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.Service;
@@ -60,6 +44,7 @@ import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
+import io.fabric8.openshift.api.model.Route;
 import io.strimzi.api.kafka.Crds;
 import io.strimzi.api.kafka.model.CertAndKeySecretSource;
 import io.strimzi.api.kafka.model.Kafka;
@@ -85,6 +70,21 @@ import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.io.UnsupportedEncodingException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 public class EventStreamsOperator extends AbstractOperator<EventStreams, EventStreamsResourceOperator> {
 
@@ -108,6 +108,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
     private long kafkaStatusReadyTimeoutMs;
 
     private int customImageCount = 0;
+    private static final String ENCODED_IBMCLOUD_CA_CERT = "icp_public_cacert_encoded";
 
     public EventStreamsOperator(Vertx vertx, KubernetesClient client, String kind, PlatformFeaturesAvailability pfa,
                                 EventStreamsResourceOperator resourceOperator,
@@ -152,6 +153,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         reconcileState.validateCustomResource()
                 .compose(state -> state.getCloudPakClusterData())
                 .compose(state -> state.getCloudPakClusterCert())
+                .compose(state -> state.createCloudPakClusterCertSecret())
                 .compose(state -> state.createKafkaCustomResource())
                 .compose(state -> state.waitForKafkaStatus())
                 .compose(state -> state.createInternalKafkaUser())
@@ -274,15 +276,17 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 if (getRes.result() != null)  {
                     try {
                         String clusterCaCert = getRes.result().getData().get("ca.crt");
+                        icpClusterData.put(EventStreamsOperator.ENCODED_IBMCLOUD_CA_CERT, clusterCaCert);
                         byte[] clusterCaCertArray = Base64.getDecoder().decode(clusterCaCert);
                         icpClusterData.put("icp_public_cacert", new String(clusterCaCertArray, "US-ASCII"));
                         clusterCaSecretPromise.complete();
-                    } catch (Exception e) {
+                    } catch (UnsupportedEncodingException e) {
                         log.error("unable to decode icp public cert", e);
                         clusterCaSecretPromise.fail(e);
                     }
                 } else {
                     Condition caCertNotPresent = buildErrorCondition("could not get secret 'ibmcloud-cluster-ca-cert' in namespace 'kube-public'");
+
                     EventStreamsStatus informativeStatus = status
                         .withConditions(caCertNotPresent)
                         .build();
@@ -294,6 +298,45 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                     });
                 }
             });
+
+            return clusterCaSecretPromise.future().map(v -> this);
+        }
+
+        Future<ReconciliationState> createCloudPakClusterCertSecret() {
+            Promise<Void> clusterCaSecretPromise = Promise.promise();
+            ClusterSecretsModel clusterSecrets = new ClusterSecretsModel(instance, secretOperator);
+            // get common services info for prometheus metrics
+            String clusterCert = icpClusterData.get(EventStreamsOperator.ENCODED_IBMCLOUD_CA_CERT);
+            if (clusterCert != null) {
+                clusterSecrets.createIBMCloudCASecret(clusterCert)
+                    .onComplete(ar -> {
+                        clusterCaSecretPromise.complete();
+                    })
+                    .onFailure(err -> {
+                        Condition caCertSecretNotCreated = buildErrorCondition(err.getMessage());
+                        EventStreamsStatus informativeStatus = status
+                            .withConditions(caCertSecretNotCreated)
+                            .build();
+                        instance.setStatus(informativeStatus);
+                        Future<ReconcileResult<EventStreams>> updateStatus = resourceOperator.createOrUpdate(instance);
+                        updateStatus.onComplete(f -> {
+                            log.info("Failure to create ICP Cluster CA Cert secret " + f.succeeded());
+                            clusterCaSecretPromise.fail(err);
+                        });
+                    });
+            } else {
+                Condition caCertNotPresent = buildErrorCondition("Encoded ICP CA Cert not in ICPClusterData");
+                EventStreamsStatus informativeStatus = status
+                    .withConditions(caCertNotPresent)
+                    .build();
+                instance.setStatus(informativeStatus);
+                Future<ReconcileResult<EventStreams>> updateStatus = resourceOperator.createOrUpdate(instance);
+                updateStatus.onComplete(f -> {
+                    log.info("Encoded ICP CA Cert not in ICPClusterData: " + f.succeeded());
+                    clusterCaSecretPromise.fail("Encoded ICP CA Cert not in ICPClusterData");
+                });
+            }
+
             return clusterCaSecretPromise.future().map(v -> this);
         }
 
