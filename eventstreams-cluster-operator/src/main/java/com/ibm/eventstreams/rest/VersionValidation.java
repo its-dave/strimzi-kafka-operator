@@ -13,6 +13,7 @@
 package com.ibm.eventstreams.rest;
 
 import com.ibm.eventstreams.api.spec.EventStreams;
+import com.ibm.eventstreams.api.status.EventStreamsVersions;
 import io.vertx.core.json.Json;
 import io.vertx.ext.web.RoutingContext;
 import org.apache.logging.log4j.LogManager;
@@ -26,13 +27,12 @@ import static java.util.Arrays.asList;
 public class VersionValidation extends AbstractValidation {
 
     private static final Logger log = LogManager.getLogger(NameValidation.class.getName());
-
-    public static final List<String> VALID_APP_VERSIONS = unmodifiableList(asList("2020.1.1", "2020.1"));
+    
+    public static final List<String> VALID_APP_VERSIONS = unmodifiableList(asList(EventStreamsVersions.OPERAND_VERSION, EventStreamsVersions.AUTO_UPGRADE_VERSION));
 
     public static boolean shouldReject(EventStreams customResourceSpec) {
         return !(VALID_APP_VERSIONS.contains(customResourceSpec.getSpec().getAppVersion()));
     }
-
 
     public static void rejectInvalidAppVersions(RoutingContext routingContext) {
         log.traceEntry();

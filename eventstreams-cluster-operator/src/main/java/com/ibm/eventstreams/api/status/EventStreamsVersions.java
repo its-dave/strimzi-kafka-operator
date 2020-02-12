@@ -36,7 +36,9 @@ public class EventStreamsVersions implements Serializable {
     private static final long serialVersionUID = 1L;
 
     public static final String OPERAND_VERSION = "2020.1.1";
+    public static final String AUTO_UPGRADE_VERSION = "2020.1";
     public static final List<String> AVAILABLE_VERSIONS = unmodifiableList(singletonList(OPERAND_VERSION));
+    public static final List<String> AUTO_UPGRADE_VERSIONS = unmodifiableList(singletonList(AUTO_UPGRADE_VERSION));
 
     public String getReconciledVersion() {
         return OPERAND_VERSION;
@@ -44,10 +46,20 @@ public class EventStreamsVersions implements Serializable {
     
     public void setReconciledVersion(String version) {
     }
+
     public List<String> getAvailableAppVersions() {
         return AVAILABLE_VERSIONS;
     }
 
+    // This method is for deserialising for jackson
     public void setAvailableAppVersions(List<String> versions) {
+    }
+
+    public List<String> getAutoUpgradeVersions() {
+        return AUTO_UPGRADE_VERSIONS;
+    }
+
+    // This method is for deserialising for jackson
+    public void setAutoUpgradeVersions(List<String> versions) {
     }
 }

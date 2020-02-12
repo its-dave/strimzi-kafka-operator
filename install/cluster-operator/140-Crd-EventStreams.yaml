@@ -7063,6 +7063,10 @@ spec:
             versions:
               type: object
               properties:
+                autoUpgradeVersions:
+                  type: array
+                  items:
+                    type: string
                 availableAppVersions:
                   type: array
                   items:

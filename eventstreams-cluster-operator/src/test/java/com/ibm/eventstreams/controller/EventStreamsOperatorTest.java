@@ -656,6 +656,7 @@ public class EventStreamsOperatorTest {
                 verify(esResourceOperator).createOrUpdate(argument.capture());
                 assertFalse(argument.getValue().getStatus().isCustomImages());
                 assertEquals(EventStreamsVersions.OPERAND_VERSION, esCluster.getStatus().getVersions().getReconciledVersion());
+                assertEquals(EventStreamsVersions.AUTO_UPGRADE_VERSIONS, esCluster.getStatus().getVersions().getAutoUpgradeVersions());
                 assertEquals(EventStreamsVersions.AVAILABLE_VERSIONS, esCluster.getStatus().getVersions().getAvailableAppVersions());
                 assertTrue(expectedRouteHosts.containsAll(esCluster.getStatus().getRoutes().values()), expectedRouteHosts + " expected to contain all values " + esCluster.getStatus().getRoutes().values() + "but did not");
                 assertEquals("https://" + formatRouteHost(UI_ROUTE_NAME), esCluster.getStatus().getAdminUiUrl());
