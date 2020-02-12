@@ -12,17 +12,45 @@
  */
 package com.ibm.eventstreams.api.model;
 
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.endsWith;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.startsWith;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.emptyIterableOf;
+import static org.hamcrest.Matchers.hasItem;
+import static org.mockito.Mockito.when;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
 import com.ibm.eventstreams.api.Labels;
 import com.ibm.eventstreams.api.Listener;
 import com.ibm.eventstreams.api.model.utils.ModelUtils;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
 import com.ibm.eventstreams.controller.EventStreamsOperatorConfig;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
+
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.EnvVarBuilder;
+import io.fabric8.kubernetes.api.model.LabelSelector;
 import io.fabric8.kubernetes.api.model.LocalObjectReference;
 import io.fabric8.kubernetes.api.model.LocalObjectReferenceBuilder;
+import io.fabric8.kubernetes.api.model.PersistentVolumeClaim;
 import io.fabric8.kubernetes.api.model.Quantity;
 import io.fabric8.kubernetes.api.model.ResourceRequirements;
 import io.fabric8.kubernetes.api.model.ResourceRequirementsBuilder;
@@ -34,29 +62,9 @@ import io.fabric8.openshift.api.model.Route;
 import io.strimzi.api.kafka.model.ExternalLogging;
 import io.strimzi.api.kafka.model.InlineLogging;
 import io.strimzi.api.kafka.model.storage.EphemeralStorageBuilder;
+import io.strimzi.api.kafka.model.storage.PersistentClaimStorage;
+import io.strimzi.api.kafka.model.storage.PersistentClaimStorageBuilder;
 import io.strimzi.api.kafka.model.template.PodTemplateBuilder;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.endsWith;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.startsWith;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.emptyIterableOf;
-import static org.hamcrest.Matchers.hasItem;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 public class SchemaRegistryModelTest {
@@ -526,5 +534,62 @@ public class SchemaRegistryModelTest {
         assertThat(schemaRegistryModel.getDeployment("newID").getMetadata().getLabels().get(AbstractSecureEndpointModel.CERT_GENERATION_KEY), is("newID"));
         assertThat(schemaRegistryModel.getDeployment("newID").getSpec().getTemplate().getMetadata().getLabels().containsKey(AbstractSecureEndpointModel.CERT_GENERATION_KEY), is(true));
         assertThat(schemaRegistryModel.getDeployment("newID").getSpec().getTemplate().getMetadata().getLabels().get(AbstractSecureEndpointModel.CERT_GENERATION_KEY), is("newID"));
+    }
+
+    @Test
+    public void testCreateSchemaRegistryPersistentVolumeClaimWithDeleteClaim() {
+    
+        PersistentClaimStorage storage = new PersistentClaimStorageBuilder()
+            .withDeleteClaim(true)
+            .build();
+        
+        EventStreams eventStreams = createDefaultEventStreams()
+            .editOrNewSpec()
+                .editOrNewSchemaRegistry()
+                    .withStorage(storage)
+                .endSchemaRegistry()
+            .endSpec()
+            .build();
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(eventStreams, imageConfig);
+
+        PersistentVolumeClaim pvc = schemaRegistryModel.getPersistentVolumeClaim();
+        assertThat("Owner Reference should be empty by default so that pvcs are not deleted",
+                pvc.getMetadata().getOwnerReferences(),
+                is(Collections.singletonList(schemaRegistryModel.getEventStreamsOwnerReference())));
+    }
+
+    @Test
+    public void testCreatePersistentVolumeClaimWithValidStorage() {
+
+        final String storageClass = "a-storage-class";
+        final String size = "some-size";
+        Map<String, String> selector = new HashMap<>();
+        selector.put("key", "value");
+
+        PersistentClaimStorage storage = new PersistentClaimStorageBuilder()
+                .withNewStorageClass(storageClass)
+                .withNewSize(size)
+                .addToSelector(selector)
+                .build();
+
+        Map<String, Quantity> expectedStorageRequest = new HashMap<String, Quantity>();
+        expectedStorageRequest.put("storage", new Quantity(size));
+
+        EventStreams eventStreams = createDefaultEventStreams()
+            .editOrNewSpec()
+                .editOrNewSchemaRegistry()
+                    .withStorage(storage)
+                .endSchemaRegistry()
+            .endSpec()
+            .build();
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(eventStreams, imageConfig);
+
+        PersistentVolumeClaim pvc = schemaRegistryModel.getPersistentVolumeClaim();
+
+        assertThat(pvc.getSpec().getStorageClassName(), is(storageClass));
+        assertThat(pvc.getSpec().getResources().getRequests(), is(expectedStorageRequest));
+        assertThat(pvc.getSpec().getSelector(), is(new LabelSelector(new ArrayList<>(), selector)));
+        assertThat("Owner Reference should be empty by default so that pvcs are not deleted",
+                pvc.getMetadata().getOwnerReferences(), is(new ArrayList<>()));
     }
 }

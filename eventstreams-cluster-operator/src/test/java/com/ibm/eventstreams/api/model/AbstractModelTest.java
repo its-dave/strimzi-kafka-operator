@@ -12,8 +12,17 @@
  */
 package com.ibm.eventstreams.api.model;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import com.ibm.eventstreams.api.model.utils.ModelUtils;
 import com.ibm.eventstreams.api.spec.EventStreams;
+
+import org.junit.jupiter.api.Test;
+
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.ContainerBuilder;
 import io.fabric8.kubernetes.api.model.HTTPHeaderBuilder;
@@ -21,24 +30,9 @@ import io.fabric8.kubernetes.api.model.OwnerReference;
 import io.fabric8.kubernetes.api.model.OwnerReferenceBuilder;
 import io.fabric8.kubernetes.api.model.Probe;
 import io.fabric8.kubernetes.api.model.ProbeBuilder;
-import io.fabric8.kubernetes.api.model.LabelSelector;
-import io.fabric8.kubernetes.api.model.PersistentVolumeClaim;
-import io.fabric8.kubernetes.api.model.Quantity;
 import io.fabric8.kubernetes.api.model.Volume;
 import io.fabric8.kubernetes.api.model.VolumeBuilder;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
-import io.strimzi.api.kafka.model.storage.PersistentClaimStorage;
-import io.strimzi.api.kafka.model.storage.PersistentClaimStorageBuilder;
-import org.junit.jupiter.api.Test;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 
 public class AbstractModelTest {
@@ -278,47 +272,5 @@ public class AbstractModelTest {
 
         Probe newCombinedProbe = model.combineProbeDefinitions(probe, overridesProbe);
         assertThat(newCombinedProbe, is(expectedProbe));
-    }
-
-    public void testCreatePersistentVolumeClaimWithValidStorage() {
-        EventStreams instance = ModelUtils.createDefaultEventStreams(instanceName).build();
-        ComponentModel model = new ComponentModel(instance);
-
-        final String storageClass = "a-storage-class";
-        final String size = "some-size";
-        Map<String, String> selector = new HashMap<>();
-        selector.put("key", "value");
-
-        PersistentClaimStorage storage = new PersistentClaimStorageBuilder()
-                .withNewStorageClass(storageClass)
-                .withNewSize(size)
-                .addToSelector(selector)
-                .build();
-
-        Map<String, Quantity> expectedStorageRequest = new HashMap<String, Quantity>();
-        expectedStorageRequest.put("storage", new Quantity(size));
-
-        PersistentVolumeClaim pvc = model.createPersistentVolumeClaim("test-pvc", storage);
-
-        assertThat(pvc.getSpec().getStorageClassName(), is(storageClass));
-        assertThat(pvc.getSpec().getResources().getRequests(), is(expectedStorageRequest));
-        assertThat(pvc.getSpec().getSelector(), is(new LabelSelector(new ArrayList<>(), selector)));
-        assertThat("Owner Reference should be empty by default so that pvcs are not deleted",
-                pvc.getMetadata().getOwnerReferences(), is(new ArrayList<>()));
-    }
-
-    @Test
-    public void testCreatePersistentVolumeClaimWithDeleteClaim() {
-        EventStreams instance = ModelUtils.createDefaultEventStreams(instanceName).build();
-        ComponentModel model = new ComponentModel(instance);
-
-        PersistentClaimStorage storage = new PersistentClaimStorageBuilder()
-                .withDeleteClaim(true)
-                .build();
-
-        PersistentVolumeClaim pvc = model.createPersistentVolumeClaim("test-pvc", storage);
-        assertThat("Owner Reference should be empty by default so that pvcs are not deleted",
-                pvc.getMetadata().getOwnerReferences(),
-                is(Collections.singletonList(model.getEventStreamsOwnerReference())));
     }
 }

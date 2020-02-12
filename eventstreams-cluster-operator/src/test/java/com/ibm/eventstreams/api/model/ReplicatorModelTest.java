@@ -400,6 +400,5 @@ public class ReplicatorModelTest {
         assertThat(rule3sourcetopic.getPatternType(), is(AclResourcePatternType.PREFIX));
         assertThat(rule3source.getOperation(), is(AclOperation.WRITE));
         assertThat(rule3source.getHost(), is("*"));
-
     }
 }

@@ -12,6 +12,14 @@
  */
 package com.ibm.eventstreams.api.model;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
 import com.ibm.eventstreams.Main;
 import com.ibm.eventstreams.api.Listener;
 import com.ibm.eventstreams.api.spec.ComponentSpec;
@@ -23,12 +31,15 @@ import com.ibm.eventstreams.api.spec.ImagesSpec;
 import com.ibm.eventstreams.api.spec.SchemaRegistrySpec;
 import com.ibm.eventstreams.api.spec.SecuritySpec;
 import com.ibm.eventstreams.controller.EventStreamsOperatorConfig;
+
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.ContainerBuilder;
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.EnvVarBuilder;
 import io.fabric8.kubernetes.api.model.HTTPHeaderBuilder;
+import io.fabric8.kubernetes.api.model.LabelSelector;
 import io.fabric8.kubernetes.api.model.PersistentVolumeClaim;
+import io.fabric8.kubernetes.api.model.PersistentVolumeClaimBuilder;
 import io.fabric8.kubernetes.api.model.Probe;
 import io.fabric8.kubernetes.api.model.ProbeBuilder;
 import io.fabric8.kubernetes.api.model.Quantity;
@@ -48,14 +59,6 @@ import io.strimzi.api.kafka.model.storage.EphemeralStorage;
 import io.strimzi.api.kafka.model.storage.PersistentClaimStorage;
 import io.strimzi.api.kafka.model.storage.Storage;
 import io.strimzi.api.kafka.model.template.PodTemplate;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 public class SchemaRegistryModel extends AbstractSecureEndpointModel {
 
@@ -100,7 +103,8 @@ public class SchemaRegistryModel extends AbstractSecureEndpointModel {
 
         setOwnerReference(instance);
         setArchitecture(instance.getSpec().getArchitecture());
-        setReplicas(schemaRegistrySpec.map(ComponentSpec::getReplicas).orElse(DEFAULT_REPLICAS));
+        int replicas = schemaRegistrySpec.map(ComponentSpec::getReplicas).orElse(DEFAULT_REPLICAS);
+        setReplicas(replicas);
         setEnvVars(schemaRegistrySpec.map(ContainerSpec::getEnvVars).orElseGet(ArrayList::new));
         setResourceRequirements(schemaRegistrySpec.map(ComponentSpec::getResources).orElseGet(ResourceRequirements::new));
         setPodTemplate(schemaRegistrySpec.map(ComponentSpec::getTemplate)
@@ -152,7 +156,7 @@ public class SchemaRegistryModel extends AbstractSecureEndpointModel {
         serviceAccount = createServiceAccount();
         networkPolicy = createNetworkPolicy();
         if (storage instanceof PersistentClaimStorage) {
-            pvc = createPersistentVolumeClaim(getDefaultResourceName(), (PersistentClaimStorage) storage);
+            pvc = createSchemaRegistryPersistentVolumeClaim(instance.getMetadata().getNamespace(), replicas, (PersistentClaimStorage) storage);
         } else {
             pvc = null;
         }
@@ -395,6 +399,46 @@ public class SchemaRegistryModel extends AbstractSecureEndpointModel {
                 .withFailureThreshold(2)
                 .build();
         return combineProbeDefinitions(defaultReadinessProbe, avroReadinessProbe);
+    }
+
+    private PersistentVolumeClaim createSchemaRegistryPersistentVolumeClaim(String namespace, int replicas, PersistentClaimStorage storage) {
+        Map<String, Quantity> requests = new HashMap<>();
+        requests.put("storage", new Quantity(Optional.ofNullable(storage.getSize()).orElse("1Gi"), null));
+
+        LabelSelector selector = null;
+        if (storage.getSelector() != null && !storage.getSelector().isEmpty()) {
+            selector = new LabelSelector(null, storage.getSelector());
+        }
+
+        String storageClass = Optional.ofNullable(storage.getStorageClass()).orElse("");
+        
+        String accessMode = Optional.ofNullable(storage.getAdditionalProperties())
+            .map(ap -> ap.get("accessMode"))
+            .map(obj -> obj.toString())
+            .orElse(replicas > 1 ? "ReadWriteMany" : "ReadWriteOnce");
+
+        PersistentVolumeClaimBuilder pvc = new PersistentVolumeClaimBuilder()
+                .withNewMetadata()
+                    .withName(getDefaultResourceName())
+                    .withNamespace(namespace)
+                    .addToLabels(getComponentLabels())
+                .endMetadata()
+                .withNewSpec()
+                    .withAccessModes(accessMode)
+                    .withNewResources()
+                        .addToRequests(requests)
+                    .endResources()
+                    .withStorageClassName(storageClass)
+                    .withSelector(selector)
+                .endSpec();
+
+        if (storage.isDeleteClaim()) {
+            pvc = pvc.editMetadata()
+                    .withOwnerReferences(getEventStreamsOwnerReference())
+                .endMetadata();
+        }
+
+        return pvc.build();
     }
 
     /**

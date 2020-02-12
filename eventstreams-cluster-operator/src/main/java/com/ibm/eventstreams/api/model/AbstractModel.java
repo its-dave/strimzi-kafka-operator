@@ -12,12 +12,24 @@
  */
 package com.ibm.eventstreams.api.model;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import com.ibm.eventstreams.Main;
 import com.ibm.eventstreams.api.Labels;
 import com.ibm.eventstreams.api.Listener;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.ExternalAccess;
 import com.ibm.eventstreams.api.spec.SecuritySpec.Encryption;
+
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
 import io.fabric8.kubernetes.api.model.Container;
@@ -30,8 +42,6 @@ import io.fabric8.kubernetes.api.model.NodeSelectorTerm;
 import io.fabric8.kubernetes.api.model.NodeSelectorTermBuilder;
 import io.fabric8.kubernetes.api.model.OwnerReference;
 import io.fabric8.kubernetes.api.model.OwnerReferenceBuilder;
-import io.fabric8.kubernetes.api.model.PersistentVolumeClaim;
-import io.fabric8.kubernetes.api.model.PersistentVolumeClaimBuilder;
 import io.fabric8.kubernetes.api.model.PodSecurityContext;
 import io.fabric8.kubernetes.api.model.PodSecurityContextBuilder;
 import io.fabric8.kubernetes.api.model.Probe;
@@ -70,20 +80,7 @@ import io.fabric8.openshift.api.model.TLSConfigBuilder;
 import io.strimzi.api.kafka.model.ContainerEnvVar;
 import io.strimzi.api.kafka.model.status.ListenerAddress;
 import io.strimzi.api.kafka.model.status.ListenerStatus;
-import io.strimzi.api.kafka.model.storage.PersistentClaimStorage;
-import io.strimzi.api.kafka.model.storage.PersistentClaimStorageOverride;
 import io.strimzi.api.kafka.model.template.PodTemplate;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @SuppressWarnings({"checkstyle:ClassFanOutComplexity", "checkstyle:ClassDataAbstractionCoupling"})
 public abstract class AbstractModel {
@@ -665,49 +662,6 @@ public abstract class AbstractModel {
                 .build();
     }
 
-    protected PersistentVolumeClaim createPersistentVolumeClaim(String name, PersistentClaimStorage storage) {
-        Map<String, Quantity> requests = new HashMap<>();
-        requests.put("storage", new Quantity(Optional.ofNullable(storage.getSize()).orElse("1Gi"), null));
-
-        LabelSelector selector = null;
-        if (storage.getSelector() != null && !storage.getSelector().isEmpty()) {
-            selector = new LabelSelector(null, storage.getSelector());
-        }
-
-        String storageClass = Optional.ofNullable(storage.getStorageClass()).orElse("");
-
-        String accessMode = Optional.ofNullable(storage.getOverrides()).orElseGet(Collections::emptyList)
-                .stream()
-                .filter(override -> override != null && override.getAdditionalProperties() != null)
-                .map(PersistentClaimStorageOverride::getAdditionalProperties)
-                .map(override -> override.get("accessMode").toString())
-                .findFirst()
-                .orElse("ReadWriteOnce");
-
-        PersistentVolumeClaimBuilder pvc = new PersistentVolumeClaimBuilder()
-                .withNewMetadata()
-                    .withName(name)
-                    .withNamespace(namespace)
-                    .addToLabels(getComponentLabels())
-                .endMetadata()
-                .withNewSpec()
-                    .withAccessModes(accessMode)
-                    .withNewResources()
-                        .addToRequests(requests)
-                    .endResources()
-                    .withStorageClassName(storageClass)
-                    .withSelector(selector)
-                .endSpec();
-
-        if (storage.isDeleteClaim()) {
-            pvc = pvc.editMetadata()
-                    .withOwnerReferences(getEventStreamsOwnerReference())
-                .endMetadata();
-        }
-
-        return pvc.build();
-    }
-
     protected Volume createKafkaUserCertVolume() {
         return new VolumeBuilder()
             .withNewName(KAFKA_USER_SECRET_VOLUME_NAME)
@@ -817,5 +771,4 @@ public abstract class AbstractModel {
 
         return kafkaBootstrap;
     }
-
 }

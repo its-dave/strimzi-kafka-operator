@@ -577,9 +577,5 @@ public class EventStreamsKafkaModelTest {
         // need to compare toString as they are different objects 
         // but the to string should map the yaml result to the same thing
         assertThat(kafka.getSpec().getKafka().getMetrics().toString(), is(metricsMap.toString()));
-
     }
-
-    
-
 }
