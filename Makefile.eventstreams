@@ -1,4 +1,6 @@
 # Makefile.eventstreams contains the tasks for the Event Streams build pipeline
+EVENTSTREAMS_PROJECT_NAME=eventstreams-cluster-operator
+
 JAVA_IMAGE_TAG_UBI7_OPENJDK8_JRE ?= latest
 B_REGISTRY ?= hyc-qp-stable-docker-local.artifactory.swg-devops.com
 B_PLATFORM ?= icp
@@ -18,10 +20,7 @@ eventstreams_build:
 eventstreams_operator_build: eventstreams_java_build eventstreams_docker_build
 
 eventstreams_java_build:
-	$(MAKE) -C eventstreams-cluster-operator java_build
+	$(MAKE) -C ${EVENTSTREAMS_PROJECT_NAME} java_build
 
 eventstreams_docker_build:
 	DOCKER_BUILD_ARGS="${DOCKER_BUILD_ARGS} -f ${ALTERNATE_BASE}/Dockerfile" $(MAKE) -C docker-images/operator docker_build
-
-eventstreams_generate_crd:
-	cd eventstreams-cluster-operator && mvn exec:exec && echo "success!"

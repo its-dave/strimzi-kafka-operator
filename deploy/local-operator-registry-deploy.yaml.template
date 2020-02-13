@@ -1,0 +1,10 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: CatalogSource
+metadata:
+  name: local-operators
+  namespace: openshift-marketplace
+spec:
+  sourceType: grpc
+  image: image-registry.openshift-image-registry.svc:5000/openshift-marketplace/@image@
+  publisher: IBM
+  displayName: Event Streams Operators

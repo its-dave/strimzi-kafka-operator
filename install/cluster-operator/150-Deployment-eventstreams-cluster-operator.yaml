@@ -21,7 +21,7 @@ spec:
       serviceAccountName: eventstreams-cluster-operator
       initContainers:
       - name: install-validating-webhook
-        image: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-operator-init-linux-amd64:combined7
+        image: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator-init:latest
         securityContext:
           privileged: false
           readOnlyRootFilesystem: false
@@ -46,7 +46,6 @@ spec:
       containers:
       - name: eventstreams-cluster-operator
         image: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator:combined8
-        imagePullPolicy: Always
         args:
         - /opt/strimzi/bin/eventstreams_cluster_operator_run.sh
         env:
@@ -110,7 +109,7 @@ spec:
         - name: EVENTSTREAMS_DEFAULT_REST_PRODUCER_IMAGE
           value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-rest-producer-icp-linux-amd64:2020-01-14-13.11.13-bb37139-exp
         - name: EVENTSTREAMS_DEFAULT_ADMIN_PROXY_IMAGE
-          value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-rest-proxy-icp-linux-amd64:2019-11-18-17.47.59-5d49861-exp
+          value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-rest-proxy-icp-linux-amd64:2020-02-05-10.59.03-791c64d
         - name: EVENTSTREAMS_DEFAULT_ADMIN_API_IMAGE
           value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-admin-icp-linux-amd64:2020-02-04-08.56.31-8701472
         - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_IMAGE

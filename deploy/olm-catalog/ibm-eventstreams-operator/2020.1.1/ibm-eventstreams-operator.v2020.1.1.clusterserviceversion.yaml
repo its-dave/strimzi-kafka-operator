@@ -1,0 +1,1079 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  annotations:
+    alm-examples: |-
+      [
+        {
+          "apiVersion": "eventstreams.ibm.com/v1beta1",
+          "kind": "EventStreams",
+          "metadata": {
+            "name": "my-es"
+          },
+          "spec": {
+            "adminApi": {
+              "replicas": 1
+            },
+            "adminProxy": {
+              "replicas": 1
+            },
+            "adminUI": {
+              "replicas": 1
+            },
+            "appVersion": "2020.1.1",
+            "architecture": "amd64",
+            "collector": {
+              "replicas": 1
+            },
+            "images": {
+              "pullSecrets": [
+                {
+                  "name": "ibm-entitlement-key"
+                }
+              ]
+            },
+            "replicator": {
+              "replicas": 1
+            },
+            "restProducer": {
+              "replicas": 1
+            },
+            "schemaRegistry": {
+              "replicas": 1,
+              "storage": {
+                "type": "ephemeral"
+              }
+            },
+            "security": {
+              "encryption": "TLS"
+            },
+            "strimziOverrides": {
+              "entityOperator": {
+                "topicOperator": {},
+                "userOperator": {}
+              },
+              "kafka": {
+                "config": {
+                  "interceptor.class.names": "com.ibm.eventstreams.interceptors.metrics.ProducerMetricsInterceptor",
+                  "log.message.format.version": "2.3",
+                  "offsets.topic.replication.factor": 1,
+                  "transaction.state.log.min.isr": 1,
+                  "transaction.state.log.replication.factor": 1
+                },
+                "listeners": {
+                  "external": {
+                    "type": "route"
+                  },
+                  "plain": {},
+                  "tls": {}
+                },
+                "metrics": {},
+                "replicas": 1,
+                "resources": {
+                  "limits": {
+                    "cpu": "1000m",
+                    "memory": "2Gi"
+                  },
+                  "requests": {
+                    "cpu": "100m",
+                    "memory": "100Mi"
+                  }
+                },
+                "storage": {
+                  "type": "ephemeral"
+                },
+                "version": "2.4.0"
+              },
+              "zookeeper": {
+                "metrics": {},
+                "replicas": 1,
+                "resources": {
+                  "limits": {
+                    "cpu": "1000m",
+                    "memory": "1Gi"
+                  },
+                  "requests": {
+                    "cpu": "100m",
+                    "memory": "100Mi"
+                  }
+                },
+                "storage": {
+                  "type": "ephemeral"
+                }
+              }
+            }
+          }
+        },
+        {
+          "apiVersion": "eventstreams.ibm.com/v1beta1",
+          "kind": "EventStreams",
+          "metadata": {
+            "name": "my-es"
+          },
+          "spec": {
+            "adminApi": {
+              "replicas": 1
+            },
+            "adminProxy": {
+              "replicas": 1
+            },
+            "adminUI": {
+              "replicas": 1
+            },
+            "appVersion": "2020.1.1",
+            "architecture": "amd64",
+            "collector": {
+              "replicas": 1
+            },
+            "images": {
+              "pullSecrets": [
+                {
+                  "name": "ibm-entitlement-key"
+                }
+              ]
+            },
+            "replicator": {
+              "replicas": 1
+            },
+            "restProducer": {
+              "replicas": 1
+            },
+            "schemaRegistry": {
+              "replicas": 1,
+              "storage": {
+                "type": "ephemeral"
+              }
+            },
+            "security": {
+              "encryption": "TLS"
+            },
+            "strimziOverrides": {
+              "entityOperator": {
+                "topicOperator": {},
+                "userOperator": {}
+              },
+              "kafka": {
+                "authorization": {
+                  "type": "runas"
+                },
+                "config": {
+                  "interceptor.class.names": "com.ibm.eventstreams.interceptors.metrics.ProducerMetricsInterceptor",
+                  "log.message.format.version": "2.3",
+                  "offsets.topic.replication.factor": 1,
+                  "transaction.state.log.min.isr": 1,
+                  "transaction.state.log.replication.factor": 1
+                },
+                "listeners": {
+                  "external": {
+                    "authentication": {
+                      "type": "scram-sha-512"
+                    },
+                    "type": "route"
+                  },
+                  "plain": {},
+                  "tls": {
+                    "authentication": {
+                      "type": "tls"
+                    }
+                  }
+                },
+                "metrics": {},
+                "replicas": 3,
+                "resources": {
+                  "limits": {
+                    "cpu": "1000m",
+                    "memory": "2Gi"
+                  },
+                  "requests": {
+                    "cpu": "100m",
+                    "memory": "100Mi"
+                  }
+                },
+                "storage": {
+                  "type": "ephemeral"
+                },
+                "version": "2.4.0"
+              },
+              "zookeeper": {
+                "metrics": {},
+                "replicas": 3,
+                "resources": {
+                  "limits": {
+                    "cpu": "1000m",
+                    "memory": "1Gi"
+                  },
+                  "requests": {
+                    "cpu": "100m",
+                    "memory": "100Mi"
+                  }
+                },
+                "storage": {
+                  "type": "ephemeral"
+                }
+              }
+            }
+          }
+        },
+        {
+          "apiVersion": "eventstreams.ibm.com/v1beta1",
+          "kind": "EventStreams",
+          "metadata": {
+            "name": "my-es"
+          },
+          "spec": {
+            "adminApi": {
+              "replicas": 1
+            },
+            "adminProxy": {
+              "replicas": 1
+            },
+            "adminUI": {
+              "replicas": 1
+            },
+            "appVersion": "2020.1.1",
+            "architecture": "amd64",
+            "collector": {
+              "replicas": 1
+            },
+            "images": {
+              "pullSecrets": [
+                {
+                  "name": "ibm-entitlement-key"
+                }
+              ]
+            },
+            "replicator": {
+              "replicas": 1
+            },
+            "restProducer": {
+              "replicas": 1
+            },
+            "schemaRegistry": {
+              "replicas": 1,
+              "storage": {
+                "type": "ephemeral"
+              }
+            },
+            "security": {
+              "encryption": "TLS"
+            },
+            "strimziOverrides": {
+              "entityOperator": {
+                "topicOperator": {},
+                "userOperator": {}
+              },
+              "kafka": {
+                "config": {
+                  "interceptor.class.names": "com.ibm.eventstreams.interceptors.metrics.ProducerMetricsInterceptor",
+                  "log.message.format.version": "2.3",
+                  "offsets.topic.replication.factor": 1,
+                  "transaction.state.log.min.isr": 1,
+                  "transaction.state.log.replication.factor": 1
+                },
+                "listeners": {
+                  "external": {
+                    "type": "route"
+                  },
+                  "plain": {},
+                  "tls": {}
+                },
+                "metrics": {},
+                "replicas": 3,
+                "resources": {
+                  "limits": {
+                    "cpu": "1000m",
+                    "memory": "2Gi"
+                  },
+                  "requests": {
+                    "cpu": "100m",
+                    "memory": "100Mi"
+                  }
+                },
+                "storage": {
+                  "type": "ephemeral"
+                },
+                "version": "2.4.0"
+              },
+              "zookeeper": {
+                "metrics": {},
+                "replicas": 3,
+                "resources": {
+                  "limits": {
+                    "cpu": "1000m",
+                    "memory": "1Gi"
+                  },
+                  "requests": {
+                    "cpu": "100m",
+                    "memory": "100Mi"
+                  }
+                },
+                "storage": {
+                  "type": "ephemeral"
+                }
+              }
+            }
+          }
+        }
+      ]
+    capabilities: Basic Install
+    categories: Streaming & Messaging
+    certified: "false"
+    containerImage: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-operator-icp-linux-amd64:latest
+    createdAt: "2020-02-13T09:32:09Z"
+    description: Kafka-based messaging platform for handling real-time data feeds.
+    repository: https://github.ibm.com/mhub/qp-eventstreams-operator
+    support: IBM
+  name: ibm-eventstreams-operator.v2020.1.1
+  namespace: placeholder
+  version: 2020.1.1
+spec:
+  apiservicedefinitions: {}
+  customresourcedefinitions:
+    owned:
+    - description: Represents an instance of IBM Event Streams
+      displayName: Event Streams
+      kind: EventStreams
+      name: eventstreams.eventstreams.ibm.com
+      resources:
+      - kind: Route
+        version: route.openshift.io/v1
+      - kind: Service
+        version: v1
+      - kind: StatefulSet
+        version: v1
+      - kind: Deployment
+        version: v1
+      - kind: ReplicaSet
+        version: v1
+      - kind: Pod
+        version: v1
+      - kind: Secret
+        version: v1
+      - kind: ConfigMap
+        version: v1
+      - kind: Kafka
+        version: eventstreams.ibm.com/v1beta1
+      specDescriptors:
+      - description: The type of storage used by Kafka brokers
+        displayName: Kafka storage
+        path: strimziOverrides.kafka.storage.type
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:fieldGroup:kafkaPersistence
+        - urn:alm:descriptor:com.tectonic.ui:select:ephemeral
+        - urn:alm:descriptor:com.tectonic.ui:select:persistent-claim
+        - urn:alm:descriptor:com.tectonic.ui:select:jbod
+      - description: Storage class to use for Kafka brokers
+        displayName: Kafka Storage Class
+        path: strimziOverrides.kafka.storage.overrides[0].class
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:fieldGroup:kafkaPersistence
+        - urn:alm:descriptor:io.kubernetes:StorageClass
+      - description: The type of storage used by Kafka brokers
+        displayName: ZooKeeper storage
+        path: strimziOverrides.zookeeper.storage.type
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:fieldGroup:zookeeperPersistence
+        - urn:alm:descriptor:com.tectonic.ui:select:ephemeral
+        - urn:alm:descriptor:com.tectonic.ui:select:persistent-claim
+      - description: Storage class to use for ZooKeeper nodes
+        displayName: ZooKeeper Storage Class
+        path: strimziOverrides.zookeeper.storage.overrides[0].class
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:fieldGroup:zookeeperPersistence
+        - urn:alm:descriptor:io.kubernetes:StorageClass
+      - description: The type of storage used by the Schema Registry
+        displayName: Schema Registry storage
+        path: schemaRegistry.storage.type
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:fieldGroup:schemaRegistryPersistence
+        - urn:alm:descriptor:com.tectonic.ui:select:ephemeral
+        - urn:alm:descriptor:com.tectonic.ui:select:persistent-claim
+      - description: Storage class to use for Schema Registry
+        displayName: Schema Registry Storage Class
+        path: schemaRegistry.storage.overrides[0].class
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:fieldGroup:schemaRegistryPersistence
+        - urn:alm:descriptor:io.kubernetes:StorageClass
+      - description: The type of external access for Kafka brokers
+        displayName: Type
+        path: strimziOverrides.kafka.listeners.external.type
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:fieldGroup:externalAccess
+        - urn:alm:descriptor:com.tectonic.ui:select:route
+        - urn:alm:descriptor:com.tectonic.ui:select:nodeport
+      - description: The desired number of Kafka brokers.
+        displayName: Kafka Brokers
+        path: strimziOverrides.kafka.replicas
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:number
+        - urn:alm:descriptor:com.tectonic.ui:advanced
+      - description: The resource limits for Kafka brokers.
+        displayName: Kafka resource limits
+        path: strimziOverrides.kafka.resources
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:resourceRequirements
+        - urn:alm:descriptor:com.tectonic.ui:advanced
+      - description: The resource limits for ZooKeeper nodes.
+        displayName: ZooKeeper resource limits
+        path: strimziOverrides.zookeeper.resources
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:resourceRequirements
+        - urn:alm:descriptor:com.tectonic.ui:advanced
+      - description: Target architecture
+        displayName: Architecture
+        path: architecture
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:select:amd64
+        - urn:alm:descriptor:com.tectonic.ui:advanced
+      - description: Whether to enable TLS for connections between pods in the cluster
+        displayName: Internal security
+        path: security.encryption
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:select:TLS
+        - urn:alm:descriptor:com.tectonic.ui:select:NONE
+        - urn:alm:descriptor:com.tectonic.ui:advanced
+      statusDescriptors:
+      - description: URL for the Event Streams UI
+        displayName: Admin UI
+        path: adminUiUrl
+        x-descriptors:
+        - urn:alm:descriptor:org.w3:link
+      - description: URL for the Event Streams REST API
+        displayName: Admin API
+        path: adminRoute
+        x-descriptors:
+        - urn:alm:descriptor:org.w3:link
+      version: v1beta1
+    - description: Represents an instance of IBM Event Streams
+      displayName: Kafka
+      kind: Kafka
+      name: kafkas.eventstreams.ibm.com
+      version: v1beta1
+    - description: Represents an instance of IBM Event Streams
+      displayName: Kafka Connect
+      kind: KafkaConnect
+      name: kafkaconnects.eventstreams.ibm.com
+      version: v1beta1
+    - description: Represents an instance of IBM Event Streams
+      displayName: Kafka Connect S2I
+      kind: KafkaConnectS2I
+      name: kafkaconnects2is.eventstreams.ibm.com
+      version: v1beta1
+    - description: Represents an instance of IBM Event Streams
+      displayName: Kafka Topic
+      kind: KafkaTopic
+      name: kafkatopics.eventstreams.ibm.com
+      version: v1beta1
+    - description: Represents an instance of IBM Event Streams
+      displayName: Kafka User
+      kind: KafkaUser
+      name: kafkausers.eventstreams.ibm.com
+      version: v1beta1
+    - description: Represents an instance of IBM Event Streams
+      displayName: Kafka Mirror Maker
+      kind: KafkaMirrorMaker
+      name: kafkamirrormakers.eventstreams.ibm.com
+      version: v1beta1
+    - description: Represents an instance of IBM Event Streams
+      displayName: Kafka Bridge
+      kind: KafkaBridge
+      name: kafkabridges.eventstreams.ibm.com
+      version: v1alpha1
+    - description: Represents an instance of IBM Event Streams
+      displayName: Kafka Connector
+      kind: KafkaConnector
+      name: kafkaconnectors.eventstreams.ibm.com
+      version: v1alpha1
+    - description: Represents an instance of IBM Event Streams
+      displayName: Kafka Mirror Maker 2
+      kind: KafkaMirrorMaker2
+      name: kafkamirrormaker2s.eventstreams.ibm.com
+      version: v1alpha1
+  description: "Built on the open-source [Apache Kafka](https://kafka.apache.org),
+    IBM Event Streams is a high-throughput, fault-tolerant, event streaming platform
+    that helps you build intelligent, responsive, event-driven applications.\n \n###
+    IBM Event Streams features include:\n* A resilient Apache Kafka deployment that
+    maximizes the spread of Kafka brokers to avoid many classes of failure with automatic
+    restart of brokers included.\n* Health check information and options to resolve
+    issues with your clusters and brokers.\n* Geo-replication of your topics between
+    clusters to enable disaster recovery and scalability.\n* UI for browsing data
+    to help view and filter hundreds of thousands of messages, including options to
+    drill in and see message details from a set time.\n* CLI for managing your deployment
+    and its operations, including Kafka tasks.\n* Encrypted communication between
+    internal components and encrypted storage.\n* Support for a number of file systems
+    to use for persistent storage of your data.\n* Security with authentication and
+    authorization for users and connecting applications.\n* Schema registry and support
+    for schemas to define structure of data.\n* Support for setting up your clusters
+    across multiple availability zones to add resilience to your  deployment.\n###
+    What's new in 2020.1.1:\n* Fully supported  operator-based deployment.\n* Support
+    for OpenShift 4.2.\n* Apache Kafka version updated to 2.4.0.\n* New supported
+    connectors added to the expanded Connector catalog.\n### Documentation\nFor more
+    information, see the [IBM Event Streams documentation](https://ibm.github.io/event-streams).\n"
+  displayName: IBM Event Streams Operator
+  icon:
+  - base64data: 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
+    mediatype: image/png
+  install:
+    spec:
+      clusterPermissions:
+      - rules:
+        - apiGroups:
+          - ""
+          resources:
+          - serviceaccounts
+          verbs:
+          - get
+          - create
+          - delete
+          - patch
+          - update
+        - apiGroups:
+          - rbac.authorization.k8s.io
+          resources:
+          - rolebindings
+          verbs:
+          - get
+          - create
+          - delete
+          - patch
+          - update
+        - apiGroups:
+          - ""
+          resources:
+          - configmaps
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - delete
+          - patch
+          - update
+        - apiGroups:
+          - eventstreams.ibm.com
+          resources:
+          - kafkas
+          - kafkas/status
+          - kafkaconnects
+          - kafkaconnects/status
+          - kafkaconnects2is
+          - kafkaconnects2is/status
+          - kafkaconnectors
+          - kafkaconnectors/status
+          - kafkamirrormakers
+          - kafkamirrormakers/status
+          - kafkabridges
+          - kafkabridges/status
+          - kafkamirrormaker2s
+          - kafkamirrormaker2s/status
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - delete
+          - patch
+          - update
+        - apiGroups:
+          - ""
+          resources:
+          - pods
+          verbs:
+          - get
+          - list
+          - watch
+          - delete
+        - apiGroups:
+          - ""
+          resources:
+          - services
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - delete
+          - patch
+          - update
+        - apiGroups:
+          - ""
+          resources:
+          - endpoints
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - extensions
+          resources:
+          - deployments
+          - deployments/scale
+          - replicasets
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - delete
+          - patch
+          - update
+        - apiGroups:
+          - apps
+          resources:
+          - deployments
+          - deployments/scale
+          - deployments/status
+          - statefulsets
+          - replicasets
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - delete
+          - patch
+          - update
+        - apiGroups:
+          - ""
+          resources:
+          - events
+          verbs:
+          - create
+        - apiGroups:
+          - extensions
+          resources:
+          - replicationcontrollers
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - delete
+          - patch
+          - update
+        - apiGroups:
+          - apps.openshift.io
+          resources:
+          - deploymentconfigs
+          - deploymentconfigs/scale
+          - deploymentconfigs/status
+          - deploymentconfigs/finalizers
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - delete
+          - patch
+          - update
+        - apiGroups:
+          - build.openshift.io
+          resources:
+          - buildconfigs
+          - builds
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - watch
+          - update
+        - apiGroups:
+          - image.openshift.io
+          resources:
+          - imagestreams
+          - imagestreams/status
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - watch
+          - patch
+          - update
+        - apiGroups:
+          - ""
+          resources:
+          - replicationcontrollers
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - delete
+          - patch
+          - update
+        - apiGroups:
+          - ""
+          resources:
+          - secrets
+          verbs:
+          - get
+          - list
+          - create
+          - delete
+          - patch
+          - update
+        - apiGroups:
+          - extensions
+          resources:
+          - networkpolicies
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - delete
+          - patch
+          - update
+        - apiGroups:
+          - networking.k8s.io
+          resources:
+          - networkpolicies
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - delete
+          - patch
+          - update
+        - apiGroups:
+          - route.openshift.io
+          resources:
+          - routes
+          - routes/custom-host
+          verbs:
+          - get
+          - list
+          - create
+          - delete
+          - patch
+          - update
+        - apiGroups:
+          - ""
+          resources:
+          - persistentvolumeclaims
+          verbs:
+          - get
+          - list
+          - create
+          - delete
+          - patch
+          - update
+        - apiGroups:
+          - policy
+          resources:
+          - poddisruptionbudgets
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - delete
+          - patch
+          - update
+        - apiGroups:
+          - extensions
+          resources:
+          - ingresses
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - delete
+          - patch
+          - update
+        - apiGroups:
+          - ""
+          resources:
+          - services
+          - configmaps
+          - pods
+          - serviceaccounts
+          - persistentvolumeclaims
+          verbs:
+          - '*'
+        - apiGroups:
+          - ""
+          resources:
+          - namespaces
+          verbs:
+          - get
+          - list
+          - patch
+          - delete
+        - apiGroups:
+          - apps
+          resources:
+          - statefulsets
+          - replicasets
+          - deployments
+          verbs:
+          - '*'
+        - apiGroups:
+          - extensions
+          resources:
+          - statefulsets
+          - deployments
+          - networkpolicies
+          verbs:
+          - '*'
+        - apiGroups:
+          - rbac.authorization.k8s.io
+          resources:
+          - rolebindings
+          verbs:
+          - get
+          - create
+          - patch
+        - apiGroups:
+          - networking.k8s.io
+          resources:
+          - networkpolicies
+          verbs:
+          - get
+          - create
+          - patch
+        - apiGroups:
+          - admissionregistration.k8s.io
+          resources:
+          - validatingwebhookconfigurations
+          verbs:
+          - get
+          - create
+          - patch
+          - delete
+        - apiGroups:
+          - monitoring.coreos.com
+          resources:
+          - servicemonitors
+          verbs:
+          - get
+          - create
+        - apiGroups:
+          - eventstreams.ibm.com
+          resources:
+          - '*'
+          verbs:
+          - '*'
+        - apiGroups:
+          - eventstreams.ibm.com
+          resources:
+          - '*'
+          - kafkausers
+          - kafkausers/status
+          verbs:
+          - '*'
+        - apiGroups:
+          - route.openshift.io
+          resources:
+          - routes
+          verbs:
+          - '*'
+        - apiGroups:
+          - oidc.security.ibm.com
+          resources:
+          - clients
+          verbs:
+          - get
+          - list
+          - create
+          - patch
+          - delete
+          - update
+        serviceAccountName: eventstreams-cluster-operator-namespaced
+      deployments:
+      - name: eventstreams-cluster-operator
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              eventstreams.ibm.com/kind: cluster-operator
+              name: eventstreams-cluster-operator
+          strategy:
+            type: Recreate
+          template:
+            metadata:
+              labels:
+                eventstreams.ibm.com/kind: cluster-operator
+                name: eventstreams-cluster-operator
+            spec:
+              affinity:
+                nodeAffinity:
+                  requiredDuringSchedulingIgnoredDuringExecution:
+                    nodeSelectorTerms:
+                    - matchExpressions:
+                      - key: beta.kubernetes.io/arch
+                        operator: In
+                        values:
+                        - amd64
+              containers:
+              - args:
+                - /opt/strimzi/bin/eventstreams_cluster_operator_run.sh
+                env:
+                - name: STRIMZI_IMAGE_PULL_SECRETS
+                  value: regcred
+                - name: STRIMZI_NAMESPACE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.annotations['olm.targetNamespaces']
+                - name: STRIMZI_FULL_RECONCILIATION_INTERVAL_MS
+                  value: "120000"
+                - name: STRIMZI_OPERATION_TIMEOUT_MS
+                  value: "300000"
+                - name: STRIMZI_DEFAULT_TLS_SIDECAR_ENTITY_OPERATOR_IMAGE
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:combined8
+                - name: STRIMZI_DEFAULT_TLS_SIDECAR_KAFKA_IMAGE
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:combined8
+                - name: STRIMZI_DEFAULT_TLS_SIDECAR_ZOOKEEPER_IMAGE
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:combined8
+                - name: STRIMZI_DEFAULT_KAFKA_EXPORTER_IMAGE
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:combined8
+                - name: STRIMZI_KAFKA_IMAGES
+                  value: |
+                    2.4.0=hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:combined8
+                - name: STRIMZI_KAFKA_CONNECT_IMAGES
+                  value: |
+                    2.4.0=hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:combined8
+                - name: STRIMZI_KAFKA_CONNECT_S2I_IMAGES
+                  value: |
+                    2.4.0=hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:combined8
+                - name: STRIMZI_KAFKA_MIRROR_MAKER_IMAGES
+                  value: |
+                    2.4.0=hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:combined8
+                - name: STRIMZI_KAFKA_MIRROR_MAKER_2_IMAGES
+                  value: |
+                    2.4.0=hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:combined8
+                - name: STRIMZI_DEFAULT_TOPIC_OPERATOR_IMAGE
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator:combined8
+                - name: STRIMZI_DEFAULT_USER_OPERATOR_IMAGE
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator:combined8
+                - name: STRIMZI_DEFAULT_KAFKA_INIT_IMAGE
+                  value: strimzi/operator:latest
+                - name: STRIMZI_DEFAULT_KAFKA_BRIDGE_IMAGE
+                  value: strimzi/kafka-bridge:0.15.0
+                - name: STRIMZI_DEFAULT_JMXTRANS_IMAGE
+                  value: strimzi/jmxtrans:latest
+                - name: STRIMZI_IMAGE_PULL_SECRETS
+                  value: ibm-entitlement-key
+                - name: STRIMZI_LOG_LEVEL
+                  value: INFO
+                - name: EVENTSTREAMS_NAMESPACE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.annotations['olm.targetNamespaces']
+                - name: EVENTSTREAMS_FULL_RECONCILIATION_INTERVAL_MS
+                  value: "120000"
+                - name: POD_NAME
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.name
+                - name: EVENTSTREAMS_DEFAULT_REST_PRODUCER_IMAGE
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-rest-producer-icp-linux-amd64:2020-01-14-13.11.13-bb37139-exp
+                - name: EVENTSTREAMS_DEFAULT_ADMIN_PROXY_IMAGE
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-rest-proxy-icp-linux-amd64:2020-02-05-10.59.03-791c64d
+                - name: EVENTSTREAMS_DEFAULT_ADMIN_API_IMAGE
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-admin-icp-linux-amd64:2020-02-04-08.56.31-8701472
+                - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_IMAGE
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-registry-icp-linux-amd64:2020-02-03-13.47.39-995d533-dev
+                - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_AVRO_IMAGE
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-avro-icp-linux-amd64:2020-01-16-15.39.43-165fd5b-exp
+                - name: EVENTSTREAMS_DEFAULT_ADMIN_UI_IMAGE
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-ui-icp-linux-amd64:2020-01-28-16.59.16-4d6651b-dev
+                - name: EVENTSTREAMS_DEFAULT_ADMIN_UI_REDIS_IMAGE
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-database-icp-linux-amd64:2020-02-11-13.40.39-0a99ddb-exp
+                - name: EVENTSTREAMS_DEFAULT_COLLECTOR_IMAGE
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-collector-icp-linux-amd64:2020-01-16-16.08.11-b264a4e-exp
+                image: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator:combined8
+                livenessProbe:
+                  httpGet:
+                    path: /healthy
+                    port: 8080
+                  initialDelaySeconds: 10
+                  periodSeconds: 30
+                name: eventstreams-cluster-operator
+                readinessProbe:
+                  httpGet:
+                    path: /ready
+                    port: 8080
+                  initialDelaySeconds: 10
+                  periodSeconds: 30
+                resources:
+                  limits:
+                    cpu: "1"
+                    memory: 256Mi
+                  requests:
+                    cpu: 200m
+                    memory: 256Mi
+              imagePullSecrets:
+              - name: ibm-entitlement-key
+              initContainers:
+              - env:
+                - name: EVENTSTREAMS_OPERATOR_NAMESPACE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.namespace
+                - name: EVENTSTREAMS_NAMESPACE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.annotations['olm.targetNamespaces']
+                - name: EVENTSTREAMS_UID
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.uid
+                image: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator-init:latest
+                name: install-validating-webhook
+                resources: {}
+                securityContext:
+                  allowPrivilegeEscalation: false
+                  capabilities:
+                    drop:
+                    - ALL
+                  privileged: false
+                  readOnlyRootFilesystem: false
+                  runAsNonRoot: true
+              serviceAccountName: eventstreams-cluster-operator-namespaced
+              volumes:
+              - name: eventstreams
+                secret:
+                  optional: true
+                  secretName: eventstreams-cluster-operator
+    strategy: deployment
+  installModes:
+  - supported: true
+    type: OwnNamespace
+  - supported: true
+    type: SingleNamespace
+  - supported: false
+    type: MultiNamespace
+  - supported: true
+    type: AllNamespaces
+  keywords:
+  - kafka
+  - apachekafka
+  - messaging
+  - streams
+  labels:
+    name: ibm-eventstreams-operator
+  links:
+  - name: Website
+    url: https://www.ibm.com/uk-en/cloud/event-streams
+  - name: Documentation
+    url: https://ibm.github.io/event-streams
+  - name: GitHub
+    url: https://github.com/IBM/event-streams
+  - name: Slack
+    url: https://slack-invite-ibm-cloud-tech.mybluemix.net
+  maintainers:
+  - email: ibm@ibm.com
+    name: IBM
+  maturity: alpha
+  provider:
+    name: IBM
+  selector:
+    matchLabels:
+      name: ibm-eventstreams-operator
+  version: 2020.1.1

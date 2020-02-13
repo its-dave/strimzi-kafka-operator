@@ -13,6 +13,8 @@ COPY --from=builder /usr/local/bin/kubectl /usr/bin/
 
 COPY scripts/* ./
 
+USER 65534
+
 LABEL name="eventstreams-operator-init"
 
 ENTRYPOINT ["./run.sh"]

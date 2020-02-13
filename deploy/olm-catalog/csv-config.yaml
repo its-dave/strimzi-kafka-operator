@@ -1,0 +1,4 @@
+crd-cr-paths:
+operator-path: deploy/temp/operator.yaml
+role-paths:
+- deploy/temp/role.yaml
