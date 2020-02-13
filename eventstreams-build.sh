@@ -4,8 +4,14 @@ set -e
 
 echo "Attempting to curl yq..."
 
-sudo curl -L -o /usr/local/bin/yq "https://github.com/mikefarah/yq/releases/download/2.4.0/yq_linux_${B_ARCH}"
+sudo curl -Lvo /usr/local/bin/yq "https://github.com/mikefarah/yq/releases/download/2.4.0/yq_linux_${B_ARCH}"
 sudo chmod +x /usr/local/bin/yq
+
+OPERATOR_SDK_VERSION=v0.15.1
+
+sudo pip3 install operator-courier
+sudo curl -vLo /usr/local/bin/operator-sdk https://github.com/operator-framework/operator-sdk/releases/download/$OPERATOR_SDK_VERSION/operator-sdk-$OPERATOR_SDK_VERSION-x86_64-linux-gnu
+sudo chmod +x /usr/local/bin/operator-sdk
 
 if ! [ -x "$(command -v yq)" ]; then
   echo 'Error: yq is not installed.' >&2
