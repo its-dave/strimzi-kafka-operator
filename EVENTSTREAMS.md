@@ -82,6 +82,20 @@ env:
 
 Logs for the operator should show that it is watching the custom resources on the supplied namespaces.
 
+## Deploying Event Streams Custom Resources
+For an OpenShift user *without* the administrator roll, a cluster administrator will need to do the following steps:
+1. Apply a ClusterRole with the required create permissions to the cluster. An example can be found at `examples/eventstreams-cluster-roles/eventstreams-cluster-admin.yaml`
+This can be applied by running:
+```
+kubectl apply -f examples/eventstreams-cluster-roles/eventstreams-cluster-admin.yaml
+```
+2. Then bind this ClusterRole to the ServiceAccount of the OpenShift user that you want to give permissions to.
+This can be done by running:
+```
+oc adm policy add-cluster-role-to-user eventstreams-cluster-admin <USER_NAME>
+```
+where `<USER_NAME>` is the username of the user you that you want to give permissions to.
+
 ## Integration Testing
 Integration tests verify installs on a live environment, so to run them you need to be logged into a running OpenShift environment.
 To run the integration tests, run: `mvn verify`
