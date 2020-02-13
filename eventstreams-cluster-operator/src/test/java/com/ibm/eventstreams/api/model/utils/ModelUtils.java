@@ -15,6 +15,7 @@ package com.ibm.eventstreams.api.model.utils;
 
 import com.ibm.eventstreams.api.Listener;
 import com.ibm.eventstreams.api.model.AbstractSecureEndpointModel;
+import com.ibm.eventstreams.api.model.EventStreamsKafkaModel;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
 import com.ibm.eventstreams.api.spec.SecuritySpec;
@@ -86,10 +87,13 @@ public class ModelUtils {
     }
 
     public static Set<Secret> generateClusterCa(String namespace, String clusterName, String appName, Certificates cert, Keys key) {
-        Map<String, String> labels = Labels.forCluster(clusterName + "-" + appName).withKind(Kafka.RESOURCE_KIND).toMap();
+        String kafkaInstanceName = EventStreamsKafkaModel.getKafkaInstanceName(clusterName);
+        Map<String, String> labels = Labels.forCluster(kafkaInstanceName)
+                .withKind(Kafka.RESOURCE_KIND)
+                .toMap();
         Secret clusterCa = new SecretBuilder()
                 .withNewMetadata()
-                    .withName(AbstractModel.clusterCaCertSecretName(clusterName + "-" + appName))
+                    .withName(AbstractModel.clusterCaCertSecretName(kafkaInstanceName))
                     .withNamespace(namespace)
                     .addToAnnotations(Ca.ANNO_STRIMZI_IO_CA_CERT_GENERATION, "0")
                     .withLabels(labels)
@@ -98,7 +102,7 @@ public class ModelUtils {
                 .build();
         Secret clusterCaKey = new SecretBuilder()
                 .withNewMetadata()
-                    .withName(AbstractModel.clusterCaKeySecretName(clusterName + "-" + appName))
+                    .withName(AbstractModel.clusterCaKeySecretName(kafkaInstanceName))
                     .withNamespace(namespace)
                     .addToAnnotations(Ca.ANNO_STRIMZI_IO_CA_KEY_GENERATION, "0")
                     .withLabels(labels)

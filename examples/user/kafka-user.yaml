@@ -3,7 +3,7 @@ kind: KafkaUser
 metadata:
   name: my-user
   labels:
-    strimzi.io/cluster: my-cluster
+    eventstreams.ibm.com/cluster: my-cluster
 spec:
   authentication:
     type: tls

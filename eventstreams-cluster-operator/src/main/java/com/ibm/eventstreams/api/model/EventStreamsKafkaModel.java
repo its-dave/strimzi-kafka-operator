@@ -267,7 +267,7 @@ public class EventStreamsKafkaModel extends AbstractModel {
      * Do not use this method when not referencing Kafka resources
      */
     public static String getKafkaInstanceName(String instanceName) {
-        return getResourcePrefix(instanceName);
+        return instanceName;
     }
 
     private WeightedPodAffinityTerm preferredWeightedPodAntiAffinityTermForSelector(String serviceSelector, Integer affinityWeight) {

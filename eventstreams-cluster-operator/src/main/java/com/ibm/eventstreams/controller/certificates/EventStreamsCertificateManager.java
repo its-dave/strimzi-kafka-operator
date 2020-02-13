@@ -10,7 +10,7 @@
  * divested of its trade secrets, irrespective of what has been
  * deposited with the U.S. Copyright Office.
  */
-package com.ibm.eventstreams.controller.certifificates;
+package com.ibm.eventstreams.controller.certificates;
 
 import com.ibm.eventstreams.api.model.CertificateSecretModel;
 import io.fabric8.kubernetes.api.model.Secret;
@@ -20,6 +20,7 @@ import io.strimzi.api.kafka.model.CertificateAuthority;
 import io.strimzi.certs.CertAndKey;
 import io.strimzi.certs.OpenSslCertManager;
 import io.strimzi.certs.Subject;
+import io.strimzi.operator.cluster.model.AbstractModel;
 import io.strimzi.operator.cluster.model.Ca;
 import io.strimzi.operator.cluster.model.ModelUtils;
 import io.strimzi.operator.common.operator.resource.SecretOperator;
@@ -55,7 +56,7 @@ import java.util.stream.Collectors;
 
 public class EventStreamsCertificateManager {
     private static final Logger log = LogManager.getLogger(EventStreamsCertificateManager.class.getName());
-    private static final String ORGANISATION_NAME = "io.strimzi";
+    private static final String ORGANISATION_NAME = "eventstreams.ibm.com";
 
     private SecretOperator secretOperator;
     private String namespace;
@@ -91,14 +92,14 @@ public class EventStreamsCertificateManager {
     }
 
     private byte[] getClusterCaData() throws EventStreamsCertificateException {
-        String clusterCaCertName = io.strimzi.operator.cluster.model.AbstractModel.clusterCaCertSecretName(kafkaInstanceName);
+        String clusterCaCertName = AbstractModel.clusterCaCertSecretName(kafkaInstanceName);
         Secret clusterCaSecret = getSecret(clusterCaCertName).orElseThrow(() -> new EventStreamsCertificateException("Cluster CA cert secret could not be found"));
         return getBase64DecodedSecretData(clusterCaSecret, Ca.CA_CRT);
     }
 
     private byte[] getClusterCaKeyData() throws EventStreamsCertificateException {
-        String clusterCaKeyName = io.strimzi.operator.cluster.model.AbstractModel.clusterCaKeySecretName(kafkaInstanceName);
-        Secret clusterCaKeySecret = getSecret(clusterCaKeyName).orElseThrow(() -> new EventStreamsCertificateException("Cluster CA key secret could not be found"));
+        String clusterCaKeyName = AbstractModel.clusterCaKeySecretName(kafkaInstanceName);
+        Secret clusterCaKeySecret = getSecret(clusterCaKeyName).orElseThrow(() -> new EventStreamsCertificateException("Cluster CA key secret " + clusterCaKeyName + " could not be found"));
         return getBase64DecodedSecretData(clusterCaKeySecret, Ca.CA_KEY);
     }
 

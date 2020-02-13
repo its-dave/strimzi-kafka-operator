@@ -3,7 +3,7 @@ kind: KafkaTopic
 metadata:
   name: my-topic
   labels:
-    strimzi.io/cluster: my-cluster
+    eventstreams.ibm.com/cluster: my-cluster
 spec:
   partitions: 1
   replicas: 1

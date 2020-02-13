@@ -10,7 +10,7 @@
  * divested of its trade secrets, irrespective of what has been
  * deposited with the U.S. Copyright Office.
  */
-package com.ibm.eventstreams.controller.certifificates;
+package com.ibm.eventstreams.controller.certificates;
 
 import java.util.function.Supplier;
 

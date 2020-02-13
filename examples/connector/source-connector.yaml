@@ -7,7 +7,7 @@ metadata:
     # in which to create this connector. That KafkaConnect instance
     # must have the strimzi.io/use-connector-resources annotation
     # set to true.
-    strimzi.io/cluster: my-connect-cluster
+    eventstreams.ibm.com/cluster: my-connect-cluster
 spec:
   class: org.apache.kafka.connect.file.FileStreamSourceConnector
   tasksMax: 2

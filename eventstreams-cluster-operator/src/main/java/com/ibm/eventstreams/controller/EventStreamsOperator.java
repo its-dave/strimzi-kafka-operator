@@ -28,8 +28,8 @@ import com.ibm.eventstreams.api.model.SchemaRegistryModel;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.status.EventStreamsStatus;
 import com.ibm.eventstreams.api.status.EventStreamsStatusBuilder;
-import com.ibm.eventstreams.controller.certifificates.EventStreamsCertificateException;
-import com.ibm.eventstreams.controller.certifificates.EventStreamsCertificateManager;
+import com.ibm.eventstreams.controller.certificates.EventStreamsCertificateException;
+import com.ibm.eventstreams.controller.certificates.EventStreamsCertificateManager;
 import com.ibm.eventstreams.rest.NameValidation;
 import com.ibm.eventstreams.rest.VersionValidation;
 import com.ibm.iam.api.model.ClientModel;
@@ -197,7 +197,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 : new EventStreamsStatusBuilder(instance.getStatus());
 
             this.imageConfig = imageConfig;
-            this.certificateManager = new EventStreamsCertificateManager(secretOperator, reconciliation.namespace(), EventStreamsKafkaModel.getKafkaInstanceName(reconciliation.name()));
+            this.certificateManager = new EventStreamsCertificateManager(secretOperator, reconciliation.namespace(), EventStreamsKafkaModel.getKafkaInstanceName(instance.getMetadata().getName()));
         }
 
         Future<ReconciliationState> validateCustomResource() {
@@ -309,7 +309,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             String clusterCert = icpClusterData.get(EventStreamsOperator.ENCODED_IBMCLOUD_CA_CERT);
             if (clusterCert != null) {
                 clusterSecrets.createIBMCloudCASecret(clusterCert)
-                    .onComplete(ar -> {
+                    .onSuccess(ar -> {
                         clusterCaSecretPromise.complete();
                     })
                     .onFailure(err -> {

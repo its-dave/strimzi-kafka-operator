@@ -335,7 +335,7 @@ public class ReplicatorModel extends AbstractModel {
     private KafkaUser buildUser(List<AclRule> aclList, String kafkaUserName) {
 
         Map<String, String> labels = new HashMap<>();
-        labels.put(io.strimzi.operator.common.model.Labels.STRIMZI_CLUSTER_LABEL, getResourcePrefix());
+        labels.put(io.strimzi.operator.common.model.Labels.STRIMZI_CLUSTER_LABEL, EventStreamsKafkaModel.getKafkaInstanceName(getInstanceName()));
 
         return new KafkaUserBuilder()
                 .withApiVersion(KafkaUser.RESOURCE_GROUP + "/" + KafkaUser.V1BETA1)
@@ -369,10 +369,6 @@ public class ReplicatorModel extends AbstractModel {
         List<NetworkPolicyEgressRule> egressRules = new ArrayList<>(0);  
 
         return super.createNetworkPolicy(createLabelSelector(COMPONENT_NAME), ingressRules, egressRules);
-    }
-
-    public static String getKafkaInstanceName(String instanceName) {
-        return getResourcePrefix(instanceName);
     }
 
 

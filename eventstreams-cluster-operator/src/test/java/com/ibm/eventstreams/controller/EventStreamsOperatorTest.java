@@ -682,7 +682,7 @@ public class EventStreamsOperatorTest {
         Map<String, String> additionalHosts = Collections.singletonMap(listener.getName(), "extra.host.name");
 
         reconciliationState.reconcileCerts(endpointModel, additionalHosts, Date::new).setHandler(ar -> {
-            assertThat("There is only one additional secret created", mockClient.secrets().list().getItems().size(), is(3));
+            assertThat("Number of secrets do not match " + mockClient.secrets().list().getItems(), mockClient.secrets().list().getItems().size(), is(3));
             Secret secret = mockClient.secrets().withName(endpointModel.getCertSecretName()).get();
             assertThat("The expected secret is created", secret, is(notNullValue()));
             CertAndKey certAndKey = reconciliationState.certificateManager.certificateAndKey(secret, endpointModel.getCertSecretCertID(listener.getName()), endpointModel.getCertSecretKeyID(listener.getName()));

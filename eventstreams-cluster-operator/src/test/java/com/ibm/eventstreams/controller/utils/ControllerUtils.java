@@ -12,7 +12,7 @@
  */
 package com.ibm.eventstreams.controller.utils;
 
-import com.ibm.eventstreams.controller.certifificates.EventStreamsCertificateManager;
+import com.ibm.eventstreams.controller.certificates.EventStreamsCertificateManager;
 import io.fabric8.kubernetes.api.model.Service;
 import io.strimzi.certs.CertAndKey;
 import io.strimzi.certs.Subject;

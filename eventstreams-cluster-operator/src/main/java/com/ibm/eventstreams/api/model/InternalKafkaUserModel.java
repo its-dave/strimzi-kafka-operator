@@ -50,7 +50,7 @@ public class InternalKafkaUserModel extends AbstractModel {
         aclList.add(rule1);
         
         Map<String, String> labels = new HashMap<>();
-        labels.put(Labels.STRIMZI_CLUSTER_LABEL, getResourcePrefix());
+        labels.put(Labels.STRIMZI_CLUSTER_LABEL, EventStreamsKafkaModel.getKafkaInstanceName(getInstanceName()));
         
         kafkaUser = new KafkaUserBuilder()
         .withApiVersion(KafkaUser.RESOURCE_GROUP + "/" + KafkaUser.V1BETA1)
