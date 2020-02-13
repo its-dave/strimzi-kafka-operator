@@ -2011,7 +2011,7 @@ public class KafkaCluster extends AbstractModel {
                     .build();
 
             RoleRef roleRef = new RoleRefBuilder()
-                    .withName("strimzi-kafka-broker")
+                    .withName("eventstreams-kafka-broker")
                     .withApiGroup("rbac.authorization.k8s.io")
                     .withKind("ClusterRole")
                     .build();
