@@ -38,7 +38,7 @@ seLinuxContext:
 supplementalGroups:
   type: RunAsAny
 groups:
-  - system:serviceaccounts:myproject
+  - system:serviceaccounts:{{ .Release.Namespace }}
 volumes:
   - configMap
   - downwardAPI

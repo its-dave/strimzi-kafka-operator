@@ -4,7 +4,7 @@ CSV_VERSION = 2020.1.1
 
 # TODO verfy this is still true
 OPERATOR_NAME := ibm-eventstreams-operator
-INSTALL_DIR := ../install/cluster-operator
+INSTALL_DIR := ../install/ibm-eventstreams-operator
 
 WORKING_DIR := $(shell pwd)
 BUILD_DIR := $(WORKING_DIR)/../build
@@ -87,7 +87,7 @@ ifdef TRAVIS
 	yq w -i $(GENERATED_CSV) metadata.annotations.createdAt $(LAST_CREATED_DATE)
 endif
 
-docker_build:
+docker_build: build_csv
 	docker build -t $(IMAGE_NAME) -f ${IMAGE_BASE_NAME}.Dockerfile .
 
 docker_push:

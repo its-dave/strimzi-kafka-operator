@@ -1,22 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: eventstreams-cluster-operator
+  name: strimzi-cluster-operator
   labels:
-    app: eventstreams
+    app: strimzi
 spec:
   replicas: 1
   selector:
     matchLabels:
-      name: eventstreams-cluster-operator
-      eventstreams.ibm.com/kind: cluster-operator
+      name: strimzi-cluster-operator
+      strimzi.io/kind: cluster-operator
   template:
     metadata:
       labels:
-        name: eventstreams-cluster-operator
-        eventstreams.ibm.com/kind: cluster-operator
+        name: strimzi-cluster-operator
+        strimzi.io/kind: cluster-operator
     spec:
-      serviceAccountName: eventstreams-cluster-operator
+      serviceAccountName: strimzi-cluster-operator
       containers:
       - name: strimzi-cluster-operator
         image: strimzi/operator:latest
@@ -74,6 +74,8 @@ spec:
             2.5.0=strimzi/kafka:latest-kafka-2.5.0
         - name: STRIMZI_KAFKA_MIRROR_MAKER_2_IMAGES
           value: |
+            2.3.0=strimzi/kafka:latest-kafka-2.3.0
+            2.3.1=strimzi/kafka:latest-kafka-2.3.1
             2.4.0=strimzi/kafka:latest-kafka-2.4.0
             2.4.1=strimzi/kafka:latest-kafka-2.4.1
             2.5.0=strimzi/kafka:latest-kafka-2.5.0

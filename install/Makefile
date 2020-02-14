@@ -6,6 +6,7 @@ RELEASE_VERSION ?= latest
 RELEASE_PATH ?= ../strimzi-$(RELEASE_VERSION)/$(PROJECT_NAME)
 
 crd_install:
+	$(FIND) . -type f -name '04*-Crd-*.yaml' -exec $(SED) -E -i 's+eventstreams.ibm.com+kafka.strimzi.io+g' {} \;
 	$(CP) ./cluster-operator/043-Crd-kafkatopic.yaml ./topic-operator/04-Crd-kafkatopic.yaml
 	$(CP) ./cluster-operator/044-Crd-kafkauser.yaml ./user-operator/04-Crd-kafkauser.yaml
 	$(CP) ./cluster-operator/040-Crd-kafka.yaml ../helm-charts/strimzi-kafka-operator/templates/040-Crd-kafka.yaml
@@ -42,4 +43,5 @@ release:
 	$(CP) -r ./topic-operator $(RELEASE_PATH)/
 	$(CP) -r ./strimzi-admin $(RELEASE_PATH)/
 
+docker_build: crd_install
 .PHONY: all build clean docker_build docker_push docker_tag spotbugs

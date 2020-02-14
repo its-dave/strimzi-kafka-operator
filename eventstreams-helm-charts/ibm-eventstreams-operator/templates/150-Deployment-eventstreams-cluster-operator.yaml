@@ -1,0 +1,175 @@
+###############################################################################
+#
+# Licensed Materials - Property of IBM
+#
+# 5737-H33
+#
+# (C) Copyright IBM Corp. 2019  All Rights Reserved.
+#
+# US Government Users Restricted Rights - Use, duplication or
+# disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+#
+###############################################################################
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: eventstreams-cluster-operator
+  labels:
+    app: {{ template "eventstreams.name" . }}
+    chart: {{ template "eventstreams.chart" . }}
+    component: deployment
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: eventstreams-cluster-operator
+      eventstreams.ibm.com/kind: cluster-operator
+  template:
+    metadata:
+      labels:
+        name: eventstreams-cluster-operator
+        eventstreams.ibm.com/kind: cluster-operator
+    spec:
+      imagePullSecrets:
+      - name: ibm-entitlement-key
+      serviceAccountName: eventstreams-cluster-operator
+      initContainers:
+      - name: install-validating-webhook
+        image: {{ default .Values.operatorInit.image.repository .Values.imageRepositoryOverride }}/{{ .Values.operatorInit.image.name }}:{{ .Values.operatorInit.image.tag }}
+        securityContext:
+          privileged: false
+          readOnlyRootFilesystem: false
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          capabilities:
+            drop:
+              - ALL
+        env:
+          - name: EVENTSTREAMS_OPERATOR_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: EVENTSTREAMS_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: EVENTSTREAMS_UID
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.uid
+      containers:
+        - name: eventstreams-cluster-operator
+          image: {{ default .Values.operator.image.repository .Values.imageRepositoryOverride }}/{{ .Values.operator.image.name }}:{{ .Values.operator.image.tag }}
+          args:
+          - /opt/strimzi/bin/eventstreams_cluster_operator_run.sh
+          env:
+            - name: STRIMZI_NAMESPACE
+              {{- if .Values.watchAnyNamespace }}
+              value: "*"
+              {{- else }}
+              {{- if .Values.watchNamespaces -}}
+              {{- $ns := .Values.watchNamespaces -}}
+              {{- $ns := append $ns .Release.Namespace }}
+              value: "{{ join "," $ns }}"
+              {{- else }}
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+              {{- end }}
+              {{- end }}
+            - name: STRIMZI_FULL_RECONCILIATION_INTERVAL_MS
+              value: {{ .Values.fullReconciliationIntervalMs | quote }}
+            - name: STRIMZI_OPERATION_TIMEOUT_MS
+              value: {{ .Values.operationTimeoutMs | quote }}
+              {{- template "strimzi.kafka.image.map" . }}
+            - name: STRIMZI_DEFAULT_TOPIC_OPERATOR_IMAGE
+              value: "{{ default .Values.topicOperator.image.repository .Values.imageRepositoryOverride }}/{{ .Values.topicOperator.image.name }}:{{ .Values.topicOperator.image.tag }}"
+            - name: STRIMZI_DEFAULT_USER_OPERATOR_IMAGE
+              value: "{{ default .Values.userOperator.image.repository .Values.imageRepositoryOverride }}/{{ .Values.userOperator.image.name }}:{{ .Values.userOperator.image.tag }}"
+            - name: STRIMZI_DEFAULT_KAFKA_INIT_IMAGE
+              value: "{{ default .Values.kafkaInit.image.repository .Values.imageRepositoryOverride }}/{{ .Values.kafkaInit.image.name }}:{{ .Values.kafkaInit.image.tag }}"
+            - name: STRIMZI_DEFAULT_KAFKA_BRIDGE_IMAGE
+              value: "{{ default .Values.kafkaBridge.image.repository .Values.imageRepositoryOverride }}/{{ .Values.kafkaBridge.image.name }}:{{ .Values.kafkaBridge.image.tag }}"
+            - name: STRIMZI_DEFAULT_JMXTRANS_IMAGE
+              value: "{{ default .Values.jmxTrans.image.repository .Values.imageRepositoryOverride }}/{{ .Values.jmxTrans.image.name }}:{{ .Values.jmxTrans.image.tag }}"
+              {{- if .Values.imagePullSecrets }}
+            - name: STRIMZI_IMAGE_PULL_SECRETS
+              value: {{ .Values.imagePullSecrets }}
+              {{- end }}
+            - name: STRIMZI_LOG_LEVEL
+              value: {{ .Values.logLevel | quote }}
+            - name: EVENTSTREAMS_NAMESPACE
+              {{- if .Values.watchAnyNamespace }}
+              value: "*"
+              {{- else }}
+              {{- if .Values.watchNamespaces -}}
+              {{- $ns := .Values.watchNamespaces -}}
+              {{- $ns := append $ns .Release.Namespace }}
+              value: "{{ join "," $ns }}"
+              {{- else }}
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+              {{- end }}
+              {{- end }}
+            - name: EVENTSTREAMS_FULL_RECONCILIATION_INTERVAL_MS
+              value: {{ .Values.fullReconciliationIntervalMs | quote }}
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: EVENTSTREAMS_DEFAULT_REST_PRODUCER_IMAGE
+              value: "{{ default .Values.restProducer.image.repository .Values.imageRepositoryOverride }}/{{ .Values.restProducer.image.name }}:{{ .Values.restProducer.image.tag }}"
+            - name: EVENTSTREAMS_DEFAULT_ADMIN_PROXY_IMAGE
+              value: "{{ default .Values.adminProxy.image.repository .Values.imageRepositoryOverride }}/{{ .Values.adminProxy.image.name }}:{{ .Values.adminProxy.image.tag }}"
+            - name: EVENTSTREAMS_DEFAULT_ADMIN_API_IMAGE
+              value: "{{ default .Values.adminApi.image.repository .Values.imageRepositoryOverride }}/{{ .Values.adminApi.image.name }}:{{ .Values.adminApi.image.tag }}"
+            - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_IMAGE
+              value: "{{ default .Values.schemaRegistry.image.repository .Values.imageRepositoryOverride }}/{{ .Values.schemaRegistry.image.name }}:{{ .Values.schemaRegistry.image.tag }}"
+            - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_AVRO_IMAGE
+              value: "{{ default .Values.avro.image.repository .Values.imageRepositoryOverride }}/{{ .Values.avro.image.name }}:{{ .Values.avro.image.tag }}"
+            - name: EVENTSTREAMS_DEFAULT_ADMIN_UI_IMAGE
+              value: "{{ default .Values.adminUi.image.repository .Values.imageRepositoryOverride }}/{{ .Values.adminUi.image.name }}:{{ .Values.adminUi.image.tag }}"
+            - name: EVENTSTREAMS_DEFAULT_ADMIN_UI_REDIS_IMAGE
+              value: "{{ default .Values.adminUiDatabase.image.repository .Values.imageRepositoryOverride }}/{{ .Values.adminUiDatabase.image.name }}:{{ .Values.adminUiDatabase.image.tag }}"
+            - name: EVENTSTREAMS_DEFAULT_COLLECTOR_IMAGE
+              value: "{{ default .Values.collector.image.repository .Values.imageRepositoryOverride }}/{{ .Values.collector.image.name }}:{{ .Values.collector.image.tag }}"
+          livenessProbe:
+            httpGet:
+              path: /healthy
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 256Mi
+            requests:
+              cpu: 200m
+              memory: 256Mi
+      volumes:
+      - name: eventstreams
+        secret:
+          secretName: eventstreams-cluster-operator
+          # Secret created by the init-container
+          # optional so as to not block startup
+          optional: true
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: beta.kubernetes.io/arch
+                    operator: In
+                    values:
+                      - amd64
+  strategy:
+    type: Recreate

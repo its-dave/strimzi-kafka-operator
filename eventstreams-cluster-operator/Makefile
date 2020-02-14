@@ -1,7 +1,7 @@
 PROJECT_NAME=eventstreams-cluster-operator
 export MVN_ARGS := ${MVN_ARGS} -DskipITs -s settings.xml -Dmaven.javadoc.skip=true
 
-docker_build: java_build generate_crd generate_olm
+docker_build: java_build generate_crd
 
 docker_tag:
 
@@ -16,10 +16,6 @@ include ../Makefile.maven
 
 generate_crd:
 	mvn exec:exec && echo "success!"
-
-generate_olm:
-	$(MAKE) -C ../deploy build_csv
-
 
 # .PHONY: all build build_mvn build_docker generate_crd generate_helm local roll generate_olm
 #

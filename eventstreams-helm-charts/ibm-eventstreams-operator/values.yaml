@@ -1,0 +1,189 @@
+###############################################################################
+#
+# Licensed Materials - Property of IBM
+#
+# 5737-H33
+#
+# (C) Copyright IBM Corp. 2019  All Rights Reserved.
+#
+# US Government Users Restricted Rights - Use, duplication or
+# disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+#
+###############################################################################
+###############################################################################
+############################# IBM EVENT STREAMS ###############################
+###############################################################################
+
+# If you set `watchNamespaces` to the same value as ``.Release.Namespace` (e.g. `helm ... --namespace $NAMESPACE`), 
+# the chart will fail because duplicate RoleBindings will be attempted to be created in the same namespace
+watchNamespaces: []
+watchAnyNamespace: false
+
+
+# imageTagOverride: combined8
+# imageRepositoryOverride: hyc-qp-stable-docker-local.artifactory.swg-devops.com
+
+# If you set `watchNamespaces` to the same value as ``.Release.Namespace` (e.g. `helm ... --namespace $NAMESPACE`), 
+# the chart will fail because duplicate RoleBindings will be attempted to be created in the same namespace
+watchNamespaces: []
+watchAnyNamespace: false
+
+logLevel: INFO
+fullReconciliationIntervalMs: 120000
+operationTimeoutMs: 300000
+kubernetesServiceDnsDomain: cluster.local
+
+tolerations: []
+affinity: {}
+nodeSelector: {}
+
+imagePullSecrets: ibm-entitlement-key
+
+operator:
+  image:
+    repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
+    name: strimzi/operator
+    tag: combined8
+operatorInit:
+    image:
+      repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
+      name: strimzi/operator-init
+      tag: latest
+
+
+restProducer:
+  image:
+    repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
+    name: eventstreams-rest-producer-icp-linux-amd64
+    tag: 2020-01-14-13.11.13-bb37139-exp
+adminProxy:
+  image:
+    repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
+    name: eventstreams-rest-proxy-icp-linux-amd64
+    tag: 2020-02-13-15.20.14-1b3fd35-exp
+adminApi:
+  image:
+    repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
+    name: eventstreams-admin-icp-linux-amd64
+    tag: 2020-02-04-08.56.31-8701472
+schemaRegistry:
+  image:
+    repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
+    name: eventstreams-registry-icp-linux-amd64
+    tag: 2020-02-03-13.47.39-995d533-dev
+avro:
+  image:
+    repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
+    name: eventstreams-avro-icp-linux-amd64
+    tag: 2020-01-16-15.39.43-165fd5b-exp
+adminUi:
+  image:
+    repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
+    name: eventstreams-ui-icp-linux-amd64
+    tag: 2020-01-28-16.59.16-4d6651b-dev
+adminUiDatabase:
+  image:
+    repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
+    name: eventstreams-database-icp-linux-amd64
+    tag: 2020-02-11-13.40.39-0a99ddb-exp
+collector:
+  image:
+    repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
+    name: eventstreams-collector-icp-linux-amd64
+    tag: 2020-01-16-16.08.11-b264a4e-exp
+
+
+zookeeper:
+  image:
+    repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
+    name: strimzi/kafka
+    tagPrefix: combined8
+kafka:
+  image:
+    repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
+    name: strimzi/kafka
+    tagPrefix: combined8
+kafkaConnect:
+  image:
+    repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
+    name: strimzi/kafka
+    tagPrefix: combined8
+kafkaConnects2i:
+  image:
+    repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
+    name: strimzi/kafka
+    tagPrefix: combined8
+topicOperator:
+  image:
+    repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
+    name: strimzi/operator
+    tag: combined8
+userOperator:
+  image:
+    repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
+    name: strimzi/operator
+    tag: combined8
+kafkaInit:
+  image:
+    repository: strimzi
+    name: operator
+    tag: latest
+tlsSidecarZookeeper:
+  image:
+    repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
+    name: strimzi/kafka
+    tagPrefix: combined8
+tlsSidecarKafka:
+  image:
+    repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
+    name: strimzi/kafka
+    tagPrefix: combined8
+tlsSidecarEntityOperator:
+  image:
+    repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
+    name: strimzi/kafka
+    tagPrefix: combined8
+kafkaMirrorMaker:
+  image:
+    repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
+    name: strimzi/kafka
+    tagPrefix: combined8
+kafkaBridge:
+  image:
+    repository: strimzi
+    name: kafka-bridge
+    tag: 0.15.2
+kafkaExporter:
+  image:
+    repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
+    name: strimzi/kafka
+    tagPrefix: combined8
+jmxTrans:
+  image:
+    repository: strimzi
+    name: jmxtrans
+    tag: latest
+kafkaMirrorMaker2:
+  image:
+    repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
+    name: strimzi/kafka
+    tagPrefix: combined8
+resources:
+  limits:
+    memory: 256Mi
+    cpu: 1000m
+  requests:
+    memory: 256Mi
+    cpu: 200m
+livenessProbe:
+  initialDelaySeconds: 10
+  periodSeconds: 30
+readinessProbe:
+  initialDelaySeconds: 10
+  periodSeconds: 30
+
+# Override the docker image repository used by all Strimzi images
+# imageRepositoryOverride: foobar
+# Override the docker image tag used by all Strimzi images
+# imageTagOverride: latest
+createGlobalResources: true

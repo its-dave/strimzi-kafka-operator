@@ -39,4 +39,7 @@ if [[ "${DOCKER_BUILD_ARGS}" != *"JAVA_IMAGE_TAG_UBI7_OPENJDK8_JRE"* ]]; then
 fi
 export DOCKER_BUILD_ARGS
 MVN_ARGS=-DskipTests make docker_build
-git checkout -- install/
+
+# clean up unwanted changes
+git checkout -- cluster-operator/src/main/resources
+git checkout -- helm-charts/strimzi-kafka-operator/templates/_kafka_image_map.tpl

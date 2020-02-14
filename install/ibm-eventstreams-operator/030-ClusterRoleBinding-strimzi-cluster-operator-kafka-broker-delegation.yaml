@@ -1,0 +1,14 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: eventstreams-cluster-operator-kafka-broker-delegation
+  labels:
+    app: eventstreams
+subjects:
+- kind: ServiceAccount
+  name: eventstreams-cluster-operator
+  namespace: myproject
+roleRef:
+  kind: ClusterRole
+  name: eventstreams-kafka-broker
+  apiGroup: rbac.authorization.k8s.io

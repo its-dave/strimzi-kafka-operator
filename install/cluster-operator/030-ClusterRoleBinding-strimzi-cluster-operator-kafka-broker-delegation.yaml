@@ -1,16 +1,16 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: eventstreams-cluster-operator-kafka-broker-delegation
+  name: strimzi-cluster-operator-kafka-broker-delegation
   labels:
 # The Kafka broker cluster role must be bound to the cluster operator service account so that it can delegate the cluster role to the Kafka brokers.
 # This must be done to avoid escalating privileges which would be blocked by Kubernetes.
     app: eventstreams
 subjects:
 - kind: ServiceAccount
-  name: eventstreams-cluster-operator
+  name: strimzi-cluster-operator
   namespace: myproject
 roleRef:
   kind: ClusterRole
-  name: eventstreams-kafka-broker
+  name: strimzi-kafka-broker
   apiGroup: rbac.authorization.k8s.io

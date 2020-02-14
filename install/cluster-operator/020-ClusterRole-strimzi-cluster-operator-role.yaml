@@ -1,9 +1,9 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: eventstreams-cluster-operator-namespaced
+  name: strimzi-cluster-operator-namespaced
   labels:
-    app: eventstreams
+    app: strimzi
 rules:
 - apiGroups:
   - ""
@@ -225,6 +225,18 @@ rules:
   # The cluster operator needs to access and manage pod disruption budgets this limits the number of concurrent disruptions
   # that a Strimzi component experiences, allowing for higher availability
   - poddisruptionbudgets
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - delete
+  - patch
+  - update
+- apiGroups:
+  - extensions
+  resources:
+  - ingresses
   verbs:
   - get
   - list

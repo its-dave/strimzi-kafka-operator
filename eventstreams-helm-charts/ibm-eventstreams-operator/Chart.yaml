@@ -1,0 +1,15 @@
+apiVersion: v1
+appVersion: "0.0.1"
+description: "IBM Event Streams based on Apache Kafka."
+name: ibm-eventstreams-operator
+version: 0.0.1
+icon: https://raw.githubusercontent.com/IBM/event-streams/master/es/es_icon_light.png
+keywords:
+  - kafka
+  - amd64
+  - s390x
+  - Commercial
+  - ICP
+  - ICPRHOCP
+  - ICPROKS
+  - Integration

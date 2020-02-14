@@ -10,15 +10,20 @@
 # disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
 #
 ###############################################################################
-kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
 metadata:
-  name: eventstreams-operator
-subjects:
-  - kind: ServiceAccount
-    name: eventstreams-cluster-operator
-    namespace: myproject
-roleRef:
-  kind: ClusterRole
-  name: eventstreams-operator
-  apiGroup: rbac.authorization.k8s.io
+  name: eventstreams-ui-clusterrole
+  labels:
+    app: {{ template "eventstreams.name" . }}
+    chart: {{ template "eventstreams.chart" . }}
+    component: eventstreams-ui-clusterrole
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+    verbs:
+      - "*"

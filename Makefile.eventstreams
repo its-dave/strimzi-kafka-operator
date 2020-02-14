@@ -17,10 +17,10 @@ eventstreams_build:
 	@[ "${ARTIFACTORY_PASSWORD}" ] || ( echo "ARTIFACTORY_PASSWORD is not set - Please set to Artifactory API Key"; exit 1 )
 	./eventstreams-local-build.sh
 
-eventstreams_operator_build: eventstreams_java_build eventstreams_docker_build
+eventstreams_operator_build:
+	$(MAKE) -C ${EVENTSTREAMS_PROJECT_NAME} docker_build
+	DOCKER_BUILD_ARGS="${DOCKER_BUILD_ARGS} -f ${ALTERNATE_BASE}/Dockerfile" $(MAKE) -C docker-images/operator docker_build
 
 eventstreams_java_build:
 	$(MAKE) -C ${EVENTSTREAMS_PROJECT_NAME} java_build
 
-eventstreams_docker_build:
-	DOCKER_BUILD_ARGS="${DOCKER_BUILD_ARGS} -f ${ALTERNATE_BASE}/Dockerfile" $(MAKE) -C docker-images/operator docker_build
