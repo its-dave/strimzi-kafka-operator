@@ -44,6 +44,7 @@ import io.strimzi.api.kafka.model.EntityUserOperatorSpec;
 import io.strimzi.api.kafka.model.Kafka;
 import io.strimzi.api.kafka.model.KafkaBuilder;
 import io.strimzi.api.kafka.model.KafkaClusterSpec;
+import io.strimzi.api.kafka.model.KafkaResources;
 import io.strimzi.api.kafka.model.KafkaSpec;
 import io.strimzi.api.kafka.model.TlsSidecar;
 import io.strimzi.api.kafka.model.ZookeeperClusterSpec;
@@ -290,6 +291,14 @@ public class EventStreamsKafkaModel extends AbstractModel {
                 .endLabelSelector()
             .endPodAffinityTerm()
             .build();
+    }
+
+    public static String getKafkaClusterCaCertName(String instanceName) {
+        return KafkaResources.clusterCaCertificateSecretName(instanceName);
+    }
+
+    public static String getKafkaBrokersSecretName(String instanceName) {
+        return getKafkaInstanceName(instanceName) + "-kafka-brokers";
     }
 
     private ResourceRequirements getKafkaResources(KafkaClusterSpec kafkaClusterSpec) {

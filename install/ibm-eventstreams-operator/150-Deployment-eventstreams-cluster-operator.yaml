@@ -45,7 +45,7 @@ spec:
               fieldPath: metadata.uid
       containers:
       - name: eventstreams-cluster-operator
-        image: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator:combined8
+        image: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator:test4844
         args:
         - /opt/strimzi/bin/eventstreams_cluster_operator_run.sh
         env:

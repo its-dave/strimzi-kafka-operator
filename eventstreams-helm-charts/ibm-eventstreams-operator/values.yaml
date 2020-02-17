@@ -43,7 +43,7 @@ operator:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: strimzi/operator
-    tag: combined8
+    tag: test4844
 operatorInit:
     image:
       repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com

@@ -243,12 +243,14 @@ public class AdminProxyModel extends AbstractModel {
             .endConfigMap()
             .build();
 
+        String kafkaInstanceName = EventStreamsKafkaModel.getKafkaInstanceName(getInstanceName());
+
         Volume kafkaBrokersVolume = new VolumeBuilder()
             .withNewName(KAFKA_BROKERS_VOLUME_MOUNT_NAME)
             .withNewSecret()
-                .withNewSecretName(getResourcePrefix() + "-kafka-brokers")
-                .addNewItem().withNewKey(getResourcePrefix() + "-kafka-0.crt").withNewPath("tls.crt").endItem()
-                .addNewItem().withNewKey(getResourcePrefix() + "-kafka-0.key").withNewPath("tls.key").endItem()
+                .withNewSecretName(EventStreamsKafkaModel.getKafkaBrokersSecretName(getInstanceName()))
+                .addNewItem().withNewKey(kafkaInstanceName + "-kafka-0.crt").withNewPath("tls.crt").endItem()
+                .addNewItem().withNewKey(kafkaInstanceName + "-kafka-0.key").withNewPath("tls.key").endItem()
             .endSecret()
             .build();
 
