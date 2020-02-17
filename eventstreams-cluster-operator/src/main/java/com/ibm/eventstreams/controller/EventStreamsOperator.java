@@ -23,6 +23,10 @@ import com.ibm.eventstreams.api.model.CollectorModel;
 import com.ibm.eventstreams.api.model.EventStreamsKafkaModel;
 import com.ibm.eventstreams.api.model.InternalKafkaUserModel;
 import com.ibm.eventstreams.api.model.ReplicatorModel;
+import com.ibm.eventstreams.api.model.ReplicatorUsersModel;
+import com.ibm.eventstreams.api.spec.EventStreamsSpec;
+import com.ibm.eventstreams.api.spec.ReplicatorSpec;
+import com.ibm.eventstreams.replicator.ReplicatorCredentials;
 import com.ibm.eventstreams.api.model.RestProducerModel;
 import com.ibm.eventstreams.api.model.SchemaRegistryModel;
 import com.ibm.eventstreams.api.spec.EventStreams;
@@ -36,6 +40,15 @@ import com.ibm.iam.api.model.ClientModel;
 import com.ibm.iam.api.spec.Client;
 import com.ibm.iam.api.spec.ClientDoneable;
 import com.ibm.iam.api.spec.ClientList;
+
+import io.strimzi.api.kafka.model.KafkaClusterSpec;
+import io.strimzi.api.kafka.model.KafkaSpec;
+import io.strimzi.api.kafka.model.listener.KafkaListenerAuthentication;
+import io.strimzi.api.kafka.model.listener.KafkaListenerAuthenticationOAuth;
+import io.strimzi.api.kafka.model.listener.KafkaListenerExternal;
+import io.strimzi.api.kafka.model.listener.KafkaListenerTls;
+import io.strimzi.api.kafka.model.listener.KafkaListeners;
+
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.Service;
@@ -66,6 +79,8 @@ import io.strimzi.operator.common.operator.resource.RouteOperator;
 import io.strimzi.operator.common.operator.resource.SecretOperator;
 import io.strimzi.operator.common.operator.resource.ServiceAccountOperator;
 import io.strimzi.operator.common.operator.resource.ServiceOperator;
+
+
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -109,6 +124,8 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
 
     private int customImageCount = 0;
     private static final String ENCODED_IBMCLOUD_CA_CERT = "icp_public_cacert_encoded";
+    private static final String CLUSTER_CA_CERT_SECRET_NAME = "cluster-ca-cert";
+    private static final String OAUTH_REPLICATOR_ERROR = "Listener Oauth client authentication unsupported for Geo Replication";
 
     public EventStreamsOperator(Vertx vertx, KubernetesClient client, String kind, PlatformFeaturesAvailability pfa,
                                 EventStreamsResourceOperator resourceOperator,
@@ -156,13 +173,14 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 .compose(state -> state.createCloudPakClusterCertSecret())
                 .compose(state -> state.createKafkaCustomResource())
                 .compose(state -> state.waitForKafkaStatus())
+                .compose(state -> state.createReplicatorUsers()) //needs to be before createReplicator and createAdminAPI
                 .compose(state -> state.createInternalKafkaUser())
                 .compose(state -> state.createAdminProxy())
                 .compose(state -> state.createRestProducer(this::dateSupplier))
+                .compose(state -> state.createReplicator())
                 .compose(state -> state.createAdminApi(this::dateSupplier))
                 .compose(state -> state.createSchemaRegistry(this::dateSupplier))
                 .compose(state -> state.createAdminUI())
-                .compose(state -> state.createReplicator())
                 .compose(state -> state.createCollector())
                 .compose(state -> state.createOAuthClient())
                 .compose(state -> state.updateStatus())
@@ -184,6 +202,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         final EventStreamsOperatorConfig.ImageLookup imageConfig;
         final EventStreamsCertificateManager certificateManager;
         Map<String, String> icpClusterData = null;
+        private ReplicatorCredentials replicatorCredentials;
 
         ReconciliationState(Reconciliation reconciliation, EventStreams instance, EventStreamsOperatorConfig.ImageLookup imageConfig) {
             this.reconciliation = reconciliation;
@@ -195,6 +214,8 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 .withNewVersions()
                 .endVersions()
                 : new EventStreamsStatusBuilder(instance.getStatus());
+
+            this.replicatorCredentials = new ReplicatorCredentials(instance);
 
             this.imageConfig = imageConfig;
             this.certificateManager = new EventStreamsCertificateManager(secretOperator, reconciliation.namespace(), EventStreamsKafkaModel.getKafkaInstanceName(instance.getMetadata().getName()));
@@ -369,6 +390,145 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                     });
         }
 
+        Future<ReconciliationState> createReplicatorUsers() {
+
+            List<Future> usersCreated = new ArrayList<>();
+
+            Optional<KafkaListenerAuthentication> internalClientAuth =
+                    Optional.ofNullable(instance.getSpec())
+                        .map(EventStreamsSpec::getStrimziOverrides)
+                        .map(KafkaSpec::getKafka)
+                        .map(KafkaClusterSpec::getListeners)
+                        .map(KafkaListeners::getTls)
+                        .map(KafkaListenerTls::getAuth);
+
+            Optional<KafkaListenerAuthentication> externalClientAuth =
+                    Optional.ofNullable(instance.getSpec())
+                    .map(EventStreamsSpec::getStrimziOverrides)
+                    .map(KafkaSpec::getKafka)
+                    .map(KafkaClusterSpec::getListeners)
+                    .map(KafkaListeners::getExternal)
+                    .map(KafkaListenerExternal::getAuth);
+
+            Optional<Integer> replicationEnabled =
+                    Optional.ofNullable(instance.getSpec())
+                            .map(EventStreamsSpec::getReplicator)
+                            .map(ReplicatorSpec::getReplicas);
+
+            ReplicatorUsersModel replicatorUsersModel = new ReplicatorUsersModel(instance);
+
+            if (externalClientAuth.isPresent() && !(externalClientAuth.get() instanceof KafkaListenerAuthenticationOAuth)) {
+
+                KafkaUser sourceConnectorUser = replicatorUsersModel.getReplicatorSourceConnectorUser();
+                sourceConnectorUser.getMetadata()
+                        .getLabels()
+                        .putAll(replicatorUsersModel.getComponentLabels());
+                Future<KafkaUser> createdSourceConnectorKafkaUser = toFuture(() -> Crds
+                        .kafkaUserOperation(client)
+                        .inNamespace(instance.getMetadata().getNamespace())
+                        .createOrReplace(sourceConnectorUser));
+                usersCreated.add(createdSourceConnectorKafkaUser.map(v -> this));
+
+            } else if (externalClientAuth.isPresent() && externalClientAuth.get() instanceof KafkaListenerAuthenticationOAuth) {
+
+                Condition authConfigNotSupportedForReplication = buildErrorCondition(OAUTH_REPLICATOR_ERROR);
+                EventStreamsStatus informativeStatus = status
+                        .withConditions(authConfigNotSupportedForReplication)
+                        .build();
+                instance.setStatus(informativeStatus);
+                resourceOperator.createOrUpdate(instance);
+                usersCreated.add(Future.failedFuture(OAUTH_REPLICATOR_ERROR));
+
+            }
+
+
+            if (internalClientAuth.isPresent()
+                    && !(internalClientAuth.get() instanceof KafkaListenerAuthenticationOAuth)
+                    && replicationEnabled.isPresent()
+                    && replicationEnabled.get() > 0) {
+
+                KafkaUser connectUser = replicatorUsersModel.getReplicatorConnectUser();
+                connectUser.getMetadata()
+                        .getLabels()
+                        .putAll(replicatorUsersModel.getComponentLabels());
+
+                Future<KafkaUser> createKafkaConnectUser = toFuture(() -> Crds
+                        .kafkaUserOperation(client)
+                        .inNamespace(instance.getMetadata().getNamespace())
+                        .createOrReplace(connectUser));
+                usersCreated.add(createKafkaConnectUser.map(v -> this));
+
+                KafkaUser destinationConnectorUser = replicatorUsersModel.getReplicatorDestinationConnectorUser();
+                destinationConnectorUser.getMetadata()
+                        .getLabels()
+                        .putAll(replicatorUsersModel.getComponentLabels());
+                Future<KafkaUser> createdDestinationConnectorKafkaUser = toFuture(() -> Crds
+                        .kafkaUserOperation(client)
+                        .inNamespace(instance.getMetadata().getNamespace())
+                        .createOrReplace(destinationConnectorUser));
+                usersCreated.add(createdDestinationConnectorKafkaUser.map(v -> this));
+
+            } else if (internalClientAuth.isPresent() && internalClientAuth.get() instanceof KafkaListenerAuthenticationOAuth) {
+
+                String oauthReplicatorError = "Listener Oauth client authentication unsupported for Geo Replication";
+                Condition authConfigNotSupportedForReplication = buildErrorCondition(oauthReplicatorError);
+                EventStreamsStatus informativeStatus = status
+                        .withConditions(authConfigNotSupportedForReplication)
+                        .build();
+                instance.setStatus(informativeStatus);
+                resourceOperator.createOrUpdate(instance);
+                usersCreated.add(Future.failedFuture(oauthReplicatorError));
+
+            }
+
+
+
+
+            return CompositeFuture.join(usersCreated)
+                    .map(v -> this);
+
+        }
+
+
+        Future<ReconciliationState> createReplicator() {
+
+            Promise<ReconciliationState> replicatorPromise = Promise.promise();
+
+            Optional<Integer> replicationEnabled =
+                    Optional.ofNullable(instance.getSpec().getReplicator())
+                            .map(ReplicatorSpec::getReplicas);
+
+            if (replicationEnabled.isPresent() && replicationEnabled.get() > 0) {
+
+                Future<ReconciliationState>  replicatorFuture = setTrustStoreForReplicator()
+                        .compose(res -> setClientAuthForReplicator())
+
+                        //Can't make the replicatorModel until after setTrustStoreForReplicator and setClientAuthForReplicator have completed
+                        .compose(res -> {
+
+                            List<Future> replicatorFutures = new ArrayList<>();
+                            ReplicatorModel replicatorModel = new ReplicatorModel(instance, replicatorCredentials);
+
+                            replicatorFutures.add(networkPolicyOperator.createOrUpdate(replicatorModel.getNetworkPolicy()));
+                            replicatorFutures.add(
+                                    toFuture(() -> Crds.kafkaConnectOperation(client)
+                                            .inNamespace(instance.getMetadata().getNamespace())
+                                            .createOrReplace(replicatorModel.getReplicator())));
+                            return CompositeFuture.join(replicatorFutures)
+                                    .map(v -> this);
+                        });
+                replicatorFuture.onSuccess(f -> {
+                    replicatorPromise.complete();
+                }).onFailure(f -> {
+                    replicatorPromise.fail(f.getCause());
+                });
+            } else {
+                replicatorPromise.complete();
+            }
+
+            return replicatorPromise.future().map(v -> this);
+        }
+
         Future<ReconciliationState> createInternalKafkaUser() {
             InternalKafkaUserModel internalUserModel = new InternalKafkaUserModel(instance);
             KafkaUser kafkaUser = internalUserModel
@@ -435,6 +595,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         Future<ReconciliationState> createAdminApi(Supplier<Date> dateSupplier) {
             List<Future> adminApiFutures = new ArrayList<>();
             AdminApiModel adminApi = new AdminApiModel(instance, imageConfig, status.getKafkaListeners(), icpClusterData);
+            ReplicatorModel replicatorModel = new ReplicatorModel(instance);
             if (adminApi.getCustomImage()) {
                 customImageCount++;
             }
@@ -445,6 +606,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             adminApiFutures.add(serviceOperator.createOrUpdate(adminApi.getInternalService()));
             adminApiFutures.add(networkPolicyOperator.createOrUpdate(adminApi.getNetworkPolicy()));
             adminApiFutures.add(roleBindingOperator.createOrUpdate(adminApi.getRoleBinding()));
+            adminApiFutures.add(createReplicatorSecretIfRequired(replicatorModel));
             return CompositeFuture.join(adminApiFutures)
                     .compose(res -> {
                         Map<String, Route> routes = adminApi.getRoutes();
@@ -495,28 +657,6 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 }));
             }
             return CompositeFuture.join(adminUIFutures)
-                    .map(v -> this);
-        }
-
-        Future<ReconciliationState> createReplicator() {
-
-            List<Future> replicatorFutures = new ArrayList<>();
-            ReplicatorModel replicatorModel = new ReplicatorModel(instance);
-
-            replicatorFutures.add(createReplicatorSecretIfRequired(replicatorModel));
-            replicatorFutures.add(createReplicatorSourceUser(replicatorModel));
-
-            if (instance.getSpec().getReplicator() != null && instance.getSpec().getReplicator().getReplicas() > 0) {
-
-                replicatorFutures.add(createReplicatorDestinationUsers(replicatorModel));
-                replicatorFutures.add(networkPolicyOperator.createOrUpdate(replicatorModel.getNetworkPolicy()));
-                replicatorFutures.add(
-                    toFuture(() -> Crds.kafkaConnectOperation(client)
-                        .inNamespace(instance.getMetadata().getNamespace())
-                        .createOrReplace(replicatorModel.getReplicator()))
-                );
-            }
-            return CompositeFuture.join(replicatorFutures)
                     .map(v -> this);
         }
 
@@ -646,38 +786,84 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             }
         }
 
-        CompositeFuture createReplicatorDestinationUsers(ReplicatorModel replicatorModel) {
+        private Future<Void> setTrustStoreForReplicator() {
 
-            KafkaUser replicatorConnectUser = replicatorModel.getReplicatorConnectUser();
-            KafkaUser replicatorDestinationConnectorUser = replicatorModel.getReplicatorDestinationConnectorUser();
+            Promise<Void> setAuthSet = Promise.promise();
 
-            Future<KafkaUser> createdReplicatorConnectUser = toFuture(() -> Crds
-                    .kafkaUserOperation(client)
-                    .inNamespace(instance.getMetadata().getNamespace())
-                     .createOrReplace(replicatorConnectUser));
+            Optional<KafkaListenerTls> internalServerAuth =
+                    Optional.ofNullable(instance.getSpec())
+                            .map(EventStreamsSpec::getStrimziOverrides)
+                            .map(KafkaSpec::getKafka)
+                            .map(KafkaClusterSpec::getListeners)
+                            .map(KafkaListeners::getTls);
 
-            Future<KafkaUser> createdReplicatorDestinationConnectorUser = toFuture(() -> Crds
-                    .kafkaUserOperation(client)
-                    .inNamespace(instance.getMetadata().getNamespace())
-                    .createOrReplace(replicatorDestinationConnectorUser));
+            if (internalServerAuth.isPresent()) {
+                //get the truststore from the cluster
+                String resourceNameCA = instance.getMetadata().getName() + "-" + CLUSTER_CA_CERT_SECRET_NAME;
+                secretOperator.getAsync(instance.getMetadata().getNamespace(), resourceNameCA).setHandler(getRes -> {
 
-            return CompositeFuture.join(createdReplicatorConnectUser, createdReplicatorDestinationConnectorUser);
+                    if (getRes.succeeded()) {
+                        if (getRes.result() != null) {
+                            replicatorCredentials.setReplicatorTrustStore(getRes.result());
+                            setAuthSet.complete();
+                        } else {
+                            log.info("Setting up Replicator TrustStore - CA cert " + resourceNameCA + " does not exist");
+                            setAuthSet.fail("Setting up Replicator TrustStore - CA cert " + resourceNameCA + " does not exist");
+                        }
+                    } else {
+                        log.error("Failed to query for the  Replicator TrustStore - CA cert " + resourceNameCA, getRes.cause());
+                        setAuthSet.fail("Failed to query for the  Replicator TrustStore - CA cert " + resourceNameCA);
+                    }
+                });
+            } else {
+                setAuthSet.complete();
+            }
+            return setAuthSet.future();
         }
 
-        Future<KafkaUser> createReplicatorSourceUser(ReplicatorModel replicatorModel) {
-            KafkaUser replicatorSourceConnectorUser = replicatorModel.getReplicatorSourceConnectorUser();
+        private Future<Void> setClientAuthForReplicator() {
 
-            return toFuture(() -> Crds
-                    .kafkaUserOperation(client)
-                    .inNamespace(instance.getMetadata().getNamespace())
-                    .createOrReplace(replicatorSourceConnectorUser));
+            Promise<Void> setAuthSet = Promise.promise();
+
+
+            String resourceName = instance.getMetadata().getName() + "-" + AbstractModel.APP_NAME + "-" + ReplicatorModel.REPLICATOR_CONNECT_USER_NAME;
+
+            Optional<KafkaListenerAuthentication> internalClientAuth =
+                Optional.ofNullable(instance.getSpec())
+                    .map(EventStreamsSpec::getStrimziOverrides)
+                    .map(KafkaSpec::getKafka)
+                    .map(KafkaClusterSpec::getListeners)
+                    .map(KafkaListeners::getTls)
+                    .map(KafkaListenerTls::getAuth);
+
+            //need to null check on getTls first
+            if (internalClientAuth.isPresent()) {
+
+                // get the secret created by the KafkaUser
+                secretOperator.getAsync(instance.getMetadata().getNamespace(), resourceName).setHandler(getRes -> {
+                    if (getRes.succeeded()) {
+                        if (getRes.result() != null) {
+                            replicatorCredentials.setReplicatorClientAuth(getRes.result());
+                            setAuthSet.complete();
+                        } else {
+                            log.info("Replicator Connect User secret " + resourceName + " doesn't exist");
+                            setAuthSet.fail("Replicator Connect User secret " + resourceName + " doesn't exist");
+                        }
+                    } else {
+                        log.error("Failed to query for the Replicator Connect User Secret" + resourceName + " " + getRes.cause().toString());
+                        setAuthSet.fail("Failed to query for the Replicator Connect User Secret" + resourceName + " " + getRes.cause().toString());
+                    }
+                });
+            } else {
+                setAuthSet.complete();
+            }
+            return setAuthSet.future();
         }
 
         Future<Void> createReplicatorSecretIfRequired(ReplicatorModel replicatorModel) {
             Promise<Void> createSecretPromise = Promise.promise();
 
             String resourceName = instance.getMetadata().getName() + "-" + AbstractModel.APP_NAME + "-" + ReplicatorModel.REPLICATOR_SECRET_NAME;
-
             secretOperator.getAsync(instance.getMetadata().getNamespace(), resourceName).setHandler(getRes -> {
                 if (getRes.succeeded()) {
                     if (getRes.result() == null) {

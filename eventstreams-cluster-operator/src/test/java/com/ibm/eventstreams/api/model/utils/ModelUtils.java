@@ -16,6 +16,7 @@ package com.ibm.eventstreams.api.model.utils;
 import com.ibm.eventstreams.api.Listener;
 import com.ibm.eventstreams.api.model.AbstractSecureEndpointModel;
 import com.ibm.eventstreams.api.model.EventStreamsKafkaModel;
+import com.ibm.eventstreams.api.model.ReplicatorModel;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
 import com.ibm.eventstreams.api.spec.SecuritySpec;
@@ -113,6 +114,56 @@ public class ModelUtils {
         initialSecrets.add(clusterCa);
         initialSecrets.add(clusterCaKey);
         return initialSecrets;
+    }
+
+    public static Set<Secret> generateReplicatorConnectSecrets(String namespace, String clusterName, String appName, Certificates cert, Keys key) {
+
+        Map<String, String> labels = Labels.forCluster(EventStreamsKafkaModel.getKafkaInstanceName(clusterName)).withKind(Kafka.RESOURCE_KIND).toMap();
+
+        Secret replicatorConnect = new SecretBuilder()
+            .withNewMetadata()
+                .withName(clusterName + "-" + appName + "-" + ReplicatorModel.REPLICATOR_CONNECT_USER_NAME)
+                .withNamespace(namespace)
+                .addToAnnotations(Ca.ANNO_STRIMZI_IO_CA_KEY_GENERATION, "0")
+                .withLabels(labels)
+            .endMetadata()
+            .addToData("user.key", key.toString())
+            .addToData("user.crt", key.toString())
+            .addToData("user.password", "password")
+            .build();
+
+
+        Secret replicatorConnectorDest = new SecretBuilder()
+            .withNewMetadata()
+                .withName(clusterName + "-" + appName + "-" + ReplicatorModel.REPLICATOR_DESTINATION_CLUSTER_CONNNECTOR_USER_NAME)
+                .withNamespace(namespace)
+                .addToAnnotations(Ca.ANNO_STRIMZI_IO_CA_KEY_GENERATION, "0")
+                .withLabels(labels)
+            .endMetadata()
+            .addToData("user.key", key.toString())
+            .addToData("user.crt", key.toString())
+            .addToData("user.password", "password1")
+            .build();
+
+
+        Secret replicatorConnectorSource = new SecretBuilder()
+            .withNewMetadata()
+                .withName(clusterName + "-" + appName + "-" + ReplicatorModel.REPLICATOR_SOURCE_CLUSTER_CONNECTOR_USER_NAME)
+                .withNamespace(namespace)
+                .addToAnnotations(Ca.ANNO_STRIMZI_IO_CA_KEY_GENERATION, "0")
+                .withLabels(labels)
+            .endMetadata()
+            .addToData("user.key", key.toString())
+            .addToData("user.crt", key.toString())
+            .addToData("user.password", "password2")
+            .build();
+
+        Set<Secret> replicatorConnectSecrets = new HashSet<>();
+        replicatorConnectSecrets.add(replicatorConnect);
+        replicatorConnectSecrets.add(replicatorConnectorDest);
+        replicatorConnectSecrets.add(replicatorConnectorSource);
+
+        return replicatorConnectSecrets;
     }
 
     public static Secret generateSecret(String namespace, String name, Map<String, String> data) {

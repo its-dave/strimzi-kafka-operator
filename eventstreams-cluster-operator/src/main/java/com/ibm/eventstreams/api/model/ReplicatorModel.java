@@ -25,9 +25,23 @@ import java.nio.charset.StandardCharsets;
 import com.ibm.eventstreams.Main;
 import com.ibm.eventstreams.api.Labels;
 import com.ibm.eventstreams.api.spec.EventStreams;
+import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.spec.ReplicatorSpec;
 
+import com.ibm.eventstreams.replicator.ReplicatorCredentials;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicyIngressRuleBuilder;
+import io.strimzi.api.kafka.model.KafkaClusterSpec;
+import io.strimzi.api.kafka.model.KafkaConnect;
+import io.strimzi.api.kafka.model.KafkaConnectTls;
+import io.strimzi.api.kafka.model.KafkaConnectBuilder;
+import io.strimzi.api.kafka.model.KafkaSpec;
+import io.strimzi.api.kafka.model.authentication.KafkaClientAuthentication;
+import io.strimzi.api.kafka.model.listener.KafkaListenerTls;
+import io.strimzi.api.kafka.model.listener.KafkaListeners;
+import io.strimzi.api.kafka.model.template.KafkaConnectTemplate;
+import io.strimzi.api.kafka.model.template.KafkaConnectTemplateBuilder;
+import io.strimzi.api.kafka.model.template.MetadataTemplateBuilder;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -35,17 +49,7 @@ import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicy;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicyEgressRule;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicyIngressRule;
-import io.strimzi.api.kafka.model.KafkaConnect;
-import io.strimzi.api.kafka.model.KafkaUser;
-import io.strimzi.api.kafka.model.KafkaUserBuilder;
-import io.strimzi.api.kafka.model.AclOperation;
-import io.strimzi.api.kafka.model.AclRuleBuilder;
-import io.strimzi.api.kafka.model.AclRule;
-import io.strimzi.api.kafka.model.AclResourcePatternType;
-import io.strimzi.api.kafka.model.KafkaConnectBuilder;
-import io.strimzi.api.kafka.model.template.KafkaConnectTemplate;
-import io.strimzi.api.kafka.model.template.KafkaConnectTemplateBuilder;
-import io.strimzi.api.kafka.model.template.MetadataTemplateBuilder;
+
 
 public class ReplicatorModel extends AbstractModel {
 
@@ -59,39 +63,66 @@ public class ReplicatorModel extends AbstractModel {
     protected static final String CONFIG_STORAGE_TOPIC_NAME = "__eventstreams_georeplicator_configs";
     protected static final String OFFSET_STORAGE_TOPIC_NAME = "__eventstreams_georeplicator_offsets";
     protected static final String STATUS_STORAGE_TOPIC_NAME = "__eventstreams_georeplicator_status";
-    protected static final String REPLICATOR_CONNECT_USER_NAME = "replicator-connect-user";
-    protected static final String REPLICATOR_DESTINATION_CLUSTER_CONNNECTOR_USER_NAME = "replicator-destination-cluster-user";
-    protected static final String REPLICATOR_SOURCE_CLUSTER_CONNECTOR_USER_NAME = "replicator-source-cluster-user";
+    public static final String REPLICATOR_CONNECT_USER_NAME = "replicator-connect-user";
+    public static final String REPLICATOR_DESTINATION_CLUSTER_CONNNECTOR_USER_NAME = "replicator-destination-cluster-user";
+    public static final String REPLICATOR_SOURCE_CLUSTER_CONNECTOR_USER_NAME = "replicator-source-cluster-user";
 
     private final NetworkPolicy networkPolicy;
     private final Secret secret;
-    private final KafkaConnect kafkaConnect;
+    private KafkaConnect kafkaConnect;
 
-    private KafkaUser replicatorConnectUser;
-    private KafkaUser replicatorDestinationConnectorUser;
-    private KafkaUser replicatorSourceConnectorUser;
+    private KafkaClientAuthentication clientAuthentication;
+    private KafkaConnectTls caCert;
 
     private static final Logger log = LogManager.getLogger(ReplicatorModel.class.getName());
-
 
     public ReplicatorModel(EventStreams instance) {
         super(instance.getMetadata().getName(), instance.getMetadata().getNamespace(), COMPONENT_NAME);
 
-        String namespace = instance.getMetadata().getNamespace();
+        String namespace = getNamespace();
+        setOwnerReference(instance);
+        setArchitecture(instance.getSpec().getArchitecture());
 
-        ReplicatorSpec replicatorSpec = instance.getSpec().getReplicator();
-      
-        String kafkaInstanceName = EventStreamsKafkaModel.getKafkaInstanceName(getInstanceName());
+        Encoder encoder = Base64.getEncoder();
+        Map<String, String> data = Collections.singletonMap(REPLICATOR_SECRET_KEY_NAME, encoder.encodeToString("[]".getBytes(StandardCharsets.UTF_8)));
+
+        this.secret = createSecret(namespace, getDefaultResourceName(getInstanceName(),  REPLICATOR_SECRET_NAME), data, getComponentLabels(),
+                getEventStreamsMeteringAnnotations(COMPONENT_NAME));
+
+        this.networkPolicy = createNetworkPolicy();
+
+    }
+
+    public ReplicatorModel(EventStreams instance, ReplicatorCredentials replicatorCredentials) {
+        super(instance.getMetadata().getName(), instance.getMetadata().getNamespace(), COMPONENT_NAME);
+
+        Optional<ReplicatorSpec> replicatorSpec = Optional.ofNullable(instance.getSpec())
+                .map(EventStreamsSpec::getReplicator);
 
         setOwnerReference(instance);
         setArchitecture(instance.getSpec().getArchitecture());
 
-        createReplicatorConnectUser();
-        createReplicatorDestinationConnectorUser();
-        createReplicatorSourceConnectorUser();
+        this.caCert = replicatorCredentials.getReplicatorConnectTrustStore();
+        this.clientAuthentication = replicatorCredentials.getReplicatorConnectClientAuth();
 
-        String bootstrap = Optional.ofNullable(replicatorSpec.getBootstrapServers())
-            .orElse(kafkaInstanceName + "-kafka-bootstrap." + namespace + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_PORT);
+        String bootstrap;
+
+        Optional<KafkaListenerTls> internalSecurityEnabled = Optional.ofNullable(instance.getSpec())
+                .map(EventStreamsSpec::getStrimziOverrides)
+                .map(KafkaSpec::getKafka)
+                .map(KafkaClusterSpec::getListeners)
+                .map(KafkaListeners::getTls);
+
+        //Check is done on instance.getSpec()... as caCert might be null due to an error, or because oauth is on
+        //We use the internal port for connect, so we don't query here on listeners.external
+        if (internalSecurityEnabled.isPresent()) {
+            bootstrap = replicatorSpec.map(ReplicatorSpec::getBootstrapServers)
+                    .orElse(getInstanceName() + "-kafka-bootstrap." + getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_PORT_TLS);
+        } else {
+            //security off
+            bootstrap = replicatorSpec.map(ReplicatorSpec::getBootstrapServers)
+                    .orElse(getInstanceName() + "-kafka-bootstrap." + getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_PORT);
+        }
 
         int numberOfConnectConfigTopicReplicas = (instance.getSpec().getStrimziOverrides().getKafka().getReplicas() >= 3)
                 ? 3 : instance.getSpec().getStrimziOverrides().getKafka().getReplicas();
@@ -108,257 +139,47 @@ public class ReplicatorModel extends AbstractModel {
 
         KafkaConnectTemplate kafkaConnectTemplate = new KafkaConnectTemplateBuilder()
             .editOrNewPod()
-                .withMetadata(new MetadataTemplateBuilder()
-                        .addToAnnotations(getEventStreamsMeteringAnnotations(COMPONENT_NAME))
-                        .addToAnnotations(getPrometheusAnnotations(DEFAULT_PROMETHEUS_PORT))
-                        .addToLabels(getServiceSelectorLabel(COMPONENT_NAME))
-                        .addToLabels(getComponentLabels())
-                        .build())
+            .withMetadata(new MetadataTemplateBuilder()
+                .addToAnnotations(getEventStreamsMeteringAnnotations(COMPONENT_NAME))
+                .addToAnnotations(getPrometheusAnnotations(DEFAULT_PROMETHEUS_PORT))
+                .addToLabels(getServiceSelectorLabel(COMPONENT_NAME))
+                .addToLabels(getComponentLabels())
+                .build())
             .endPod()
             .build();
 
+
+        //if no security set then caCert and clientAuthentication are null and just not set on the connect object
+        //if we have an oauth config then the bootstrap will be the TLS port, but the clientAuthentication will be null so the connection will fail (and we log earlier that oauth is unsupported)
         kafkaConnect = new KafkaConnectBuilder()
-            .withApiVersion(KafkaConnect.RESOURCE_GROUP + "/" + KafkaConnect.V1BETA1)  
+            .withApiVersion(KafkaConnect.RESOURCE_GROUP + "/" + KafkaConnect.V1BETA1)
             .editOrNewMetadata()
-                .withNamespace(namespace)
+                .withNamespace(getNamespace())
                 .withName(getDefaultResourceName(getInstanceName(), COMPONENT_NAME))
                 .withOwnerReferences(getEventStreamsOwnerReference())
                 .addToLabels(getServiceSelectorLabel(COMPONENT_NAME))
                 .addToLabels(getComponentLabels())
             .endMetadata()
-            .withNewSpecLike(replicatorSpec)
+            .withNewSpecLike(replicatorSpec.get())
                 .withTemplate(kafkaConnectTemplate)
                 .withBootstrapServers(bootstrap)
                 .withConfig(configOfKafkaConnect)
+                .withTls(caCert)
+                .withAuthentication(clientAuthentication)
             .endSpec()
             .build();
-          
+
         this.networkPolicy = createNetworkPolicy();
 
         Encoder encoder = Base64.getEncoder();
-
         Map<String, String> data = Collections.singletonMap(REPLICATOR_SECRET_KEY_NAME, encoder.encodeToString("[]".getBytes(StandardCharsets.UTF_8)));
 
-    
-        this.secret = createSecret(namespace, getDefaultResourceName(getInstanceName(),  REPLICATOR_SECRET_NAME), data, getComponentLabels(), 
-            getEventStreamsMeteringAnnotations(COMPONENT_NAME));
-           
-    }
-
-    // Used to store the credentials for the Connect workers connecting to Kafka
-    // https://docs.confluent.io/4.1.0/connect/security.html
-    private void createReplicatorConnectUser() {
-
-        List<AclRule> connectAclList = new ArrayList<>();
-
-        //Connect needs the ability to read/write to/from the three config topics
-        AclRule rule1read = new AclRuleBuilder()
-                .withNewAclRuleTopicResource()
-                    .withName(CONFIG_STORAGE_TOPIC_NAME)
-                    .withPatternType(AclResourcePatternType.LITERAL)
-                .endAclRuleTopicResource()
-                .withOperation(AclOperation.READ)
-                .withHost("*")
-                .build();
-
-        AclRule rule1write = new AclRuleBuilder()
-                .withNewAclRuleTopicResource()
-                .withName(CONFIG_STORAGE_TOPIC_NAME)
-                .withPatternType(AclResourcePatternType.LITERAL)
-                .endAclRuleTopicResource()
-                .withOperation(AclOperation.WRITE)
-                .withHost("*")
-                .build();
-
-        AclRule rule2read = new AclRuleBuilder()
-                .withNewAclRuleTopicResource()
-                .withName(OFFSET_STORAGE_TOPIC_NAME)
-                .withPatternType(AclResourcePatternType.LITERAL)
-                .endAclRuleTopicResource()
-                .withOperation(AclOperation.READ)
-                .withHost("*")
-                .build();
-
-        AclRule rule2write = new AclRuleBuilder()
-                .withNewAclRuleTopicResource()
-                .withName(OFFSET_STORAGE_TOPIC_NAME)
-                .withPatternType(AclResourcePatternType.LITERAL)
-                .endAclRuleTopicResource()
-                .withOperation(AclOperation.WRITE)
-                .withHost("*")
-                .build();
-
-        AclRule rule3read = new AclRuleBuilder()
-                .withNewAclRuleTopicResource()
-                    .withName(STATUS_STORAGE_TOPIC_NAME)
-                    .withPatternType(AclResourcePatternType.LITERAL)
-                .endAclRuleTopicResource()
-                .withOperation(AclOperation.READ)
-                .withHost("*")
-                .build();
-
-        AclRule rule3write = new AclRuleBuilder()
-                .withNewAclRuleTopicResource()
-                .withName(STATUS_STORAGE_TOPIC_NAME)
-                .withPatternType(AclResourcePatternType.LITERAL)
-                .endAclRuleTopicResource()
-                .withOperation(AclOperation.WRITE)
-                .withHost("*")
-                .build();
-
-        //Connect needs to be able to create the three Connect config topics defined in rules 1-3 + the topics being mirrored to the destination
-        AclRule rule4 = new AclRuleBuilder()
-                .withNewAclRuleClusterResource()
-                .endAclRuleClusterResource()
-                .withOperation(AclOperation.CREATE)
-                .withHost("*")
-                .build();
-
-        //Connect also needs read on group.id
-        AclRule rule5 = new AclRuleBuilder()
-                .withNewAclRuleGroupResource()
-                   .withName("*")
-                   .withPatternType(AclResourcePatternType.PREFIX)
-                .endAclRuleGroupResource()
-                .withOperation(AclOperation.READ)
-                .withHost("*")
-                .build();
-
-        //Connect writes the data being brought over from the source cluster, it therefore needs write permission to any topic
-        //as we don't know the names of these topics at install time
-        //We could edit this user each time a new topic is added to the replication but lets keep it simple for now
-        AclRule rule6 = new AclRuleBuilder()
-                .withNewAclRuleTopicResource()
-                    .withName("*")
-                    .withPatternType(AclResourcePatternType.PREFIX)
-                .endAclRuleTopicResource()
-                .withOperation(AclOperation.WRITE)
-                .withHost("*")
-                .build();
-
-        connectAclList.add(rule1read);
-        connectAclList.add(rule1write);
-        connectAclList.add(rule2read);
-        connectAclList.add(rule2write);
-        connectAclList.add(rule3read);
-        connectAclList.add(rule3write);
-        connectAclList.add(rule4);
-        connectAclList.add(rule5);
-        connectAclList.add(rule6);
-
-        replicatorConnectUser = buildUser(connectAclList, REPLICATOR_CONNECT_USER_NAME);
-
-    }
-
-    //used to allow the mirror maker connector to create destination topics and ACLs
-    //This user is only used when this cluster is a destination cluster, but is made in advance ready to use
-    private void createReplicatorDestinationConnectorUser() {
-
-        List<AclRule> connectorDestinationAclList = new ArrayList<>();
-
-        //Need the ability to create the destination topics (eg sourceClusterName.topic1)
-        AclRule rule1create = new AclRuleBuilder()
-                .withNewAclRuleClusterResource()
-                .endAclRuleClusterResource()
-                .withOperation(AclOperation.CREATE) //createTopicPermission
-                .withHost("*")
-                .build();
-
-        //Need the ability to create the destination topics (eg sourceClusterName.topic1)
-        AclRule rule1alter = new AclRuleBuilder()
-                .withNewAclRuleClusterResource()
-                .endAclRuleClusterResource()
-                .withOperation(AclOperation.ALTER)  //createAclPermission
-                .withHost("*")
-                .build();
-
-        connectorDestinationAclList.add(rule1create);
-        connectorDestinationAclList.add(rule1alter);
-
-        replicatorDestinationConnectorUser = buildUser(connectorDestinationAclList, REPLICATOR_DESTINATION_CLUSTER_CONNNECTOR_USER_NAME);
-
-    }
-
-    //Used to allow the mirror maker connector to create topics on the source cluster, read and write this topic and read from the source topic
-    //This user is only used when the cluster is a source cluster but is made in advance ready to use
-    private void createReplicatorSourceConnectorUser() {
-
-        //need the ability to read from the source topics (don't know the names of these at this point)
-        List<AclRule> connectorSourceAclList = new ArrayList<>();
-        AclRule rule1 = new AclRuleBuilder()
-                .withNewAclRuleTopicResource()
-                    .withName("*")
-                    .withPatternType(AclResourcePatternType.PREFIX)
-                .endAclRuleTopicResource()
-                .withOperation(AclOperation.READ)
-                .withHost("*")
-                .build();
-
-
-        //Need the ability to create the source offset topic
-        AclRule rule2create = new AclRuleBuilder()
-                .withNewAclRuleClusterResource()
-                .endAclRuleClusterResource()
-                .withOperation(AclOperation.CREATE) //createTopicPermission
-                .withHost("*")
-                .build();
-
-        //Need the ability to create the source offset topic
-        AclRule rule2read = new AclRuleBuilder()
-                .withNewAclRuleClusterResource()
-                .endAclRuleClusterResource()
-                .withOperation(AclOperation.READ)  //readAclPermission
-                .withHost("*")
-                .build();
-
-        //Need the ability to write to the source side offset syncs topic which is called mm2-offset-syncs." + targetClusterAlias() + ".internal
-        //We don't know the full name so using the prefix
-        AclRule rule3 = new AclRuleBuilder()
-                .withNewAclRuleTopicResource()
-                    .withName("mm2-offset-syncs.*")
-                    .withPatternType(AclResourcePatternType.PREFIX)
-                .endAclRuleTopicResource()
-                .withOperation(AclOperation.WRITE)
-                .withHost("*")
-                .build();
-
-        connectorSourceAclList.add(rule1);
-        connectorSourceAclList.add(rule2create);
-        connectorSourceAclList.add(rule2read);
-        connectorSourceAclList.add(rule3);
-
-        replicatorSourceConnectorUser = buildUser(connectorSourceAclList, REPLICATOR_SOURCE_CLUSTER_CONNECTOR_USER_NAME);
-
-    }
-
-
-    private KafkaUser buildUser(List<AclRule> aclList, String kafkaUserName) {
-
-        Map<String, String> labels = new HashMap<>();
-        labels.put(io.strimzi.operator.common.model.Labels.STRIMZI_CLUSTER_LABEL, EventStreamsKafkaModel.getKafkaInstanceName(getInstanceName()));
-
-        return new KafkaUserBuilder()
-                .withApiVersion(KafkaUser.RESOURCE_GROUP + "/" + KafkaUser.V1BETA1)
-                .withNewMetadata()
-                    .withName(getDefaultResourceName(getInstanceName(),  kafkaUserName))
-                    .withOwnerReferences(getEventStreamsOwnerReference())
-                    .withNamespace(getNamespace())
-                    .withLabels(labels)
-                    .withLabels(getComponentLabels())
-                .endMetadata()
-                .withNewSpec()
-                    .withNewKafkaUserTlsClientAuthentication()
-                    .endKafkaUserTlsClientAuthentication()
-                    .withNewKafkaUserAuthorizationSimple()
-                        .withAcls(aclList)
-                    .endKafkaUserAuthorizationSimple()
-                .endSpec()
-                .build();
+        this.secret = createSecret(getDefaultResourceName(getInstanceName(),  REPLICATOR_SECRET_NAME), data);
     }
 
     private NetworkPolicy createNetworkPolicy() {
         List<NetworkPolicyIngressRule> ingressRules = new ArrayList<>(1);
-     
+
         //TODO need to add in promethus port when we enable metrics issue 4493
         // ingressRules.add(new NetworkPolicyIngressRuleBuilder()
         //     .addNewPort().withNewPort(Integer.parseInt(ReplicatorModel.DEFAULT_PROMETHEUS_PORT)).endPort()
@@ -366,7 +187,7 @@ public class ReplicatorModel extends AbstractModel {
 
         ingressRules.add(createCustomReplicatorConnectIngressRule());
 
-        List<NetworkPolicyEgressRule> egressRules = new ArrayList<>(0);  
+        List<NetworkPolicyEgressRule> egressRules = new ArrayList<>(0);
 
         return super.createNetworkPolicy(createLabelSelector(COMPONENT_NAME), ingressRules, egressRules);
     }
@@ -397,7 +218,7 @@ public class ReplicatorModel extends AbstractModel {
     }
 
     /**
-     * @return KafkaConnect return the replicator 
+     * @return KafkaConnect return the replicator
      */
     public KafkaConnect getReplicator() {
         return this.kafkaConnect;
@@ -409,7 +230,7 @@ public class ReplicatorModel extends AbstractModel {
     public NetworkPolicy getNetworkPolicy() {
         return this.networkPolicy;
     }
-    
+
     /**
      * @return Secret return the replicators secret
      */
@@ -417,25 +238,5 @@ public class ReplicatorModel extends AbstractModel {
         return this.secret;
     }
 
-    /**
-     * @return KafkaUser return the KafkaUser used to connect KafkaConnect worker to Kafka
-     */
-    public KafkaUser getReplicatorConnectUser() {
-        return replicatorConnectUser;
-    }
-
-    /**
-     * @return KafkaUser return the KafkaUser used to connect MirrorMaker connector to source Kafka
-     */
-    public KafkaUser getReplicatorSourceConnectorUser() {
-        return replicatorSourceConnectorUser;
-    }
-
-    /**
-     * @return KafkaUser return the KafkaUser used to connect MirrorMaker connector to destination Kafka
-     */
-    public KafkaUser getReplicatorDestinationConnectorUser() {
-        return replicatorDestinationConnectorUser;
-    }
 
 }

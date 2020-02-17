@@ -177,8 +177,12 @@ public class EventStreamsOperatorTest {
     @BeforeEach
     public void init() {
         // setting up a mock Kubernetes client
+        Set<Secret> initialSecrets = new HashSet<>();
+        ModelUtils.generateClusterCa(NAMESPACE, CLUSTER_NAME, APP_NAME, ModelUtils.Certificates.CLUSTER_CA, ModelUtils.Keys.CLUSTER_CA_KEY).forEach(s -> initialSecrets.add(s));
+        ModelUtils.generateReplicatorConnectSecrets(NAMESPACE, CLUSTER_NAME, APP_NAME, ModelUtils.Certificates.CLUSTER_CA, ModelUtils.Keys.CLUSTER_CA_KEY).forEach(s -> initialSecrets.add(s));
+
         mockClient = new MockEventStreamsKube()
-                .withInitialSecrets(ModelUtils.generateClusterCa(NAMESPACE, CLUSTER_NAME, APP_NAME, ModelUtils.Certificates.CLUSTER_CA, ModelUtils.Keys.CLUSTER_CA_KEY))
+                .withInitialSecrets(initialSecrets)
                 .build();
         when(mockClient.getNamespace()).thenReturn(NAMESPACE);
 
@@ -666,7 +670,7 @@ public class EventStreamsOperatorTest {
             }
         });
     }
-    
+
     @Test
     public void testSingleListenerCertificateSecretContentIsValid(VertxTestContext context) {
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(false, KubernetesVersion.V1_9);
@@ -682,7 +686,7 @@ public class EventStreamsOperatorTest {
         Map<String, String> additionalHosts = Collections.singletonMap(listener.getName(), "extra.host.name");
 
         reconciliationState.reconcileCerts(endpointModel, additionalHosts, Date::new).setHandler(ar -> {
-            assertThat("Number of secrets do not match " + mockClient.secrets().list().getItems(), mockClient.secrets().list().getItems().size(), is(3));
+            assertThat("Number of secrets do not match " + mockClient.secrets().list().getItems(), mockClient.secrets().list().getItems().size(), is(6));
             Secret secret = mockClient.secrets().withName(endpointModel.getCertSecretName()).get();
             assertThat("The expected secret is created", secret, is(notNullValue()));
             CertAndKey certAndKey = reconciliationState.certificateManager.certificateAndKey(secret, endpointModel.getCertSecretCertID(listener.getName()), endpointModel.getCertSecretKeyID(listener.getName()));
@@ -709,7 +713,7 @@ public class EventStreamsOperatorTest {
         Map<String, String> additionalHosts = Collections.singletonMap(externalTlsListener.getName(), "extra.host.name");
 
         reconciliationState.reconcileCerts(endpointModel, additionalHosts, Date::new).setHandler(ar -> {
-            assertThat("There is only one additional secret created", mockClient.secrets().list().getItems().size(), is(3));
+            assertThat("The number of secrets does not match", mockClient.secrets().list().getItems().size(), is(6));
             Secret secret = mockClient.secrets().withName(endpointModel.getCertSecretName()).get();
             assertThat("The expected secret is created", secret, is(notNullValue()));
             assertThat("The secret does not contain cert key ID for plain listener", secret.getData().containsKey(endpointModel.getCertSecretKeyID(internalListener.getName())), is(false));
@@ -738,10 +742,10 @@ public class EventStreamsOperatorTest {
         Map<String, String> additionalHosts = Collections.singletonMap(Listener.externalTls().getName(), "extra.host.name");
 
         reconciliationState.reconcileCerts(endpointModel, additionalHosts, Date::new).setHandler(ar -> {
-            assertThat("There is only one additional secret created", mockClient.secrets().list().getItems().size(), is(3));
+            assertThat("The number of secrets does not match", mockClient.secrets().list().getItems().size(), is(6));
             Secret firstSecret = mockClient.secrets().withName(endpointModel.getCertSecretName()).get();
             reconciliationState.reconcileCerts(endpointModel, additionalHosts,  Date::new).setHandler(ar2 -> {
-                assertThat("There is only one additional secret created", mockClient.secrets().list().getItems().size(), is(3));
+                assertThat("The number of secrets does not match", mockClient.secrets().list().getItems().size(), is(6));
                 Secret secondSecret = mockClient.secrets().withName(endpointModel.getCertSecretName()).get();
                 assertThat("The secret has not changed", secondSecret, is(firstSecret));
                 async.flag();
@@ -763,10 +767,10 @@ public class EventStreamsOperatorTest {
         Map<String, String> additionalHosts = Collections.singletonMap(Listener.externalTls().getName(), "extra.host.name");
 
         reconciliationState.reconcileCerts(endpointModel, additionalHosts, Date::new).setHandler(ar -> {
-            assertThat("There is only one additional secret created", mockClient.secrets().list().getItems().size(), is(3));
+            assertThat("The number of secrets does not match", mockClient.secrets().list().getItems().size(), is(6));
             Secret firstSecret = mockClient.secrets().withName(endpointModel.getCertSecretName()).get();
             reconciliationState.reconcileCerts(endpointModel, additionalHosts,  () -> Date.from(Instant.now().plusSeconds(TWO_YEARS_PLUS_IN_SECONDS))).setHandler(ar2 -> {
-                assertThat("There is only one additional secret created", mockClient.secrets().list().getItems().size(), is(3));
+                assertThat("The number of secrets does not match", mockClient.secrets().list().getItems().size(), is(6));
                 Secret secondSecret = mockClient.secrets().withName(endpointModel.getCertSecretName()).get();
                 assertThat("The secret has changed", secondSecret, not(firstSecret));
                 async.flag();
@@ -788,13 +792,13 @@ public class EventStreamsOperatorTest {
         Map<String, String> additionalHosts = Collections.singletonMap(Listener.externalTls().getName(), "extra.host.name");
 
         reconciliationState.reconcileCerts(endpointModel, additionalHosts, Date::new).setHandler(ar -> {
-            assertThat("There is only one additional secret created", mockClient.secrets().list().getItems().size(), is(3));
+            assertThat("The number of secrets does not match", mockClient.secrets().list().getItems().size(), is(6));
             Secret firstSecret = mockClient.secrets().withName(endpointModel.getCertSecretName()).get();
             List<Secret> newClusterCA = new ArrayList<>(ModelUtils.generateClusterCa(NAMESPACE, CLUSTER_NAME, APP_NAME, ModelUtils.Certificates.NEW_CLUSTER_CA, ModelUtils.Keys.NEW_CLUSTER_CA_KEY));
             mockClient.secrets().createOrReplace(newClusterCA.get(0));
             mockClient.secrets().createOrReplace(newClusterCA.get(1));
             reconciliationState.reconcileCerts(endpointModel, additionalHosts, Date::new).setHandler(ar2 -> {
-                assertThat("There is only one additional secret created", mockClient.secrets().list().getItems().size(), is(3));
+                assertThat("The number of secrets does not match", mockClient.secrets().list().getItems().size(), is(6));
                 Secret secondSecret = mockClient.secrets().withName(endpointModel.getCertSecretName()).get();
                 assertThat("The secret has changed", secondSecret, not(firstSecret));
                 async.flag();
@@ -817,12 +821,12 @@ public class EventStreamsOperatorTest {
         Map<String, String> additionalHosts = Collections.singletonMap(Listener.externalTls().getName(), "extra.host.name");
 
         reconciliationState.reconcileCerts(endpointModel, additionalHosts, Date::new).setHandler(ar -> {
-            assertThat("There is only one additional secret created", mockClient.secrets().list().getItems().size(), is(3));
+            assertThat("The number of secrets does not match", mockClient.secrets().list().getItems().size(), is(6));
             Secret firstSecret = mockClient.secrets().withName(endpointModel.getCertSecretName()).get();
             CertAndKey originalInternalTlsCertAndKey = reconciliationState.certificateManager.certificateAndKey(firstSecret, endpointModel.getCertSecretCertID(internalTlsListener.getName()), endpointModel.getCertSecretKeyID(internalTlsListener.getName()));
             Map<String, String> newHosts = Collections.singletonMap(Listener.externalTls().getName(), "extra.host.name.2");
             reconciliationState.reconcileCerts(endpointModel, newHosts, Date::new).setHandler(ar2 -> {
-                assertThat("There is only one additional secret created", mockClient.secrets().list().getItems().size(), is(3));
+                assertThat("The number of secrets does not match", mockClient.secrets().list().getItems().size(), is(6));
                 Secret secondSecret = mockClient.secrets().withName(endpointModel.getCertSecretName()).get();
                 assertThat("The secret has changed", secondSecret, not(firstSecret));
                 CertAndKey newInternalTlsCertAndKey = reconciliationState.certificateManager.certificateAndKey(secondSecret, endpointModel.getCertSecretCertID(internalTlsListener.getName()), endpointModel.getCertSecretKeyID(internalTlsListener.getName()));
@@ -857,7 +861,7 @@ public class EventStreamsOperatorTest {
         Map<String, String> additionalHosts = Collections.singletonMap(externalTlsListener.getName(), "extra.host.name");
 
         reconciliationState.reconcileCerts(endpointModel, additionalHosts, Date::new).setHandler(ar -> {
-            assertThat("There is only one additional secret created", mockClient.secrets().list().getItems().size(), is(4));
+            assertThat("The number of secrets does not match", mockClient.secrets().list().getItems().size(), is(7));
             Secret secret = mockClient.secrets().withName(endpointModel.getCertSecretName()).get();
             assertThat("The admin api cert secret has been populated with the internal provided cert", secret.getData().get(endpointModel.getCertSecretCertID(internalTlsListener.getName())), is(providedSecret.getData().get(secretCertificate)));
             assertThat("The admin api cert secret has been populated with the internal provided key", secret.getData().get(endpointModel.getCertSecretKeyID(internalTlsListener.getName())), is(providedSecret.getData().get(secretKey)));
@@ -892,7 +896,7 @@ public class EventStreamsOperatorTest {
         Map<String, String> additionalHosts = Collections.singletonMap(externalTlsListener.getName(), "extra.host.name");
 
         reconciliationState.reconcileCerts(endpointModel, additionalHosts, Date::new).setHandler(ar -> {
-            assertThat("There is only one additional secret created", mockClient.secrets().list().getItems().size(), is(4));
+            assertThat("The number of secrets does not match", mockClient.secrets().list().getItems().size(), is(7));
             Secret secret = mockClient.secrets().withName(endpointModel.getCertSecretName()).get();
             assertThat("The admin api cert secret has not been populated with the internal provided cert", secret.getData().get(endpointModel.getCertSecretCertID(internalTlsListener.getName())), not(providedSecret.getData().get(secretCertificate)));
             assertThat("The admin api cert secret has not been populated with the internal provided key", secret.getData().get(endpointModel.getCertSecretKeyID(internalTlsListener.getName())), not(providedSecret.getData().get(secretKey)));
@@ -920,21 +924,22 @@ public class EventStreamsOperatorTest {
         Listener.setEnabledListeners(Collections.singletonList(listener));
 
         CompositeFuture.join(reconciliationState.createRestProducer(Date::new),
-                reconciliationState.createSchemaRegistry(Date::new),
-                reconciliationState.createAdminApi(Date::new)).setHandler(ar -> {
-                    assertThat("There are three additional secrets created", mockClient.secrets().list().getItems().size(), is(5));
-                    List<Secret> secrets = mockClient.secrets().withLabel("instance", CLUSTER_NAME).list().getItems();
-                    secrets.forEach(secret -> {
+            reconciliationState.createSchemaRegistry(Date::new),
+            reconciliationState.createAdminApi(Date::new)).setHandler(ar -> {
+                assertThat("There are three additional secrets created", mockClient.secrets().list().getItems().size(), is(9));
+                List<Secret> secrets = mockClient.secrets().withLabel("instance", CLUSTER_NAME).list().getItems();
+                secrets.forEach(secret -> {
+                    if (secret.getMetadata().getName().endsWith("-cert")) {
                         Optional<Service> serviceOpt = mockClient.services().list().getItems()
-                                    .stream()
-                                    .filter(service -> service.getMetadata().getName().contains("external"))
-                                    .filter(service -> service.getMetadata().getName().startsWith(secret.getMetadata().getName().replace("-cert", "")))
-                                    .findAny();
+                            .stream()
+                            .filter(service -> service.getMetadata().getName().contains("external"))
+                            .filter(service -> service.getMetadata().getName().startsWith(secret.getMetadata().getName().replace("-cert", "")))
+                            .findAny();
                         Optional<Route> routeOpt = mockClient.adapt(OpenShiftClient.class).routes().list().getItems()
-                                    .stream()
-                                    .filter(route -> route.getMetadata().getName().endsWith("tls"))
-                                    .filter(route -> route.getMetadata().getName().startsWith(secret.getMetadata().getName().replace("-cert", "")))
-                                    .findAny();
+                            .stream()
+                            .filter(route -> route.getMetadata().getName().endsWith("tls"))
+                            .filter(route -> route.getMetadata().getName().startsWith(secret.getMetadata().getName().replace("-cert", "")))
+                            .findAny();
                         assertThat("We found the service for this secret", serviceOpt.isPresent(), is(true));
                         assertThat("We found the route for this secret", routeOpt.isPresent(), is(true));
                         String certID = secret.getData().keySet().stream().filter(string -> string.endsWith(CertificateSecretModel.formatCertID(listener.getName()))).findAny().get();
@@ -942,9 +947,10 @@ public class EventStreamsOperatorTest {
                         CertAndKey certAndKey = reconciliationState.certificateManager.certificateAndKey(secret, certID, keyID);
                         X509Certificate certificate = ControllerUtils.checkCertificate(reconciliationState.certificateManager, certAndKey);
                         ControllerUtils.checkSans(reconciliationState.certificateManager, certificate, serviceOpt.get(), routeOpt.get().getSpec().getHost());
-                    });
-                    async.flag();
+                    }
                 });
+                async.flag();
+            });
         Listener.setEnabledListeners(Arrays.asList(Listener.externalTls(), Listener.externalPlain(), Listener.internalTls()));
         async.flag();
     }
@@ -1268,12 +1274,18 @@ public class EventStreamsOperatorTest {
 
     private EventStreams createESCluster(String namespace, String clusterName) {
         KafkaSpecBuilder kafka = new KafkaSpecBuilder()
-                .editOrNewKafka()
-                    .withReplicas(3)
-                .endKafka()
-                .editOrNewZookeeper()
-                    .withReplicas(3)
-                .endZookeeper();
+            .editOrNewKafka()
+                .withReplicas(3)
+                .withNewListeners()
+                    .withNewTls()
+                        .withNewKafkaListenerAuthenticationTlsAuth()
+                        .endKafkaListenerAuthenticationTlsAuth()
+                    .endTls()
+                .endListeners()
+            .endKafka()
+            .editOrNewZookeeper()
+                .withReplicas(3)
+            .endZookeeper();
 
         return createESClusterWithStrimziOverrides(namespace, clusterName, kafka.build());
     }
