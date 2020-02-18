@@ -319,7 +319,7 @@ metadata:
     categories: Streaming & Messaging
     certified: "false"
     containerImage: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-operator-icp-linux-amd64:latest
-    createdAt: "2020-02-13T17:35:09Z"
+    createdAt: "2020-02-17T16:25:56Z"
     description: Kafka-based messaging platform for handling real-time data feeds.
     repository: https://github.ibm.com/mhub/qp-eventstreams-operator
     support: IBM
@@ -923,32 +923,32 @@ spec:
                 - name: STRIMZI_OPERATION_TIMEOUT_MS
                   value: "300000"
                 - name: STRIMZI_DEFAULT_TLS_SIDECAR_ENTITY_OPERATOR_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:combined8-kafka-2.4.0
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka-amd64:latest-kafka-2.4.0
                 - name: STRIMZI_DEFAULT_TLS_SIDECAR_KAFKA_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:combined8-kafka-2.4.0
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka-amd64:latest-kafka-2.4.0
                 - name: STRIMZI_DEFAULT_TLS_SIDECAR_ZOOKEEPER_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:combined8-kafka-2.4.0
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka-amd64:latest-kafka-2.4.0
                 - name: STRIMZI_DEFAULT_KAFKA_EXPORTER_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:combined8-kafka-2.4.0
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka-amd64:latest-kafka-2.4.0
                 - name: STRIMZI_KAFKA_IMAGES
                   value: |
-                    2.4.0=hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:combined8-kafka-2.4.0
+                    2.4.0=hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka-amd64:latest-kafka-2.4.0
                 - name: STRIMZI_KAFKA_CONNECT_IMAGES
                   value: |
-                    2.4.0=hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:combined8-kafka-2.4.0
+                    2.4.0=hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka-amd64:latest-kafka-2.4.0
                 - name: STRIMZI_KAFKA_CONNECT_S2I_IMAGES
                   value: |
-                    2.4.0=hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:combined8-kafka-2.4.0
+                    2.4.0=hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka-amd64:latest-kafka-2.4.0
                 - name: STRIMZI_KAFKA_MIRROR_MAKER_IMAGES
                   value: |
-                    2.4.0=hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:combined8-kafka-2.4.0
+                    2.4.0=hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka-amd64:latest-kafka-2.4.0
                 - name: STRIMZI_KAFKA_MIRROR_MAKER_2_IMAGES
                   value: |
-                    2.4.0=hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:combined8-kafka-2.4.0
+                    2.4.0=hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka-amd64:latest-kafka-2.4.0
                 - name: STRIMZI_DEFAULT_TOPIC_OPERATOR_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator:combined8
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator-amd64:latest
                 - name: STRIMZI_DEFAULT_USER_OPERATOR_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator:combined8
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator-amd64:latest
                 - name: STRIMZI_DEFAULT_KAFKA_INIT_IMAGE
                   value: strimzi/operator:latest
                 - name: STRIMZI_DEFAULT_KAFKA_BRIDGE_IMAGE
@@ -972,7 +972,7 @@ spec:
                 - name: EVENTSTREAMS_DEFAULT_REST_PRODUCER_IMAGE
                   value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-rest-producer-icp-linux-amd64:2020-01-14-13.11.13-bb37139-exp
                 - name: EVENTSTREAMS_DEFAULT_ADMIN_PROXY_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-rest-proxy-icp-linux-amd64:2020-02-05-10.59.03-791c64d
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-rest-proxy-icp-linux-amd64:2020-02-13-15.20.14-1b3fd35-exp
                 - name: EVENTSTREAMS_DEFAULT_ADMIN_API_IMAGE
                   value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-admin-icp-linux-amd64:2020-02-04-08.56.31-8701472
                 - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_IMAGE
@@ -985,7 +985,7 @@ spec:
                   value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-database-icp-linux-amd64:2020-02-11-13.40.39-0a99ddb-exp
                 - name: EVENTSTREAMS_DEFAULT_COLLECTOR_IMAGE
                   value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-collector-icp-linux-amd64:2020-01-16-16.08.11-b264a4e-exp
-                image: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator:combined8
+                image: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator-amd64:latest
                 livenessProbe:
                   httpGet:
                     path: /healthy

@@ -42,8 +42,8 @@ imagePullSecrets: ibm-entitlement-key
 operator:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
-    name: strimzi/operator
-    tag: test4844
+    name: strimzi/operator-amd64
+    tag: latest
 operatorInit:
     image:
       repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
@@ -96,33 +96,33 @@ collector:
 zookeeper:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
-    name: strimzi/kafka
-    tagPrefix: combined8
+    name: strimzi/kafka-amd64
+    tagPrefix: latest
 kafka:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
-    name: strimzi/kafka
-    tagPrefix: combined8
+    name: strimzi/kafka-amd64
+    tagPrefix: latest
 kafkaConnect:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
-    name: strimzi/kafka
-    tagPrefix: combined8
+    name: strimzi/kafka-amd64
+    tagPrefix: latest
 kafkaConnects2i:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
-    name: strimzi/kafka
-    tagPrefix: combined8
+    name: strimzi/kafka-amd64
+    tagPrefix: latest
 topicOperator:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
-    name: strimzi/operator
-    tag: combined8
+    name: strimzi/operator-amd64
+    tag: latest
 userOperator:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
-    name: strimzi/operator
-    tag: combined8
+    name: strimzi/operator-amd64
+    tag: latest
 kafkaInit:
   image:
     repository: strimzi
@@ -131,23 +131,23 @@ kafkaInit:
 tlsSidecarZookeeper:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
-    name: strimzi/kafka
-    tagPrefix: combined8
+    name: strimzi/kafka-amd64
+    tagPrefix: latest
 tlsSidecarKafka:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
-    name: strimzi/kafka
-    tagPrefix: combined8
+    name: strimzi/kafka-amd64
+    tagPrefix: latest
 tlsSidecarEntityOperator:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
-    name: strimzi/kafka
-    tagPrefix: combined8
+    name: strimzi/kafka-amd64
+    tagPrefix: latest
 kafkaMirrorMaker:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
-    name: strimzi/kafka
-    tagPrefix: combined8
+    name: strimzi/kafka-amd64
+    tagPrefix: latest
 kafkaBridge:
   image:
     repository: strimzi
@@ -156,8 +156,8 @@ kafkaBridge:
 kafkaExporter:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
-    name: strimzi/kafka
-    tagPrefix: combined8
+    name: strimzi/kafka-amd64
+    tagPrefix: latest
 jmxTrans:
   image:
     repository: strimzi
@@ -166,8 +166,8 @@ jmxTrans:
 kafkaMirrorMaker2:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
-    name: strimzi/kafka
-    tagPrefix: combined8
+    name: strimzi/kafka-amd64
+    tagPrefix: latest
 resources:
   limits:
     memory: 256Mi
