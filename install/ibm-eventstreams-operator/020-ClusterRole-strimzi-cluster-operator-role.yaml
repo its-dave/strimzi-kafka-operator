@@ -16,7 +16,7 @@ rules:
   - patch
   - update
 - apiGroups:
-  - rbac.authorization.k8s.io
+  - "rbac.authorization.k8s.io"
   resources:
   - rolebindings
   verbs:
@@ -38,20 +38,27 @@ rules:
   - patch
   - update
 - apiGroups:
-  - eventstreams.ibm.com
+  - "eventstreams.ibm.com"
   resources:
+  # The cluster operator runs the KafkaAssemblyOperator, which needs to access Kafka resources
   - kafkas
   - kafkas/status
+  # The cluster operator runs the KafkaConnectAssemblyOperator, which needs to access KafkaConnect resources
   - kafkaconnects
   - kafkaconnects/status
+  # The cluster operator runs the KafkaConnectS2IAssemblyOperator, which needs to access KafkaConnectS2I resources
   - kafkaconnects2is
   - kafkaconnects2is/status
+  # The cluster operator runs the KafkaConnectorAssemblyOperator, which needs to access KafkaConnector resources
   - kafkaconnectors
   - kafkaconnectors/status
+  # The cluster operator runs the KafkaMirrorMakerAssemblyOperator, which needs to access KafkaMirrorMaker resources
   - kafkamirrormakers
   - kafkamirrormakers/status
+  # The cluster operator runs the KafkaBridgeAssemblyOperator, which needs to access BridgeMaker resources
   - kafkabridges
   - kafkabridges/status
+  # The cluster operator runs the KafkaMirrorMaker2AssemblyOperator, which needs to access KafkaMirrorMaker2 resources
   - kafkamirrormaker2s
   - kafkamirrormaker2s/status
   verbs:
@@ -92,7 +99,7 @@ rules:
   - list
   - watch
 - apiGroups:
-  - extensions
+  - "extensions"
   resources:
   - deployments
   - deployments/scale
@@ -106,7 +113,7 @@ rules:
   - patch
   - update
 - apiGroups:
-  - apps
+  - "apps"
   resources:
   - deployments
   - deployments/scale
@@ -127,8 +134,8 @@ rules:
   - events
   verbs:
   - create
-- apiGroups:
-  - extensions
+- apiGroups: # OpenShift S2I requirements
+  - "extensions"
   resources:
   - replicationcontrollers
   verbs:
@@ -283,7 +290,7 @@ rules:
   - serviceaccounts
   - persistentvolumeclaims
   verbs:
-  - '*'
+  - "*"
 - apiGroups:
   - ""
   resources:
@@ -300,7 +307,7 @@ rules:
   - replicasets
   - deployments
   verbs:
-  - '*'
+  - "*"
 - apiGroups:
   - extensions
   resources:
@@ -308,7 +315,7 @@ rules:
   - deployments
   - networkpolicies
   verbs:
-  - '*'
+  - "*"
 - apiGroups:
   - rbac.authorization.k8s.io
   resources:
@@ -344,25 +351,25 @@ rules:
 - apiGroups:
   - eventstreams.ibm.com
   resources:
-  - '*'
+  - "*"
   verbs:
-  - '*'
+  - "*"
 - apiGroups:
   - eventstreams.ibm.com
   resources:
-  - '*'
-  - kafkausers
-  - kafkausers/status
+  - "*"
+  - "kafkausers"
+  - "kafkausers/status"
   verbs:
-  - '*'
+  - "*"
 - apiGroups:
   - route.openshift.io
   resources:
-  - routes
+  - "routes"
   verbs:
-  - '*'
+  - "*"
 - apiGroups:
-  - oidc.security.ibm.com
+  - "oidc.security.ibm.com"
   resources:
   - clients
   verbs:

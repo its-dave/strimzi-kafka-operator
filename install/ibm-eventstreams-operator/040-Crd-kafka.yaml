@@ -3,7 +3,7 @@ kind: CustomResourceDefinition
 metadata:
   name: kafkas.eventstreams.ibm.com
   labels:
-    app: eventstreams
+    app: 'eventstreams'
 spec:
   group: eventstreams.ibm.com
   versions:

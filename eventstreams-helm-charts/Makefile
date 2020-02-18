@@ -34,7 +34,8 @@ helm_merge: helm_clean
 	$(SED) -E -i 's+strimzi+eventstreams+g' $(CHART_RENDERED_TEMPLATES_TMP)/templates/_helpers.tpl
 	$(FIND) $(CHART_RENDERED_TEMPLATES_TMP)/templates -type f -name '*.yaml' -exec $(SED) -E -i 's+\{\{ template "strimzi.name"+\{\{ template "eventstreams.name"+g' {} \;
 	$(FIND) $(CHART_RENDERED_TEMPLATES_TMP)/templates -type f -name '*.yaml' -exec $(SED) -E -i 's+\{\{ template "strimzi.chart"+\{\{ template "eventstreams.chart"+g' {} \;
-	$(FIND) $(CHART_RENDERED_TEMPLATES_TMP)/templates -type f -name '020-ClusterRole-strimzi-cluster-operator-role.yaml' -exec $(SED) -E -i '$$i \{\{ template "eventstreams.clusterrole" \}\}' {} \;
+	$(FIND) $(CHART_RENDERED_TEMPLATES_TMP)/templates -type f -name '020-ClusterRole-strimzi-cluster-operator-role.yaml' -exec $(SED) -E -i '$$i \{\{ template "eventstreams.clusterrole.namespaced" \}\}' {} \;
+	$(FIND) $(CHART_RENDERED_TEMPLATES_TMP)/templates -type f -name '021-ClusterRole-strimzi-cluster-operator-role.yaml' -exec $(SED) -E -i '$$i \{\{ template "eventstreams.clusterrole.global" \}\}' {} \;
 
 
 	# run kafka-version-tpl.sh in strimzi helm charts repo to generate kafka versions template
@@ -57,6 +58,7 @@ helm_install: helm_template
 
 	# Remove Helm-related labels
 	$(FIND) $(CHART_RENDERED_TEMPLATES)/templates -type f -name '*.yaml' -exec $(SED) -i '/^---/d' {} \;
+	$(FIND) $(CHART_RENDERED_TEMPLATES)/templates -type f -name '*.yaml' -exec $(SED) -i '/^# Source:/d' {} \;
 	$(FIND) $(CHART_RENDERED_TEMPLATES)/templates -type f -name '*.yaml' -exec yq d -i {} metadata.labels.chart \;
 	$(FIND) $(CHART_RENDERED_TEMPLATES)/templates -type f -name '*.yaml' -exec yq d -i {} metadata.labels.component \;
 	$(FIND) $(CHART_RENDERED_TEMPLATES)/templates -type f -name '*.yaml' -exec yq d -i {} metadata.labels.release \;

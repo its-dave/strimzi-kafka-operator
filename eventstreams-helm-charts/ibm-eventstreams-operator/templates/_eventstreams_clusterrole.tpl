@@ -1,4 +1,4 @@
-{{- define "eventstreams.clusterrole" }}
+{{- define "eventstreams.clusterrole.namespaced" }}
 - apiGroups:
     - ""
   resources:
@@ -97,4 +97,16 @@
     - patch
     - delete
     - update
+{{- end -}}
+
+{{- define "eventstreams.clusterrole.global" }}
+- apiGroups:
+    - admissionregistration.k8s.io
+  resources:
+    - validatingwebhookconfigurations
+  verbs:
+    - get
+    - create
+    - patch
+    - delete
 {{- end -}}

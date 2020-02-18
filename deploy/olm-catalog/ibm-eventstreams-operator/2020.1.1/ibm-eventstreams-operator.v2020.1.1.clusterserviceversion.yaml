@@ -317,9 +317,9 @@ metadata:
       ]
     capabilities: Basic Install
     categories: Streaming & Messaging
-    certified: "false"
+    certified: 'false'
     containerImage: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-operator-icp-linux-amd64:latest
-    createdAt: "2020-02-17T16:25:56Z"
+    createdAt: 2020-02-18T11:48:52Z
     description: Kafka-based messaging platform for handling real-time data feeds.
     repository: https://github.ibm.com/mhub/qp-eventstreams-operator
     support: IBM
@@ -336,113 +336,133 @@ spec:
       name: eventstreams.eventstreams.ibm.com
       resources:
       - kind: Route
+        name: ""
         version: route.openshift.io/v1
       - kind: Service
+        name: ""
         version: v1
       - kind: StatefulSet
+        name: ""
         version: v1
       - kind: Deployment
+        name: ""
         version: v1
       - kind: ReplicaSet
+        name: ""
         version: v1
       - kind: Pod
+        name: ""
         version: v1
       - kind: Secret
+        name: ""
         version: v1
       - kind: ConfigMap
+        name: ""
         version: v1
       - kind: Kafka
+        name: ""
         version: eventstreams.ibm.com/v1beta1
       specDescriptors:
       - description: The type of storage used by Kafka brokers
         displayName: Kafka storage
         path: strimziOverrides.kafka.storage.type
         x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:fieldGroup:kafkaPersistence
-        - urn:alm:descriptor:com.tectonic.ui:select:ephemeral
-        - urn:alm:descriptor:com.tectonic.ui:select:persistent-claim
-        - urn:alm:descriptor:com.tectonic.ui:select:jbod
+        - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:kafkaPersistence'
+        - 'urn:alm:descriptor:com.tectonic.ui:select:ephemeral'
+        - 'urn:alm:descriptor:com.tectonic.ui:select:persistent-claim'
+        - 'urn:alm:descriptor:com.tectonic.ui:select:jbod'
       - description: Storage class to use for Kafka brokers
         displayName: Kafka Storage Class
         path: strimziOverrides.kafka.storage.overrides[0].class
         x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:fieldGroup:kafkaPersistence
-        - urn:alm:descriptor:io.kubernetes:StorageClass
+        - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:kafkaPersistence'
+        - 'urn:alm:descriptor:io.kubernetes:StorageClass'
       - description: The type of storage used by Kafka brokers
         displayName: ZooKeeper storage
         path: strimziOverrides.zookeeper.storage.type
         x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:fieldGroup:zookeeperPersistence
-        - urn:alm:descriptor:com.tectonic.ui:select:ephemeral
-        - urn:alm:descriptor:com.tectonic.ui:select:persistent-claim
+        - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:zookeeperPersistence'
+        - 'urn:alm:descriptor:com.tectonic.ui:select:ephemeral'
+        - 'urn:alm:descriptor:com.tectonic.ui:select:persistent-claim'
       - description: Storage class to use for ZooKeeper nodes
         displayName: ZooKeeper Storage Class
         path: strimziOverrides.zookeeper.storage.overrides[0].class
         x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:fieldGroup:zookeeperPersistence
-        - urn:alm:descriptor:io.kubernetes:StorageClass
+        - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:zookeeperPersistence'
+        - 'urn:alm:descriptor:io.kubernetes:StorageClass'
       - description: The type of storage used by the Schema Registry
         displayName: Schema Registry storage
         path: schemaRegistry.storage.type
         x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:fieldGroup:schemaRegistryPersistence
-        - urn:alm:descriptor:com.tectonic.ui:select:ephemeral
-        - urn:alm:descriptor:com.tectonic.ui:select:persistent-claim
+        - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:schemaRegistryPersistence'
+        - 'urn:alm:descriptor:com.tectonic.ui:select:ephemeral'
+        - 'urn:alm:descriptor:com.tectonic.ui:select:persistent-claim'
       - description: Storage class to use for Schema Registry
         displayName: Schema Registry Storage Class
         path: schemaRegistry.storage.overrides[0].class
         x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:fieldGroup:schemaRegistryPersistence
-        - urn:alm:descriptor:io.kubernetes:StorageClass
+        - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:schemaRegistryPersistence'
+        - 'urn:alm:descriptor:io.kubernetes:StorageClass'
       - description: The type of external access for Kafka brokers
         displayName: Type
         path: strimziOverrides.kafka.listeners.external.type
         x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:fieldGroup:externalAccess
-        - urn:alm:descriptor:com.tectonic.ui:select:route
-        - urn:alm:descriptor:com.tectonic.ui:select:nodeport
+        - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:externalAccess'
+        - 'urn:alm:descriptor:com.tectonic.ui:select:route'
+        - 'urn:alm:descriptor:com.tectonic.ui:select:nodeport'
+        # If the user doesn't want authentication, they should omit the
+        # strimziOverrides.kafka.listeners.external.authentication section
+        # completely - it's not clear how to do this in alm.
+        #
+        #        - displayName: Authentication type
+        #          description: Authentication method for external Kafka clients
+        #          path: strimziOverrides.kafka.listeners.external.authentication.type
+        #          x-descriptors:
+        #            - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:externalAccess'
+        #            - 'urn:alm:descriptor:com.tectonic.ui:select:tls'
+        #            - 'urn:alm:descriptor:com.tectonic.ui:select:scram-sha-512'
       - description: The desired number of Kafka brokers.
         displayName: Kafka Brokers
         path: strimziOverrides.kafka.replicas
         x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:number
-        - urn:alm:descriptor:com.tectonic.ui:advanced
+        - 'urn:alm:descriptor:com.tectonic.ui:number'
+        - 'urn:alm:descriptor:com.tectonic.ui:advanced'
       - description: The resource limits for Kafka brokers.
         displayName: Kafka resource limits
         path: strimziOverrides.kafka.resources
         x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:resourceRequirements
-        - urn:alm:descriptor:com.tectonic.ui:advanced
+        - 'urn:alm:descriptor:com.tectonic.ui:resourceRequirements'
+        - 'urn:alm:descriptor:com.tectonic.ui:advanced'
       - description: The resource limits for ZooKeeper nodes.
         displayName: ZooKeeper resource limits
         path: strimziOverrides.zookeeper.resources
         x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:resourceRequirements
-        - urn:alm:descriptor:com.tectonic.ui:advanced
+        - 'urn:alm:descriptor:com.tectonic.ui:resourceRequirements'
+        - 'urn:alm:descriptor:com.tectonic.ui:advanced'
       - description: Target architecture
         displayName: Architecture
         path: architecture
         x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:select:amd64
-        - urn:alm:descriptor:com.tectonic.ui:advanced
+        - 'urn:alm:descriptor:com.tectonic.ui:select:amd64'
+        - 'urn:alm:descriptor:com.tectonic.ui:advanced'
       - description: Whether to enable TLS for connections between pods in the cluster
         displayName: Internal security
         path: security.encryption
         x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:select:TLS
-        - urn:alm:descriptor:com.tectonic.ui:select:NONE
-        - urn:alm:descriptor:com.tectonic.ui:advanced
+        - 'urn:alm:descriptor:com.tectonic.ui:select:TLS'
+        - 'urn:alm:descriptor:com.tectonic.ui:select:NONE'
+        - 'urn:alm:descriptor:com.tectonic.ui:advanced'
       statusDescriptors:
       - description: URL for the Event Streams UI
         displayName: Admin UI
         path: adminUiUrl
         x-descriptors:
-        - urn:alm:descriptor:org.w3:link
+        - 'urn:alm:descriptor:org.w3:link'
       - description: URL for the Event Streams REST API
         displayName: Admin API
         path: adminRoute
         x-descriptors:
-        - urn:alm:descriptor:org.w3:link
+        - 'urn:alm:descriptor:org.w3:link'
       version: v1beta1
     - description: Represents an instance of IBM Event Streams
       displayName: Kafka
@@ -1050,10 +1070,10 @@ spec:
   - supported: true
     type: AllNamespaces
   keywords:
-  - kafka
-  - apachekafka
-  - messaging
-  - streams
+  - 'kafka'
+  - 'apachekafka'
+  - 'messaging'
+  - 'streams'
   labels:
     name: ibm-eventstreams-operator
   links:
