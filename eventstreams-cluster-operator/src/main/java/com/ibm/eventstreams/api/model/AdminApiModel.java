@@ -285,8 +285,8 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
     }
 
     private Container getRestContainer() {
-        String kafkaConnectBootstrapServers = getResourcePrefix() + "-replicator-connect-api." + getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + ReplicatorModel.REPLICATOR_PORT;
-        String temporaryKafkaConnectExternalBootstrap = getResourcePrefix() + "-kafka-bootstrap." + getNamespace() + ".svc." + Main.CLUSTER_NAME + ":9092";
+        String kafkaConnectBootstrapServers = EventStreamsKafkaModel.getKafkaInstanceName(getInstanceName()) + "-replicator-connect-api." + getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + ReplicatorModel.REPLICATOR_PORT;
+        String temporaryKafkaConnectExternalBootstrap = EventStreamsKafkaModel.getKafkaInstanceName(getInstanceName()) + "-kafka-bootstrap." + getNamespace() + ".svc." + Main.CLUSTER_NAME + ":9092";
         String kafkaBootstrap = getInternalKafkaBootstrap(kafkaListeners);
         String externalBootstrap = getExternalKafkaBootstrap(kafkaListeners);
 

@@ -351,7 +351,7 @@ public class RestProducerModelTest {
         EventStreams defaultEs = createDefaultEventStreams().build();
         RestProducerModel restProducerModel = new RestProducerModel(defaultEs, imageConfig, listeners);
 
-        String kafkaBootstrap = restProducerModel.getResourcePrefix() + "-kafka-bootstrap." + restProducerModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_PORT;
+        String kafkaBootstrap = instanceName + "-kafka-bootstrap." + restProducerModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_PORT;
         EnvVar kafkaBootstrapUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_URL").withValue(kafkaBootstrap).build();
         Container adminApiContainer = restProducerModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0);
 
@@ -428,7 +428,7 @@ public class RestProducerModelTest {
         listeners.add(listener);
 
         RestProducerModel restProducerModel = new RestProducerModel(defaultEs, imageConfig, listeners);
-        String expectedKafkaBootstrap = restProducerModel.getResourcePrefix() + "-kafka-bootstrap." + restProducerModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_PORT;
+        String expectedKafkaBootstrap = instanceName + "-kafka-bootstrap." + restProducerModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_PORT;
 
         EnvVar kafkaBootstrapUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_URL").withValue(expectedKafkaBootstrap).build();
         Container adminApiContainer = restProducerModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0);
@@ -442,7 +442,7 @@ public class RestProducerModelTest {
         EventStreams defaultEs = createDefaultEventStreams().build();
 
         RestProducerModel restProducerModel = new RestProducerModel(defaultEs, imageConfig, null);
-        String expectedKafkaBootstrap = restProducerModel.getResourcePrefix() + "-kafka-bootstrap." + restProducerModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_PORT;
+        String expectedKafkaBootstrap = instanceName + "-kafka-bootstrap." + restProducerModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_PORT;
 
         EnvVar kafkaBootstrapUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_URL").withValue(expectedKafkaBootstrap).build();
         Container adminApiContainer = restProducerModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0);

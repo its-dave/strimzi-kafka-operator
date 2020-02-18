@@ -756,7 +756,7 @@ public abstract class AbstractModel {
     }
 
     private String getKafkaBootstrap(List<ListenerStatus> kafkaListeners, String listenerType) {
-        String kafkaBootstrap = getResourcePrefix() + "-kafka-bootstrap." + getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + (tlsEnabled() ? EventStreamsKafkaModel.KAFKA_PORT_TLS : EventStreamsKafkaModel.KAFKA_PORT);
+        String kafkaBootstrap = EventStreamsKafkaModel.getKafkaInstanceName(getInstanceName()) + "-kafka-bootstrap." + getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + (tlsEnabled() ? EventStreamsKafkaModel.KAFKA_PORT_TLS : EventStreamsKafkaModel.KAFKA_PORT);
 
         Optional<ListenerAddress> listenerAddress = kafkaListeners
                 .stream()

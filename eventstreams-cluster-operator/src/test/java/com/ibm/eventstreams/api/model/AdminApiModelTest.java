@@ -497,7 +497,7 @@ public class AdminApiModelTest {
         EventStreams defaultEs = createDefaultEventStreams().build();
         AdminApiModel adminApiModel = new AdminApiModel(defaultEs, imageConfig, listeners, mockIcpClusterDataMap);
 
-        String kafkaBootstrap = adminApiModel.getResourcePrefix() + "-kafka-bootstrap." + adminApiModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_PORT;
+        String kafkaBootstrap = instanceName + "-kafka-bootstrap." + adminApiModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_PORT;
         EnvVar kafkaBootstrapUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_URL").withValue(kafkaBootstrap).build();
         EnvVar kafkaAdvertisedListenerEnv = new EnvVarBuilder().withName("KAFKA_ADVERTISED_LISTENER_BOOTSTRAP_ADDRESS").withValue(kafkaBootstrap).build();
 
@@ -690,7 +690,7 @@ public class AdminApiModelTest {
         listeners.add(listener);
 
         AdminApiModel adminApiModel = new AdminApiModel(defaultEs, imageConfig, listeners, mockIcpClusterDataMap);
-        String expectedKafkaBootstrap = adminApiModel.getResourcePrefix() + "-kafka-bootstrap." + adminApiModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_PORT;
+        String expectedKafkaBootstrap = instanceName + "-kafka-bootstrap." + adminApiModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_PORT;
 
         EnvVar kafkaBootstrapUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_URL").withValue(expectedKafkaBootstrap).build();
         EnvVar kafkaAdvertisedListenerEnv = new EnvVarBuilder().withName("KAFKA_ADVERTISED_LISTENER_BOOTSTRAP_ADDRESS").withValue(expectedKafkaBootstrap).build();
@@ -707,7 +707,7 @@ public class AdminApiModelTest {
         EventStreams defaultEs = createDefaultEventStreams().build();
 
         AdminApiModel adminApiModel = new AdminApiModel(defaultEs, imageConfig, null, mockIcpClusterDataMap);
-        String expectedKafkaBootstrap = adminApiModel.getResourcePrefix() + "-kafka-bootstrap." + adminApiModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_PORT;
+        String expectedKafkaBootstrap = instanceName + "-kafka-bootstrap." + adminApiModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_PORT;
 
         EnvVar kafkaBootstrapUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_URL").withValue(expectedKafkaBootstrap).build();
         EnvVar kafkaAdvertisedListenerEnv = new EnvVarBuilder().withName("KAFKA_ADVERTISED_LISTENER_BOOTSTRAP_ADDRESS").withValue(expectedKafkaBootstrap).build();
