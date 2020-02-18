@@ -165,6 +165,32 @@ webhooks:
         name: eventstreams-cluster-operator
         path: /admissionwebhook/rejectinvalidversions
       caBundle: "$cabundle"
+  - name: eventstreams.ibm.com.rejectmissingtopiclabels
+    rules:
+      - apiGroups: ["eventstreams.ibm.com"]
+        apiVersions: ["v1beta1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["kafkatopics"]
+    failurePolicy: Ignore
+    clientConfig:
+      service:
+        namespace: $EVENTSTREAMS_OPERATOR_NAMESPACE
+        name: eventstreams-cluster-operator
+        path: /admissionwebhook/rejectmissingtopiclabels
+      caBundle: "$cabundle"
+  - name: eventstreams.ibm.com.rejectmissinguserlabels
+    rules:
+      - apiGroups: ["eventstreams.ibm.com"]
+        apiVersions: ["v1beta1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["kafkausers"]
+    failurePolicy: Ignore
+    clientConfig:
+      service:
+        namespace: $EVENTSTREAMS_OPERATOR_NAMESPACE
+        name: eventstreams-cluster-operator
+        path: /admissionwebhook/rejectmissinguserlabels
+      caBundle: "$cabundle"
 EOF
 
 echo "Webhook config:"

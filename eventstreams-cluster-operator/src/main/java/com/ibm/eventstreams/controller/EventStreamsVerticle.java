@@ -13,6 +13,7 @@
 package com.ibm.eventstreams.controller;
 
 import com.ibm.eventstreams.api.spec.EventStreams;
+import com.ibm.eventstreams.rest.EntityLabelValidation;
 import com.ibm.eventstreams.rest.KubernetesProbe;
 import com.ibm.eventstreams.rest.NameValidation;
 import com.ibm.eventstreams.rest.VersionValidation;
@@ -141,6 +142,15 @@ public class EventStreamsVerticle extends AbstractVerticle {
 
         router.route(HttpMethod.POST, "/admissionwebhook/rejectlongnames").handler(NameValidation::rejectLongNames);
         router.route(HttpMethod.POST, "/admissionwebhook/rejectinvalidversions").handler(VersionValidation::rejectInvalidAppVersions);
+        router.route(HttpMethod.POST, "/admissionwebhook/rejectmissingtopiclabels").handler(EntityLabelValidation::rejectInvalidKafkaTopics);
+        router.route(HttpMethod.POST, "/admissionwebhook/rejectmissinguserlabels").handler(EntityLabelValidation::rejectInvalidKafkaUsers);
+
+        router.errorHandler(500, rc -> {
+            Throwable failure = rc.failure();
+            if (failure != null) {
+                log.error("Unhandled exception", failure);
+            }
+        });
 
         httpServer.requestHandler(router).listen(API_SERVER_PORT, asyncResult -> {
             if (asyncResult.succeeded()) {

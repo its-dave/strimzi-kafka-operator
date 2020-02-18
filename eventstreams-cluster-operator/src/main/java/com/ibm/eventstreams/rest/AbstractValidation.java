@@ -13,14 +13,19 @@
 package com.ibm.eventstreams.rest;
 
 import com.ibm.eventstreams.api.spec.EventStreams;
+import io.fabric8.kubernetes.client.CustomResource;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 
 public abstract class AbstractValidation {
 
-    static EventStreams getSpecFromRequest(RoutingContext routingContext) {
+    static <T extends CustomResource> T getSpecFromRequest(RoutingContext routingContext, Class<T> specClass) {
         JsonObject requestBody = routingContext.getBodyAsJson();
         JsonObject requestPayload = requestBody.getJsonObject("request");
-        return requestPayload.getJsonObject("object").mapTo(EventStreams.class);
+        return requestPayload.getJsonObject("object").mapTo(specClass);
+    }
+
+    static EventStreams getSpecFromRequest(RoutingContext routingContext) {
+        return getSpecFromRequest(routingContext, EventStreams.class);
     }
 }
