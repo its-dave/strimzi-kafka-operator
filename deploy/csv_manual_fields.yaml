@@ -3,7 +3,6 @@ metadata:
     categories: Streaming & Messaging
     certified: 'false'
     description: Kafka-based messaging platform for handling real-time data feeds.
-    repository: https://github.ibm.com/mhub/qp-eventstreams-operator
     support: IBM
     containerImage: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-operator-icp-linux-amd64:latest
   version: 2020.1.1
@@ -233,7 +232,7 @@ spec:
     name: IBM
   maintainers:
     - name: IBM
-      email: ibm@ibm.com
+      email: eventstreams@uk.ibm.com
   selector:
     matchLabels:
       name: ibm-eventstreams-operator
