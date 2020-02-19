@@ -520,7 +520,8 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 replicatorFuture.onSuccess(f -> {
                     replicatorPromise.complete();
                 }).onFailure(f -> {
-                    replicatorPromise.fail(f.getCause());
+                    log.warn("Replicator failed to be instantiated " + f.getMessage());
+                    replicatorPromise.fail(f.getMessage());
                 });
             } else {
                 replicatorPromise.complete();
