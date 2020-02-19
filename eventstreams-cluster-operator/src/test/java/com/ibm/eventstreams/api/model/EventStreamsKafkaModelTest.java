@@ -12,8 +12,6 @@
  */
 package com.ibm.eventstreams.api.model;
 
-import static com.ibm.eventstreams.api.model.EventStreamsKafkaModel.KAFKA_COMPONENT_NAME;
-import static com.ibm.eventstreams.api.model.EventStreamsKafkaModel.ZOOKEEPER_COMPONENT_NAME;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -93,13 +91,13 @@ public class EventStreamsKafkaModelTest {
         assertThat(kafkaPodLabels.get(Labels.SERVICE_SELECTOR_LABEL),  is("kafka-sts"));
         assertThat(kafkaPodLabels.get(Labels.INSTANCE_LABEL),  is(instanceName));
         assertThat(kafkaPodLabels.get(Labels.RELEASE_LABEL),  is(instanceName));
-        assertThat(kafkaPodLabels.get(Labels.COMPONENT_LABEL), is(KAFKA_COMPONENT_NAME));
+        assertThat(kafkaPodLabels.get(Labels.COMPONENT_LABEL), is(EventStreamsKafkaModel.KAFKA_COMPONENT_NAME));
 
         assertThat(zkPodLabels.get(Labels.APP_LABEL),  is("ibm-es"));
         assertThat(zkPodLabels.get(Labels.SERVICE_SELECTOR_LABEL),  is("zookeeper-sts"));
         assertThat(zkPodLabels.get(Labels.INSTANCE_LABEL),  is(instanceName));
         assertThat(zkPodLabels.get(Labels.RELEASE_LABEL),  is(instanceName));
-        assertThat(zkPodLabels.get(Labels.COMPONENT_LABEL), is(ZOOKEEPER_COMPONENT_NAME));
+        assertThat(zkPodLabels.get(Labels.COMPONENT_LABEL), is(EventStreamsKafkaModel.ZOOKEEPER_COMPONENT_NAME));
     }
 
     @Test

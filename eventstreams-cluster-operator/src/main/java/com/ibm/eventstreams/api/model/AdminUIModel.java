@@ -517,6 +517,7 @@ public class AdminUIModel extends AbstractModel {
         return createNetworkPolicy(createLabelSelector(COMPONENT_NAME), ingressRules, egressRules);
     }
 
+
     public RoleBinding getRoleBinding() {
         return this.roleBinding;
     }

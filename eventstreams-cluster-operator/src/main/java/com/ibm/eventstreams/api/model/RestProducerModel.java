@@ -246,6 +246,7 @@ public class RestProducerModel extends AbstractSecureEndpointModel {
     }
 
     private NetworkPolicy createNetworkPolicy() {
+
         List<NetworkPolicyIngressRule> ingressRules = new ArrayList<>(1);
         ingressRules.add(createIngressRule(SERVICE_PORT, new HashMap<>()));
 

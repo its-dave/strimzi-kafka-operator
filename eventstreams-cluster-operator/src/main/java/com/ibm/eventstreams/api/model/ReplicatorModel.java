@@ -174,6 +174,7 @@ public class ReplicatorModel extends AbstractModel {
         Encoder encoder = Base64.getEncoder();
         Map<String, String> data = Collections.singletonMap(REPLICATOR_SECRET_KEY_NAME, encoder.encodeToString("[]".getBytes(StandardCharsets.UTF_8)));
 
+
         this.secret = createSecret(getDefaultResourceName(getInstanceName(),  REPLICATOR_SECRET_NAME), data);
     }
 

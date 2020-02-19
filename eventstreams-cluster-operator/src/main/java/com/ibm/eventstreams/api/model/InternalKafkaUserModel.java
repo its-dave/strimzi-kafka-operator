@@ -55,7 +55,7 @@ public class InternalKafkaUserModel extends AbstractModel {
         kafkaUser = new KafkaUserBuilder()
         .withApiVersion(KafkaUser.RESOURCE_GROUP + "/" + KafkaUser.V1BETA1)
         .withNewMetadata()
-            .withName(getDefaultResourceName())
+            .withName(getKafkaUserName(getInstanceName()))
             .withOwnerReferences(getEventStreamsOwnerReference())
             .withNamespace(getNamespace())
             .withLabels(labels)
@@ -74,7 +74,7 @@ public class InternalKafkaUserModel extends AbstractModel {
         return this.kafkaUser;
     }
 
-    public static String getSecretName(String instanceName) {
-        return getResourcePrefix(instanceName) + "-" + COMPONENT_NAME;
+    public static String getKafkaUserName(String instanceName) {
+        return getDefaultResourceName(instanceName, COMPONENT_NAME);
     }
 }

@@ -359,7 +359,7 @@ public class AdminProxyModel extends AbstractModel {
         return createNetworkPolicy(createLabelSelector(COMPONENT_NAME), ingressRules, egressRules);
     }
     public static String getRouteName(EventStreams instance) {
-        return AbstractModel.getDefaultResourceName(instance.getMetadata().getName(), COMPONENT_NAME);
+        return getDefaultResourceName(instance.getMetadata().getName(), COMPONENT_NAME);
     }
     /**
      * @return getDeployment returns the deployment

@@ -16,8 +16,11 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import com.ibm.eventstreams.api.Labels;
 import com.ibm.eventstreams.api.model.utils.ModelUtils;
 import com.ibm.eventstreams.api.spec.EventStreams;
 
@@ -92,6 +95,25 @@ public class AbstractModelTest {
                 .build();
 
         assertThat(model.getEventStreamsOwnerReference(), is(expectedOwnerReference));
+    }
+    @Test
+    public void testCreateDeploymentHasRequiredLabels() {
+        EventStreams instance = ModelUtils.createDefaultEventStreams(instanceName).build();
+        ComponentModel model = new ComponentModel(instance);
+
+        Map<String, String> expectedLabels = new HashMap<>();
+        expectedLabels.put(Labels.APP_LABEL, AbstractModel.APP_NAME);
+        expectedLabels.put(Labels.COMPONENT_LABEL, ComponentModel.COMPONENT_NAME);
+        expectedLabels.put(Labels.NAME_LABEL, instanceName + "-" + AbstractModel.APP_NAME + "-" + ComponentModel.COMPONENT_NAME);
+        expectedLabels.put(Labels.KUBERNETES_MANAGED_BY_LABEL, Labels.KUBERNETES_MANAGED_BY);
+        expectedLabels.put(Labels.INSTANCE_LABEL, instanceName);
+        expectedLabels.put(Labels.KUBERNETES_NAME_LABEL, Labels.KUBERNETES_NAME);
+        expectedLabels.put(Labels.RELEASE_LABEL, instanceName);
+        expectedLabels.put(Labels.KUBERNETES_INSTANCE_LABEL, instanceName);
+        expectedLabels.put(Labels.SERVICE_SELECTOR_LABEL, ComponentModel.COMPONENT_NAME);
+
+        Deployment deployment = model.createDeployment(new ArrayList<>(), null);
+        assertThat(deployment.getSpec().getTemplate().getMetadata().getLabels(), is(expectedLabels));
     }
 
     @Test

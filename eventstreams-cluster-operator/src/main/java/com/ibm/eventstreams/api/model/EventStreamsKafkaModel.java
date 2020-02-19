@@ -63,7 +63,7 @@ public class EventStreamsKafkaModel extends AbstractModel {
     private static final String STRIMZI_COMPONENT_NAME = "strimzi";
     public static final String KAFKA_COMPONENT_NAME = "kafka";
     public static final String ZOOKEEPER_COMPONENT_NAME = "zookeeper";
-    private static final String ENTITY_OPERATOR_COMPONENT = "entity-operator";
+    private static final String ENTITY_OPERATOR_COMPONENT_NAME = "entity-operator";
     public static final int KAFKA_PORT = 9092;
     public static final int KAFKA_RUNAS_PORT = 8091;
     public static final int KAFKA_PORT_TLS = 9093;
@@ -160,13 +160,17 @@ public class EventStreamsKafkaModel extends AbstractModel {
         ResourceRequirements userOperatorResources = getUserTopicResources(entityOperatorSpec);
         ResourceRequirements entityOperatorTlsResources = getEntityOperatorTlsResources(entityOperatorSpec);
 
+        Map<String, String> strimziComponentLabels = getComponentLabels();
+        // Remove as forbidden by Strimzi.
+        strimziComponentLabels.remove(Labels.NAME_LABEL);
+
         this.kafka = new KafkaBuilder()
             .withApiVersion(Kafka.RESOURCE_GROUP + "/" + Kafka.V1BETA1)
             .editOrNewMetadata()
                 .withNamespace(getNamespace())
                 .withName(getKafkaInstanceName(getInstanceName()))
                 .withOwnerReferences(getEventStreamsOwnerReference())
-                .addToLabels(getComponentLabels())
+                .addToLabels(strimziComponentLabels)
             .endMetadata()
             .withNewSpecLike(strimziOverrides.orElseGet(KafkaSpec::new))
                 .editOrNewKafka()
@@ -183,7 +187,7 @@ public class EventStreamsKafkaModel extends AbstractModel {
                             .editOrNewMetadata()
                                 .addToAnnotations(getEventStreamsMeteringAnnotations("kafka"))
                                 .addToAnnotations(getPrometheusAnnotations())
-                                .addToLabels(getComponentLabels())
+                                .addToLabels(strimziComponentLabels)
                                 .addToLabels(Labels.COMPONENT_LABEL, KAFKA_COMPONENT_NAME)
                                 .addToLabels(getServiceSelectorLabel(KAFKA_SERVICE_SELECTOR))
                             .endMetadata()
@@ -213,7 +217,7 @@ public class EventStreamsKafkaModel extends AbstractModel {
                         .editOrNewPod()
                             .editOrNewMetadata()
                                 .addToAnnotations(getEventStreamsMeteringAnnotations())
-                                .addToLabels(getComponentLabels())
+                                .addToLabels(strimziComponentLabels)
                                 .addToLabels(Labels.COMPONENT_LABEL, ZOOKEEPER_COMPONENT_NAME)
                                 .addToLabels(getServiceSelectorLabel(ZOOKEEPER_SERVICE_SELECTOR))
                             .endMetadata()
@@ -246,7 +250,8 @@ public class EventStreamsKafkaModel extends AbstractModel {
                         .editOrNewPod()
                             .editOrNewMetadata()
                                 .addToAnnotations(getEventStreamsMeteringAnnotations())
-                                .addToLabels(getComponentLabels())
+                                .addToLabels(strimziComponentLabels)
+                                .addToLabels(Labels.COMPONENT_LABEL, ENTITY_OPERATOR_COMPONENT_NAME)
                                 .addToLabels(getServiceSelectorLabel(ENTITY_OPERATOR_SERVICE_SELECTOR))
                             .endMetadata()
                         .withAffinity(new AffinityBuilder(entityOperatorAffinity)

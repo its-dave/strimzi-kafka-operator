@@ -266,7 +266,6 @@ public class AdminApiModelTest {
     }
 
     private void checkNetworkPolicy(NetworkPolicy networkPolicy, int egressIndex, int expectedNumberOfPorts, int expectedGetTo, int expectedMatchLabels, int expectedPort, String expectedComponentName) {
-
         assertThat(networkPolicy
             .getSpec()
             .getEgress()

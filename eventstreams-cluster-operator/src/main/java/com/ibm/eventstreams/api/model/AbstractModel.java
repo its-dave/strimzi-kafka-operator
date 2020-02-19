@@ -353,6 +353,7 @@ public abstract class AbstractModel {
 
         labels.put(Labels.APP_LABEL, APP_NAME);
         labels.put(Labels.COMPONENT_LABEL, this.componentName);
+        labels.put(Labels.NAME_LABEL, getDefaultResourceName());
         labels.put(Labels.INSTANCE_LABEL, this.instanceName);
         labels.put(Labels.RELEASE_LABEL, this.instanceName);
         labels.put(Labels.KUBERNETES_NAME_LABEL, Labels.KUBERNETES_NAME);
@@ -683,12 +684,6 @@ public abstract class AbstractModel {
                     .withValues(getArchitecture())
                 .endMatchExpression()
                 .build();
-    }
-
-    protected NetworkPolicyIngressRule createIngressRule(int port, String componentName) {
-
-        return createIngressRule(port, Collections.singletonMap(Labels.COMPONENT_LABEL, componentName));
-    
     }
 
     protected NetworkPolicyIngressRule createIngressRule(int port, Map<String, String> componentNames) {
