@@ -1521,6 +1521,31 @@ public class KafkaClusterTest {
     }
 
     @Test
+    public void testRunAsPortNetworkPolicy() {
+
+        NetworkPolicyPeer adminApiPeer = new NetworkPolicyPeerBuilder()
+            .withNewPodSelector()
+            .withMatchLabels(Collections.singletonMap(Labels.STRIMZI_NAME_LABEL, cluster + "-admin-api"))
+            .endPodSelector()
+            .withNewNamespaceSelector().endNamespaceSelector()
+            .build();
+
+        Kafka kafkaAssembly = ResourceUtils.createKafkaCluster(namespace, cluster, replicas,
+            image, healthDelay, healthTimeout, metricsCm, configuration, emptyMap());
+        KafkaCluster k = KafkaCluster.fromCrd(kafkaAssembly, VERSIONS);
+
+        // Check Network Policies
+        NetworkPolicy np = k.generateNetworkPolicy(true);
+
+        assertThat(np.getSpec().getIngress().stream().filter(ing -> ing.getPorts().get(0).getPort().equals(new IntOrString(KafkaCluster.RUNAS_PORT))).findFirst().orElse(null), is(notNullValue()));
+
+        List<NetworkPolicyPeer> rules = np.getSpec().getIngress().stream().filter(ing -> ing.getPorts().get(0).getPort().equals(new IntOrString(KafkaCluster.RUNAS_PORT))).map(NetworkPolicyIngressRule::getFrom).findFirst().orElse(null);
+
+        assertThat(rules.size(), is(1));
+        assertThat(rules.contains(adminApiPeer), is(true));
+    }
+
+    @Test
     public void testReplicationPortNetworkPolicyOnOldKubernetes() {
         Kafka kafkaAssembly = ResourceUtils.createKafkaCluster(namespace, cluster, replicas,
                 image, healthDelay, healthTimeout, metricsCm, configuration, emptyMap());

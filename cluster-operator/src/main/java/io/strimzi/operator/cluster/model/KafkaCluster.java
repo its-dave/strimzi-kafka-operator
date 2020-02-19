@@ -2160,6 +2160,9 @@ public class KafkaCluster extends AbstractModel {
             rules.add(jmxRule);
         }
 
+        // Add the RunAsNetwork Policy
+        rules.add(generateRunAsNetworkPolicy());
+
         NetworkPolicy networkPolicy = new NetworkPolicyBuilder()
                 .withNewMetadata()
                     .withName(policyName(cluster))
@@ -2174,9 +2177,6 @@ public class KafkaCluster extends AbstractModel {
                     .withIngress(rules)
                 .endSpec()
                 .build();
-
-        // Add the RunAsNetwork Policy
-        rules.add(generateRunAsNetworkPolicy());
 
         log.trace("Created network policy {}", networkPolicy);
         return networkPolicy;
