@@ -420,9 +420,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             if (externalClientAuth.isPresent() && !(externalClientAuth.get() instanceof KafkaListenerAuthenticationOAuth)) {
 
                 KafkaUser sourceConnectorUser = replicatorUsersModel.getReplicatorSourceConnectorUser();
-                sourceConnectorUser.getMetadata()
-                        .getLabels()
-                        .putAll(replicatorUsersModel.getComponentLabels());
+
                 Future<KafkaUser> createdSourceConnectorKafkaUser = toFuture(() -> Crds
                         .kafkaUserOperation(client)
                         .inNamespace(instance.getMetadata().getNamespace())
@@ -448,9 +446,6 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                     && replicationEnabled.get() > 0) {
 
                 KafkaUser connectUser = replicatorUsersModel.getReplicatorConnectUser();
-                connectUser.getMetadata()
-                        .getLabels()
-                        .putAll(replicatorUsersModel.getComponentLabels());
 
                 Future<KafkaUser> createKafkaConnectUser = toFuture(() -> Crds
                         .kafkaUserOperation(client)
@@ -459,9 +454,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 usersCreated.add(createKafkaConnectUser.map(v -> this));
 
                 KafkaUser destinationConnectorUser = replicatorUsersModel.getReplicatorDestinationConnectorUser();
-                destinationConnectorUser.getMetadata()
-                        .getLabels()
-                        .putAll(replicatorUsersModel.getComponentLabels());
+
                 Future<KafkaUser> createdDestinationConnectorKafkaUser = toFuture(() -> Crds
                         .kafkaUserOperation(client)
                         .inNamespace(instance.getMetadata().getNamespace())
@@ -534,9 +527,6 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             InternalKafkaUserModel internalUserModel = new InternalKafkaUserModel(instance);
             KafkaUser kafkaUser = internalUserModel
                     .getKafkaUser();
-            kafkaUser.getMetadata()
-                    .getLabels()
-                    .putAll(internalUserModel.getComponentLabels());
             Future<KafkaUser> createdKafkaUser = toFuture(() -> Crds
                 .kafkaUserOperation(client)
                 .inNamespace(instance.getMetadata().getNamespace())
