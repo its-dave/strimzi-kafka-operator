@@ -18,7 +18,6 @@ import com.ibm.iam.api.spec.Client;
 import com.ibm.iam.api.spec.ClientBuilder;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
-import java.util.HashMap;
 import java.util.Map;
 
 public class ClientModel extends AbstractModel {
@@ -32,8 +31,7 @@ public class ClientModel extends AbstractModel {
         setOwnerReference(instance);
         setArchitecture(instance.getSpec().getArchitecture());
         
-        Map<String, String> labels = new HashMap<>();
-        labels.put("strimzi.io/cluster", getResourcePrefix());
+        Map<String, String> labels = getComponentLabels();
 
         String trustgedURIPrefixes = routeHost;
         String redirectURIs = routeHost + "/oauth/callback";

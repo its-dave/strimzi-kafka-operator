@@ -1,0 +1,101 @@
+overrides:
+  # -------------------------------------------------------------------
+  # overrides - rules we need to override
+  # ----------------------------
+
+  # TODO ensure deployment for release has a locked down version
+  - rule: "NoLatestImageTags"
+    message: '^\[ERROR\] scanned-deployment-\w+-eventstreams-operator\.yaml:.*'
+    reason: "Set to latest for development purposes"
+  - rule: "LatestTagHasPullPolicyAlways"
+    message: '^\[ERROR\] scanned-deployment-\w+-eventstreams-operator\.yaml:.*'
+    reason: "Set to latest for development purposes"
+  # TODO lock down versions
+  - rule: "NoLatestImageTags"
+    message: '^\[ERROR\] scanned-deployment-\w+-(my-es-entity|strimzi-cluster)-operator\.yaml:.*'
+    reason: "Set to latest for development purposes"
+
+  # TODO validate if this is true and if so for how long.
+  - rule: "NoAlphaAnnotations"
+    message: '^\[ERROR\] scanned-service-\w+-my-es-(kafka-brokers|zookeeper-nodes)\.yaml:.*'
+    reason: "Backlevel versions of kube need supporting"
+
+##############################
+# CUSTOM STRIMZI REQUIRED
+##############################
+
+  # TODO: Custom Strimzi with DropAll
+  - rule: "ContainerHasDropAll"
+    message: '^\[ERROR\] scanned-(statefulset|deployment)-\w+-my-es-(kafka|zookeeper|entity-operator)\.yaml:.*'
+    reason: "Currently have no control over Security context within containers in Strimzi (container builder does not use it or expose it)"
+  - rule: "ContainerHasDropAll"
+    message: '^\[ERROR\] scanned-deployment-\w+-my-es-ibm-es-replicator-connect\.yaml:.*'
+    reason: "Currently have no control over Security context within containers in Strimzi"
+
+  # TODO: Custom Strimzi with PodSecurityContextDefined
+  - rule: "PodSecurityContextDefined"
+    message: '^\[ERROR\] scanned-(deployment|statefulset)-\w+-my-es-(kafka|zookeeper|entity-operator)\.yaml:.*'
+    reason: "Look into this"
+  - rule: "PodSecurityContextDefined"
+    message: '^\[ERROR\] scanned-deployment-\w+-my-es-ibm-es-replicator-connect\.yaml:.*'
+    reason: "Look into this"
+
+##############################
+# CLOUDPAK CLARIFICATION REQUIRED
+##############################
+
+##############################
+# CV LINTER BUGS
+##############################
+
+  # TODO report namespace default resources being picked up by scan to linter team
+  - rule: "RequiredMetadataLabelsDefined"
+    message: '^\[ERROR\] scanned-rolebinding-\w+-system:[a-zA-Z-]+\.yaml:.*'
+    reason: "These files are OpenShift default files and shouldn't be scanned"
+  - rule: "ResourceNameIsValid"
+    message: '^\[ERROR\] scanned-rolebinding-\w+-system:[a-zA-Z-]+\.yaml:.*'
+    reason: "These files are OpenShift default files and shouldn't be scanned"
+  - rule: "RequiredMetadataLabelsDefined"
+    message: '^\[ERROR\] scanned-(rolebinding|serviceaccount)-\w+-(admin|builder|default|deployer)\.yaml:.*'
+    reason: "These are default resources and should not be scanned"
+
+  # TODO report that imagestream does not need to be picked up and scanned
+  - rule: "RequiredMetadataLabelsDefined"
+    message: '^\[ERROR\] scanned-(imagestream|imagestreamtag)-[a-zA-Z0-9-:\.]+\.yaml:.*'
+    reason: "These are generated resources and should not be scanned"
+  - rule: "ResourceNameIsValid"
+    message: '^\[ERROR\] scanned-imagestreamtag-[a-zA-Z0-9-:\.]+\.yaml:.*'
+    reason: "These are generated resources and should not be scanned"
+
+##############################
+# TOFIX
+##############################
+
+  - rule: "RequiredMetadataLabelsDefined"
+    message: '^\[ERROR\] scanned-kafkatopic-\w+-.*'
+    reason: "Investigate: Should KafkaTopics have correct labels - also they should why is it not?"
+
+
+  - rule: "RequiredMetadataLabelsDefined"
+    message: '^\[ERROR\] scanned-client-\w+-my-es-ibm-es-oidc-client\.yaml:.*'
+    reason: "These are generated resources and should not be scanned"
+
+  - rule: "RequiredMetadataLabelsDefined"
+    message: '^\[ERROR\] scanned-secret-\w+-my-es-ibm-es-(admin-ui-service-cert|oidc-secret)\.yaml:.*'
+    reason: "Our secrets should have correct labels"
+
+  - rule: "RequiredMetadataLabelsDefined"
+    message: '^\[ERROR\] scanned-eventstreams-\w+-my-es\.yaml:.*'
+    reason: "Use YQ to deploy an es example with correct labels"
+
+
+  - rule: "PodHasArchBasedNodeAffinity"
+    message: '^\[ERROR\] scanned-deployment-\w+-my-es-ibm-es-replicator-connect\.yaml:.*'
+    reason: "Do we still need to follow this rule? Investigate"
+
+  - rule: "ContainerDefinesResources"
+    message: '^\[ERROR\] scanned-deployment-\w+-my-es-ibm-es-replicator-connect\.yaml:.*'
+    reason: "This definitely needs to be done - allocate correct resources"
+
+
+
