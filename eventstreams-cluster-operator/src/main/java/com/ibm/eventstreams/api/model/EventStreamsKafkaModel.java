@@ -76,6 +76,9 @@ public class EventStreamsKafkaModel extends AbstractModel {
     public EventStreamsKafkaModel(EventStreams instance) {
         super(instance.getMetadata().getName(), instance.getMetadata().getNamespace(), STRIMZI_COMPONENT_NAME);
 
+        // check what has been requested before any defaults get mapped on top
+        boolean shouldDeployTopicOperator = isTopicOperatorRequested(instance);
+
         setOwnerReference(instance);
         setArchitecture(instance.getSpec().getArchitecture());
         setEncryption(Optional.ofNullable(instance.getSpec())
@@ -163,8 +166,8 @@ public class EventStreamsKafkaModel extends AbstractModel {
         Map<String, String> strimziComponentLabels = getComponentLabels();
         // Remove as forbidden by Strimzi.
         strimziComponentLabels.remove(Labels.NAME_LABEL);
-
-        this.kafka = new KafkaBuilder()
+        
+        KafkaBuilder builder = new KafkaBuilder()
             .withApiVersion(Kafka.RESOURCE_GROUP + "/" + Kafka.V1BETA1)
             .editOrNewMetadata()
                 .withNamespace(getNamespace())
@@ -237,9 +240,8 @@ public class EventStreamsKafkaModel extends AbstractModel {
                     .endTemplate()
                 .endZookeeper()
                 .editOrNewEntityOperator()
-                    .editOrNewTopicOperator()
-                        .withResources(topicOperatorResources)
-                    .endTopicOperator()
+                    // topic operator is optional, so this is added
+                    //  to the builder if needed below
                     .editOrNewUserOperator()
                         .withResources(userOperatorResources)
                     .endUserOperator()
@@ -264,8 +266,22 @@ public class EventStreamsKafkaModel extends AbstractModel {
                         .endPod()
                     .endTemplate()
                 .endEntityOperator()
-            .endSpec()
-            .build();
+            .endSpec();
+
+        //
+        // add optional elements to the spec before building
+
+        if (shouldDeployTopicOperator) {
+            builder.editSpec()
+                    .editEntityOperator()
+                        .editOrNewTopicOperator()
+                            .withResources(topicOperatorResources)
+                        .endTopicOperator()
+                    .endEntityOperator()
+                .endSpec();
+        }
+
+        this.kafka = builder.build();
     }
 
     /**
@@ -373,6 +389,15 @@ public class EventStreamsKafkaModel extends AbstractModel {
         limits.put("memory", new Quantity("500Mi"));
 
         return buildNewResourceRequirements(requests, limits);
+    }
+
+    private boolean isTopicOperatorRequested(EventStreams instance) {
+        return Optional.ofNullable(instance)
+                .map(EventStreams::getSpec)
+                .map(EventStreamsSpec::getStrimziOverrides)
+                .map(KafkaSpec::getEntityOperator)
+                .map(EntityOperatorSpec::getTopicOperator)
+                .isPresent();
     }
 
     private ResourceRequirements getTopicOperatorResources(EntityOperatorSpec entityOperatorSpec) {

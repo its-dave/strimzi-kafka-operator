@@ -48,10 +48,6 @@ metadata:
               "encryption": "TLS"
             },
             "strimziOverrides": {
-              "entityOperator": {
-                "topicOperator": {},
-                "userOperator": {}
-              },
               "kafka": {
                 "config": {
                   "interceptor.class.names": "com.ibm.eventstreams.interceptors.metrics.ProducerMetricsInterceptor",
@@ -148,10 +144,6 @@ metadata:
               "encryption": "TLS"
             },
             "strimziOverrides": {
-              "entityOperator": {
-                "topicOperator": {},
-                "userOperator": {}
-              },
               "kafka": {
                 "authorization": {
                   "type": "runas"
@@ -258,10 +250,6 @@ metadata:
               "encryption": "TLS"
             },
             "strimziOverrides": {
-              "entityOperator": {
-                "topicOperator": {},
-                "userOperator": {}
-              },
               "kafka": {
                 "config": {
                   "interceptor.class.names": "com.ibm.eventstreams.interceptors.metrics.ProducerMetricsInterceptor",

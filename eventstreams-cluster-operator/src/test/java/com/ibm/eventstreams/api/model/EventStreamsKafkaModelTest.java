@@ -426,10 +426,27 @@ public class EventStreamsKafkaModelTest {
     }
 
     @Test
-    public void testTopicOperatorDefaultResources() {
+    public void testTopicOperatorOmittedByDefault() {
         EntityOperatorSpec entityOperator = createDefaultKafkaModel().getKafka().getSpec().getEntityOperator();
 
-        ResourceRequirements resources = entityOperator.getTopicOperator().getResources();
+        assertThat(entityOperator.getTopicOperator(), is(nullValue()));
+    }
+
+    @Test
+    public void testTopicOperatorDefaultResources() {
+        EventStreams instance = createDefaultEventStreams()
+                .editSpec()
+                    .withStrimziOverrides(new KafkaSpecBuilder()
+                        .editOrNewEntityOperator()
+                            .editOrNewTopicOperator()
+                            .endTopicOperator()
+                        .endEntityOperator()
+                    .build())
+                .endSpec()
+                .build();
+        Kafka kafka = new EventStreamsKafkaModel(instance).getKafka();
+
+        ResourceRequirements resources = kafka.getSpec().getEntityOperator().getTopicOperator().getResources();
         assertThat(resources.getRequests().get("cpu"), is(new Quantity("10m")));
         assertThat(resources.getLimits().get("cpu"), is(new Quantity("1000m")));
         assertThat(resources.getRequests().get("memory"), is(new Quantity("50Mi")));
