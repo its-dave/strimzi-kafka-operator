@@ -23,8 +23,6 @@ import io.strimzi.api.kafka.model.KafkaClusterSpec;
 import io.strimzi.api.kafka.model.KafkaSpec;
 import io.strimzi.api.kafka.model.KafkaUser;
 import io.strimzi.api.kafka.model.KafkaUserBuilder;
-import io.strimzi.api.kafka.model.KafkaUserScramSha512ClientAuthentication;
-import io.strimzi.api.kafka.model.KafkaUserTlsClientAuthentication;
 import io.strimzi.api.kafka.model.listener.KafkaListenerAuthentication;
 import io.strimzi.api.kafka.model.listener.KafkaListenerAuthenticationScramSha512;
 import io.strimzi.api.kafka.model.listener.KafkaListenerAuthenticationTls;
@@ -266,12 +264,7 @@ public class ReplicatorUsersModel extends AbstractModel {
         connectAclList.add(offsetStorageTopicDescribeConfigs);
         connectAclList.add(statusStorageTopicDescribeConfigs);
 
-        KafkaListenerAuthentication kafkaAuth = Optional.ofNullable(instance.getSpec())
-                .map(EventStreamsSpec::getStrimziOverrides)
-                .map(KafkaSpec::getKafka)
-                .map(KafkaClusterSpec::getListeners)
-                .map(KafkaListeners::getTls)
-                .map(KafkaListenerTls::getAuth).orElse(null);
+        KafkaListenerAuthentication kafkaAuth = getInternalKafkaListenerAuthentication();
 
         if (kafkaAuth != null) {
             replicatorConnectUser = createKafkaUser(connectAclList, ReplicatorModel.REPLICATOR_CONNECT_USER_NAME, kafkaAuth);
@@ -303,12 +296,7 @@ public class ReplicatorUsersModel extends AbstractModel {
         connectorDestinationAclList.add(clusterResourceCreate);
         connectorDestinationAclList.add(clusterResourceAlter);
 
-        KafkaListenerAuthentication kafkaAuth = Optional.ofNullable(instance.getSpec())
-            .map(EventStreamsSpec::getStrimziOverrides)
-            .map(KafkaSpec::getKafka)
-            .map(KafkaClusterSpec::getListeners)
-            .map(KafkaListeners::getTls)
-            .map(KafkaListenerTls::getAuth).orElse(null);
+        KafkaListenerAuthentication kafkaAuth = getInternalKafkaListenerAuthentication();
 
         if (kafkaAuth != null) {
             replicatorDestinationConnectorUser = createKafkaUser(connectorDestinationAclList, ReplicatorModel.REPLICATOR_DESTINATION_CLUSTER_CONNNECTOR_USER_NAME, kafkaAuth);
@@ -382,13 +370,7 @@ public class ReplicatorUsersModel extends AbstractModel {
         connectorSourceAclList.add(clusterResourceDescribe);
         connectorSourceAclList.add(offsetTopicWrite);
 
-        KafkaListenerAuthentication kafkaAuth = Optional.ofNullable(instance.getSpec())
-                .map(EventStreamsSpec::getStrimziOverrides)
-                .map(KafkaSpec::getKafka)
-                .map(KafkaClusterSpec::getListeners)
-                .map(KafkaListeners::getExternal)
-                .map(KafkaListenerExternal::getAuth)
-                .orElse(null);
+        KafkaListenerAuthentication kafkaAuth = getExternalKafkaListenerAuthentication();
 
         if (kafkaAuth != null) {
             replicatorSourceConnectorUser = createKafkaUser(connectorSourceAclList, ReplicatorModel.REPLICATOR_SOURCE_CLUSTER_CONNECTOR_USER_NAME, kafkaAuth);
@@ -403,9 +385,7 @@ public class ReplicatorUsersModel extends AbstractModel {
         Map<String, String> labels = new HashMap<>();
         labels.put(Labels.STRIMZI_CLUSTER_LABEL, getInstanceName());
 
-        KafkaUser createdUser = null;
-
-        createdUser = new KafkaUserBuilder()
+        KafkaUserBuilder createdUserBuilder = new KafkaUserBuilder()
             .withApiVersion(KafkaUser.RESOURCE_GROUP + "/" + KafkaUser.V1BETA1)
             .withNewMetadata()
                 .withName(getDefaultResourceName(getInstanceName(), kafkaUserName))
@@ -417,21 +397,42 @@ public class ReplicatorUsersModel extends AbstractModel {
                .withNewKafkaUserAuthorizationSimple()
                    .withAcls(aclList)
                .endKafkaUserAuthorizationSimple()
-            .endSpec()
-            .build();
+            .endSpec();
 
         if (kafkaAuth instanceof KafkaListenerAuthenticationTls) {
-
-            createdUser.getSpec().setAuthentication(new KafkaUserTlsClientAuthentication());
-
+            createdUserBuilder
+                .editOrNewSpec()
+                    .withNewKafkaUserTlsClientAuthentication()
+                    .endKafkaUserTlsClientAuthentication()
+                .endSpec();
         } else if (kafkaAuth instanceof KafkaListenerAuthenticationScramSha512) {
-
-            createdUser.getSpec().setAuthentication(new KafkaUserScramSha512ClientAuthentication());
+            createdUserBuilder
+                .editOrNewSpec()
+                    .withNewKafkaUserScramSha512ClientAuthentication()
+                    .endKafkaUserScramSha512ClientAuthentication()
+                 .endSpec();
 
         }
+        return createdUserBuilder.build();
+    }
 
-        return createdUser;
+    private KafkaListenerAuthentication getExternalKafkaListenerAuthentication() {
+        return Optional.ofNullable(instance.getSpec())
+                .map(EventStreamsSpec::getStrimziOverrides)
+                .map(KafkaSpec::getKafka)
+                .map(KafkaClusterSpec::getListeners)
+                .map(KafkaListeners::getExternal)
+                .map(KafkaListenerExternal::getAuth)
+                .orElse(null);
+    }
 
+    private KafkaListenerAuthentication getInternalKafkaListenerAuthentication() {
+        return Optional.ofNullable(instance.getSpec())
+                .map(EventStreamsSpec::getStrimziOverrides)
+                .map(KafkaSpec::getKafka)
+                .map(KafkaClusterSpec::getListeners)
+                .map(KafkaListeners::getTls)
+                .map(KafkaListenerTls::getAuth).orElse(null);
     }
 
     /**
