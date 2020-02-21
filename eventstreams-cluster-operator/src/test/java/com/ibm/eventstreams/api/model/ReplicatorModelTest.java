@@ -12,7 +12,9 @@
  */
 package com.ibm.eventstreams.api.model;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.CoreMatchers.startsWith;
 
@@ -61,8 +63,6 @@ public class ReplicatorModelTest {
 
     private EventStreamsBuilder createDefaultEventStreams() {
 
-
-
         return ModelUtils.createDefaultEventStreams(instanceName)
             .withMetadata(new ObjectMetaBuilder()
                 .withNewName(instanceName)
@@ -99,12 +99,6 @@ public class ReplicatorModelTest {
         return new ReplicatorModel(instance, replicatorCredentials);
     }
 
-    private ReplicatorUsersModel createDefaultReplicatorUserModel() {
-        EventStreams instance = createDefaultEventStreams().build();
-        return new ReplicatorUsersModel(instance);
-    }
-
-
     @Test
     public void testDefaultReplicatorIsCreated() {
         KafkaConnect replicator = createDefaultReplicator();
@@ -113,6 +107,12 @@ public class ReplicatorModelTest {
         assertThat(replicator.getApiVersion(), is("eventstreams.ibm.com/v1beta1"));
 
         assertThat(replicator.getMetadata().getName(), startsWith(componentPrefix));
+
+        Map<String, String> labels = replicator.getMetadata().getLabels();
+        for (Map.Entry<String, String> label : labels.entrySet()) {
+            assertThat(label.getKey(), not(containsString(io.strimzi.operator.common.model.Labels.STRIMZI_DOMAIN)));
+        }
+
         assertThat(replicator.getSpec().getReplicas(), is(defaultReplicas));
         assertThat(replicator.getSpec().getBootstrapServers(), is(bootstrap));
         assertThat(replicator.getSpec().getConfig().get("config.storage.replication.factor"), is(numberOfConnectorTopics));

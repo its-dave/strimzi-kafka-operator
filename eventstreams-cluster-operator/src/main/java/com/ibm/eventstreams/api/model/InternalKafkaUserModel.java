@@ -18,13 +18,10 @@ import io.strimzi.api.kafka.model.AclResourcePatternType;
 import io.strimzi.api.kafka.model.AclRule;
 import io.strimzi.api.kafka.model.AclRuleBuilder;
 import io.strimzi.api.kafka.model.KafkaUser;
-import io.strimzi.api.kafka.model.KafkaUserBuilder;
-import io.strimzi.operator.common.model.Labels;
+import io.strimzi.api.kafka.model.KafkaUserSpecBuilder;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class InternalKafkaUserModel extends AbstractModel {
     public static final String COMPONENT_NAME = "kafka-user";
@@ -48,26 +45,16 @@ public class InternalKafkaUserModel extends AbstractModel {
             .build();
 
         aclList.add(rule1);
+
         
-        Map<String, String> labels = new HashMap<>();
-        labels.put(Labels.STRIMZI_CLUSTER_LABEL, EventStreamsKafkaModel.getKafkaInstanceName(getInstanceName()));
-        
-        kafkaUser = new KafkaUserBuilder()
-        .withApiVersion(KafkaUser.RESOURCE_GROUP + "/" + KafkaUser.V1BETA1)
-        .withNewMetadata()
-            .withName(getKafkaUserName(getInstanceName()))
-            .withOwnerReferences(getEventStreamsOwnerReference())
-            .withNamespace(getNamespace())
-            .withLabels(labels)
-        .endMetadata()
-        .withNewSpec()
-            .withNewKafkaUserTlsClientAuthentication()
-            .endKafkaUserTlsClientAuthentication()
-            .withNewKafkaUserAuthorizationSimple()
-               .withAcls(aclList)
-            .endKafkaUserAuthorizationSimple()
-        .endSpec()
-        .build();
+        kafkaUser = createKafkaUser(COMPONENT_NAME,
+                new KafkaUserSpecBuilder()
+                        .withNewKafkaUserTlsClientAuthentication()
+                        .endKafkaUserTlsClientAuthentication()
+                        .withNewKafkaUserAuthorizationSimple()
+                            .withAcls(aclList)
+                        .endKafkaUserAuthorizationSimple()
+                        .build());
     }
 
     public KafkaUser getKafkaUser() {

@@ -137,14 +137,16 @@ public class ReplicatorModel extends AbstractModel {
         configOfKafkaConnect.put("key.converter", "org.apache.kafka.connect.converters.ByteArrayConverter");
         configOfKafkaConnect.put("value.converter", "org.apache.kafka.connect.converters.ByteArrayConverter");
 
+        Map<String, String> labels = getComponentLabelsWithoutResourceGroup();
+
         KafkaConnectTemplate kafkaConnectTemplate = new KafkaConnectTemplateBuilder()
             .editOrNewPod()
-            .withMetadata(new MetadataTemplateBuilder()
-                .addToAnnotations(getEventStreamsMeteringAnnotations(COMPONENT_NAME))
-                .addToAnnotations(getPrometheusAnnotations(DEFAULT_PROMETHEUS_PORT))
-                .addToLabels(getServiceSelectorLabel(COMPONENT_NAME))
-                .addToLabels(getComponentLabels())
-                .build())
+                .withMetadata(new MetadataTemplateBuilder()
+                    .addToAnnotations(getEventStreamsMeteringAnnotations(COMPONENT_NAME))
+                    .addToAnnotations(getPrometheusAnnotations(DEFAULT_PROMETHEUS_PORT))
+                    .addToLabels(getServiceSelectorLabel(COMPONENT_NAME))
+                    .addToLabels(labels)
+                    .build())
             .endPod()
             .build();
 
@@ -157,8 +159,7 @@ public class ReplicatorModel extends AbstractModel {
                 .withNamespace(getNamespace())
                 .withName(getDefaultResourceName(getInstanceName(), COMPONENT_NAME))
                 .withOwnerReferences(getEventStreamsOwnerReference())
-                .addToLabels(getServiceSelectorLabel(COMPONENT_NAME))
-                .addToLabels(getComponentLabels())
+                .addToLabels(labels)
             .endMetadata()
             .withNewSpecLike(replicatorSpec.get())
                 .withTemplate(kafkaConnectTemplate)
@@ -195,7 +196,6 @@ public class ReplicatorModel extends AbstractModel {
 
 
     private NetworkPolicyIngressRule createCustomReplicatorConnectIngressRule() {
-
 
         NetworkPolicyIngressRuleBuilder policyBuilder = new NetworkPolicyIngressRuleBuilder()
             .addNewPort().withNewPort(REPLICATOR_PORT).endPort();

@@ -78,6 +78,9 @@ import io.fabric8.openshift.api.model.RouteBuilder;
 import io.fabric8.openshift.api.model.TLSConfig;
 import io.fabric8.openshift.api.model.TLSConfigBuilder;
 import io.strimzi.api.kafka.model.ContainerEnvVar;
+import io.strimzi.api.kafka.model.KafkaUser;
+import io.strimzi.api.kafka.model.KafkaUserBuilder;
+import io.strimzi.api.kafka.model.KafkaUserSpec;
 import io.strimzi.api.kafka.model.status.ListenerAddress;
 import io.strimzi.api.kafka.model.status.ListenerStatus;
 import io.strimzi.api.kafka.model.template.PodTemplate;
@@ -348,17 +351,40 @@ public abstract class AbstractModel {
         
     }
 
+    // If creating a Strimzi Custom Resource please use getComponentLabelsWithoutResourceGroup
     public Map<String, String> getComponentLabels() {
-        Map<String, String> labels = new HashMap<String, String>();
+        Map<String, String> labels = getGenericLabels();
+        labels.putAll(getResourceGroupLabels());
+
+        return labels;
+    }
+
+    // getComponentLabelsWithoutResourceGroup returns the component labels without any of the banned Strimzi namespaced labels
+    // Use this function to create labels for Strimzi Custom Resources
+    public Map<String, String> getComponentLabelsWithoutResourceGroup() {
+        Map<String, String> labels = getGenericLabels();
+
+        return labels;
+    }
+
+    private Map<String, String> getGenericLabels() {
+        Map<String, String> labels = new HashMap<>();
 
         labels.put(Labels.APP_LABEL, APP_NAME);
         labels.put(Labels.COMPONENT_LABEL, this.componentName);
-        labels.put(Labels.NAME_LABEL, getDefaultResourceName());
         labels.put(Labels.INSTANCE_LABEL, this.instanceName);
         labels.put(Labels.RELEASE_LABEL, this.instanceName);
         labels.put(Labels.KUBERNETES_NAME_LABEL, Labels.KUBERNETES_NAME);
         labels.put(Labels.KUBERNETES_INSTANCE_LABEL, this.instanceName);
         labels.put(Labels.KUBERNETES_MANAGED_BY_LABEL, Labels.KUBERNETES_MANAGED_BY);
+
+        return labels;
+    }
+
+    private Map<String, String> getResourceGroupLabels() {
+        Map<String, String> labels = new HashMap<>();
+
+        labels.put(Labels.NAME_LABEL, getDefaultResourceName());
 
         return labels;
     }
@@ -622,6 +648,22 @@ public abstract class AbstractModel {
                 .withIngress(ingressRules)
                 .withEgress(egressRules)
             .endSpec()
+            .build();
+    }
+
+    protected KafkaUser createKafkaUser(String kafkaUserName, KafkaUserSpec spec) {
+        Map<String, String> labels = getComponentLabelsWithoutResourceGroup();
+        labels.put(io.strimzi.operator.common.model.Labels.STRIMZI_CLUSTER_LABEL, EventStreamsKafkaModel.getKafkaInstanceName(getInstanceName()));
+
+        return new KafkaUserBuilder()
+            .withApiVersion(KafkaUser.RESOURCE_GROUP + "/" + KafkaUser.V1BETA1)
+            .withNewMetadata()
+                .withName(getDefaultResourceName(getInstanceName(), kafkaUserName))
+                .withOwnerReferences(getEventStreamsOwnerReference())
+                .withNamespace(getNamespace())
+                .withLabels(labels)
+            .endMetadata()
+            .withSpec(spec)
             .build();
     }
     

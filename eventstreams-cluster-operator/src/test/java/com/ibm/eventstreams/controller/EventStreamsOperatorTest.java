@@ -58,6 +58,7 @@ import com.ibm.eventstreams.api.model.AdminUIModel;
 import com.ibm.eventstreams.api.model.CertificateSecretModel;
 import com.ibm.eventstreams.api.model.ClusterSecretsModel;
 import com.ibm.eventstreams.api.model.CollectorModel;
+import com.ibm.eventstreams.api.model.InternalKafkaUserModel;
 import com.ibm.eventstreams.api.model.ReplicatorModel;
 import com.ibm.eventstreams.api.model.RestProducerModel;
 import com.ibm.eventstreams.api.model.SchemaRegistryModel;
@@ -70,6 +71,11 @@ import com.ibm.eventstreams.api.status.EventStreamsStatusBuilder;
 import com.ibm.eventstreams.api.status.EventStreamsVersions;
 import com.ibm.eventstreams.controller.utils.ControllerUtils;
 
+import io.strimzi.api.kafka.KafkaList;
+import io.strimzi.api.kafka.KafkaUserList;
+import io.strimzi.api.kafka.model.DoneableKafka;
+import io.strimzi.api.kafka.model.DoneableKafkaUser;
+import io.strimzi.api.kafka.model.KafkaUser;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterAll;
@@ -161,7 +167,9 @@ public class EventStreamsOperatorTest {
         SERVICES,
         CONFIG_MAPS,
         ROUTES,
-        SECRETS
+        SECRETS,
+        KAFKAS,
+        KAFKA_USERS
     };
 
     @BeforeAll
@@ -243,6 +251,9 @@ public class EventStreamsOperatorTest {
         Set<String> expectedRoutes = getExpectedRouteNames(CLUSTER_NAME);
         Set<String> expectedConfigMaps = getExpectedConfigMapNames(CLUSTER_NAME);
         Set<String> expectedSecrets = getExpectedSecretNames(CLUSTER_NAME);
+        Set<String> expectedKafkaUsers = getExpectedKafkaUsers(CLUSTER_NAME);
+        Set<String> expectedKafkas = getExpectedKafkas(CLUSTER_NAME);
+
 
         Checkpoint async = context.checkpoint();
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster).setHandler(ar -> {
@@ -254,10 +265,29 @@ public class EventStreamsOperatorTest {
             });
             verifyResources(context, expectedConfigMaps, KubeResourceType.CONFIG_MAPS);
             verifyResources(context, expectedResources, KubeResourceType.DEPLOYMENTS);
+            verifyReplicasInDeployments(context, expectedResourcesWithReplicas);
             verifyResources(context, expectedServices, KubeResourceType.SERVICES);
             verifyResources(context, expectedRoutes, KubeResourceType.ROUTES);
             verifyResources(context, expectedSecrets, KubeResourceType.SECRETS);
-            verifyReplicasInDeployments(context, expectedResourcesWithReplicas);
+
+            verifyResources(context, expectedKafkas, KubeResourceType.KAFKAS);
+            Set<HasMetadata> kafkas = getResources(NAMESPACE, KubeResourceType.KAFKAS);
+            kafkas.forEach(user -> {
+                for (Map.Entry<String, String> label: user.getMetadata().getLabels().entrySet()) {
+                    assertThat("Kafka Custom Resources should not contain reserved domain labels", label.getKey(), not(containsString(io.strimzi.operator.common.model.Labels.STRIMZI_DOMAIN)));
+                }
+            });
+
+            verifyResources(context, expectedKafkaUsers, KubeResourceType.KAFKA_USERS);
+            Set<HasMetadata> kafkaUsers = getResources(NAMESPACE, KubeResourceType.KAFKA_USERS);
+            kafkaUsers.forEach(user -> {
+                for (Map.Entry<String, String> label: user.getMetadata().getLabels().entrySet()) {
+                    if (!label.getKey().equals(io.strimzi.operator.common.model.Labels.STRIMZI_CLUSTER_LABEL)) {
+                        assertThat("KafkaUser Custom Resources should not contain reserved domain labels, with the exception of the cluster label", label.getKey(), not(containsString(io.strimzi.operator.common.model.Labels.STRIMZI_DOMAIN)));
+                    }
+                }
+            });
+
             async.flag();
         });
     }
@@ -1140,8 +1170,6 @@ public class EventStreamsOperatorTest {
 
     private void verifyResources(VertxTestContext context, Set<String> expectedResources, KubeResourceType type) {
         Set<HasMetadata> actualResources =  getActualResources(expectedResources, type);
-        Set<HasMetadata> finalActualResources = actualResources;
-        context.verify(() -> assertThat(finalActualResources.size(), is(expectedResources.size())));
         Set<String> actualResourceNames = actualResources.stream().map(res -> res.getMetadata().getName()).collect(Collectors.toSet());
         context.verify(() -> assertThat(actualResourceNames, is(expectedResources)));
     }
@@ -1247,7 +1275,30 @@ public class EventStreamsOperatorTest {
         expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME + "-" + CertificateSecretModel.CERT_SECRET_NAME_POSTFIX);
         expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + AdminApiModel.COMPONENT_NAME + "-" + CertificateSecretModel.CERT_SECRET_NAME_POSTFIX);
         expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + ClusterSecretsModel.EVENTSTREAMS_IBMCLOUD_CA_CERT_SECRET_SUFFIX);
+        expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + ReplicatorModel.REPLICATOR_SOURCE_CLUSTER_CONNECTOR_USER_NAME);
+        expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + ReplicatorModel.REPLICATOR_DESTINATION_CLUSTER_CONNNECTOR_USER_NAME);
+        expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + ReplicatorModel.REPLICATOR_CONNECT_USER_NAME);
+
+        expectedSecrets.add(clusterName + "-cluster-ca");
+        expectedSecrets.add(clusterName + "-cluster-ca-cert");
+
         return expectedSecrets;
+    }
+
+    private Set<String> getExpectedKafkas(String clusterName) {
+        Set<String> expectedKafkas = new HashSet<>();
+        expectedKafkas.add(clusterName);
+        return expectedKafkas;
+    }
+
+    private Set<String> getExpectedKafkaUsers(String clusterName) {
+        Set<String> expectedKafkaUsers = new HashSet<>();
+        expectedKafkaUsers.add(clusterName + "-" + APP_NAME + "-" + ReplicatorModel.REPLICATOR_DESTINATION_CLUSTER_CONNNECTOR_USER_NAME);
+        expectedKafkaUsers.add(clusterName + "-" + APP_NAME + "-" + ReplicatorModel.REPLICATOR_CONNECT_USER_NAME);
+        expectedKafkaUsers.add(clusterName + "-" + APP_NAME + "-" + InternalKafkaUserModel.COMPONENT_NAME);
+
+
+        return expectedKafkaUsers;
     }
 
     private Set<HasMetadata> getResources(String namespace, KubeResourceType type) {
@@ -1266,7 +1317,13 @@ public class EventStreamsOperatorTest {
                 result = new HashSet<>(mockClient.adapt(OpenShiftClient.class).routes().inNamespace(namespace).list().getItems());
                 break;
             case SECRETS:
-                result = new HashSet<>(mockClient.secrets().inNamespace(namespace).withLabel("app.kubernetes.io/managed-by", "eventstreams-operator").list().getItems());
+                result = new HashSet<>(mockClient.secrets().inNamespace(namespace).list().getItems());
+                break;
+            case KAFKA_USERS:
+                result = new HashSet<>(mockClient.customResources(io.strimzi.api.kafka.Crds.kafkaUser(), KafkaUser.class, KafkaUserList.class, DoneableKafkaUser.class).inNamespace(namespace).list().getItems());
+                break;
+            case KAFKAS:
+                result = new HashSet<>(mockClient.customResources(io.strimzi.api.kafka.Crds.kafka(), Kafka.class, KafkaList.class, DoneableKafka.class).inNamespace(namespace).list().getItems());
                 break;
         }
         return result;

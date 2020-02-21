@@ -12,7 +12,9 @@
  */
 package com.ibm.eventstreams.api.model;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.util.ArrayList;
@@ -24,6 +26,9 @@ import com.ibm.eventstreams.api.Labels;
 import com.ibm.eventstreams.api.model.utils.ModelUtils;
 import com.ibm.eventstreams.api.spec.EventStreams;
 
+import io.strimzi.api.kafka.model.KafkaUser;
+import io.strimzi.api.kafka.model.KafkaUserSpec;
+import io.strimzi.api.kafka.model.KafkaUserSpecBuilder;
 import org.junit.jupiter.api.Test;
 
 import io.fabric8.kubernetes.api.model.Container;
@@ -104,12 +109,12 @@ public class AbstractModelTest {
         Map<String, String> expectedLabels = new HashMap<>();
         expectedLabels.put(Labels.APP_LABEL, AbstractModel.APP_NAME);
         expectedLabels.put(Labels.COMPONENT_LABEL, ComponentModel.COMPONENT_NAME);
-        expectedLabels.put(Labels.NAME_LABEL, instanceName + "-" + AbstractModel.APP_NAME + "-" + ComponentModel.COMPONENT_NAME);
-        expectedLabels.put(Labels.KUBERNETES_MANAGED_BY_LABEL, Labels.KUBERNETES_MANAGED_BY);
         expectedLabels.put(Labels.INSTANCE_LABEL, instanceName);
-        expectedLabels.put(Labels.KUBERNETES_NAME_LABEL, Labels.KUBERNETES_NAME);
         expectedLabels.put(Labels.RELEASE_LABEL, instanceName);
+        expectedLabels.put(Labels.KUBERNETES_NAME_LABEL, Labels.KUBERNETES_NAME);
         expectedLabels.put(Labels.KUBERNETES_INSTANCE_LABEL, instanceName);
+        expectedLabels.put(Labels.KUBERNETES_MANAGED_BY_LABEL, Labels.KUBERNETES_MANAGED_BY);
+        expectedLabels.put(Labels.NAME_LABEL, instanceName + "-" + AbstractModel.APP_NAME + "-" + ComponentModel.COMPONENT_NAME);
         expectedLabels.put(Labels.SERVICE_SELECTOR_LABEL, ComponentModel.COMPONENT_NAME);
 
         Deployment deployment = model.createDeployment(new ArrayList<>(), null);
@@ -150,6 +155,26 @@ public class AbstractModelTest {
 
         Deployment deployment = model.createDeployment(null, volumes);
         assertThat(deployment.getSpec().getTemplate().getSpec().getVolumes(), is(volumes));
+    }
+
+    @Test
+    public void testCreateKafkaUserReturnsValidKafkaUser() {
+        EventStreams instance = ModelUtils.createDefaultEventStreams(instanceName).build();
+        ComponentModel model = new ComponentModel(instance);
+
+        String kafkaUserName = "a-user";
+        KafkaUserSpec spec = new KafkaUserSpecBuilder().build();
+
+        KafkaUser kafkaUser = model.createKafkaUser(kafkaUserName, spec);
+
+        assertThat(kafkaUser.getSpec(), is(spec));
+
+        Map<String, String> labels = kafkaUser.getMetadata().getLabels();
+        for (Map.Entry<String, String> label : labels.entrySet()) {
+            if (!label.getKey().equals(io.strimzi.operator.common.model.Labels.STRIMZI_CLUSTER_LABEL)) {
+                assertThat(label.getKey(), not(containsString(io.strimzi.operator.common.model.Labels.STRIMZI_DOMAIN)));
+            }
+        }
     }
 
     @Test

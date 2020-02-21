@@ -25,7 +25,6 @@ import io.strimzi.api.kafka.model.AclRule;
 import io.strimzi.api.kafka.model.AclRuleClusterResource;
 import io.strimzi.api.kafka.model.AclRuleGroupResource;
 import io.strimzi.api.kafka.model.AclRuleTopicResource;
-import io.strimzi.api.kafka.model.KafkaConnect;
 import io.strimzi.api.kafka.model.KafkaSpecBuilder;
 import io.strimzi.api.kafka.model.KafkaUser;
 import io.strimzi.api.kafka.model.KafkaUserAuthorizationSimple;
@@ -34,8 +33,10 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.Map;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 @SuppressWarnings({"checkstyle:JavaNCSS", "checkstyle:MethodLength"})
@@ -48,12 +49,6 @@ public class ReplicatorUsersModelTest {
 
 
     private ReplicatorCredentials repUtils;
-
-    private KafkaConnect createDefaultReplicator() {
-
-        return  createDefaultReplicatorModel().getReplicator();
-
-    }
 
     private EventStreamsBuilder createDefaultEventStreams() {
 
@@ -115,6 +110,31 @@ public class ReplicatorUsersModelTest {
         assertThat(replicatorDestinationConnectorUser.getMetadata().getName(), is(instanceName + "-" + AbstractModel.APP_NAME + "-" + ReplicatorModel.REPLICATOR_DESTINATION_CLUSTER_CONNNECTOR_USER_NAME));
         assertThat(replicatorSourceConnectorUser.getMetadata().getName(), is(instanceName + "-" + AbstractModel.APP_NAME + "-" + ReplicatorModel.REPLICATOR_SOURCE_CLUSTER_CONNECTOR_USER_NAME));
 
+        Map<String, String> replicatorConnectUserLabels = replicatorConnectUser.getMetadata().getLabels();
+        for (Map.Entry<String, String> label : replicatorConnectUserLabels.entrySet()) {
+            if (!label.getKey().equals(io.strimzi.operator.common.model.Labels.STRIMZI_CLUSTER_LABEL)) {
+                assertThat(label.getKey(), not(containsString(io.strimzi.operator.common.model.Labels.STRIMZI_DOMAIN)));
+            }
+        }
+        assertThat(replicatorConnectUserLabels.get(io.strimzi.operator.common.model.Labels.STRIMZI_CLUSTER_LABEL), is(instanceName));
+
+        Map<String, String> replicatorDestinationConnectorUserLabels = replicatorDestinationConnectorUser.getMetadata().getLabels();
+        for (Map.Entry<String, String> label : replicatorDestinationConnectorUserLabels.entrySet()) {
+            if (!label.getKey().equals(io.strimzi.operator.common.model.Labels.STRIMZI_CLUSTER_LABEL)) {
+                assertThat(label.getKey(), not(containsString(io.strimzi.operator.common.model.Labels.STRIMZI_DOMAIN)));
+            }
+        }
+        assertThat(replicatorDestinationConnectorUserLabels.get(io.strimzi.operator.common.model.Labels.STRIMZI_CLUSTER_LABEL), is(instanceName));
+
+
+        Map<String, String> replicatorSourceConnectorUserLabels = replicatorSourceConnectorUser.getMetadata().getLabels();
+        for (Map.Entry<String, String> label : replicatorSourceConnectorUserLabels.entrySet()) {
+            if (!label.getKey().equals(io.strimzi.operator.common.model.Labels.STRIMZI_CLUSTER_LABEL)) {
+                assertThat(label.getKey(), not(containsString(io.strimzi.operator.common.model.Labels.STRIMZI_DOMAIN)));
+            }
+        }
+        assertThat(replicatorSourceConnectorUserLabels.get(io.strimzi.operator.common.model.Labels.STRIMZI_CLUSTER_LABEL), is(instanceName));
+
         assertThat(replicatorConnectUser.getKind(), is("KafkaUser"));
         assertThat(replicatorDestinationConnectorUser.getKind(), is("KafkaUser"));
         assertThat(replicatorSourceConnectorUser.getKind(), is("KafkaUser"));
@@ -123,20 +143,21 @@ public class ReplicatorUsersModelTest {
         assertThat(replicatorDestinationConnectorUser.getMetadata().getNamespace(), is(namespace));
         assertThat(replicatorSourceConnectorUser.getMetadata().getNamespace(), is(namespace));
 
-        Map<String, String> replicatorConnectUserLabels = replicator.getSecret().getMetadata().getLabels();
-        assertThat(replicatorConnectUserLabels.get(Labels.APP_LABEL), is(AbstractModel.APP_NAME));
-        assertThat(replicatorConnectUserLabels.get(Labels.INSTANCE_LABEL), is(instanceName));
-        assertThat(replicatorConnectUserLabels.get(Labels.RELEASE_LABEL), is(instanceName));
+        Map<String, String> replicatorConnectUserSecretLabels = replicator.getSecret().getMetadata().getLabels();
+        assertThat(replicatorConnectUserSecretLabels.get(Labels.APP_LABEL), is(AbstractModel.APP_NAME));
+        assertThat(replicatorConnectUserSecretLabels.get(Labels.INSTANCE_LABEL), is(instanceName));
+        assertThat(replicatorConnectUserSecretLabels.get(Labels.RELEASE_LABEL), is(instanceName));
+        System.out.print(replicatorConnectUserSecretLabels);
 
-        Map<String, String> replicatorDestinationConnectorUserLabels = replicator.getSecret().getMetadata().getLabels();
-        assertThat(replicatorDestinationConnectorUserLabels.get(Labels.APP_LABEL), is(AbstractModel.APP_NAME));
-        assertThat(replicatorDestinationConnectorUserLabels.get(Labels.INSTANCE_LABEL), is(instanceName));
-        assertThat(replicatorDestinationConnectorUserLabels.get(Labels.RELEASE_LABEL), is(instanceName));
+        Map<String, String> replicatorDestinationConnectorSecretUserLabels = replicator.getSecret().getMetadata().getLabels();
+        assertThat(replicatorDestinationConnectorSecretUserLabels.get(Labels.APP_LABEL), is(AbstractModel.APP_NAME));
+        assertThat(replicatorDestinationConnectorSecretUserLabels.get(Labels.INSTANCE_LABEL), is(instanceName));
+        assertThat(replicatorDestinationConnectorSecretUserLabels.get(Labels.RELEASE_LABEL), is(instanceName));
 
-        Map<String, String> replicatorSourceConnectorUserLabels = replicator.getSecret().getMetadata().getLabels();
-        assertThat(replicatorSourceConnectorUserLabels.get(Labels.APP_LABEL), is(AbstractModel.APP_NAME));
-        assertThat(replicatorSourceConnectorUserLabels.get(Labels.INSTANCE_LABEL), is(instanceName));
-        assertThat(replicatorSourceConnectorUserLabels.get(Labels.RELEASE_LABEL), is(instanceName));
+        Map<String, String> replicatorSourceConnectorUserSecretLabels = replicator.getSecret().getMetadata().getLabels();
+        assertThat(replicatorSourceConnectorUserSecretLabels.get(Labels.APP_LABEL), is(AbstractModel.APP_NAME));
+        assertThat(replicatorSourceConnectorUserSecretLabels.get(Labels.INSTANCE_LABEL), is(instanceName));
+        assertThat(replicatorSourceConnectorUserSecretLabels.get(Labels.RELEASE_LABEL), is(instanceName));
 
         assertThat(replicatorConnectUser.getSpec().getAuthorization().getType(), is("simple"));
         assertThat(replicatorDestinationConnectorUser.getSpec().getAuthorization().getType(), is("simple"));
