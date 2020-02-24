@@ -66,6 +66,8 @@ import com.ibm.eventstreams.api.model.utils.MockEventStreamsKube;
 import com.ibm.eventstreams.api.model.utils.ModelUtils;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
+import com.ibm.eventstreams.api.status.EventStreamsAvailableVersions;
+import com.ibm.eventstreams.api.status.EventStreamsEndpoint;
 import com.ibm.eventstreams.api.status.EventStreamsStatus;
 import com.ibm.eventstreams.api.status.EventStreamsStatusBuilder;
 import com.ibm.eventstreams.api.status.EventStreamsVersions;
@@ -335,7 +337,53 @@ public class EventStreamsOperatorTest {
                 verify(esResourceOperator).createOrUpdate(argument.capture());
 
                 assertThat(argument.getValue().getStatus().getVersions().getReconciledVersion(), is("2020.1.1"));
-                assertThat(argument.getValue().getStatus().getVersions().getAvailableAppVersions(), contains("2020.1.1"));
+                assertThat(argument.getValue().getStatus().getVersions().getAvailable().getStrictVersions(), contains("2020.1.1"));
+                assertThat(argument.getValue().getStatus().getVersions().getAvailable().getLooseVersions(), contains("2020.1"));
+
+                context.completeNow();
+            } else {
+                context.failNow(ar.cause());
+            }
+        });
+    }
+
+    @Test
+    public void testEndpoints(VertxTestContext context) {
+        createMockRoutes();
+
+        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
+        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
+        EventStreams esCluster = createESCluster(NAMESPACE, CLUSTER_NAME);
+
+        Checkpoint async = context.checkpoint(1);
+        esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster).setHandler(ar -> {
+            if (ar.succeeded()) {
+
+                ArgumentCaptor<EventStreams> argument = ArgumentCaptor.forClass(EventStreams.class);
+                verify(esResourceOperator).createOrUpdate(argument.capture());
+
+                // check that there aren't duplicates in the list
+                assertThat(argument.getValue().getStatus().getEndpoints().size(), is(3));
+
+                // check that each expected endpoint is present
+                assertThat(argument.getValue().getStatus().getEndpoints().stream()
+                                .filter(item -> item.getName().equals("admin") &&
+                                                item.getType() == EventStreamsEndpoint.EndpointType.api &&
+                                                item.getUri().equals("https://" + ADMIN_API_ROUTE_NAME + "." + ROUTE_HOST_POSTFIX))
+                                .count(),
+                           is(1L));
+                assertThat(argument.getValue().getStatus().getEndpoints().stream()
+                                .filter(item -> item.getName().equals("ui") &&
+                                        item.getType() == EventStreamsEndpoint.EndpointType.ui &&
+                                        item.getUri().equals("https://" + UI_ROUTE_NAME + "." + ROUTE_HOST_POSTFIX))
+                                .count(),
+                           is(1L));
+                assertThat(argument.getValue().getStatus().getEndpoints().stream()
+                                .filter(item -> item.getName().equals("schemaregistry") &&
+                                        item.getType() == EventStreamsEndpoint.EndpointType.api &&
+                                        item.getUri().equals("https://" + SCHEMA_REGISTRY_ROUTE_NAME + "-external-tls." + ROUTE_HOST_POSTFIX))
+                                .count(),
+                           is(1L));
 
                 context.completeNow();
             } else {
@@ -690,8 +738,8 @@ public class EventStreamsOperatorTest {
                 verify(esResourceOperator).createOrUpdate(argument.capture());
                 assertFalse(argument.getValue().getStatus().isCustomImages());
                 assertEquals(EventStreamsVersions.OPERAND_VERSION, esCluster.getStatus().getVersions().getReconciledVersion());
-                assertEquals(EventStreamsVersions.AUTO_UPGRADE_VERSIONS, esCluster.getStatus().getVersions().getAutoUpgradeVersions());
-                assertEquals(EventStreamsVersions.AVAILABLE_VERSIONS, esCluster.getStatus().getVersions().getAvailableAppVersions());
+                assertEquals(EventStreamsAvailableVersions.LOOSE_VERSIONS, esCluster.getStatus().getVersions().getAvailable().getLooseVersions());
+                assertEquals(EventStreamsAvailableVersions.STRICT_VERSIONS, esCluster.getStatus().getVersions().getAvailable().getStrictVersions());
                 assertTrue(expectedRouteHosts.containsAll(esCluster.getStatus().getRoutes().values()), expectedRouteHosts + " expected to contain all values " + esCluster.getStatus().getRoutes().values() + "but did not");
                 assertEquals("https://" + formatRouteHost(UI_ROUTE_NAME), esCluster.getStatus().getAdminUiUrl());
                 context.completeNow();

@@ -12,41 +12,44 @@
  */
 package com.ibm.eventstreams.api.status;
 
-import java.io.Serializable;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-
 import io.sundr.builder.annotations.Buildable;
 import lombok.EqualsAndHashCode;
+
+import java.io.Serializable;
+import java.util.List;
+
+import static java.util.Collections.singletonList;
+import static java.util.Collections.unmodifiableList;
 
 
 @JsonDeserialize(using = JsonDeserializer.None.class)
 @Buildable(editableEnabled = false, generateBuilderPackage = false, builderPackage = "io.fabric8.kubernetes.api.builder")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @EqualsAndHashCode
-public class EventStreamsVersions implements Serializable {
+public class EventStreamsAvailableVersions implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    public static final String OPERAND_VERSION = "2020.1.1";
-    public static final String AUTO_UPGRADE_VERSION = "2020.1";
-    private static final EventStreamsAvailableVersions AVAILABLE_VERSIONS = new EventStreamsAvailableVersions();
+    public static final List<String> STRICT_VERSIONS = unmodifiableList(singletonList(EventStreamsVersions.OPERAND_VERSION));
+    public static final List<String> LOOSE_VERSIONS = unmodifiableList(singletonList(EventStreamsVersions.AUTO_UPGRADE_VERSION));
 
-    public String getReconciledVersion() {
-        return OPERAND_VERSION;
+    public List<String> getStrictVersions() {
+        return STRICT_VERSIONS;
     }
 
     // This method is needed to enable deserialising by Jackson
-    public void setReconciledVersion(String version) {
+    public void setStrictVersions(List<String> versions) {
     }
 
-    public EventStreamsAvailableVersions getAvailable() {
-        return AVAILABLE_VERSIONS;
+    public List<String> getLooseVersions() {
+        return LOOSE_VERSIONS;
     }
 
     // This method is needed to enable deserialising by Jackson
-    public void setAvailable(EventStreamsAvailableVersions versions) {
+    public void setLooseVersions(List<String> versions) {
     }
 }

@@ -33,7 +33,7 @@ import lombok.EqualsAndHashCode;
 @JsonDeserialize(using = JsonDeserializer.None.class)
 @Buildable(editableEnabled = false, generateBuilderPackage = false, builderPackage = "io.fabric8.kubernetes.api.builder")
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({"kafkaListeners", "adminUiUrl", "routes", "customImages", "versions", "conditions"})
+@JsonPropertyOrder({"kafkaListeners", "adminUiUrl", "routes", "customImages", "endpoints", "versions", "conditions"})
 @EqualsAndHashCode
 public class EventStreamsStatus implements Serializable {
 
@@ -42,6 +42,7 @@ public class EventStreamsStatus implements Serializable {
     private List<ListenerStatus> kafkaListeners;
     private String adminUiUrl;
     private Map<String, String> routes;
+    private List<EventStreamsEndpoint> endpoints;
     private boolean customImages;
     private EventStreamsVersions versions;
     private List<Condition> conditions;
@@ -72,6 +73,20 @@ public class EventStreamsStatus implements Serializable {
      */
     public void setRoutes(Map<String, String> routes) {
         this.routes = routes;
+    }
+
+    /**
+     * @return return the URIs
+     */
+    public List<EventStreamsEndpoint> getEndpoints() {
+        return endpoints;
+    }
+
+    /**
+     * @param endpoints the URIs to set
+     */
+    public void setEndpoints(List<EventStreamsEndpoint> endpoints) {
+        this.endpoints = endpoints;
     }
 
     /**

@@ -26,6 +26,7 @@ import com.ibm.eventstreams.api.model.ReplicatorModel;
 import com.ibm.eventstreams.api.model.ReplicatorUsersModel;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.spec.ReplicatorSpec;
+import com.ibm.eventstreams.api.status.EventStreamsEndpoint;
 import com.ibm.eventstreams.replicator.ReplicatorCredentials;
 import com.ibm.eventstreams.api.model.RestProducerModel;
 import com.ibm.eventstreams.api.model.SchemaRegistryModel;
@@ -604,6 +605,12 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                         routes.put("", adminApi.getRoute());
                         return createOrUpdateRoutes(adminApi, routes);
                     })
+                    .compose(res -> {
+                        String adminRouteHost = res.get("");
+                        String adminRouteUri = "https://" + adminRouteHost;
+                        updateEndpoints(new EventStreamsEndpoint("admin", EventStreamsEndpoint.EndpointType.api, adminRouteUri));
+                        return Future.succeededFuture(res);
+                    })
                     .compose(res -> reconcileCerts(adminApi, res, dateSupplier))
                     .compose(secretResult -> deploymentOperator.createOrUpdate(adminApi.getDeployment(secretResult.resource().getMetadata().getResourceVersion())))
                     .map(this);
@@ -624,6 +631,12 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             schemaRegistryFutures.add(networkPolicyOperator.createOrUpdate(schemaRegistry.getNetworkPolicy()));
             return CompositeFuture.join(schemaRegistryFutures)
                     .compose(res -> createOrUpdateRoutes(schemaRegistry, schemaRegistry.getRoutes()))
+                    .compose(res -> {
+                        String schemaRouteHost = res.get("external-tls");
+                        String schemaRouteUri = "https://" + schemaRouteHost;
+                        updateEndpoints(new EventStreamsEndpoint("schemaregistry", EventStreamsEndpoint.EndpointType.api, schemaRouteUri));
+                        return Future.succeededFuture(res);
+                    })
                     .compose(res -> reconcileCerts(schemaRegistry, res, dateSupplier))
                     .compose(secretResult -> deploymentOperator.createOrUpdate(schemaRegistry.getDeployment(secretResult.resource().getMetadata().getResourceVersion())))
                     .map(this);
@@ -642,8 +655,13 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             adminUIFutures.add(networkPolicyOperator.createOrUpdate(ui.getNetworkPolicy()));
             if (pfa.hasRoutes() && routeOperator != null) {
                 adminUIFutures.add(routeOperator.createOrUpdate(ui.getRoute()).compose(route -> {
-                    status.addToRoutes(AdminUIModel.COMPONENT_NAME, route.resource().getSpec().getHost());
-                    status.withNewAdminUiUrl("https://" + route.resource().getSpec().getHost());
+                    String uiRouteHost = route.resource().getSpec().getHost();
+                    String uiRouteUri = "https://" + uiRouteHost;
+
+                    status.addToRoutes(AdminUIModel.COMPONENT_NAME, uiRouteHost);
+                    status.withNewAdminUiUrl(uiRouteUri);
+                    updateEndpoints(new EventStreamsEndpoint("ui", EventStreamsEndpoint.EndpointType.ui, uiRouteUri));
+
                     return Future.succeededFuture();
                 }));
             }
@@ -910,6 +928,12 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                     return map1;
                 }).orElse(Collections.emptyMap()));
             });
+        }
+
+        protected void updateEndpoints(EventStreamsEndpoint newEndpoint) {
+            // replace any existing endpoint with the same name
+            status.removeMatchingFromEndpoints(item -> newEndpoint.getName().equals(item.getName()));
+            status.addToEndpoints(newEndpoint);
         }
     }
 }
