@@ -6,7 +6,7 @@ metadata:
     app: eventstreams
 rules:
 - apiGroups:
-  - "rbac.authorization.k8s.io"
+  - rbac.authorization.k8s.io
   resources:
   - clusterrolebindings
   verbs:
@@ -16,15 +16,13 @@ rules:
   - patch
   - update
   - watch
-- apiGroups: # Therefore we need the ability to get the storage class details and we require this access right.
-  # Persistent Volumes can be resized only when it is supported in the storage class.
+- apiGroups:
   - storage.k8s.io
   resources:
   - storageclasses
   verbs:
   - get
-- apiGroups: # addresses in the status
-  # The listing of nodes is needed to find the node addresses when the NodePort access is configured and set the proper
+- apiGroups:
   - ""
   resources:
   - nodes

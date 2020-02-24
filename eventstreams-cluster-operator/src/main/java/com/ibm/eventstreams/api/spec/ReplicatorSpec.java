@@ -13,7 +13,6 @@
 package com.ibm.eventstreams.api.spec;
 
 import java.io.Serializable;
-import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -21,7 +20,6 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
-import io.fabric8.kubernetes.api.model.EnvVar;
 import io.strimzi.api.kafka.model.KafkaMirrorMaker2Spec;
 import io.strimzi.crdgenerator.annotations.Description;
 import io.sundr.builder.annotations.Buildable;
@@ -40,9 +38,6 @@ public class ReplicatorSpec extends KafkaMirrorMaker2Spec implements Serializabl
     private Integer replicas;
     private String connectCluster;
     private String bootstrapServers;
-    private List<EnvVar> env;
-    private KafkaMirrorMaker2Spec mirrorMaker2Spec;
-  
 
     public int hashCode() {
         return super.hashCode();

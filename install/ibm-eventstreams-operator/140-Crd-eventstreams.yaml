@@ -448,12 +448,12 @@ spec:
                 jvmOptions:
                   type: object
                   properties:
-                    "-XX":
+                    -XX:
                       type: object
-                    "-Xms":
+                    -Xms:
                       type: string
                       pattern: '[0-9]+[mMgG]?'
-                    "-Xmx":
+                    -Xmx:
                       type: string
                       pattern: '[0-9]+[mMgG]?'
                     gcLoggingEnabled:
@@ -1716,12 +1716,12 @@ spec:
                     jvmOptions:
                       type: object
                       properties:
-                        "-XX":
+                        -XX:
                           type: object
-                        "-Xms":
+                        -Xms:
                           type: string
                           pattern: '[0-9]+[mMgG]?'
-                        "-Xmx":
+                        -Xmx:
                           type: string
                           pattern: '[0-9]+[mMgG]?'
                         gcLoggingEnabled:
@@ -2587,12 +2587,12 @@ spec:
                     jvmOptions:
                       type: object
                       properties:
-                        "-XX":
+                        -XX:
                           type: object
-                        "-Xms":
+                        -Xms:
                           type: string
                           pattern: '[0-9]+[mMgG]?'
-                        "-Xmx":
+                        -Xmx:
                           type: string
                           pattern: '[0-9]+[mMgG]?'
                         gcLoggingEnabled:
@@ -4619,9 +4619,78 @@ spec:
             adminApi:
               type: object
               properties:
+                envVars:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      value:
+                        type: string
+                externalAccess:
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                  required:
+                  - type
+                image:
+                  type: string
+                livenessProbe:
+                  type: object
+                  properties:
+                    failureThreshold:
+                      type: integer
+                    initialDelaySeconds:
+                      type: integer
+                      minimum: 0
+                    periodSeconds:
+                      type: integer
+                    successThreshold:
+                      type: integer
+                    timeoutSeconds:
+                      type: integer
+                      minimum: 0
+                logging:
+                  type: object
+                  properties:
+                    loggers:
+                      type: object
+                    name:
+                      type: string
+                    type:
+                      type: string
+                      enum:
+                      - inline
+                      - external
+                  required:
+                  - type
+                readinessProbe:
+                  type: object
+                  properties:
+                    failureThreshold:
+                      type: integer
+                    initialDelaySeconds:
+                      type: integer
+                      minimum: 0
+                    periodSeconds:
+                      type: integer
+                    successThreshold:
+                      type: integer
+                    timeoutSeconds:
+                      type: integer
+                      minimum: 0
                 replicas:
                   type: integer
                   minimum: 1
+                resources:
+                  type: object
+                  properties:
+                    limits:
+                      type: object
+                    requests:
+                      type: object
                 template:
                   type: object
                   properties:
@@ -4914,83 +4983,81 @@ spec:
                                 type: integer
                               value:
                                 type: string
-                envVars:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      name:
-                        type: string
-                      value:
-                        type: string
-                externalAccess:
-                  type: object
-                  properties:
-                    type:
-                      type: string
-                  required:
-                  - type
-                image:
-                  type: string
-                livenessProbe:
-                  type: object
-                  properties:
-                    failureThreshold:
-                      type: integer
-                    initialDelaySeconds:
-                      type: integer
-                      minimum: 0
-                    periodSeconds:
-                      type: integer
-                    successThreshold:
-                      type: integer
-                    timeoutSeconds:
-                      type: integer
-                      minimum: 0
-                logging:
-                  type: object
-                  properties:
-                    loggers:
-                      type: object
-                    name:
-                      type: string
-                    type:
-                      type: string
-                      enum:
-                      - inline
-                      - external
-                  required:
-                  - type
-                readinessProbe:
-                  type: object
-                  properties:
-                    failureThreshold:
-                      type: integer
-                    initialDelaySeconds:
-                      type: integer
-                      minimum: 0
-                    periodSeconds:
-                      type: integer
-                    successThreshold:
-                      type: integer
-                    timeoutSeconds:
-                      type: integer
-                      minimum: 0
-                resources:
-                  type: object
-                  properties:
-                    limits:
-                      type: object
-                    requests:
-                      type: object
-              required:
-              - replicas
             adminProxy:
               type: object
               properties:
+                envVars:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      value:
+                        type: string
+                externalAccess:
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                  required:
+                  - type
+                image:
+                  type: string
+                livenessProbe:
+                  type: object
+                  properties:
+                    failureThreshold:
+                      type: integer
+                    initialDelaySeconds:
+                      type: integer
+                      minimum: 0
+                    periodSeconds:
+                      type: integer
+                    successThreshold:
+                      type: integer
+                    timeoutSeconds:
+                      type: integer
+                      minimum: 0
+                logging:
+                  type: object
+                  properties:
+                    loggers:
+                      type: object
+                    name:
+                      type: string
+                    type:
+                      type: string
+                      enum:
+                      - inline
+                      - external
+                  required:
+                  - type
+                readinessProbe:
+                  type: object
+                  properties:
+                    failureThreshold:
+                      type: integer
+                    initialDelaySeconds:
+                      type: integer
+                      minimum: 0
+                    periodSeconds:
+                      type: integer
+                    successThreshold:
+                      type: integer
+                    timeoutSeconds:
+                      type: integer
+                      minimum: 0
                 replicas:
                   type: integer
                   minimum: 1
+                resources:
+                  type: object
+                  properties:
+                    limits:
+                      type: object
+                    requests:
+                      type: object
                 template:
                   type: object
                   properties:
@@ -5283,77 +5350,6 @@ spec:
                                 type: integer
                               value:
                                 type: string
-                envVars:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      name:
-                        type: string
-                      value:
-                        type: string
-                externalAccess:
-                  type: object
-                  properties:
-                    type:
-                      type: string
-                  required:
-                  - type
-                image:
-                  type: string
-                livenessProbe:
-                  type: object
-                  properties:
-                    failureThreshold:
-                      type: integer
-                    initialDelaySeconds:
-                      type: integer
-                      minimum: 0
-                    periodSeconds:
-                      type: integer
-                    successThreshold:
-                      type: integer
-                    timeoutSeconds:
-                      type: integer
-                      minimum: 0
-                logging:
-                  type: object
-                  properties:
-                    loggers:
-                      type: object
-                    name:
-                      type: string
-                    type:
-                      type: string
-                      enum:
-                      - inline
-                      - external
-                  required:
-                  - type
-                readinessProbe:
-                  type: object
-                  properties:
-                    failureThreshold:
-                      type: integer
-                    initialDelaySeconds:
-                      type: integer
-                      minimum: 0
-                    periodSeconds:
-                      type: integer
-                    successThreshold:
-                      type: integer
-                    timeoutSeconds:
-                      type: integer
-                      minimum: 0
-                resources:
-                  type: object
-                  properties:
-                    limits:
-                      type: object
-                    requests:
-                      type: object
-              required:
-              - replicas
             adminUI:
               type: object
               properties:
@@ -5486,7 +5482,6 @@ spec:
                       minimum: 0
                 replicas:
                   type: integer
-                  minimum: 1
                 resources:
                   type: object
                   properties:
@@ -5786,8 +5781,6 @@ spec:
                                 type: integer
                               value:
                                 type: string
-              required:
-              - replicas
             appVersion:
               type: string
             collector:
@@ -5795,7 +5788,6 @@ spec:
               properties:
                 replicas:
                   type: integer
-                  minimum: 1
                 template:
                   type: object
                   properties:
@@ -6088,6 +6080,13 @@ spec:
                                 type: integer
                               value:
                                 type: string
+                externalAccess:
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                  required:
+                  - type
                 envVars:
                   type: array
                   items:
@@ -6097,13 +6096,6 @@ spec:
                         type: string
                       value:
                         type: string
-                externalAccess:
-                  type: object
-                  properties:
-                    type:
-                      type: string
-                  required:
-                  - type
                 image:
                   type: string
                 livenessProbe:
@@ -6157,14 +6149,11 @@ spec:
                       type: object
                     requests:
                       type: object
-              required:
-              - replicas
             restProducer:
               type: object
               properties:
                 replicas:
                   type: integer
-                  minimum: 1
                 template:
                   type: object
                   properties:
@@ -6457,6 +6446,13 @@ spec:
                                 type: integer
                               value:
                                 type: string
+                externalAccess:
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                  required:
+                  - type
                 envVars:
                   type: array
                   items:
@@ -6466,13 +6462,6 @@ spec:
                         type: string
                       value:
                         type: string
-                externalAccess:
-                  type: object
-                  properties:
-                    type:
-                      type: string
-                  required:
-                  - type
                 image:
                   type: string
                 livenessProbe:
@@ -6526,8 +6515,6 @@ spec:
                       type: object
                     requests:
                       type: object
-              required:
-              - replicas
             schemaRegistry:
               type: object
               properties:
@@ -6729,7 +6716,6 @@ spec:
                       minimum: 0
                 replicas:
                   type: integer
-                  minimum: 1
                 resources:
                   type: object
                   properties:
@@ -7029,8 +7015,11 @@ spec:
                                 type: integer
                               value:
                                 type: string
-              required:
-              - replicas
+          required:
+          - strimziOverrides
+          - adminApi
+          - adminProxy
+          - appVersion
         status:
           type: object
           properties:
@@ -7088,3 +7077,5 @@ spec:
                     type: string
                   message:
                     type: string
+      required:
+      - spec

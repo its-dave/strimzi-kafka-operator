@@ -59,11 +59,12 @@ matrix:
 
       install:
         - pip3 install operator-courier
-        - sudo add-apt-repository ppa:rmescandon/yq -y
         - sudo apt update -y
-        - sudo apt install yq -y
         - sudo apt install jq -y
         - sudo mkdir -p /tmp/bin
+        - curl -LO https://github.com/mikefarah/yq/releases/download/2.4.1/yq_linux_amd64
+        - sudo mv yq_linux_amd64 /tmp/bin/yq
+        - sudo chmod +x /tmp/bin/yq
         - curl -LO https://github.com/operator-framework/operator-sdk/releases/download/$OPERATOR_SDK_VERSION/operator-sdk-$OPERATOR_SDK_VERSION-x86_64-linux-gnu
         - sudo mv operator-sdk-$OPERATOR_SDK_VERSION-x86_64-linux-gnu /tmp/bin/operator-sdk
         - sudo chmod +x /tmp/bin/operator-sdk

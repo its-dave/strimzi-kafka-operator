@@ -13,6 +13,7 @@
 package com.ibm.eventstreams.api.spec;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -35,9 +36,9 @@ public class EventStreamsSpec implements Serializable {
 
     private String architecture;
     private String appVersion;
-    private ComponentSpec adminApi;
+    private AdminApiSpec adminApi;
     private ComponentSpec restProducer;
-    private ComponentSpec adminProxy;
+    private AdminProxySpec adminProxy;
     private AdminUISpec adminUI;
     private SchemaRegistrySpec schemaRegistry;
     private ComponentSpec collector;
@@ -46,7 +47,6 @@ public class EventStreamsSpec implements Serializable {
     private ReplicatorSpec replicator;
     private SecuritySpec security;
     private ImagesSpec images;
-
 
     @Description("The specification of global image properties")
     public ImagesSpec getImages() {
@@ -71,10 +71,12 @@ public class EventStreamsSpec implements Serializable {
         return architecture;
     }
 
+    @JsonProperty(required = true)
     public void setArchitecture(String architecture) {
         this.architecture = architecture;
     }
 
+    @JsonProperty(required = true)
     public String getAppVersion() {
         return appVersion;
     }
@@ -83,12 +85,13 @@ public class EventStreamsSpec implements Serializable {
         this.appVersion = appVersion;
     }
 
+    @JsonProperty(required = true)
     @Description("The specification of the admin API server")
-    public ComponentSpec getAdminApi() {
+    public AdminApiSpec getAdminApi() {
         return adminApi;
     }
 
-    public void setAdminApi(ComponentSpec adminApi) {
+    public void setAdminApi(AdminApiSpec adminApi) {
         this.adminApi = adminApi;
     }
 
@@ -101,11 +104,12 @@ public class EventStreamsSpec implements Serializable {
         this.restProducer = spec;
     }
 
-    public ComponentSpec getAdminProxy() {
+    @JsonProperty(required = true)
+    public AdminProxySpec getAdminProxy() {
         return adminProxy;
     }
 
-    public void setAdminProxy(ComponentSpec spec) {
+    public void setAdminProxy(AdminProxySpec spec) {
         this.adminProxy = spec;
     }
 
@@ -143,7 +147,8 @@ public class EventStreamsSpec implements Serializable {
     public void setReplicator(ReplicatorSpec replicator) {
         this.replicator = replicator;
     }
-
+    
+    @JsonProperty(required = true)
     @Description("The specification of the strimzi kafka cluster")
     public KafkaSpec getStrimziOverrides() {
         return strimziOverrides;

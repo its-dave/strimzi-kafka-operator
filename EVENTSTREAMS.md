@@ -10,7 +10,7 @@ This results in a single `Main` that runs two completely separate operators.
 ### Pre-reqs
 If building the whole project you will need:
 - all of the [pre-reqs listed for Strimzi](DEV_QUICK_START_MACOS.md#Preparing your Mac for work) or for [non-Mac users](DEV_QUICK_START.md#pre-requisites)
-- yq [source repo](https://github.com/mikefarah/yq)
+- yq v2.4.1 [source repo](https://github.com/mikefarah/yq)
 - jq [source repo](https://stedolan.github.io/jq/)
 - operator-sdk [source repo](https://github.com/operator-framework/operator-sdk/blob/master/doc/user/install-operator-sdk.md)
 - python v3

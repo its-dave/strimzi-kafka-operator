@@ -15,7 +15,7 @@ include ../Makefile.maven
 .PHONY: build clean release
 
 generate_crd:
-	mvn exec:exec && echo "success!"
+	mvn exec:exec && echo "success!" || echo "check for expected errors"
 
 # .PHONY: all build build_mvn build_docker generate_crd generate_helm local roll generate_olm
 #

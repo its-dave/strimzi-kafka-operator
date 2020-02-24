@@ -45,6 +45,7 @@ verify: build_csv docker_build
 
 clean:
 	rm -rf $(TEMP_DIR)
+	rm -rf $(CRD_DIR)
 	rm -rf $(BUILD_DIR)
 	mkdir -p $(TEMP_DIR)
 	mkdir -p $(CRD_DIR)

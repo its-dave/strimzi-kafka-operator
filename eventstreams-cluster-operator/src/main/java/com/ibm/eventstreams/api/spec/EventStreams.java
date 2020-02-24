@@ -105,6 +105,7 @@ public class EventStreams extends CustomResource {
         this.apiVersion = apiVersion;
     }
 
+    @JsonProperty(required = true)
     public EventStreamsSpec getSpec() {
         return spec;
     }

@@ -12,50 +12,31 @@
  */
 package com.ibm.eventstreams.api.spec;
 
-import java.io.Serializable;
-
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
+import io.strimzi.crdgenerator.annotations.Minimum;
 import io.sundr.builder.annotations.Buildable;
 import lombok.EqualsAndHashCode;
 
 @JsonDeserialize(using = JsonDeserializer.None.class)
 @Buildable(editableEnabled = false, generateBuilderPackage = false, builderPackage = "io.fabric8.kubernetes.api.builder")
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({"replicas", "template", "externalAccess"})
-@EqualsAndHashCode(callSuper = true)
-public class ComponentSpec extends ContainerSpec implements Serializable {
+@EqualsAndHashCode
+public class AdminApiSpec extends ComponentSpec {
 
     private static final long serialVersionUID = 1L;
 
     private int replicas;
-    private ExternalAccess externalAccess;
-    private ComponentTemplate template;
 
-    public ComponentTemplate getTemplate() {
-        return template;
-    }
-
-    public void setTemplate(ComponentTemplate template) {
-        this.template = template;
-    }
-
+    @Override
+    @Minimum(1)
     public int getReplicas() {
         return replicas;
     }
 
     public void setReplicas(int replicas) {
         this.replicas = replicas;
-    }
-
-    public ExternalAccess getExternalAccess() {
-        return externalAccess;
-    }
-
-    public void setExternalAccess(ExternalAccess externalAccess) {
-        this.externalAccess = externalAccess;
     }
 }
