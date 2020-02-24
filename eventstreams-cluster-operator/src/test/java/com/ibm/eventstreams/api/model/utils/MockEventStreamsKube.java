@@ -20,14 +20,14 @@ import com.ibm.eventstreams.api.spec.EventStreamsList;
 import com.ibm.iam.api.spec.Client;
 import com.ibm.iam.api.spec.ClientDoneable;
 import com.ibm.iam.api.spec.ClientList;
-import io.strimzi.api.kafka.KafkaConnectList;
+import io.strimzi.api.kafka.KafkaMirrorMaker2List;
 import io.strimzi.api.kafka.KafkaList;
 import io.strimzi.api.kafka.KafkaUserList;
 import io.strimzi.api.kafka.model.DoneableKafka;
-import io.strimzi.api.kafka.model.DoneableKafkaConnect;
+import io.strimzi.api.kafka.model.DoneableKafkaMirrorMaker2;
 import io.strimzi.api.kafka.model.DoneableKafkaUser;
 import io.strimzi.api.kafka.model.Kafka;
-import io.strimzi.api.kafka.model.KafkaConnect;
+import io.strimzi.api.kafka.model.KafkaMirrorMaker2;
 import io.strimzi.api.kafka.model.KafkaUser;
 import io.strimzi.test.mockkube.MockKube;
 
@@ -44,7 +44,7 @@ public class MockEventStreamsKube extends MockKube {
             .end()
             .withCustomResourceDefinition(Crds.getCrd(Client.class), Client.class, ClientList.class, ClientDoneable.class)
             .end()
-            .withCustomResourceDefinition(io.strimzi.api.kafka.Crds.kafkaConnect(), KafkaConnect.class, KafkaConnectList.class, DoneableKafkaConnect.class)
+            .withCustomResourceDefinition(io.strimzi.api.kafka.Crds.kafkaMirrorMaker2(), KafkaMirrorMaker2.class, KafkaMirrorMaker2List.class, DoneableKafkaMirrorMaker2.class)
             .end();
     }
 }

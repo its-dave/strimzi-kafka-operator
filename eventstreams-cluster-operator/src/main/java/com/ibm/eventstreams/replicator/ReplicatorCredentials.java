@@ -19,8 +19,8 @@ import io.fabric8.kubernetes.api.model.Secret;
 import io.strimzi.api.kafka.model.CertAndKeySecretSource;
 import io.strimzi.api.kafka.model.CertSecretSource;
 import io.strimzi.api.kafka.model.CertSecretSourceBuilder;
-import io.strimzi.api.kafka.model.KafkaConnectTls;
-import io.strimzi.api.kafka.model.KafkaConnectTlsBuilder;
+import io.strimzi.api.kafka.model.KafkaMirrorMaker2Tls;
+import io.strimzi.api.kafka.model.KafkaMirrorMaker2TlsBuilder;
 import io.strimzi.api.kafka.model.PasswordSecretSourceBuilder;
 import io.strimzi.api.kafka.model.authentication.KafkaClientAuthentication;
 import io.strimzi.api.kafka.model.authentication.KafkaClientAuthenticationScramSha512Builder;
@@ -38,7 +38,7 @@ import java.util.Optional;
 
 public class ReplicatorCredentials {
 
-    KafkaConnectTls replicatorConnectTrustStore;
+    KafkaMirrorMaker2Tls replicatorConnectTrustStore;
     KafkaClientAuthentication replicatorConnectClientAuth;
     EventStreams instance;
 
@@ -60,11 +60,10 @@ public class ReplicatorCredentials {
 
 
         if (kafaServerTLS.isPresent()) {
-            replicatorConnectTrustStore = new KafkaConnectTlsBuilder()
+            replicatorConnectTrustStore = new KafkaMirrorMaker2TlsBuilder()
                     .withTrustedCertificates(caCrt)
                     .build();
         }
-
     }
 
     public void setReplicatorClientAuth(Secret connectUserSecret) {
@@ -96,7 +95,7 @@ public class ReplicatorCredentials {
         }
     }
 
-    public KafkaConnectTls getReplicatorConnectTrustStore() {
+    public KafkaMirrorMaker2Tls getReplicatorConnectTrustStore() {
 
         return this.replicatorConnectTrustStore;
     }

@@ -147,7 +147,6 @@ public class ReplicatorUsersModelTest {
         assertThat(replicatorConnectUserSecretLabels.get(Labels.APP_LABEL), is(AbstractModel.APP_NAME));
         assertThat(replicatorConnectUserSecretLabels.get(Labels.INSTANCE_LABEL), is(instanceName));
         assertThat(replicatorConnectUserSecretLabels.get(Labels.RELEASE_LABEL), is(instanceName));
-        System.out.print(replicatorConnectUserSecretLabels);
 
         Map<String, String> replicatorDestinationConnectorSecretUserLabels = replicator.getSecret().getMetadata().getLabels();
         assertThat(replicatorDestinationConnectorSecretUserLabels.get(Labels.APP_LABEL), is(AbstractModel.APP_NAME));
@@ -262,7 +261,7 @@ public class ReplicatorUsersModelTest {
         AclRule rule5read = acls.get(11);
         assertThat(rule5read.getResource(), instanceOf(AclRuleGroupResource.class));
         AclRuleGroupResource rule5readgroup = (AclRuleGroupResource) rule5read.getResource();
-        assertThat(rule5readgroup.getName(), is("connect-cluster"));
+        assertThat(rule5readgroup.getName(), is(ReplicatorModel.getReplicatorClusterName(instanceName)));
         assertThat(rule5readgroup.getPatternType(), is(AclResourcePatternType.PREFIX));
         assertThat(rule5read.getOperation(), is(AclOperation.READ));
         assertThat(rule5read.getHost(), is("*"));
@@ -270,7 +269,7 @@ public class ReplicatorUsersModelTest {
         AclRule rule5describe = acls.get(12);
         assertThat(rule5describe.getResource(), instanceOf(AclRuleGroupResource.class));
         AclRuleGroupResource rule5describegroup = (AclRuleGroupResource) rule5describe.getResource();
-        assertThat(rule5describegroup.getName(), is("connect-cluster"));
+        assertThat(rule5describegroup.getName(), is(ReplicatorModel.getReplicatorClusterName(instanceName)));
         assertThat(rule5describegroup.getPatternType(), is(AclResourcePatternType.LITERAL));
         assertThat(rule5describe.getOperation(), is(AclOperation.DESCRIBE));
         assertThat(rule5describe.getHost(), is("*"));

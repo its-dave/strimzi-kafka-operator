@@ -33,7 +33,7 @@ import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
 import com.ibm.eventstreams.api.spec.ReplicatorSpecBuilder;
 
 import com.ibm.eventstreams.replicator.ReplicatorCredentials;
-import io.strimzi.api.kafka.model.KafkaConnect;
+import io.strimzi.api.kafka.model.KafkaMirrorMaker2;
 import io.strimzi.api.kafka.model.KafkaSpecBuilder;
 
 import org.junit.jupiter.api.Test;
@@ -55,7 +55,7 @@ public class ReplicatorModelTest {
     private ReplicatorCredentials replicatorCredentials;
 
 
-    private KafkaConnect createDefaultReplicator() {
+    private KafkaMirrorMaker2 createDefaultReplicator() {
 
         return  createDefaultReplicatorModel().getReplicator();
 
@@ -101,10 +101,10 @@ public class ReplicatorModelTest {
 
     @Test
     public void testDefaultReplicatorIsCreated() {
-        KafkaConnect replicator = createDefaultReplicator();
+        KafkaMirrorMaker2 replicator = createDefaultReplicator();
 
-        assertThat(replicator.getKind(), is("KafkaConnect"));
-        assertThat(replicator.getApiVersion(), is("eventstreams.ibm.com/v1beta1"));
+        assertThat(replicator.getKind(), is("KafkaMirrorMaker2"));
+        assertThat(replicator.getApiVersion(), is("eventstreams.ibm.com/v1alpha1"));
 
         assertThat(replicator.getMetadata().getName(), startsWith(componentPrefix));
 
@@ -114,7 +114,7 @@ public class ReplicatorModelTest {
         }
 
         assertThat(replicator.getSpec().getReplicas(), is(defaultReplicas));
-        assertThat(replicator.getSpec().getBootstrapServers(), is(bootstrap));
+        assertThat(replicator.getSpec().getClusters().get(0).getBootstrapServers(), is(bootstrap));
         assertThat(replicator.getSpec().getConfig().get("config.storage.replication.factor"), is(numberOfConnectorTopics));
         assertThat(replicator.getSpec().getConfig().get("offset.storage.replication.factor"), is(numberOfConnectorTopics));
         assertThat(replicator.getSpec().getConfig().get("status.storage.replication.factor"), is(numberOfConnectorTopics));
@@ -122,7 +122,7 @@ public class ReplicatorModelTest {
 
     @Test
     public void testDefaultReplicatorHasRequiredLabels() {
-        KafkaConnect replicator = createDefaultReplicator();
+        KafkaMirrorMaker2 replicator = createDefaultReplicator();
 
         Map<String, String> replicatorPodLabels = replicator.getSpec()
                 .getTemplate()
@@ -139,7 +139,7 @@ public class ReplicatorModelTest {
 
     @Test
     public void testDefaultReplicatorHasRequiredMeteringAnnotations() {
-        KafkaConnect replicator = createDefaultReplicator();
+        KafkaMirrorMaker2 replicator = createDefaultReplicator();
 
         Map<String, String> replicatorPodAnnotations = replicator.getSpec().getTemplate().getPod()
                 .getMetadata().getAnnotations();
@@ -156,12 +156,12 @@ public class ReplicatorModelTest {
     public void testReplicatorWithCustomLabels() {
         String customBootstrap = "custom-bootstrap";
         int customReplicas = 2;
-        Map<String, Object> kafkaConnectConfig = new HashMap<>();
-        kafkaConnectConfig.put("config.storage.replication.factor", 2);
-        kafkaConnectConfig.put("offset.storage.replication.factor", 2);
-        kafkaConnectConfig.put("status.storage.replication.factor", 2);
-        kafkaConnectConfig.put("key.converter2", "org.apache.kafka.connect.converters.ByteArrayConverter2");
-        kafkaConnectConfig.put("value.converter2", "org.apache.kafka.connect.converters.ByteArrayConverter2");
+        Map<String, Object> mirrorMaker2Config = new HashMap<>();
+        mirrorMaker2Config.put("config.storage.replication.factor", 2);
+        mirrorMaker2Config.put("offset.storage.replication.factor", 2);
+        mirrorMaker2Config.put("status.storage.replication.factor", 2);
+        mirrorMaker2Config.put("key.converter2", "org.apache.kafka.connect.converters.ByteArrayConverter2");
+        mirrorMaker2Config.put("value.converter2", "org.apache.kafka.connect.converters.ByteArrayConverter2");
 
 
 

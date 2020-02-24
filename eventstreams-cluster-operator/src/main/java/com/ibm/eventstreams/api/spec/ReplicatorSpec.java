@@ -22,7 +22,7 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 import io.fabric8.kubernetes.api.model.EnvVar;
-import io.strimzi.api.kafka.model.KafkaConnectSpec;
+import io.strimzi.api.kafka.model.KafkaMirrorMaker2Spec;
 import io.strimzi.crdgenerator.annotations.Description;
 import io.sundr.builder.annotations.Buildable;
 import io.vertx.core.cli.annotations.DefaultValue;
@@ -33,15 +33,15 @@ import lombok.EqualsAndHashCode;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({ "replicas", "metadataConnectName", "bootstrapServers", "configStorageReplicationFactor", "offsetStorageReplicationFactor", "statusStorageReplicationFactor", "env" })
 @EqualsAndHashCode
-public class ReplicatorSpec extends KafkaConnectSpec implements Serializable  {
+public class ReplicatorSpec extends KafkaMirrorMaker2Spec implements Serializable  {
 
     private static final long serialVersionUID = 1L;
     
     private Integer replicas;
-    private String metadataConnectName;
+    private String connectCluster;
     private String bootstrapServers;
     private List<EnvVar> env;
-    private KafkaConnectSpec connectSpec;
+    private KafkaMirrorMaker2Spec mirrorMaker2Spec;
   
 
     public int hashCode() {
@@ -65,14 +65,18 @@ public class ReplicatorSpec extends KafkaConnectSpec implements Serializable  {
         this.replicas = replicas;
     }
 
+    //Override needed so that this is no longer a required field in the Replicator CRD - we set it in the Model
+    @Override
+    @JsonProperty(required = false)
     @Description("The name of the Kafka Connect instance running the replicator")
-    public String getMetadataConnectName() {
-        return metadataConnectName;
+    public String getConnectCluster() {
+        return connectCluster;
     }
 
-    public void setMetadataConnectName(String metadataConnectName) {
-        this.metadataConnectName = metadataConnectName;
+    public void setConnectCluster(String connectCluster) {
+        this.connectCluster = connectCluster;
     }
+
 
     //Override needed so that this is no longer a required field in the Replicator CRD
     @Override

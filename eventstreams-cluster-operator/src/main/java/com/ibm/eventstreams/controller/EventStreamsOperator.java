@@ -504,7 +504,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
 
                             replicatorFutures.add(networkPolicyOperator.createOrUpdate(replicatorModel.getNetworkPolicy()));
                             replicatorFutures.add(
-                                    toFuture(() -> Crds.kafkaConnectOperation(client)
+                                    toFuture(() -> Crds.kafkaMirrorMaker2Operation(client)
                                             .inNamespace(instance.getMetadata().getNamespace())
                                             .createOrReplace(replicatorModel.getReplicator())));
                             return CompositeFuture.join(replicatorFutures)
