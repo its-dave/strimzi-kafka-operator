@@ -66,7 +66,7 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
     public static final String COMPONENT_NAME = "admin-api";
     protected static final String FRONTEND_REST_CONTAINER_NAME = "frontend-rest";
     public static final String ADMIN_API_CONTAINER_NAME = "admin-api";
-    public static final String FRONTEND_REST_IMAGE = "hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-rest-icp-linux-amd64:2020-01-17-16.07.02-2c5fca9-exp";
+    public static final String FRONTEND_REST_IMAGE = "hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-rest-icp-linux-amd64:2020-02-24-14.31.14-00cef35-exp";
     // This should be 9443 if we're enabling TLS, or 9080 if we're not
     // Other classes should use the getServicePort method to get the port
     private static final int SERVICE_PORT = 9080;

@@ -78,7 +78,7 @@ public class AdminApiModelTest {
     private final String instanceName = "test-instance";
     private final String componentPrefix = instanceName + "-" + AbstractModel.APP_NAME + "-" + AdminApiModel.COMPONENT_NAME;
     private final int defaultReplicas = 1;
-    private final String frontendRestImage = "hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-rest-icp-linux-amd64:2020-01-17-16.07.02-2c5fca9-exp";
+    private final String frontendRestImage = AdminApiModel.FRONTEND_REST_IMAGE;
     @Mock
     private EventStreamsOperatorConfig.ImageLookup imageConfig;
     private List<ListenerStatus> listeners = new ArrayList<>();

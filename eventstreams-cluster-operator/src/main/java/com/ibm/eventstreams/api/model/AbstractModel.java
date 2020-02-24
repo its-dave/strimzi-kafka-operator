@@ -98,7 +98,6 @@ public abstract class AbstractModel {
     private static final String DEFAULT_ARCHITECTURE = "amd64";
     protected static final Encryption DEFAULT_ENCRYPTION = Encryption.NONE;
 
-    private static final long EVENTSTREAMS_USER_ID = 65534L;
     private static final String PRODUCT_ID = "ID";
     private static final String PRODUCT_NAME = "eventstreams";
     private static final String PRODUCT_VERSION = "version";
@@ -418,7 +417,6 @@ public abstract class AbstractModel {
                 .withNewReadOnlyRootFilesystem(readOnlyRootFileSystem)
                 .withAllowPrivilegeEscalation(false)
                 .withNewRunAsNonRoot(true)
-                .withRunAsUser(EVENTSTREAMS_USER_ID)
                 .withNewCapabilities()
                     .addNewDrop("ALL")
                 .endCapabilities()
@@ -428,7 +426,6 @@ public abstract class AbstractModel {
     protected PodSecurityContext getPodSecurityContext() {
         return new PodSecurityContextBuilder()
                 .withNewRunAsNonRoot(true)
-                .withRunAsUser(EVENTSTREAMS_USER_ID)
                 .build();
     }
 
