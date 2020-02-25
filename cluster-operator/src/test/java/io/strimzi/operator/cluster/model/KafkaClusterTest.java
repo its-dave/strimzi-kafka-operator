@@ -1525,7 +1525,7 @@ public class KafkaClusterTest {
 
         NetworkPolicyPeer adminApiPeer = new NetworkPolicyPeerBuilder()
             .withNewPodSelector()
-            .withMatchLabels(Collections.singletonMap(Labels.STRIMZI_NAME_LABEL, cluster + "-admin-api"))
+            .withMatchLabels(Collections.singletonMap(Labels.STRIMZI_NAME_LABEL, cluster + "-ibm-es-admin-api"))
             .endPodSelector()
             .withNewNamespaceSelector().endNamespaceSelector()
             .build();

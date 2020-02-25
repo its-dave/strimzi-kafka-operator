@@ -532,7 +532,6 @@ public class AdminApiModelTest {
         final String externalHost = "externalHost";
         final Integer externalPort = 9876;
 
-        final String runasHost = "runasHost";
         final Integer runasPort = 8091;
 
         EventStreams defaultEs = createDefaultEventStreams().build();
@@ -553,14 +552,6 @@ public class AdminApiModelTest {
                 .endAddress()
                 .build();
 
-        ListenerStatus runasListener = new ListenerStatusBuilder()
-            .withNewType("runas")
-            .addNewAddress()
-            .withHost(runasHost)
-            .withPort(runasPort)
-            .endAddress()
-            .build();
-
         List<ListenerStatus> listeners = new ArrayList<>();
         listeners.add(kafkaListener);
         listeners.add(externalListener);
@@ -579,17 +570,22 @@ public class AdminApiModelTest {
     }
 
     @Test
-    public void testAdminApiContainerHasRunAsKafkaBootstrapEnvironmentVariables() {
+    public void testAdminApiContainerHasRunAsKafkaBootstrapEnvironmentVariablesWhenSecurityEnabled() {
         final String kafkaHost = "plainHost";
         final Integer kafkaPort = 1234;
 
         final String externalHost = "externalHost";
         final Integer externalPort = 9876;
 
-        final String runasHost = "runasHost";
         final Integer runasPort = 8091;
 
-        EventStreams defaultEs = createDefaultEventStreams().build();
+        EventStreams defaultEs = createDefaultEventStreams()
+            .editSpec()
+                .editOrNewSecurity()
+                    .withEncryption(SecuritySpec.Encryption.TLS)
+                .endSecurity()
+            .endSpec()
+            .build();
 
         ListenerStatus kafkaListener = new ListenerStatusBuilder()
             .withNewType("plain")
@@ -607,21 +603,12 @@ public class AdminApiModelTest {
             .endAddress()
             .build();
 
-        ListenerStatus runasListener = new ListenerStatusBuilder()
-            .withNewType("runas")
-            .addNewAddress()
-            .withHost(runasHost)
-            .withPort(runasPort)
-            .endAddress()
-            .build();
-
         List<ListenerStatus> listeners = new ArrayList<>();
         listeners.add(kafkaListener);
         listeners.add(externalListener);
-        listeners.add(runasListener);
 
         AdminApiModel adminApiModel = new AdminApiModel(defaultEs, imageConfig, listeners, mockIcpClusterDataMap);
-        String expectedRunAsKafkaBootstrap = runasHost + ":" + runasPort;
+        String expectedRunAsKafkaBootstrap = adminApiModel.getInstanceName() + "-kafka-bootstrap." + adminApiModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + runasPort;
 
         EnvVar kafkaBootstrapUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_SERVERS").withValue(expectedRunAsKafkaBootstrap).build();
 
@@ -773,8 +760,8 @@ public class AdminApiModelTest {
     @Test
     public void testSSLTrustAndKeystoreEnvVars() {
 
-        final String userCertPath = "/opt/ibm/adminapi/user";
-        final String clusterCertPath = "/opt/ibm/adminapi/cluster";
+        final String userCertPath = "/certs/p2p";
+        final String clusterCertPath = "/certs/cluster";
 
         EventStreams eventStreams = createDefaultEventStreams().build();
         AdminApiModel adminApiModel = new AdminApiModel(eventStreams, imageConfig, null, mockIcpClusterDataMap);

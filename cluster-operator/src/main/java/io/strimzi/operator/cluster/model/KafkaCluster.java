@@ -2191,7 +2191,7 @@ public class KafkaCluster extends AbstractModel {
 
         NetworkPolicyPeer adminAPIPodPeer = new NetworkPolicyPeerBuilder()
             .withNewPodSelector()
-            .addToMatchLabels(Labels.STRIMZI_NAME_LABEL, cluster + "-admin-api")
+            .addToMatchLabels(Labels.STRIMZI_NAME_LABEL, cluster + "-ibm-es-admin-api")
             .endPodSelector()
             .withNewNamespaceSelector()
             .endNamespaceSelector()

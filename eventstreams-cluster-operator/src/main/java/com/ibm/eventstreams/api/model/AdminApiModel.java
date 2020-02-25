@@ -79,10 +79,10 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
     private static final String IBMCLOUD_CA_VOLUME_MOUNT_NAME = "ibmcloud";
     public static final String ADMIN_CLUSTERROLE_NAME = "eventstreams-admin-clusterrole";
 
-    private static final String CERTIFICATE_PATH = "/opt/ibm/adminapi";
-    private static final String KAFKA_USER_CERTIFICATE_PATH = CERTIFICATE_PATH + File.separator + "user";
+    private static final String CERTIFICATE_PATH = "/certs";
+    private static final String KAFKA_USER_CERTIFICATE_PATH = CERTIFICATE_PATH + File.separator + "p2p";
     private static final String CLUSTER_CERTIFICATE_PATH = CERTIFICATE_PATH + File.separator + "cluster";
-    private static final String IBMCLOUD_CA_CERTIFICATE_PATH = CERTIFICATE_PATH + File.separator + "ibmcloud-private";
+    private static final String IBMCLOUD_CA_CERTIFICATE_PATH = CERTIFICATE_PATH + File.separator + "ibmcloud";
 
     private static final String CLIENT_ID_KEY = "CLIENT_ID";
     private static final String CLIENT_SECRET_KEY = "CLIENT_SECRET";
@@ -224,9 +224,10 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
     }
 
     private Container getAdminApiContainer() {
-        String runAsKafkaBootstrap = getRunAsKafkaBootstrap(kafkaListeners);
+        String internalBootstrap = getInternalKafkaBootstrap(kafkaListeners);
+        String runasBootstrap = getRunAsKafkaBootstrap(kafkaListeners);
 
-        List<EnvVar> adminApiEnvVars = getAdminApiEnvVars(runAsKafkaBootstrap);
+        List<EnvVar> adminApiEnvVars = getAdminApiEnvVars(getEncryption() == SecuritySpec.Encryption.NONE ? internalBootstrap : runasBootstrap);
 
         List<EnvVar> envVars = combineEnvVarListsNoDuplicateKeys(adminApiEnvVars);
 
@@ -246,12 +247,12 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
             .withSecurityContext(getSecurityContext(false))
             .addNewVolumeMount()
                 .withNewName(KAFKA_USER_SECRET_VOLUME_NAME)
-                .withMountPath("/certs/p2p")
+                .withMountPath(KAFKA_USER_CERTIFICATE_PATH)
                 .withNewReadOnly(true)
             .endVolumeMount()
                 .addNewVolumeMount()
                 .withNewName(CERTS_VOLUME_MOUNT_NAME)
-                .withMountPath("/certs")
+                .withMountPath(CERTIFICATE_PATH)
                 .withNewReadOnly(true)
             .endVolumeMount()
             .addNewVolumeMount()
@@ -383,7 +384,7 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
         );
     }
 
-    private List<EnvVar> getAdminApiEnvVars(String runasKafkaBootstrap) {
+    private List<EnvVar> getAdminApiEnvVars(String kafkaBootstrap) {
         List<Listener> listeners = getListeners();
         listeners.add(Listener.podToPodListener(tlsEnabled()));
         List<EnvVar> envVars = new ArrayList<EnvVar>();
@@ -392,9 +393,10 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
             new EnvVarBuilder().withName("RELEASE").withValue(getInstanceName()).build(),
             new EnvVarBuilder().withName("LICENSE").withValue("accept").build(),
             new EnvVarBuilder().withName("NAMESPACE").withValue(getNamespace()).build(),
-            new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_SERVERS").withValue(runasKafkaBootstrap).build(),
+            new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_SERVERS").withValue(kafkaBootstrap).build(),
             new EnvVarBuilder().withName("IAM_CLUSTER_NAME").withValue(icpClusterName).build(),
             new EnvVarBuilder().withName("SSL_TRUSTSTORE_PATH").withValue(CLUSTER_CERTIFICATE_PATH + File.separator + "podtls.p12").build(),
+            new EnvVarBuilder().withName("AUTHENTICATION_ENABLED").withValue(getEncryption() == SecuritySpec.Encryption.NONE ? "false" : "true").build(),
             new EnvVarBuilder()
                 .withName("SSL_TRUSTSTORE_PASSWORD")
                 .withNewValueFrom()

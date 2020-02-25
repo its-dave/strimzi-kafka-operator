@@ -107,6 +107,7 @@ public abstract class AbstractModel {
     private static final String CLOUDPAK_ID = "c8b82d189e7545f0892db9ef2731b90d";
     private static final String CLOUDPAK_NAME = "IBM Cloud Pak for Integration";
     private static final String CLOUDPAK_VERSION = "2019.4.1";
+    private static final String RUNAS_LISTENER_TYPE = "runas";
 
     public static final String KAFKA_USER_SECRET_VOLUME_NAME = "kafka-user";
     public static final String CA_CERT = "ca.crt";
@@ -781,8 +782,7 @@ public abstract class AbstractModel {
     }
 
     protected String getRunAsKafkaBootstrap(List<ListenerStatus> kafkaListeners) {
-        String listenerType = "runas";
-        return getKafkaBootstrap(kafkaListeners, listenerType);
+        return getKafkaBootstrap(kafkaListeners, RUNAS_LISTENER_TYPE);
     }
 
     protected String getExternalKafkaBootstrap(List<ListenerStatus> kafkaListeners) {
@@ -801,6 +801,8 @@ public abstract class AbstractModel {
 
         if (listenerAddress.isPresent()) {
             kafkaBootstrap = listenerAddress.get().getHost() + ":" + listenerAddress.get().getPort();
+        } else if (RUNAS_LISTENER_TYPE.equals(listenerType)) {
+            kafkaBootstrap = EventStreamsKafkaModel.getKafkaInstanceName(getInstanceName()) + "-kafka-bootstrap." + getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_RUNAS_PORT;
         }
 
         return kafkaBootstrap;
