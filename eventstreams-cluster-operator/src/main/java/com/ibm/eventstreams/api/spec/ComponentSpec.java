@@ -19,6 +19,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
+import io.strimzi.crdgenerator.annotations.Description;
 import io.sundr.builder.annotations.Buildable;
 import lombok.EqualsAndHashCode;
 
@@ -43,6 +44,7 @@ public class ComponentSpec extends ContainerSpec implements Serializable {
         this.template = template;
     }
 
+    @Description("The number of instances to deploy.")
     public int getReplicas() {
         return replicas;
     }

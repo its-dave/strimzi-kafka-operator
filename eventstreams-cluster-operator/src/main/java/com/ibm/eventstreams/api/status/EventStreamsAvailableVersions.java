@@ -16,6 +16,7 @@ package com.ibm.eventstreams.api.status;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import io.strimzi.crdgenerator.annotations.Description;
 import io.sundr.builder.annotations.Buildable;
 import lombok.EqualsAndHashCode;
 
@@ -37,6 +38,7 @@ public class EventStreamsAvailableVersions implements Serializable {
     public static final List<String> STRICT_VERSIONS = unmodifiableList(singletonList(EventStreamsVersions.OPERAND_VERSION));
     public static final List<String> LOOSE_VERSIONS = unmodifiableList(singletonList(EventStreamsVersions.AUTO_UPGRADE_VERSION));
 
+    @Description("A list of versions that the Operator is able to upgrade this instance of Event Streams to.")
     public List<String> getStrictVersions() {
         return STRICT_VERSIONS;
     }
@@ -45,6 +47,7 @@ public class EventStreamsAvailableVersions implements Serializable {
     public void setStrictVersions(List<String> versions) {
     }
 
+    @Description("A list of versions that the Operator is able to automatically upgrade from.")
     public List<String> getLooseVersions() {
         return LOOSE_VERSIONS;
     }

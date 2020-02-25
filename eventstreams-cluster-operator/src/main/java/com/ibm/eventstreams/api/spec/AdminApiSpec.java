@@ -16,6 +16,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
+import io.strimzi.crdgenerator.annotations.Description;
 import io.strimzi.crdgenerator.annotations.Minimum;
 import io.sundr.builder.annotations.Buildable;
 import lombok.EqualsAndHashCode;
@@ -32,6 +33,7 @@ public class AdminApiSpec extends ComponentSpec {
 
     @Override
     @Minimum(1)
+    @Description("The number of instances of the admin API pod to run.")
     public int getReplicas() {
         return replicas;
     }

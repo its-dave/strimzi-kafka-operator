@@ -18,6 +18,7 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
+import io.strimzi.crdgenerator.annotations.Description;
 import io.sundr.builder.annotations.Buildable;
 import lombok.EqualsAndHashCode;
 
@@ -56,6 +57,7 @@ public class EventStreamsEndpoint implements Serializable {
         this.uri = uri;
     }
 
+    @Description("The type of the endpoint: 'ui' for a UI endpoint, 'api' for an API endpoint.")
     public EndpointType getType() {
         return type;
     }

@@ -95,7 +95,7 @@ public class EventStreamsSpec implements Serializable {
         this.adminApi = adminApi;
     }
 
-    @Description("The specification of the rest producer")
+    @Description("The specification of the REST producer")
     public ComponentSpec getRestProducer() {
         return restProducer;
     }
@@ -113,7 +113,7 @@ public class EventStreamsSpec implements Serializable {
         this.adminProxy = spec;
     }
 
-    @Description("The specification of the graphical user interface")
+    @Description("The specification of the admin user interface")
     public AdminUISpec getAdminUI() {
         return adminUI;
     }
@@ -131,7 +131,7 @@ public class EventStreamsSpec implements Serializable {
         this.schemaRegistry = schemaRegistry;
     }
 
-    @Description("The specification of the collector")
+    @Description("The specification of the collector pod responsible for aggregating metrics.")
     public ComponentSpec getCollector() {
         return collector;
     }
@@ -149,7 +149,7 @@ public class EventStreamsSpec implements Serializable {
     }
     
     @JsonProperty(required = true)
-    @Description("The specification of the strimzi kafka cluster")
+    @Description("The specification of the Kafka and ZooKeeper clusters.")
     public KafkaSpec getStrimziOverrides() {
         return strimziOverrides;
     }

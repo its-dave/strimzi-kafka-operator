@@ -16,6 +16,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import io.strimzi.crdgenerator.annotations.Description;
 import io.sundr.builder.annotations.Buildable;
 import lombok.EqualsAndHashCode;
 
@@ -30,6 +31,7 @@ public class AdminUISpec extends ComponentSpec {
 
     private ContainerSpec redis;
 
+    @Description("Configuration options for the redis container used to store UI login sessions.")
     public ContainerSpec getRedis() {
         return redis;
     }

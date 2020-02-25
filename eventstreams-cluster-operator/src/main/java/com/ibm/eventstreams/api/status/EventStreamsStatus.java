@@ -26,6 +26,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 
 import io.strimzi.api.kafka.model.status.Condition;
 import io.strimzi.api.kafka.model.status.ListenerStatus;
+import io.strimzi.crdgenerator.annotations.Description;
 import io.sundr.builder.annotations.Buildable;
 import lombok.EqualsAndHashCode;
 
@@ -89,9 +90,7 @@ public class EventStreamsStatus implements Serializable {
         this.endpoints = endpoints;
     }
 
-    /**
-     * @return boolean return the customImages
-     */
+    @Description("Identifies whether any of the Docker images have been modified from the defaults for this version of Event Streams")
     public boolean isCustomImages() {
         return customImages;
     }

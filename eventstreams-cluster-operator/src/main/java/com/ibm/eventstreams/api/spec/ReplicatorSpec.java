@@ -48,7 +48,7 @@ public class ReplicatorSpec extends KafkaMirrorMaker2Spec implements Serializabl
     }
 
     @Override
-    @Description("The number of connect replicas to start for  Event Streams replication")
+    @Description("The number of connect replicas to start for Event Streams replication")
     @DefaultValue("0")
     @JsonProperty(required = true)
     public Integer getReplicas() {
