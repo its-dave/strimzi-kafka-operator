@@ -322,6 +322,10 @@ public class EventStreamsKafkaModel extends AbstractModel {
         return getKafkaInstanceName(instanceName) + "-kafka-brokers";
     }
 
+    public static String getKafkaConfigMapName(final String instanceName) {
+        return getKafkaInstanceName(instanceName) + "-kafka-config";
+    }
+
     private ResourceRequirements getKafkaResources(KafkaClusterSpec kafkaClusterSpec) {
         ResourceRequirements initialKafkaResources = Optional.ofNullable(kafkaClusterSpec.getResources())
                 .orElseGet(ResourceRequirements::new);

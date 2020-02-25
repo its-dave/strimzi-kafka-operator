@@ -777,8 +777,15 @@ public abstract class AbstractModel {
     }
     
     protected String getInternalKafkaBootstrap(List<ListenerStatus> kafkaListeners) {
-        String listenerType = tlsEnabled() ? "tls" : "plain";
-        return getKafkaBootstrap(kafkaListeners, listenerType);
+        return tlsEnabled() ? getInternalTlsKafkaBootstrap(kafkaListeners) : getInternalPlainKafkaBootstrap(kafkaListeners);
+    }
+
+    protected String getInternalPlainKafkaBootstrap(List<ListenerStatus> kafkaListeners) {
+        return getKafkaBootstrap(kafkaListeners, "plain");
+    }
+
+    protected String getInternalTlsKafkaBootstrap(List<ListenerStatus> kafkaListeners) {
+        return getKafkaBootstrap(kafkaListeners, "tls");
     }
 
     protected String getRunAsKafkaBootstrap(List<ListenerStatus> kafkaListeners) {

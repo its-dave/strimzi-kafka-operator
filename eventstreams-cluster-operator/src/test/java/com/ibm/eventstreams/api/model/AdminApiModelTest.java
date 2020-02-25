@@ -500,9 +500,18 @@ public class AdminApiModelTest {
         EnvVar kafkaBootstrapUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_URL").withValue(kafkaBootstrap).build();
         EnvVar kafkaAdvertisedListenerEnv = new EnvVarBuilder().withName("KAFKA_ADVERTISED_LISTENER_BOOTSTRAP_ADDRESS").withValue(kafkaBootstrap).build();
 
-        Container adminApiContainer = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0);
-        assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapUrlEnv));
-        assertThat(adminApiContainer.getEnv(), hasItem(kafkaAdvertisedListenerEnv));
+        EnvVar kafkaBootstrapInternalPlainUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_INTERNAL_PLAIN_URL").withValue(kafkaBootstrap).build();
+        EnvVar kafkaBootstrapInternalTlsUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_INTERNAL_TLS_URL").withValue(kafkaBootstrap).build();
+        EnvVar kafkaBootstrapExternalUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_EXTERNAL_URL").withValue(kafkaBootstrap).build();
+
+        Container restContainer = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0);
+        assertThat(restContainer.getEnv(), hasItem(kafkaBootstrapUrlEnv));
+        assertThat(restContainer.getEnv(), hasItem(kafkaAdvertisedListenerEnv));
+
+        Container adminApiContainer = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(1);
+        assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapInternalPlainUrlEnv));
+        assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapInternalTlsUrlEnv));
+        assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapExternalUrlEnv));
     }
 
     @Test
@@ -526,8 +535,11 @@ public class AdminApiModelTest {
 
     @Test
     public void testAdminApiContainerHasPlainKafkaStatusKafkaBootstrapEnvironmentVariables() {
-        final String kafkaHost = "plainHost";
-        final Integer kafkaPort = 1234;
+        final String kafkaPlainHost = "plainHost";
+        final Integer kafkaPlainPort = 1234;
+
+        final String kafkaTlsHost = "tlsHost";
+        final Integer kafkaTlsPort = 5678;
 
         final String externalHost = "externalHost";
         final Integer externalPort = 9876;
@@ -536,13 +548,21 @@ public class AdminApiModelTest {
 
         EventStreams defaultEs = createDefaultEventStreams().build();
 
-        ListenerStatus kafkaListener = new ListenerStatusBuilder()
+        ListenerStatus internalPlainListener = new ListenerStatusBuilder()
                 .withNewType("plain")
                 .addNewAddress()
-                    .withHost(kafkaHost)
-                    .withPort(kafkaPort)
+                    .withHost(kafkaPlainHost)
+                    .withPort(kafkaPlainPort)
                 .endAddress()
                 .build();
+
+        ListenerStatus internalTlsListener = new ListenerStatusBuilder()
+            .withNewType("tls")
+            .addNewAddress()
+            .withHost(kafkaTlsHost)
+            .withPort(kafkaTlsPort)
+            .endAddress()
+            .build();
 
         ListenerStatus externalListener = new ListenerStatusBuilder()
                 .withNewType("external")
@@ -553,20 +573,29 @@ public class AdminApiModelTest {
                 .build();
 
         List<ListenerStatus> listeners = new ArrayList<>();
-        listeners.add(kafkaListener);
+        listeners.add(internalPlainListener);
+        listeners.add(internalTlsListener);
         listeners.add(externalListener);
 
         AdminApiModel adminApiModel = new AdminApiModel(defaultEs, imageConfig, listeners, mockIcpClusterDataMap);
-        String expectedKafkaBootstrap = kafkaHost + ":" + kafkaPort;
+        String expectedKafkaBootstrap = kafkaPlainHost + ":" + kafkaPlainPort;
         String expectedExternalBootstrap = externalHost + ":" + externalPort;
 
         EnvVar kafkaBootstrapUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_URL").withValue(expectedKafkaBootstrap).build();
         EnvVar kafkaAdvertisedListenerEnv = new EnvVarBuilder().withName("KAFKA_ADVERTISED_LISTENER_BOOTSTRAP_ADDRESS").withValue(expectedExternalBootstrap).build();
 
-        Container adminApiContainer = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0);
+        EnvVar kafkaBootstrapInternalPlainUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_INTERNAL_PLAIN_URL").withValue(kafkaPlainHost + ":" + kafkaPlainPort).build();
+        EnvVar kafkaBootstrapInternalTlsUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_INTERNAL_TLS_URL").withValue(kafkaTlsHost + ":" + kafkaTlsPort).build();
+        EnvVar kafkaBootstrapExternalUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_EXTERNAL_URL").withValue(externalHost + ":" + externalPort).build();
 
-        assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapUrlEnv));
-        assertThat(adminApiContainer.getEnv(), hasItem(kafkaAdvertisedListenerEnv));
+        Container restContainer = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0);
+        assertThat(restContainer.getEnv(), hasItem(kafkaBootstrapUrlEnv));
+        assertThat(restContainer.getEnv(), hasItem(kafkaAdvertisedListenerEnv));
+
+        Container adminApiContainer = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(1);
+        assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapInternalPlainUrlEnv));
+        assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapInternalTlsUrlEnv));
+        assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapExternalUrlEnv));
     }
 
     @Test
@@ -618,55 +647,6 @@ public class AdminApiModelTest {
     }
 
     @Test
-    public void testAdminApiContainerHasSecureKafkaStatusKafkaBootstrapEnvironmentVariables() {
-        final String hostName = "tlsHost";
-        final Integer port = 2345;
-
-        final String externalHost = "externalHost";
-        final Integer externalPort = 5678;
-
-        EventStreams defaultEs = createDefaultEventStreams()
-                .editSpec()
-                    .editOrNewSecurity()
-                        .withEncryption(SecuritySpec.Encryption.TLS)
-                    .endSecurity()
-                .endSpec()
-                .build();
-
-        ListenerStatus kafkaListener = new ListenerStatusBuilder()
-                .withNewType("tls")
-                .addNewAddress()
-                    .withHost(hostName)
-                    .withPort(port)
-                .endAddress()
-                .build();
-
-        ListenerStatus externalListener = new ListenerStatusBuilder()
-                .withNewType("external")
-                .addNewAddress()
-                .withHost(externalHost)
-                .withPort(externalPort)
-                .endAddress()
-                .build();
-
-        List<ListenerStatus> listeners = new ArrayList<>();
-        listeners.add(kafkaListener);
-        listeners.add(externalListener);
-
-        AdminApiModel adminApiModel = new AdminApiModel(defaultEs, imageConfig, listeners, mockIcpClusterDataMap);
-        String expectedKafkaBootstrap = hostName + ":" + port;
-        String expectedExternalBootstrap = externalHost + ":" + externalPort;
-
-        EnvVar kafkaBootstrapUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_URL").withValue(expectedKafkaBootstrap).build();
-        EnvVar kafkaAdvertisedListenerEnv = new EnvVarBuilder().withName("KAFKA_ADVERTISED_LISTENER_BOOTSTRAP_ADDRESS").withValue(expectedExternalBootstrap).build();
-
-        Container adminApiContainer = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0);
-
-        assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapUrlEnv));
-        assertThat(adminApiContainer.getEnv(), hasItem(kafkaAdvertisedListenerEnv));
-    }
-
-    @Test
     public void testDefaultBootstrapWhenNoKafkaStatusKafkaBootstrap() {
 
         EventStreams defaultEs = createDefaultEventStreams().build();
@@ -681,10 +661,18 @@ public class AdminApiModelTest {
         EnvVar kafkaBootstrapUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_URL").withValue(expectedKafkaBootstrap).build();
         EnvVar kafkaAdvertisedListenerEnv = new EnvVarBuilder().withName("KAFKA_ADVERTISED_LISTENER_BOOTSTRAP_ADDRESS").withValue(expectedKafkaBootstrap).build();
 
-        Container adminApiContainer = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0);
+        EnvVar kafkaBootstrapInternalPlainUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_INTERNAL_PLAIN_URL").withValue(expectedKafkaBootstrap).build();
+        EnvVar kafkaBootstrapInternalTlsUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_INTERNAL_TLS_URL").withValue(expectedKafkaBootstrap).build();
+        EnvVar kafkaBootstrapExternalUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_EXTERNAL_URL").withValue(expectedKafkaBootstrap).build();
 
-        assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapUrlEnv));
-        assertThat(adminApiContainer.getEnv(), hasItem(kafkaAdvertisedListenerEnv));
+        Container restContainer = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0);
+        assertThat(restContainer.getEnv(), hasItem(kafkaBootstrapUrlEnv));
+        assertThat(restContainer.getEnv(), hasItem(kafkaAdvertisedListenerEnv));
+
+        Container adminApiContainer = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(1);
+        assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapInternalPlainUrlEnv));
+        assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapInternalTlsUrlEnv));
+        assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapExternalUrlEnv));
     }
 
     @Test
@@ -698,10 +686,18 @@ public class AdminApiModelTest {
         EnvVar kafkaBootstrapUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_URL").withValue(expectedKafkaBootstrap).build();
         EnvVar kafkaAdvertisedListenerEnv = new EnvVarBuilder().withName("KAFKA_ADVERTISED_LISTENER_BOOTSTRAP_ADDRESS").withValue(expectedKafkaBootstrap).build();
 
-        Container adminApiContainer = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0);
+        EnvVar kafkaBootstrapInternalPlainUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_INTERNAL_PLAIN_URL").withValue(expectedKafkaBootstrap).build();
+        EnvVar kafkaBootstrapInternalTlsUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_INTERNAL_TLS_URL").withValue(expectedKafkaBootstrap).build();
+        EnvVar kafkaBootstrapExternalUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_EXTERNAL_URL").withValue(expectedKafkaBootstrap).build();
 
-        assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapUrlEnv));
-        assertThat(adminApiContainer.getEnv(), hasItem(kafkaAdvertisedListenerEnv));
+        Container restContainer = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0);
+        assertThat(restContainer.getEnv(), hasItem(kafkaBootstrapUrlEnv));
+        assertThat(restContainer.getEnv(), hasItem(kafkaAdvertisedListenerEnv));
+
+        Container adminApiContainer = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(1);
+        assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapInternalPlainUrlEnv));
+        assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapInternalTlsUrlEnv));
+        assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapExternalUrlEnv));
     }
 
     @Test

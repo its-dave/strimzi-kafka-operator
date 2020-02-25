@@ -77,6 +77,8 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
     private static final String CLUSTER_CA_VOLUME_MOUNT_NAME = "cluster-ca";
     private static final String CERTS_VOLUME_MOUNT_NAME = "certs";
     private static final String IBMCLOUD_CA_VOLUME_MOUNT_NAME = "ibmcloud";
+    private static final String KAFKA_CONFIGMAP_MOUNT_NAME = "kafka-cm";
+
     public static final String ADMIN_CLUSTERROLE_NAME = "eventstreams-admin-clusterrole";
 
     private static final String CERTIFICATE_PATH = "/certs";
@@ -101,7 +103,7 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
     private final Route route;
     private final NetworkPolicy networkPolicy;
     private final RoleBinding roleBinding;
-    
+
     private static final Logger log = LogManager.getLogger(AdminApiModel.class.getName());
     private List<ListenerStatus> kafkaListeners;
 
@@ -111,7 +113,7 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
                          Map<String, String> icpClusterData) {
         super(instance, instance.getMetadata().getNamespace(), COMPONENT_NAME);
         this.kafkaListeners = kafkaListeners != null ? new ArrayList<>(kafkaListeners) : new ArrayList<>();
-        
+
         this.prometheusHost = icpClusterData.getOrDefault("cluster_address", "null");
         this.prometheusPort = icpClusterData.getOrDefault("cluster_router_https_port", "null");
         this.clusterCaCert = icpClusterData.getOrDefault("icp_public_cacert", "null");
@@ -200,6 +202,13 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
             .endSecret()
             .build());
 
+        volumes.add(new VolumeBuilder()
+            .withNewName(KAFKA_CONFIGMAP_MOUNT_NAME)
+            .withNewConfigMap()
+                .withNewName(EventStreamsKafkaModel.getKafkaConfigMapName(getInstanceName()))
+            .endConfigMap()
+            .build());
+
         volumes.add(createKafkaUserCertVolume());
 
         // Add The IAM Specific Volumes.  If we need to build without IAM Support we can put a variable check
@@ -226,8 +235,11 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
     private Container getAdminApiContainer() {
         String internalBootstrap = getInternalKafkaBootstrap(kafkaListeners);
         String runasBootstrap = getRunAsKafkaBootstrap(kafkaListeners);
+        String kafkaBootstrapInternalPlainUrl = getInternalPlainKafkaBootstrap(kafkaListeners);
+        String kafkaBootstrapInternalTlsUrl = getInternalTlsKafkaBootstrap(kafkaListeners);
+        String kafkaBootstrapExternalUrl = getExternalKafkaBootstrap(kafkaListeners);
 
-        List<EnvVar> adminApiEnvVars = getAdminApiEnvVars(getEncryption() == SecuritySpec.Encryption.NONE ? internalBootstrap : runasBootstrap);
+        List<EnvVar> adminApiEnvVars = getAdminApiEnvVars(getEncryption() == SecuritySpec.Encryption.NONE ? internalBootstrap : runasBootstrap, kafkaBootstrapInternalPlainUrl, kafkaBootstrapInternalTlsUrl, kafkaBootstrapExternalUrl);
 
         List<EnvVar> envVars = combineEnvVarListsNoDuplicateKeys(adminApiEnvVars);
 
@@ -263,6 +275,11 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
             .addNewVolumeMount()
                 .withNewName(ReplicatorModel.REPLICATOR_SECRET_NAME)
                 .withMountPath("/etc/georeplication")
+                .withNewReadOnly(true)
+            .endVolumeMount()
+            .addNewVolumeMount()
+                .withNewName(KAFKA_CONFIGMAP_MOUNT_NAME)
+                .withMountPath("/etc/kafka-cm")
                 .withNewReadOnly(true)
             .endVolumeMount()
 
@@ -384,7 +401,10 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
         );
     }
 
-    private List<EnvVar> getAdminApiEnvVars(String kafkaBootstrap) {
+    private List<EnvVar> getAdminApiEnvVars(final String kafkaBootstrap,
+                                            final String kafkaBootstrapInternalPlainUrl,
+                                            final String kafkaBootstrapInternalTlsUrl,
+                                            final String kafkaBootstrapExternalUrl) {
         List<Listener> listeners = getListeners();
         listeners.add(Listener.podToPodListener(tlsEnabled()));
         List<EnvVar> envVars = new ArrayList<EnvVar>();
@@ -394,6 +414,9 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
             new EnvVarBuilder().withName("LICENSE").withValue("accept").build(),
             new EnvVarBuilder().withName("NAMESPACE").withValue(getNamespace()).build(),
             new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_SERVERS").withValue(kafkaBootstrap).build(),
+            new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_INTERNAL_PLAIN_URL").withValue(kafkaBootstrapInternalPlainUrl).build(),
+            new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_INTERNAL_TLS_URL").withValue(kafkaBootstrapInternalTlsUrl).build(),
+            new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_EXTERNAL_URL").withValue(kafkaBootstrapExternalUrl).build(),
             new EnvVarBuilder().withName("IAM_CLUSTER_NAME").withValue(icpClusterName).build(),
             new EnvVarBuilder().withName("SSL_TRUSTSTORE_PATH").withValue(CLUSTER_CERTIFICATE_PATH + File.separator + "podtls.p12").build(),
             new EnvVarBuilder().withName("AUTHENTICATION_ENABLED").withValue(getEncryption() == SecuritySpec.Encryption.NONE ? "false" : "true").build(),
@@ -519,7 +542,7 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
         return this.networkPolicy;
     }
 
-     /**
+    /**
      * @return RoleBinding return the roleBinding
      */
     public RoleBinding getRoleBinding() {
