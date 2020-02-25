@@ -120,15 +120,14 @@ public class ReplicatorModel extends AbstractModel {
 
         String bootstrap;
 
-        //Check is done on instance.getSpec()... as caCert might be null due to an error, or because oauth is on
+
+        // TODO This was edited to cope with changes in KafkaMirrorMaker2 - needs reviewing
         //We use the internal port for connect, so we don't query here on listeners.external
         if (internalSecurityEnabled.isPresent()) {
-            bootstrap = replicatorSpec.map(ReplicatorSpec::getBootstrapServers)
-                    .orElse(getInstanceName() + "-kafka-bootstrap." + getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_PORT_TLS);
+            bootstrap = getInstanceName() + "-kafka-bootstrap." + getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_PORT_TLS;
         } else {
             //security off
-            bootstrap = replicatorSpec.map(ReplicatorSpec::getBootstrapServers)
-                    .orElse(getInstanceName() + "-kafka-bootstrap." + getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_PORT);
+            bootstrap = getInstanceName() + "-kafka-bootstrap." + getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_PORT;
         }
 
         int numberOfConnectConfigTopicReplicas = (instance.getSpec().getStrimziOverrides().getKafka().getReplicas() >= 3)
@@ -166,6 +165,7 @@ public class ReplicatorModel extends AbstractModel {
                 .withTls(caCert)
                 .withAuthentication(clientAuthentication)
                 .withAlias(connectCluster)
+                .withConfig(kafkaMirrorMaker2Config)
                 .build();
 
         kafkaMirrorMaker2 = new KafkaMirrorMaker2Builder()
@@ -178,7 +178,6 @@ public class ReplicatorModel extends AbstractModel {
             .endMetadata()
             .withNewSpecLike(replicatorSpec.get())
                 .withTemplate(kafkaMirrorMaker2Template)
-                .withConfig(kafkaMirrorMaker2Config)
                 .withConnectCluster(connectCluster)
                 .withClusters(kafkaMirrorMaker2ClusterSpec)
             .endSpec()

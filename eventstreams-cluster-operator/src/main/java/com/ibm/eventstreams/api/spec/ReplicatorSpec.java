@@ -37,7 +37,6 @@ public class ReplicatorSpec extends KafkaMirrorMaker2Spec implements Serializabl
     
     private Integer replicas;
     private String connectCluster;
-    private String bootstrapServers;
 
     public int hashCode() {
         return super.hashCode();
@@ -71,20 +70,6 @@ public class ReplicatorSpec extends KafkaMirrorMaker2Spec implements Serializabl
     public void setConnectCluster(String connectCluster) {
         this.connectCluster = connectCluster;
     }
-
-
-    //Override needed so that this is no longer a required field in the Replicator CRD
-    @Override
-    @JsonProperty(required = false)
-    @Description("The bootstrap address of the Kafka cluster to connect to : Event Streams sets this")
-    public String getBootstrapServers() {
-        return bootstrapServers;
-    }
-
-    public void setBootstrapServers(String bootstrapServers) {
-        this.bootstrapServers = bootstrapServers;
-    }
-
 }
 
     
