@@ -51,7 +51,7 @@ This will also regenerate the EventStreams CustomResourceDefinition into `instal
 
 To deploy the EventStreams operator into your Kubernetes Environment with a `common-services` installed
 ```
-oc apply -f install/cluster-operator/
+oc apply -f install/ibm-eventstreams-operator/
 ```
 
 Finally you can create an instance of the EventStreams Custom resource.
