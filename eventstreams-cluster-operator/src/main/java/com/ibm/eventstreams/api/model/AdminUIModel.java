@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import com.ibm.eventstreams.Main;
+import com.ibm.eventstreams.api.Listener;
 import com.ibm.eventstreams.api.spec.AdminUISpec;
 import com.ibm.eventstreams.api.spec.ComponentSpec;
 import com.ibm.eventstreams.api.spec.ComponentTemplate;
@@ -64,6 +65,8 @@ import io.strimzi.api.kafka.model.Logging;
 import io.strimzi.api.kafka.model.template.PodTemplate;
 
 import java.util.Collections;
+
+import static com.ibm.eventstreams.api.model.AbstractSecureEndpointModel.getInternalServiceName;
 
 public class AdminUIModel extends AbstractModel {
 
@@ -256,8 +259,8 @@ public class AdminUIModel extends AbstractModel {
     }
 
     private Container getUIContainer() {
-
-        String restService = getUrlProtocol(crEncryptionValue) + getDefaultResourceName(getInstanceName(), AdminProxyModel.COMPONENT_NAME) + "." +  getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + AdminProxyModel.SERVICE_PORT;
+        String adminApiService = getUrlProtocol(crEncryptionValue) + getInternalServiceName(getInstanceName(), AdminApiModel.COMPONENT_NAME) + "." +  getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + Listener.podToPodListener(tlsEnabled()).getPort();
+        String schemaRegistryService = getUrlProtocol(crEncryptionValue) + getInternalServiceName(getInstanceName(), SchemaRegistryModel.COMPONENT_NAME) + "." +  getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + Listener.podToPodListener(tlsEnabled()).getPort();
 
         List<EnvVar> envVarDefaults = new ArrayList<>();
 
@@ -290,14 +293,15 @@ public class AdminUIModel extends AbstractModel {
         envVarDefaults.add(new EnvVarBuilder().withName("EVENT_STREAMS_VERSION").withValue("").build()); // FILL OUT
         envVarDefaults.add(new EnvVarBuilder().withName("KAFKA_VERSION").withValue("").build()); // FILL OUT
         envVarDefaults.add(new EnvVarBuilder().withName("EVENT_STREAMS_CHART_VERSION").withValue("").build()); // FILL OUT
-        envVarDefaults.add(new EnvVarBuilder().withName("API_URL").withValue(restService).build());
+        envVarDefaults.add(new EnvVarBuilder().withName("API_URL").withValue(adminApiService).build());
         envVarDefaults.add(new EnvVarBuilder().withName("PRODUCER_METRICS_ENABLED").withValue(enableProducerMetricsPanels).build());
         envVarDefaults.add(new EnvVarBuilder().withName("METRICS_ENABLED").withValue(enableMetricsPanels).build());
 
         envVarDefaults.add(new EnvVarBuilder().withName("REDIS_HOST").withValue("127.0.0.1").build());
 
         envVarDefaults.add(new EnvVarBuilder().withName("CLUSTER_NAME").withValue(Main.CLUSTER_NAME).build());
-        envVarDefaults.add(new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue("true").build());
+        envVarDefaults.add(new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue("false").build());
+        envVarDefaults.add(new EnvVarBuilder().withName("SCHEMA_REGISTRY_URL").withValue(schemaRegistryService).build());
         envVarDefaults.add(
             new EnvVarBuilder()
                 .withName(TRACE_STATE)
@@ -512,7 +516,8 @@ public class AdminUIModel extends AbstractModel {
         ingressRules.add(createIngressRule(UI_SERVICE_PORT, new HashMap<>()));
 
         List<NetworkPolicyEgressRule> egressRules = new ArrayList<>(1);
-        egressRules.add(createEgressRule(AdminProxyModel.SERVICE_PORT, AdminProxyModel.COMPONENT_NAME));
+        egressRules.add(createEgressRule(Listener.podToPodListener(tlsEnabled()).getPort(), AdminApiModel.COMPONENT_NAME));
+        egressRules.add(createEgressRule(Listener.podToPodListener(tlsEnabled()).getPort(), SchemaRegistryModel.COMPONENT_NAME));
 
         return createNetworkPolicy(createLabelSelector(COMPONENT_NAME), ingressRules, egressRules);
     }

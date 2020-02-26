@@ -12,6 +12,7 @@
  */
 package com.ibm.eventstreams.api.model;
 
+import static com.ibm.eventstreams.api.model.AbstractSecureEndpointModel.INTERNAL_SERVICE_POSTFIX;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.startsWith;
@@ -30,6 +31,7 @@ import java.util.stream.Collectors;
 
 import com.ibm.eventstreams.Main;
 import com.ibm.eventstreams.api.Labels;
+import com.ibm.eventstreams.api.Listener;
 import com.ibm.eventstreams.api.model.utils.ModelUtils;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
@@ -149,17 +151,20 @@ public class AdminUIModelTest {
         assertThat(uiPodMetadata.getLabels().get("release"), is(instanceName));
 
         // confirm ui container has required envars
-        // build up rest url - note the http - required so the UI proxy knows which protocol to use
-        String restResourceName = instanceName + "-" + AbstractModel.APP_NAME + "-" + AdminProxyModel.COMPONENT_NAME;
-        String restService = "http://" + restResourceName + "." +  namespace + ".svc." + Main.CLUSTER_NAME + ":" + AdminProxyModel.SERVICE_PORT;
+
+
+        String adminApiService = "http://" + instanceName + "-" + AbstractModel.APP_NAME + "-" + AdminApiModel.COMPONENT_NAME + "-" + INTERNAL_SERVICE_POSTFIX + "." +  namespace + ".svc." + Main.CLUSTER_NAME + ":" + Listener.podToPodListener(true).getPort();
+        String schemaRegistryService = "http://" + instanceName + "-" + AbstractModel.APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME + "-" + INTERNAL_SERVICE_POSTFIX + "." +  namespace + ".svc." + Main.CLUSTER_NAME + ":" + Listener.podToPodListener(true).getPort();
 
         assertThat(uiContainers.get(0).getEnv(), hasItems(
                 new EnvVarBuilder().withName("ID").withValue(instanceName).build(),
                 new EnvVarBuilder().withName("ESFF_SECURITY_AUTH").withValue("true").build(),
                 new EnvVarBuilder().withName("ESFF_SECURITY_AUTHZ").withValue("true").build(),
-                new EnvVarBuilder().withName("API_URL").withValue(restService).build(),
+                new EnvVarBuilder().withName("API_URL").withValue(adminApiService).build(),
                 new EnvVarBuilder().withName("ICP_USER_MGMT_IP").withValue("icp-management-ingress.kube-system").build(),
                 new EnvVarBuilder().withName("ICP_USER_MGMT_PORT").withValue("443").build(),
+                new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue("false").build(),
+                new EnvVarBuilder().withName("SCHEMA_REGISTRY_URL").withValue(schemaRegistryService).build(),
                 new EnvVarBuilder().withName("ICP_USER_MGMT_HIGHEST_ROLE_FOR_CRN").withValue("idmgmt/identity/api/v1/teams/highestRole").build()));
 
         Service userInterfaceService = adminUIModel.getService();
@@ -197,17 +202,12 @@ public class AdminUIModelTest {
         assertThat(userInterfaceNetworkPolicy.getMetadata().getName(), is(expectedNetworkPolicyName));
         assertThat(userInterfaceNetworkPolicy.getKind(), is("NetworkPolicy"));
 
-        assertThat(userInterfaceNetworkPolicy.getSpec().getEgress().size(), is(1));
+        assertThat(userInterfaceNetworkPolicy.getSpec().getEgress().size(), is(2));
 
         assertThat(userInterfaceNetworkPolicy.getSpec().getEgress().get(0).getPorts().size(), is(1));
-        assertThat(userInterfaceNetworkPolicy
-            .getSpec()
-            .getEgress()
-            .get(0)
-            .getPorts()
-            .get(0)
-            .getPort()
-            .getIntVal(), is(AdminProxyModel.SERVICE_PORT));
+        checkNetworkPolicy(userInterfaceNetworkPolicy, 0, 1, 1, 1, Listener.podToPodListener(true).getPort(), AdminApiModel.COMPONENT_NAME);
+        checkNetworkPolicy(userInterfaceNetworkPolicy, 1, 1, 1, 1, Listener.podToPodListener(true).getPort(), SchemaRegistryModel.COMPONENT_NAME);
+
         assertThat(userInterfaceNetworkPolicy.getSpec().getEgress().get(0).getTo().size(), is(1));
         assertThat(userInterfaceNetworkPolicy
             .getSpec()
@@ -218,15 +218,6 @@ public class AdminUIModelTest {
             .getPodSelector()
             .getMatchLabels()
             .size(), is(1));
-        assertThat(userInterfaceNetworkPolicy
-            .getSpec()
-            .getEgress()
-            .get(0)
-            .getTo()
-            .get(0)
-            .getPodSelector()
-            .getMatchLabels()
-            .get(Labels.COMPONENT_LABEL), is(AdminProxyModel.COMPONENT_NAME));
 
         assertThat(userInterfaceNetworkPolicy.getSpec().getPodSelector().getMatchLabels().size(), is(1));
         assertThat(userInterfaceNetworkPolicy
@@ -601,5 +592,46 @@ public class AdminUIModelTest {
         assertThat(producerMetricsEnvVar.getValue(), is("false"));
         assertThat(metricsEnvVar.getValue(), is("false"));
      
+    }
+
+    private void checkNetworkPolicy(NetworkPolicy networkPolicy, int egressIndex, int expectedNumberOfPorts, int expectedGetTo, int expectedMatchLabels, int expectedPort, String expectedComponentName) {
+        assertThat(networkPolicy
+            .getSpec()
+            .getEgress()
+            .get(egressIndex)
+            .getPorts()
+            .size(), is(expectedNumberOfPorts));
+        assertThat(networkPolicy
+            .getSpec()
+            .getEgress()
+            .get(egressIndex)
+            .getPorts()
+            .get(0)
+            .getPort()
+            .getIntVal(), is(expectedPort));
+        assertThat(networkPolicy
+            .getSpec()
+            .getEgress()
+            .get(egressIndex)
+            .getTo()
+            .size(), is(expectedGetTo));
+        assertThat(networkPolicy
+            .getSpec()
+            .getEgress()
+            .get(egressIndex)
+            .getTo()
+            .get(0)
+            .getPodSelector()
+            .getMatchLabels()
+            .size(), is(expectedMatchLabels));
+        assertThat(networkPolicy
+            .getSpec()
+            .getEgress()
+            .get(egressIndex)
+            .getTo()
+            .get(0)
+            .getPodSelector()
+            .getMatchLabels()
+            .get(Labels.COMPONENT_LABEL), is(expectedComponentName));
     }
 }

@@ -238,8 +238,11 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
         String kafkaBootstrapInternalPlainUrl = getInternalPlainKafkaBootstrap(kafkaListeners);
         String kafkaBootstrapInternalTlsUrl = getInternalTlsKafkaBootstrap(kafkaListeners);
         String kafkaBootstrapExternalUrl = getExternalKafkaBootstrap(kafkaListeners);
+        String schemaRegistryEndpoint =  getInternalServiceName(getInstanceName(), SchemaRegistryModel.COMPONENT_NAME) + "." +  getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + Listener.podToPodListener(tlsEnabled()).getPort();
+        String zookeeperEndpoint = EventStreamsKafkaModel.getKafkaInstanceName(getInstanceName()) + "-" + EventStreamsKafkaModel.ZOOKEEPER_COMPONENT_NAME + "-client." + getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.ZOOKEEPER_PORT;
+        String kafkaConnectRestEndpoint = "http://" + getResourcePrefix() + "-" + ReplicatorModel.COMPONENT_NAME + "-mirrormaker2-api." + getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + ReplicatorModel.REPLICATOR_PORT;
 
-        List<EnvVar> adminApiEnvVars = getAdminApiEnvVars(getEncryption() == SecuritySpec.Encryption.NONE ? internalBootstrap : runasBootstrap, kafkaBootstrapInternalPlainUrl, kafkaBootstrapInternalTlsUrl, kafkaBootstrapExternalUrl);
+        List<EnvVar> adminApiEnvVars = getAdminApiEnvVars(getEncryption() == SecuritySpec.Encryption.NONE ? internalBootstrap : runasBootstrap, kafkaBootstrapInternalPlainUrl, kafkaBootstrapInternalTlsUrl, kafkaBootstrapExternalUrl, schemaRegistryEndpoint, zookeeperEndpoint, kafkaConnectRestEndpoint);
 
         List<EnvVar> envVars = combineEnvVarListsNoDuplicateKeys(adminApiEnvVars);
 
@@ -404,7 +407,10 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
     private List<EnvVar> getAdminApiEnvVars(final String kafkaBootstrap,
                                             final String kafkaBootstrapInternalPlainUrl,
                                             final String kafkaBootstrapInternalTlsUrl,
-                                            final String kafkaBootstrapExternalUrl) {
+                                            final String kafkaBootstrapExternalUrl,
+                                            final String schemaRegistryEndpoint,
+                                            final String zookeeperEndpoint,
+                                            final String kafkaConnectRestEndpoint) {
         List<Listener> listeners = getListeners();
         listeners.add(Listener.podToPodListener(tlsEnabled()));
         List<EnvVar> envVars = new ArrayList<EnvVar>();
@@ -420,6 +426,14 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
             new EnvVarBuilder().withName("IAM_CLUSTER_NAME").withValue(icpClusterName).build(),
             new EnvVarBuilder().withName("SSL_TRUSTSTORE_PATH").withValue(CLUSTER_CERTIFICATE_PATH + File.separator + "podtls.p12").build(),
             new EnvVarBuilder().withName("AUTHENTICATION_ENABLED").withValue(getEncryption() == SecuritySpec.Encryption.NONE ? "false" : "true").build(),
+            new EnvVarBuilder().withName("SCHEMA_REGISTRY_URL").withValue(schemaRegistryEndpoint).build(),
+            new EnvVarBuilder().withName("ZOOKEEPER_CONNECT").withValue(zookeeperEndpoint).build(),
+            new EnvVarBuilder().withName("PROMETHEUS_HOST").withValue(prometheusHost).build(),
+            new EnvVarBuilder().withName("PROMETHEUS_PORT").withValue(prometheusPort).build(),
+            new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue("false").build(),
+            new EnvVarBuilder().withName("KAFKA_STS_NAME").withValue(EventStreamsKafkaModel.getKafkaInstanceName(getInstanceName()) + "-" + EventStreamsKafkaModel.KAFKA_COMPONENT_NAME).build(),
+            new EnvVarBuilder().withName("KAFKA_CONNECT_REST_API_ADDRESS").withValue(kafkaConnectRestEndpoint).build(),
+            new EnvVarBuilder().withName("GEOREPLICATION_SECRET_NAME").withValue(getResourcePrefix() + "-" + ReplicatorModel.REPLICATOR_SECRET_NAME).build(),
             new EnvVarBuilder()
                 .withName("SSL_TRUSTSTORE_PASSWORD")
                 .withNewValueFrom()

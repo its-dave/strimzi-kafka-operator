@@ -57,6 +57,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static com.ibm.eventstreams.api.model.AbstractSecureEndpointModel.INTERNAL_SERVICE_POSTFIX;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.endsWith;
 import static org.hamcrest.CoreMatchers.is;
@@ -135,6 +136,34 @@ public class AdminApiModelTest {
             assertThat(route.getMetadata().getName(), startsWith(componentPrefix));
             assertThat(route.getMetadata().getName(), containsString(key));
         });
+    }
+
+    @Test
+    public void testDefaultAdminApiEnvVars() {
+        AdminApiModel adminApiModel = createDefaultAdminApiModel();
+        String kafkaBootstrap = instanceName + "-kafka-bootstrap." + adminApiModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_PORT;
+        String schemaRegistryEndpoint = instanceName  + "-" + AbstractModel.APP_NAME + "-schema-registry" + "-" + INTERNAL_SERVICE_POSTFIX  + "." + adminApiModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + Listener.podToPodListener(adminApiModel.tlsEnabled()).getPort();
+        String zookeeperEndpoint = instanceName + "-" + EventStreamsKafkaModel.ZOOKEEPER_COMPONENT_NAME + "-client." + adminApiModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.ZOOKEEPER_PORT;
+        String kafkaConnectRestEndpoint = "http://" + instanceName  + "-" + AbstractModel.APP_NAME + "-" + ReplicatorModel.COMPONENT_NAME + "-mirrormaker2-api." + adminApiModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + ReplicatorModel.REPLICATOR_PORT;
+
+        EnvVar kafkaBootstrapUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_SERVERS").withValue(kafkaBootstrap).build();
+        EnvVar schemaRegistryUrlEnv = new EnvVarBuilder().withName("SCHEMA_REGISTRY_URL").withValue(schemaRegistryEndpoint).build();
+        EnvVar zkConnectEnv = new EnvVarBuilder().withName("ZOOKEEPER_CONNECT").withValue(zookeeperEndpoint).build();
+        EnvVar geoRepEnabledEnv = new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue("false").build();
+        EnvVar kafkaStsEnv = new EnvVarBuilder().withName("KAFKA_STS_NAME").withValue(instanceName + "-" + EventStreamsKafkaModel.KAFKA_COMPONENT_NAME).build();
+        EnvVar kafkaConnectRestApiEnv = new EnvVarBuilder().withName("KAFKA_CONNECT_REST_API_ADDRESS").withValue(kafkaConnectRestEndpoint).build();
+        EnvVar geoRepSecretNameEnv = new EnvVarBuilder().withName("GEOREPLICATION_SECRET_NAME").withValue(instanceName  + "-" + AbstractModel.APP_NAME + "-" + ReplicatorModel.REPLICATOR_SECRET_NAME).build();
+
+        // Get env-vars from admin-api container, not frontend-rest
+        Container adminApiContainer = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(1);
+        List<EnvVar> defaultEnvVars = adminApiContainer.getEnv();
+        assertThat(defaultEnvVars, hasItem(kafkaBootstrapUrlEnv));
+        assertThat(defaultEnvVars, hasItem(zkConnectEnv));
+        assertThat(defaultEnvVars, hasItem(geoRepEnabledEnv));
+        assertThat(defaultEnvVars, hasItem(schemaRegistryUrlEnv));
+        assertThat(defaultEnvVars, hasItem(kafkaStsEnv));
+        assertThat(defaultEnvVars, hasItem(kafkaConnectRestApiEnv));
+        assertThat(defaultEnvVars, hasItem(geoRepSecretNameEnv));
     }
 
     @Test
