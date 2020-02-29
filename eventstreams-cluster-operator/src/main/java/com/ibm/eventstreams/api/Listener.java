@@ -151,13 +151,21 @@ public class Listener {
 
     public static String createEndpointsString(List<Listener> listeners) {
         return listeners.stream()
-                .map(listener -> {
-                    if (listener.isTls()) {
-                        return String.format("%d:%s", listener.getPort(), listener.getPath());
-                    }
-                    return String.format("%d", listener.getPort());
-                })
-                .collect(Collectors.joining(","));
+            .map(listener -> {
+                if (listener.isTls()) {
+                    return String.format("%d:%s", listener.getPort(), listener.getPath());
+                }
+                return String.format("%d", listener.getPort());
+            })
+            .collect(Collectors.joining(","));
+    }
+
+    public static String createAuthorizationString(List<Listener> listeners) {
+        return listeners.stream()
+            .map(listener -> {
+                return String.format("%d", listener.getPort());
+            })
+            .collect(Collectors.joining(","));
     }
 
     private static List<Listener> getDefaultListeners() {

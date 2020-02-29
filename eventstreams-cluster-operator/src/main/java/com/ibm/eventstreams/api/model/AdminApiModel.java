@@ -78,12 +78,14 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
     private static final String CERTS_VOLUME_MOUNT_NAME = "certs";
     private static final String IBMCLOUD_CA_VOLUME_MOUNT_NAME = "ibmcloud";
     private static final String KAFKA_CONFIGMAP_MOUNT_NAME = "kafka-cm";
+    private static final String CLIENT_CA_VOLUME_MOUNT_NAME = "client-ca";
 
     public static final String ADMIN_CLUSTERROLE_NAME = "eventstreams-admin-clusterrole";
 
     private static final String CERTIFICATE_PATH = "/certs";
     private static final String KAFKA_USER_CERTIFICATE_PATH = CERTIFICATE_PATH + File.separator + "p2p";
     private static final String CLUSTER_CERTIFICATE_PATH = CERTIFICATE_PATH + File.separator + "cluster";
+    private static final String CLIENT_CA_CERTIFICATE_PATH = CERTIFICATE_PATH + File.separator + "client";
     private static final String IBMCLOUD_CA_CERTIFICATE_PATH = CERTIFICATE_PATH + File.separator + "ibmcloud";
 
     private static final String CLIENT_ID_KEY = "CLIENT_ID";
@@ -209,6 +211,14 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
             .endConfigMap()
             .build());
 
+        volumes.add(new VolumeBuilder()
+            .withNewName(CLIENT_CA_VOLUME_MOUNT_NAME)
+            .withNewSecret()
+            .withNewSecretName(EventStreamsKafkaModel.getKafkaClientCaCertName(getInstanceName()))
+                .addNewItem().withNewKey(CA_P12).withNewPath("ca.p12").endItem()
+            .endSecret()
+            .build());
+
         volumes.add(createKafkaUserCertVolume());
 
         // Add The IAM Specific Volumes.  If we need to build without IAM Support we can put a variable check
@@ -274,6 +284,11 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
                 .withNewName(CLUSTER_CA_VOLUME_MOUNT_NAME)
                 .withMountPath(CLUSTER_CERTIFICATE_PATH)
                 .withNewReadOnly(true)
+            .endVolumeMount()
+            .addNewVolumeMount()
+                .withNewName(CLIENT_CA_VOLUME_MOUNT_NAME)
+                .withMountPath(CLIENT_CA_CERTIFICATE_PATH)
+                .withReadOnly(true)
             .endVolumeMount()
             .addNewVolumeMount()
                 .withNewName(ReplicatorModel.REPLICATOR_SECRET_NAME)
@@ -416,6 +431,7 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
         List<EnvVar> envVars = new ArrayList<EnvVar>();
         envVars.addAll(Arrays.asList(
             new EnvVarBuilder().withName("ENDPOINTS").withValue(Listener.createEndpointsString(listeners)).build(),
+            new EnvVarBuilder().withName("AUTHENTICATION").withValue(Listener.createAuthorizationString(listeners)).build(),
             new EnvVarBuilder().withName("RELEASE").withValue(getInstanceName()).build(),
             new EnvVarBuilder().withName("LICENSE").withValue("accept").build(),
             new EnvVarBuilder().withName("NAMESPACE").withValue(getNamespace()).build(),
@@ -425,6 +441,7 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
             new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_EXTERNAL_URL").withValue(kafkaBootstrapExternalUrl).build(),
             new EnvVarBuilder().withName("IAM_CLUSTER_NAME").withValue(icpClusterName).build(),
             new EnvVarBuilder().withName("SSL_TRUSTSTORE_PATH").withValue(CLUSTER_CERTIFICATE_PATH + File.separator + "podtls.p12").build(),
+            new EnvVarBuilder().withName("CLIENT_CA_PATH").withValue(CLIENT_CA_CERTIFICATE_PATH + File.separator + "ca.p12").build(),
             new EnvVarBuilder().withName("AUTHENTICATION_ENABLED").withValue(getEncryption() == SecuritySpec.Encryption.NONE ? "false" : "true").build(),
             new EnvVarBuilder().withName("SCHEMA_REGISTRY_URL").withValue(schemaRegistryEndpoint).build(),
             new EnvVarBuilder().withName("ZOOKEEPER_CONNECT").withValue(zookeeperEndpoint).build(),
@@ -453,6 +470,15 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
                 .withNewSecretKeyRef()
                 .withName(getInternalKafkaUserSecretName())
                 .withKey(USER_P12_PASS)
+                .endSecretKeyRef()
+                .endValueFrom()
+                .build(),
+            new EnvVarBuilder()
+                .withName("CLIENT_P12_PASSWORD")
+                .withNewValueFrom()
+                .withNewSecretKeyRef()
+                .withName(EventStreamsKafkaModel.getKafkaClientCaCertName(getInstanceName()))
+                .withKey(CA_P12_PASS)
                 .endSecretKeyRef()
                 .endValueFrom()
                 .build()));

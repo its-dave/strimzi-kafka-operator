@@ -318,6 +318,10 @@ public class EventStreamsKafkaModel extends AbstractModel {
         return KafkaResources.clusterCaCertificateSecretName(instanceName);
     }
 
+    public static String getKafkaClientCaCertName(String instanceName) {
+        return KafkaResources.clientsCaCertificateSecretName(instanceName);
+    }
+
     public static String getKafkaBrokersSecretName(String instanceName) {
         return getKafkaInstanceName(instanceName) + "-kafka-brokers";
     }

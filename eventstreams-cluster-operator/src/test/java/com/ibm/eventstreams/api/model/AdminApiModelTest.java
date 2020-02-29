@@ -153,7 +153,7 @@ public class AdminApiModelTest {
         EnvVar kafkaStsEnv = new EnvVarBuilder().withName("KAFKA_STS_NAME").withValue(instanceName + "-" + EventStreamsKafkaModel.KAFKA_COMPONENT_NAME).build();
         EnvVar kafkaConnectRestApiEnv = new EnvVarBuilder().withName("KAFKA_CONNECT_REST_API_ADDRESS").withValue(kafkaConnectRestEndpoint).build();
         EnvVar geoRepSecretNameEnv = new EnvVarBuilder().withName("GEOREPLICATION_SECRET_NAME").withValue(instanceName  + "-" + AbstractModel.APP_NAME + "-" + ReplicatorModel.REPLICATOR_SECRET_NAME).build();
-
+        EnvVar clientCaCertPath = new EnvVarBuilder().withName("CLIENT_CA_PATH").withValue("/certs/client/ca.p12").build();
         // Get env-vars from admin-api container, not frontend-rest
         Container adminApiContainer = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(1);
         List<EnvVar> defaultEnvVars = adminApiContainer.getEnv();
@@ -164,6 +164,7 @@ public class AdminApiModelTest {
         assertThat(defaultEnvVars, hasItem(kafkaStsEnv));
         assertThat(defaultEnvVars, hasItem(kafkaConnectRestApiEnv));
         assertThat(defaultEnvVars, hasItem(geoRepSecretNameEnv));
+        assertThat(defaultEnvVars, hasItem(clientCaCertPath));
     }
 
     @Test

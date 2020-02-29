@@ -14,16 +14,7 @@
 ############################# IBM EVENT STREAMS ###############################
 ###############################################################################
 
-# If you set `watchNamespaces` to the same value as ``.Release.Namespace` (e.g. `helm ... --namespace $NAMESPACE`), 
-# the chart will fail because duplicate RoleBindings will be attempted to be created in the same namespace
-watchNamespaces: []
-watchAnyNamespace: false
-
-
-# imageTagOverride: combined8
-# imageRepositoryOverride: hyc-qp-stable-docker-local.artifactory.swg-devops.com
-
-# If you set `watchNamespaces` to the same value as ``.Release.Namespace` (e.g. `helm ... --namespace $NAMESPACE`), 
+# If you set `watchNamespaces` to the same value as ``.Release.Namespace` (e.g. `helm ... --namespace $NAMESPACE`),
 # the chart will fail because duplicate RoleBindings will be attempted to be created in the same namespace
 watchNamespaces: []
 watchAnyNamespace: false
