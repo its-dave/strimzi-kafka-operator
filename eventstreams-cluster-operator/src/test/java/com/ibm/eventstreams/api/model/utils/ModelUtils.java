@@ -182,8 +182,9 @@ public class ModelUtils {
         public EndpointModel(EventStreams instance, String namespace, String componentName, List<Listener> listeners) {
             super(instance, namespace, componentName, listeners);
             setEncryption(SecuritySpec.Encryption.TLS);
-            createServices();
-            createRoutes();
+            createInternalService();
+            createExternalService();
+            createRoutesFromListeners();
         }
     }
 

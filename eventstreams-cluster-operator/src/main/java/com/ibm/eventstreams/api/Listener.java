@@ -29,26 +29,33 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class Listener {
+    public static final String EXTERNAL_TLS_NAME = "external-tls";
+    private static final int EXTERNAL_TLS_PORT = 9444;
+
+    public static final String EXTERNAL_PLAIN_NAME = "external-plain";
+    private static final int EXTERNAL_PLAIN_PORT = 9081;
+
+    public static final String INTERNAL_TLS_NAME = "internal-tls";
+    private static final int INTERNAL_TLS_PORT = 8443;
+
+    public static final String INTERNAL_PLAIN_NAME = "internal-plain";
+    private static final int INTERNAL_PLAIN_PORT = 8080;
+
+    private static final String POD_TO_POD_TLS_NAME = "podtls";
+    private static final String POD_TO_POD_TLS_PATH = "p2p/podtls";
+    private static final int POD_TO_POD_TLS_PORT = 7443;
+    private static final String POD_TO_POD_PLAIN_NAME = "pod";
+    private static final int POD_TO_POD_PLAIN_PORT = 7080;
+
+    // Initialize listeners with defaults
+    private static List<Listener> enabledListeners = getDefaultListeners();
+
     private String name;
     private String path;
     private boolean tls;
     private boolean exposed;
     private int port;
     private Function<EventStreamsSpec, Optional<CertAndKeySecretSource>> certOverrideSpec;
-    public static final String EXTERNAL_TLS_NAME = "external-tls";
-    private static final int EXTERNAL_TLS_PORT = 9444;
-    public static final String EXTERNAL_PLAIN_NAME = "external-plain";
-    private static final int EXTERNAL_PLAIN_PORT = 9081;
-    public static final String INTERNAL_TLS_NAME = "internal-tls";
-    private static final int INTERNAL_TLS_PORT = 8443;
-    public static final String INTERNAL_PLAIN_NAME = "internal-plain";
-    private static final int INTERNAL_PLAIN_PORT = 8080;
-    private static final String POD_TO_POD_TLS_NAME = "podtls";
-    private static final String POD_TO_POD_TLS_PATH = "p2p/podtls";
-    private static final int POD_TO_POD_TLS_PORT = 7443;
-    private static final String POD_TO_POD_PLAIN_NAME = "pod";
-    private static final int POD_TO_POD_PLAIN_PORT = 7080;
-    private static List<Listener> enabledListeners = getDefaultListeners();
 
 
     public Listener(String name, boolean tls, boolean exposed, int port, Function<EventStreamsSpec, Optional<CertAndKeySecretSource>> certOverrideSpec) {
@@ -169,10 +176,10 @@ public class Listener {
     }
 
     private static List<Listener> getDefaultListeners() {
-        List<Listener> enabledListeners = new ArrayList<>();
-        enabledListeners.add(Listener.externalTls());
-        enabledListeners.add(Listener.internalTls());
-        enabledListeners.add(Listener.externalPlain());
-        return enabledListeners;
+        List<Listener> defaultListeners = new ArrayList<>();
+        defaultListeners.add(Listener.externalTls());
+        defaultListeners.add(Listener.internalTls());
+        defaultListeners.add(Listener.externalPlain());
+        return defaultListeners;
     }
 }

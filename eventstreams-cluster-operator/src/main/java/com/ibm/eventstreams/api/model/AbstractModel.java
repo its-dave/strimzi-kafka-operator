@@ -299,16 +299,28 @@ public abstract class AbstractModel {
         return getDefaultResourceName(instanceName, componentName);
     }
 
-    public String componentPrefixedName(String name) {
+    public String getComponentNameWithSuffix(String name) {
         return name.isEmpty() ? getComponentName() : getComponentName() + "-" + name;
     }
 
-    public String fullPrefixedName(String name) {
-        return name.isEmpty() ? getDefaultResourceName() : getDefaultResourceName() + "-" + name;
+    public String getDefaultResourceNameWithSuffix(String name) {
+        return getDefaultResourceNameWithSuffix(name, getInstanceName(), getComponentName());
+    }
+
+    public static String getDefaultResourceNameWithSuffix(String name, String instanceName, String componentName) {
+        return name.isEmpty() ? getDefaultResourceName(instanceName, componentName) : getDefaultResourceName(instanceName, componentName) + "-" + name;
     }
 
     public static String getDefaultResourceName(String instanceName, String componentName) {
         return getResourcePrefix(instanceName) + "-" + componentName;
+    }
+
+    public String getRouteName() {
+        return getRouteName("");
+    }
+
+    public String getRouteName(String suffix) {
+        return getDefaultResourceNameWithSuffix(suffix);
     }
 
     protected String getInternalKafkaUserSecretName() {
@@ -526,7 +538,7 @@ public abstract class AbstractModel {
 
     protected ServicePort createServicePort(Listener listener) {
         return new ServicePortBuilder()
-                .withNewName(componentPrefixedName(listener.getName()))
+                .withNewName(getComponentNameWithSuffix(listener.getName()))
                 .withNewProtocol("TCP")
                 .withPort(listener.getPort())
                 .build();
@@ -534,7 +546,7 @@ public abstract class AbstractModel {
 
     protected ServicePort createServicePort(int port) {
         return new ServicePortBuilder()
-                .withNewName(componentPrefixedName("http"))
+                .withNewName(getComponentNameWithSuffix("http"))
                 .withNewProtocol("TCP")
                 .withPort(port)
                 .build();
@@ -571,46 +583,16 @@ public abstract class AbstractModel {
                 .build();
     }
 
-    // will go when remove old routes
-    protected Route createRoute(int port) {
-        if (tlsEnabled()) {
-            TLSConfig tlsConfig = new TLSConfigBuilder()
-                    .withTermination("passthrough")
-                    .withInsecureEdgeTerminationPolicy("None")
-                    .build();
-            return createRoute(port, tlsConfig);
-        }
-        RouteBuilder routeBuilder = createDefaultRouteBuilder(getDefaultResourceName(), getDefaultResourceName(), port);
-        return routeBuilder.build();
-    }
-
-    // Used by UI
-    protected Route createRoute(int port, TLSConfig tlsConfig) {
-        RouteBuilder routeBuilder = createDefaultRouteBuilder(getDefaultResourceName(), getDefaultResourceName(), port);
-        routeBuilder
-                .editSpec()
-                    .withTls(tlsConfig)
-                .endSpec();
-        return routeBuilder.build();
-    }
-
-    protected Route createRoute(String serviceName, Listener listener) {
-        String name = fullPrefixedName(listener.getName());
-        RouteBuilder routeBuilder = createDefaultRouteBuilder(name, serviceName, listener.getPort());
-        if (listener.isTls()) {
-            routeBuilder
-                    .editSpec()
-                    .withNewTls()
-                        .withTermination("passthrough")
-                        .withInsecureEdgeTerminationPolicy("None")
-                    .endTls()
-                    .endSpec();
-        }
-        return routeBuilder.build();
-    }
-
-    protected RouteBuilder createDefaultRouteBuilder(String name, String serviceName, int port) {
-        return new RouteBuilder()
+    /**
+     *
+     * @param name the name of the route to be created
+     * @param serviceName the name of the service associated with the route
+     * @param port the port to route to on the service
+     * @param tlsConfig the TLSConfig to set in the route, if null it is not set
+     * @return a configured Route
+     */
+    protected Route createRoute(String name, String serviceName, int port, TLSConfig tlsConfig) {
+        RouteBuilder route = new RouteBuilder()
                 .withNewMetadata()
                     .withName(name)
                     .withNamespace(namespace)
@@ -629,6 +611,25 @@ public abstract class AbstractModel {
                     .endPort()
                     .withNewWildcardPolicy("None")
                 .endSpec();
+
+        if (tlsConfig != null) {
+            route.editSpec()
+                    .withTls(tlsConfig)
+                .endSpec();
+        }
+
+        return route.build();
+    }
+
+    /**
+     *
+     * @return the default TLSConfig, most often used for configuring a route
+     */
+    protected TLSConfig getDefaultTlsConfig() {
+        return new TLSConfigBuilder()
+                .withTermination("passthrough")
+                .withInsecureEdgeTerminationPolicy("None")
+                .build();
     }
 
     protected NetworkPolicy createNetworkPolicy(LabelSelector labelSelector,

@@ -44,6 +44,7 @@ import io.fabric8.kubernetes.api.model.networking.NetworkPolicy;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicyEgressRule;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicyIngressRule;
 import io.fabric8.openshift.api.model.Route;
+import io.fabric8.openshift.api.model.TLSConfig;
 import io.strimzi.api.kafka.model.template.PodTemplate;
 
 import java.util.ArrayList;
@@ -113,8 +114,10 @@ public class AdminProxyModel extends AbstractModel {
         configmap = createConfigMap(getProxyConfigMap());
         service = createService(SERVICE_PORT);
         serviceAccount = createServiceAccount();
-        route = createRoute(SERVICE_PORT);
         networkPolicy = createNetworkPolicy();
+
+        TLSConfig tlsConfig = tlsEnabled() ? getDefaultTlsConfig() : null;
+        route = createRoute(getRouteName(), getDefaultResourceName(), SERVICE_PORT, tlsConfig);
     }
 
     public AdminProxyModel(EventStreams instance,

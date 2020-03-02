@@ -572,7 +572,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 restProducerFutures.add(networkPolicyOperator.createOrUpdate(restProducer.getNetworkPolicy()));
                 restProducerFuture = CompositeFuture.join(restProducerFutures)
                         .compose(res -> createOrUpdateRoutes(restProducer, restProducer.getRoutes()))
-                        .compose(res -> reconcileCerts(restProducer, res, dateSupplier))
+                        .compose(routesHostMap -> reconcileCerts(restProducer, routesHostMap, dateSupplier))
                         .compose(secretResult -> deploymentOperator.createOrUpdate(restProducer.getDeployment(secretResult.resource().getMetadata().getResourceVersion())));
             }
 
@@ -595,18 +595,14 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             adminApiFutures.add(roleBindingOperator.createOrUpdate(adminApi.getRoleBinding()));
             adminApiFutures.add(createReplicatorSecretIfRequired(replicatorModel));
             return CompositeFuture.join(adminApiFutures)
-                    .compose(res -> {
-                        Map<String, Route> routes = adminApi.getRoutes();
-                        routes.put("", adminApi.getRoute());
-                        return createOrUpdateRoutes(adminApi, routes);
-                    })
-                    .compose(res -> {
-                        String adminRouteHost = res.get("");
+                    .compose(res -> createOrUpdateRoutes(adminApi, adminApi.getRoutes()))
+                    .compose(routesHostMap -> {
+                        String adminRouteHost = routesHostMap.get(adminApi.getRouteName());
                         String adminRouteUri = "https://" + adminRouteHost;
-                        updateEndpoints(new EventStreamsEndpoint("admin", EventStreamsEndpoint.EndpointType.api, adminRouteUri));
-                        return Future.succeededFuture(res);
+                        updateEndpoints(new EventStreamsEndpoint(EventStreamsEndpoint.ADMIN_KEY, EventStreamsEndpoint.EndpointType.api, adminRouteUri));
+                        return Future.succeededFuture(routesHostMap);
                     })
-                    .compose(res -> reconcileCerts(adminApi, res, dateSupplier))
+                    .compose(routesHostMap -> reconcileCerts(adminApi, routesHostMap, dateSupplier))
                     .compose(secretResult -> deploymentOperator.createOrUpdate(adminApi.getDeployment(secretResult.resource().getMetadata().getResourceVersion())))
                     .map(this);
         }
@@ -625,14 +621,15 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             schemaRegistryFutures.add(serviceOperator.createOrUpdate(schemaRegistry.getInternalService()));
             schemaRegistryFutures.add(networkPolicyOperator.createOrUpdate(schemaRegistry.getNetworkPolicy()));
             return CompositeFuture.join(schemaRegistryFutures)
+                    // TODO the fact this returns the hostmap is unideal
                     .compose(res -> createOrUpdateRoutes(schemaRegistry, schemaRegistry.getRoutes()))
-                    .compose(res -> {
-                        String schemaRouteHost = res.get("external-tls");
+                    .compose(routesHostMap -> {
+                        String schemaRouteHost = routesHostMap.get(schemaRegistry.getRouteName(Listener.EXTERNAL_TLS_NAME));
                         String schemaRouteUri = "https://" + schemaRouteHost;
-                        updateEndpoints(new EventStreamsEndpoint("schemaregistry", EventStreamsEndpoint.EndpointType.api, schemaRouteUri));
-                        return Future.succeededFuture(res);
+                        updateEndpoints(new EventStreamsEndpoint(EventStreamsEndpoint.SCHEMA_REGISTRY_KEY, EventStreamsEndpoint.EndpointType.api, schemaRouteUri));
+                        return Future.succeededFuture(routesHostMap);
                     })
-                    .compose(res -> reconcileCerts(schemaRegistry, res, dateSupplier))
+                    .compose(routesHostMap -> reconcileCerts(schemaRegistry, routesHostMap, dateSupplier))
                     .compose(secretResult -> deploymentOperator.createOrUpdate(schemaRegistry.getDeployment(secretResult.resource().getMetadata().getResourceVersion())))
                     .map(this);
         }
@@ -655,7 +652,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
 
                     status.addToRoutes(AdminUIModel.COMPONENT_NAME, uiRouteHost);
                     status.withNewAdminUiUrl(uiRouteUri);
-                    updateEndpoints(new EventStreamsEndpoint("ui", EventStreamsEndpoint.EndpointType.ui, uiRouteUri));
+                    updateEndpoints(new EventStreamsEndpoint(EventStreamsEndpoint.UI_KEY, EventStreamsEndpoint.EndpointType.ui, uiRouteUri));
 
                     return Future.succeededFuture();
                 }));
@@ -750,16 +747,28 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             });
         }
 
+        /**
+         *
+         *
+         * @param model
+         * @param additionalHosts is a map of route names and their corresponding hosts generated by openshift
+         * @param dateSupplier
+         * @return
+         */
         Future<ReconcileResult<Secret>> reconcileCerts(AbstractSecureEndpointModel model, Map<String, String> additionalHosts, Supplier<Date> dateSupplier) {
             log.info("Starting certificate reconciliation for: " + model.getComponentName());
             try {
+
                 boolean regenSecret = false;
                 Optional<Secret> certSecret = certificateManager.getSecret(model.getCertSecretName());
                 for (Listener listener: model.getTlsListeners()) {
-                    String host = listener.isExposed() ? additionalHosts.getOrDefault(listener.getName(), "") : "";
+
+                    String host = listener.isExposed() ? additionalHosts.getOrDefault(model.getRouteName(listener.getName()), "") : "";
+
                     List<String> hosts = host.isEmpty() ? Collections.emptyList() : Collections.singletonList(host);
                     Service service = listener.isExposed() ? model.getExternalService() : model.getInternalService();
                     Optional<CertAndKeySecretSource> certAndKeySecretSource = listener.getCertOverride(instance.getSpec());
+
                     // Check for user supplied certificates else check if we need to generate or renew our certificates
                     if (certAndKeySecretSource.isPresent()) {
                         Optional<CertAndKey> providedCertAndKey = certificateManager.certificateAndKey(certAndKeySecretSource.get());
@@ -782,8 +791,9 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                         regenSecret = true;
                     }
                 }
+
                 // regen can't be false and the current certSecret not exist
-                return regenSecret ? secretOperator.createOrUpdate(model.getCertSecret()) : Future.succeededFuture(ReconcileResult.noop(certSecret.get()));
+                return regenSecret ? secretOperator.createOrUpdate(model.getCertificateSecretModel()) : Future.succeededFuture(ReconcileResult.noop(certSecret.get()));
             } catch (EventStreamsCertificateException e) {
                 log.error(e);
                 return Future.failedFuture(e);
@@ -907,22 +917,33 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             }
             List<Future> routeFutures = routes.entrySet()
                     .stream()
-                    .map(entry -> routeOperator.createOrUpdate(entry.getValue()).compose(routeResult -> {
+                    .map(entry -> routeOperator.createOrUpdate(entry.getValue())
+                    .compose(routeResult -> {
                         String routeHost = routeResult.resource().getSpec().getHost();
-                        status.addToRoutes(model.componentPrefixedName(entry.getKey()), routeHost);
+                        if (routeHost.isEmpty()) {
+                            return Future.failedFuture("Cannot find host for " + routeResult.resource().getMetadata().getName());
+                        }
+
+                        // TODO this is a hack, change this
+                        status.addToRoutes(entry.getKey().replaceFirst(model.getResourcePrefix() + "-", ""), routeHost);
                         Map<String, String> map = new HashMap<>(1); // Has to be HashMap for putAll
                         map.put(entry.getKey(), routeHost);
                         return Future.succeededFuture(map);
                     }))
                     .collect(Collectors.toList());
 
-            return CompositeFuture.join(routeFutures).compose(ar -> {
-                List<Map<String, String>> maps = ar.list();
-                return Future.succeededFuture(maps.stream().reduce((map1, map2) -> {
-                    map1.putAll(map2);
-                    return map1;
-                }).orElse(Collections.emptyMap()));
-            });
+            return CompositeFuture.join(routeFutures)
+                .compose(ar -> {
+                    List<Map<String, String>> allRoutesMaps = ar.list();
+                    Map<String, String> routesMap = allRoutesMaps
+                        .stream()
+                        .reduce((map1, map2) -> {
+                            map1.putAll(map2);
+                            return map1;
+                        })
+                        .orElse(Collections.emptyMap());
+                    return Future.succeededFuture(routesMap);
+                });
         }
 
         protected void updateEndpoints(EventStreamsEndpoint newEndpoint) {

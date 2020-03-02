@@ -18,48 +18,80 @@ import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.ServicePort;
 import io.fabric8.openshift.api.model.Route;
+import io.fabric8.openshift.api.model.TLSConfig;
 import io.strimzi.certs.CertAndKey;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public abstract class AbstractSecureEndpointModel extends AbstractModel {
     public static final String EXTERNAL_SERVICE_POSTFIX = "external";
     public static final String INTERNAL_SERVICE_POSTFIX = "internal";
     public static final String CERT_GENERATION_KEY = "certificateGenerationID";
-    private final CertificateSecretModel certSecret;
+    protected static final Set<String> DEFAULT_LISTENERS_WITH_ROUTES = new HashSet<>(Arrays.asList(Listener.EXTERNAL_PLAIN_NAME, Listener.EXTERNAL_TLS_NAME));
+
+    private final CertificateSecretModel certificateSecretModel;
     private final List<Listener> listeners;
-    private Service externalService = null;
-    private Service internalService = null;
-    private Map<String, Route> routes;
+
+    private Service internalService;
+    private Service externalService;
+
+    protected Map<String, Route> routes;
 
     protected AbstractSecureEndpointModel(EventStreams instance, String namespace, String componentName) {
         super(instance.getMetadata().getName(), namespace, componentName);
-        certSecret = new CertificateSecretModel(instance, namespace, componentName);
+        this.certificateSecretModel = new CertificateSecretModel(instance, namespace, componentName);
         this.listeners = Listener.enabledListeners();
+
+        // Initialize routes with predefined names for the purposes of EventStreams operator deletion strategy
+        this.routes = new HashMap<>();
+        DEFAULT_LISTENERS_WITH_ROUTES.forEach(r -> routes.put(getRouteName(r), null));
     }
 
     // Exposed for testing
     protected AbstractSecureEndpointModel(EventStreams instance, String namespace, String componentName, List<Listener> listeners) {
         super(instance.getMetadata().getName(), namespace, componentName);
-        certSecret = new CertificateSecretModel(instance, namespace, componentName);
+        this.certificateSecretModel = new CertificateSecretModel(instance, namespace, componentName);
         this.listeners = listeners;
     }
 
-    protected void createServices() {
-        List<ServicePort> externalPorts = getExternalListeners().stream().map(super::createServicePort).collect(Collectors.toList());
-        List<ServicePort> internalPorts = getInternalListeners().stream().map(super::createServicePort).collect(Collectors.toList());
-        externalService = createService(fullPrefixedName(EXTERNAL_SERVICE_POSTFIX), externalPorts, Collections.emptyMap());
-        internalService = createService("ClusterIP", fullPrefixedName(INTERNAL_SERVICE_POSTFIX), internalPorts, Collections.emptyMap());
+    protected void createInternalService() {
+        List<ServicePort> internalPorts = getInternalListeners()
+                .stream()
+                .map(super::createServicePort)
+                .collect(Collectors.toList());
+        internalService = createService("ClusterIP", getDefaultResourceNameWithSuffix(INTERNAL_SERVICE_POSTFIX), internalPorts, Collections.emptyMap());
     }
 
-    protected void createRoutes() {
-        routes = listeners.stream()
-                .filter(Listener::isExposed)
-                .collect(Collectors.toMap(Listener::getName, listener -> createRoute(externalService.getMetadata().getName(), listener)));
+    protected void createExternalService() {
+        List<ServicePort> externalPorts = getExternalListeners().stream()
+                .map(super::createServicePort)
+                .collect(Collectors.toList());
+        externalService = createService(getExternalServiceName(), externalPorts, Collections.emptyMap());
+    }
+
+    /**
+     * @return Routes for the listeners based on the name of the external service if it exists
+     */
+    protected void createRoutesFromListeners() {
+        if (externalService != null) {
+            this.routes = listeners.stream()
+                    .filter(Listener::isExposed)
+                    .collect(Collectors.toMap(listener -> getRouteName(listener.getName()), listener -> {
+                        TLSConfig tlsConfig = null;
+                        if (listener.isTls()) {
+                            tlsConfig = getDefaultTlsConfig();
+                        }
+                        return createRoute(getRouteName(listener.getName()), getExternalServiceName(), listener.getPort(), tlsConfig);
+                    }));
+        }
     }
 
     public List<Listener> getListeners() {
@@ -81,37 +113,23 @@ public abstract class AbstractSecureEndpointModel extends AbstractModel {
     }
 
     public void setCertAndKey(String name, CertAndKey certAndKey) {
-        certSecret.setCertAndKey(name, certAndKey);
+        certificateSecretModel.setCertAndKey(name, certAndKey);
     }
 
     public String getCertSecretName() {
-        return certSecret.getSecretName();
+        return certificateSecretModel.getSecretName();
     }
 
     public String getCertSecretCertID(String name) {
-        return certSecret.getCertID(name);
+        return certificateSecretModel.getCertID(name);
     }
 
     public String getCertSecretKeyID(String name) {
-        return certSecret.getKeyID(name);
+        return certificateSecretModel.getKeyID(name);
     }
 
-    public Secret getCertSecret() {
-        return certSecret.getSecret();
-    }
-
-    /**
-     * @return Service return the external service
-     */
-    public Service getExternalService() {
-        return externalService;
-    }
-
-    /**
-     * @return Service return the external service name
-     */
-    public static String getExternalServiceName(String instanceName, String componentName) {
-        return getDefaultResourceName(instanceName, componentName) + "-" + EXTERNAL_SERVICE_POSTFIX;
+    public Secret getCertificateSecretModel() {
+        return certificateSecretModel.getSecret();
     }
 
     /**
@@ -122,10 +140,28 @@ public abstract class AbstractSecureEndpointModel extends AbstractModel {
     }
 
     /**
+     * @return Service return the external service
+     */
+    public Service getExternalService() {
+        return externalService;
+    }
+
+    /**
      * @return Service return the internal service name
      */
     public static String getInternalServiceName(String instanceName, String componentName) {
-        return getDefaultResourceName(instanceName, componentName) + "-" + INTERNAL_SERVICE_POSTFIX;
+        return getDefaultResourceNameWithSuffix(INTERNAL_SERVICE_POSTFIX, instanceName, componentName);
+    }
+
+    /**
+     * @return Service return the external service name
+     */
+    private String getExternalServiceName() {
+        return getExternalServiceName(getInstanceName(), getComponentName());
+    }
+
+    public static String getExternalServiceName(String instanceName, String componentName) {
+        return getDefaultResourceNameWithSuffix(EXTERNAL_SERVICE_POSTFIX, instanceName, componentName);
     }
 
     /**

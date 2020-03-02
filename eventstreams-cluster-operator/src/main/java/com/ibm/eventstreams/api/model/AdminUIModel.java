@@ -56,6 +56,7 @@ import io.fabric8.kubernetes.api.model.rbac.RoleBinding;
 import io.fabric8.kubernetes.api.model.rbac.RoleRefBuilder;
 import io.fabric8.kubernetes.api.model.rbac.SubjectBuilder;
 import io.fabric8.openshift.api.model.Route;
+import io.fabric8.openshift.api.model.TLSConfig;
 import io.fabric8.openshift.api.model.TLSConfigBuilder;
 import io.strimzi.api.kafka.model.ContainerEnvVar;
 import io.strimzi.api.kafka.model.InlineLogging;
@@ -188,14 +189,14 @@ public class AdminUIModel extends AbstractModel {
                 .orElse(defaultExternalAccess));
 
         service = createService();
-
-        // AdminUI uses OpenShift-generated certificate with TLM `reencrypt` method.
-        // It does not use spec.security.encryption setting from from CR
-        route = createRoute(UI_SERVICE_PORT,
-                new TLSConfigBuilder()
-                        .withNewTermination("reencrypt")
-                        .build());
         networkPolicy = createNetworkPolicy();
+
+        // AdminUI uses OpenShift-generated certificate with TLS `reencrypt` method.
+        // It does not use spec.security.encryption setting from from CR
+        TLSConfig tlsConfig = new TLSConfigBuilder()
+                .withNewTermination("reencrypt")
+                .build();
+        route = createRoute(getRouteName(), getDefaultResourceName(), UI_SERVICE_PORT, tlsConfig);
     }
 
     public AdminUIModel(EventStreams instance,

@@ -16,6 +16,7 @@ import com.ibm.eventstreams.controller.certificates.EventStreamsCertificateManag
 import io.fabric8.kubernetes.api.model.Service;
 import io.strimzi.certs.CertAndKey;
 import io.strimzi.certs.Subject;
+import org.hamcrest.collection.IsMapWithSize;
 
 import java.security.cert.X509Certificate;
 import java.util.Collections;
@@ -49,9 +50,10 @@ public class ControllerUtils {
                     .collect(Collectors.toList());
             List<String> additionalHosts = additionalHost.isEmpty() ? Collections.emptyList() : Collections.singletonList(additionalHost);
             Subject subject = certificateManager.createSubject(service, additionalHosts);
-            assertThat("The certificate has the expected number of SANs", subject.subjectAltNames().size(), is(sans.size()));
+            assertThat("The certificate has the expected number of SANs\nSubject : " + subject.subjectAltNames().toString() + "\nexpected : " + sans.toString(), subject.subjectAltNames(), IsMapWithSize.aMapWithSize(sans.size()));
+            // Remove all subjects from SANs list, if all expected are removed then SANs list should be empty
             subject.subjectAltNames().values().forEach(sans::remove);
-            assertThat("The certificate has the expected SANs", sans.size(), is(0));
+            assertThat("The certificate has no SANs", sans, is(Collections.emptyList()));
         });
     }
 }

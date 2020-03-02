@@ -151,8 +151,11 @@ public class SchemaRegistryModel extends AbstractSecureEndpointModel {
         setCustomImages(imageConfig.getSchemaRegistryImage(), imageConfig.getSchemaRegistryAvroImage());
 
         deployment = createDeployment(getContainers(), getVolumes());
-        createServices();
-        createRoutes();
+
+        createInternalService();
+        createExternalService();
+        createRoutesFromListeners();
+
         serviceAccount = createServiceAccount();
         networkPolicy = createNetworkPolicy();
         if (storage instanceof PersistentClaimStorage) {

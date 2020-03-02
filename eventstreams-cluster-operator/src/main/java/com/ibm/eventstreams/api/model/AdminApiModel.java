@@ -45,7 +45,7 @@ import io.fabric8.kubernetes.api.model.networking.NetworkPolicyIngressRule;
 import io.fabric8.kubernetes.api.model.rbac.RoleBinding;
 import io.fabric8.kubernetes.api.model.rbac.RoleRefBuilder;
 import io.fabric8.kubernetes.api.model.rbac.SubjectBuilder;
-import io.fabric8.openshift.api.model.Route;
+import io.fabric8.openshift.api.model.TLSConfig;
 import io.strimzi.api.kafka.model.InlineLogging;
 import io.strimzi.api.kafka.model.Logging;
 import io.strimzi.api.kafka.model.status.ListenerStatus;
@@ -102,7 +102,6 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
     private final Deployment deployment;
     private final ServiceAccount serviceAccount;
     private final Service service;
-    private final Route route;
     private final NetworkPolicy networkPolicy;
     private final RoleBinding roleBinding;
 
@@ -169,9 +168,13 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
             .build());
 
         service = createService(getServicePort(tlsEnabled()));
-        createServices();
-        createRoutes();
-        route = createRoute(getServicePort(tlsEnabled()));
+        createInternalService();
+        createExternalService();
+        createRoutesFromListeners();
+
+        TLSConfig tlsConfig = tlsEnabled() ? getDefaultTlsConfig() : null;
+        routes.put(getRouteName(),
+                createRoute(getRouteName(), getDefaultResourceName(), getServicePort(tlsEnabled()), tlsConfig));
         networkPolicy = createNetworkPolicy();
     }
 
@@ -491,10 +494,7 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
     }
 
     public static int getServicePort(boolean tlsEnabled) {
-        if (tlsEnabled) {
-            return SERVICE_PORT_TLS;
-        }
-        return SERVICE_PORT;
+        return tlsEnabled ? SERVICE_PORT_TLS : SERVICE_PORT;
     }
 
     protected Probe createLivenessProbe(int port) {
@@ -566,13 +566,6 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
      */
     public Service getService() {
         return this.service;
-    }
-
-    /**
-     * @return Route return the route
-     */
-    public Route getRoute() {
-        return this.route;
     }
 
     /**
@@ -657,4 +650,5 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
             this.traceString = String.join(",", loggersArray);
         }
     }
+
 }

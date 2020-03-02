@@ -36,6 +36,7 @@ import io.fabric8.openshift.api.model.Route;
 import io.strimzi.api.kafka.model.status.ListenerStatus;
 import io.strimzi.api.kafka.model.status.ListenerStatusBuilder;
 import io.strimzi.api.kafka.model.template.PodTemplateBuilder;
+
 import org.hamcrest.collection.IsMapWithSize;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -469,11 +470,20 @@ public class RestProducerModelTest {
 
     @Test
     public void testCreateRestProducerRouteWithTlsEncryption() {
-        EventStreams eventStreams = createDefaultEventStreams().build();
-        assertThat(new RestProducerModel(eventStreams, imageConfig, null).getRoutes().get(Listener.EXTERNAL_TLS_NAME).getSpec().getTls().getTermination(), is("passthrough"));
-    }
+        EventStreams eventStreams = createDefaultEventStreams()
+                .editSpec()
+                    .withNewSecurity()
+                        .withEncryption(SecuritySpec.Encryption.TLS)
+                    .endSecurity()
+                .endSpec()
+                .build();
 
-    @Test
+        RestProducerModel restProducerModel = new RestProducerModel(eventStreams, imageConfig, listeners);
+        Map<String, Route> routes = restProducerModel.getRoutes();
+        assertThat(routes, IsMapWithSize.aMapWithSize(2));
+        assertThat(routes.get(restProducerModel.getRouteName(Listener.EXTERNAL_TLS_NAME)).getSpec().getTls().getTermination(), is("passthrough"));
+    }
+      
     public void testGenerationIdLabelOnDeployment() {
         EventStreams eventStreams = createDefaultEventStreams().build();
         RestProducerModel restProducerModel = new RestProducerModel(eventStreams, imageConfig, null);

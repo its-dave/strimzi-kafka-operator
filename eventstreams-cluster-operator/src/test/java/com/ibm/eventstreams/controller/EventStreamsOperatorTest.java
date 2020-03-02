@@ -50,6 +50,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.ibm.eventstreams.api.Labels;
 import com.ibm.eventstreams.api.Listener;
 import com.ibm.eventstreams.api.model.AbstractSecureEndpointModel;
 import com.ibm.eventstreams.api.model.AdminApiModel;
@@ -68,6 +69,7 @@ import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
 import com.ibm.eventstreams.api.status.EventStreamsAvailableVersions;
 import com.ibm.eventstreams.api.status.EventStreamsEndpoint;
+import com.ibm.eventstreams.api.status.EventStreamsEndpointBuilder;
 import com.ibm.eventstreams.api.status.EventStreamsStatus;
 import com.ibm.eventstreams.api.status.EventStreamsStatusBuilder;
 import com.ibm.eventstreams.api.status.EventStreamsVersions;
@@ -80,6 +82,10 @@ import io.strimzi.api.kafka.model.DoneableKafkaUser;
 import io.strimzi.api.kafka.model.KafkaUser;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.hamcrest.Matchers;
+import org.hamcrest.collection.IsCollectionWithSize;
+import org.hamcrest.collection.IsMapContaining;
+import org.hamcrest.collection.IsMapWithSize;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -348,7 +354,7 @@ public class EventStreamsOperatorTest {
     }
 
     @Test
-    public void testEndpoints(VertxTestContext context) {
+    public void testDefaultClusterProducesEndpointsInStatus(VertxTestContext context) {
         createMockRoutes();
 
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
@@ -358,33 +364,30 @@ public class EventStreamsOperatorTest {
         Checkpoint async = context.checkpoint(1);
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster).setHandler(ar -> {
             if (ar.succeeded()) {
-
                 ArgumentCaptor<EventStreams> argument = ArgumentCaptor.forClass(EventStreams.class);
                 verify(esResourceOperator).createOrUpdate(argument.capture());
 
+                List<EventStreamsEndpoint> endpoints = argument.getValue().getStatus().getEndpoints();
                 // check that there aren't duplicates in the list
-                assertThat(argument.getValue().getStatus().getEndpoints().size(), is(3));
+                assertThat(endpoints, IsCollectionWithSize.hasSize(3));
 
                 // check that each expected endpoint is present
-                assertThat(argument.getValue().getStatus().getEndpoints().stream()
-                                .filter(item -> item.getName().equals("admin") &&
-                                                item.getType() == EventStreamsEndpoint.EndpointType.api &&
-                                                item.getUri().equals("https://" + ADMIN_API_ROUTE_NAME + "." + ROUTE_HOST_POSTFIX))
-                                .count(),
-                           is(1L));
-                assertThat(argument.getValue().getStatus().getEndpoints().stream()
-                                .filter(item -> item.getName().equals("ui") &&
-                                        item.getType() == EventStreamsEndpoint.EndpointType.ui &&
-                                        item.getUri().equals("https://" + UI_ROUTE_NAME + "." + ROUTE_HOST_POSTFIX))
-                                .count(),
-                           is(1L));
-                assertThat(argument.getValue().getStatus().getEndpoints().stream()
-                                .filter(item -> item.getName().equals("schemaregistry") &&
-                                        item.getType() == EventStreamsEndpoint.EndpointType.api &&
-                                        item.getUri().equals("https://" + SCHEMA_REGISTRY_ROUTE_NAME + "-external-tls." + ROUTE_HOST_POSTFIX))
-                                .count(),
-                           is(1L));
-
+                assertThat(endpoints, Matchers.hasItems(
+                    new EventStreamsEndpointBuilder()
+                        .withName("admin")
+                        .withType(EventStreamsEndpoint.EndpointType.api)
+                        .withNewUri("https://" + ADMIN_API_ROUTE_NAME + "." + ROUTE_HOST_POSTFIX)
+                        .build(),
+                    new EventStreamsEndpointBuilder()
+                        .withName("ui")
+                        .withType(EventStreamsEndpoint.EndpointType.ui)
+                        .withNewUri("https://" + UI_ROUTE_NAME + "." + ROUTE_HOST_POSTFIX)
+                        .build(),
+                    new EventStreamsEndpointBuilder()
+                        .withName("schemaregistry")
+                        .withType(EventStreamsEndpoint.EndpointType.api)
+                        .withNewUri("https://" + SCHEMA_REGISTRY_ROUTE_NAME + "-external-tls." + ROUTE_HOST_POSTFIX)
+                        .build()));
                 context.completeNow();
             } else {
                 context.failNow(ar.cause());
@@ -761,7 +764,8 @@ public class EventStreamsOperatorTest {
         Listener listener = Listener.externalTls();
         List<Listener> listeners = Collections.singletonList(listener);
         ModelUtils.EndpointModel endpointModel = new ModelUtils.EndpointModel(esCluster, NAMESPACE, "endpoint-component", listeners);
-        Map<String, String> additionalHosts = Collections.singletonMap(listener.getName(), "extra.host.name");
+        String routeName = endpointModel.getRouteName(listener.getName());
+        Map<String, String> additionalHosts = Collections.singletonMap(routeName, "extra.host.name");
 
         reconciliationState.reconcileCerts(endpointModel, additionalHosts, Date::new).setHandler(ar -> {
             assertThat("Number of secrets do not match " + mockClient.secrets().list().getItems(), mockClient.secrets().list().getItems().size(), is(6));
@@ -769,7 +773,7 @@ public class EventStreamsOperatorTest {
             assertThat("The expected secret is created", secret, is(notNullValue()));
             CertAndKey certAndKey = reconciliationState.certificateManager.certificateAndKey(secret, endpointModel.getCertSecretCertID(listener.getName()), endpointModel.getCertSecretKeyID(listener.getName()));
             X509Certificate certificate = ControllerUtils.checkCertificate(reconciliationState.certificateManager, certAndKey);
-            ControllerUtils.checkSans(reconciliationState.certificateManager, certificate, endpointModel.getExternalService(), additionalHosts.get(listener.getName()));
+            ControllerUtils.checkSans(reconciliationState.certificateManager, certificate, endpointModel.getExternalService(), additionalHosts.get(routeName));
             async.flag();
         });
     }
@@ -779,29 +783,34 @@ public class EventStreamsOperatorTest {
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(false, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
         Checkpoint async = context.checkpoint(1);
+
         EventStreams esCluster = createESCluster(NAMESPACE, CLUSTER_NAME);
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always"));
         reconciliationState.icpClusterData = Collections.emptyMap();
+
         Listener internalListener = Listener.internalPlain();
         Listener internalTlsListener = Listener.internalTls();
         Listener externalTlsListener = Listener.externalTls();
         List<Listener> listeners = Arrays.asList(internalListener, internalTlsListener, externalTlsListener);
         ModelUtils.EndpointModel endpointModel = new ModelUtils.EndpointModel(esCluster, NAMESPACE, "endpoint-component", listeners);
-        Map<String, String> additionalHosts = Collections.singletonMap(externalTlsListener.getName(), "extra.host.name");
+
+        Map<String, String> additionalHosts = Collections.singletonMap(endpointModel.getRouteName(externalTlsListener.getName()), "extra.host.name");
 
         reconciliationState.reconcileCerts(endpointModel, additionalHosts, Date::new).setHandler(ar -> {
-            assertThat("The number of secrets does not match", mockClient.secrets().list().getItems().size(), is(6));
+            assertThat("The number of secrets does not match", mockClient.secrets().list().getItems(), IsCollectionWithSize.hasSize(6));
             Secret secret = mockClient.secrets().withName(endpointModel.getCertSecretName()).get();
-            assertThat("The expected secret is created", secret, is(notNullValue()));
+            assertThat("The certificate secret should be created", secret, is(notNullValue()));
             assertThat("The secret does not contain cert key ID for plain listener", secret.getData().containsKey(endpointModel.getCertSecretKeyID(internalListener.getName())), is(false));
             assertThat("The secret does not contain cert ID for plain listener", secret.getData().containsKey(endpointModel.getCertSecretCertID(internalListener.getName())), is(false));
+
             CertAndKey internalTlsCertAndKey = reconciliationState.certificateManager.certificateAndKey(secret, endpointModel.getCertSecretCertID(internalTlsListener.getName()), endpointModel.getCertSecretKeyID(internalTlsListener.getName()));
             CertAndKey externalTlsCertAndKey = reconciliationState.certificateManager.certificateAndKey(secret, endpointModel.getCertSecretCertID(externalTlsListener.getName()), endpointModel.getCertSecretKeyID(externalTlsListener.getName()));
+
             X509Certificate internalTlsCertificate = ControllerUtils.checkCertificate(reconciliationState.certificateManager, internalTlsCertAndKey);
             X509Certificate externalTlsCertificate = ControllerUtils.checkCertificate(reconciliationState.certificateManager, externalTlsCertAndKey);
             ControllerUtils.checkSans(reconciliationState.certificateManager, internalTlsCertificate, endpointModel.getInternalService(), "");
-            ControllerUtils.checkSans(reconciliationState.certificateManager, externalTlsCertificate, endpointModel.getExternalService(), additionalHosts.get(externalTlsListener.getName()));
+            ControllerUtils.checkSans(reconciliationState.certificateManager, externalTlsCertificate, endpointModel.getExternalService(), additionalHosts.get(endpointModel.getRouteName(externalTlsListener.getName())));
             async.flag();
         });
     }
@@ -886,17 +895,23 @@ public class EventStreamsOperatorTest {
 
     @Test
     public void testEndpointCertificateSecretRegeneratedWhenSansAreChanged(VertxTestContext context) {
+        Checkpoint async = context.checkpoint(1);
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(false, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
-        Checkpoint async = context.checkpoint(1);
+
         EventStreams esCluster = createESCluster(NAMESPACE, CLUSTER_NAME);
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
+
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always"));
         reconciliationState.icpClusterData = Collections.emptyMap();
+
         Listener internalTlsListener = Listener.internalTls();
-        List<Listener> listeners = Arrays.asList(Listener.externalTls(), internalTlsListener);
+        Listener externalTlsListener = Listener.externalTls();
+        List<Listener> listeners = Arrays.asList(externalTlsListener, internalTlsListener);
+
         ModelUtils.EndpointModel endpointModel = new ModelUtils.EndpointModel(esCluster, NAMESPACE, "endpoint-component", listeners);
-        Map<String, String> additionalHosts = Collections.singletonMap(Listener.externalTls().getName(), "extra.host.name");
+        String expectedRouteName = endpointModel.getRouteName(externalTlsListener.getName());
+        Map<String, String> additionalHosts = Collections.singletonMap(expectedRouteName, "extra.host.name");
 
         reconciliationState.reconcileCerts(endpointModel, additionalHosts, Date::new).setHandler(ar -> {
             assertThat("The number of secrets does not match", mockClient.secrets().list().getItems().size(), is(6));
@@ -1005,7 +1020,7 @@ public class EventStreamsOperatorTest {
             reconciliationState.createSchemaRegistry(Date::new),
             reconciliationState.createAdminApi(Date::new)).setHandler(ar -> {
                 assertThat("There are three additional secrets created", mockClient.secrets().list().getItems().size(), is(9));
-                List<Secret> secrets = mockClient.secrets().withLabel("instance", CLUSTER_NAME).list().getItems();
+                List<Secret> secrets = mockClient.secrets().withLabel(Labels.INSTANCE_LABEL, CLUSTER_NAME).list().getItems();
                 secrets.forEach(secret -> {
                     if (secret.getMetadata().getName().endsWith("-cert")) {
                         Optional<Service> serviceOpt = mockClient.services().list().getItems()
@@ -1120,18 +1135,21 @@ public class EventStreamsOperatorTest {
 
     @Test
     public void testCreateOrUpdateRoutesMapOpenShift(VertxTestContext context) {
+        Checkpoint async = context.checkpoint(1);
         createMockRoutes();
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
+
         EventStreams esCluster = createESCluster(NAMESPACE, CLUSTER_NAME);
-        Checkpoint async = context.checkpoint(1);
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always"));
         reconciliationState.icpClusterData = Collections.emptyMap();
+
         Listener internalTlsListener = Listener.internalTls();
         Listener externalTlsListener = Listener.externalTls();
         Listener externalPlainListener = Listener.externalPlain();
         List<Listener> listeners = Arrays.asList(externalTlsListener, internalTlsListener, externalPlainListener);
+
         // Use admin api name for route matching with the mock client
         ModelUtils.EndpointModel endpointModel = new ModelUtils.EndpointModel(esCluster, NAMESPACE, "admin-api", listeners);
 
@@ -1139,11 +1157,16 @@ public class EventStreamsOperatorTest {
             if (ar.failed()) {
                 context.failNow(ar.cause());
             }
-            assertThat(ar.result().size(), is(2));
-            assertThat(ar.result().containsKey(externalTlsListener.getName()), is(true));
-            assertThat(ar.result().containsKey(externalPlainListener.getName()), is(true));
-            assertThat(ar.result().get(externalTlsListener.getName()), is(formatRouteHost(ADMIN_API_ROUTE_NAME + "-" + Listener.EXTERNAL_TLS_NAME)));
-            assertThat(ar.result().get(externalPlainListener.getName()), is(formatRouteHost(ADMIN_API_ROUTE_NAME + "-" + Listener.EXTERNAL_PLAIN_NAME)));
+            Map<String, String> routes = ar.result();
+            assertThat(routes, IsMapWithSize.aMapWithSize(2));
+            String externalTlsListenerRoute = endpointModel.getRouteName(externalTlsListener.getName());
+            String externalPlainListenerRoute = endpointModel.getRouteName(externalPlainListener.getName());
+
+            assertThat(routes, IsMapContaining.hasKey(externalTlsListenerRoute));
+            assertThat(routes, IsMapContaining.hasKey(externalPlainListenerRoute));
+
+            assertThat(routes.get(externalTlsListenerRoute), is(formatRouteHost(ADMIN_API_ROUTE_NAME + "-" + Listener.EXTERNAL_TLS_NAME)));
+            assertThat(routes.get(externalPlainListenerRoute), is(formatRouteHost(ADMIN_API_ROUTE_NAME + "-" + Listener.EXTERNAL_PLAIN_NAME)));
             async.flag();
         });
     }

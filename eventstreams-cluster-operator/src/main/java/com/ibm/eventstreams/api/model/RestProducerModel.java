@@ -100,9 +100,11 @@ public class RestProducerModel extends AbstractSecureEndpointModel {
 
         deployment = createDeployment(getContainers(), getVolumes());
         serviceAccount = createServiceAccount();
-        createServices();
-        createRoutes();
         networkPolicy = createNetworkPolicy();
+
+        createInternalService();
+        createExternalService();
+        createRoutesFromListeners();
     }
 
     private List<Volume> getVolumes() {
@@ -302,4 +304,5 @@ public class RestProducerModel extends AbstractSecureEndpointModel {
 
         return createNetworkPolicy(createLabelSelector(COMPONENT_NAME), ingressRules, egressRules);
     }
+
 }

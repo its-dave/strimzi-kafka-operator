@@ -20,6 +20,9 @@ import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.openshift.api.model.Route;
 import io.strimzi.certs.CertAndKey;
+import org.hamcrest.Matchers;
+import org.hamcrest.collection.IsMapContaining;
+import org.hamcrest.collection.IsMapWithSize;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -47,8 +50,9 @@ public class AbstractSecureEndpointModelTest {
             setEncryption(SecuritySpec.Encryption.TLS);
             setArchitecture(instance.getSpec().getArchitecture());
             setOwnerReference(instance);
-            createServices();
-            createRoutes();
+            createInternalService();
+            createExternalService();
+            createRoutesFromListeners();
         }
     }
 
@@ -71,7 +75,7 @@ public class AbstractSecureEndpointModelTest {
         String keyData = "test-key";
         CertAndKey certAndKey = new CertAndKey(keyData.getBytes(), certData.getBytes());
         model.setCertAndKey(listener.getName(), certAndKey);
-        Secret certSecret = model.getCertSecret();
+        Secret certSecret = model.getCertificateSecretModel();
         assertThat("Secret contains the cert data base64 encoded", new String(Base64.getDecoder().decode(certSecret.getData().get(model.getCertSecretCertID(listener.getName())))), is(certData));
         assertThat("Secret contains the key data base64 encoded", new String(Base64.getDecoder().decode(certSecret.getData().get(model.getCertSecretKeyID(listener.getName())))), is(keyData));
         assertThat("Secret name is correct", certSecret.getMetadata().getName(), is(model.getCertSecretName()));
@@ -196,38 +200,48 @@ public class AbstractSecureEndpointModelTest {
 
     @Test
     public void testCreateRoutesWithOneExternalTlsListener() {
+
+        String externalListenerName = "test-external-name-1";
+        Listener externalListener = new Listener(externalListenerName, true, true, 9080, spec -> Optional.empty());
+
         EventStreams instance = ModelUtils.createDefaultEventStreams(instanceName).build();
-        Listener externalListener = new Listener("test-external-name-1", true, true, 9080, spec -> Optional.empty());
         ComponentModel model = new ComponentModel(instance,
                 Collections.singletonList(externalListener));
 
         Map<String, Route> routes = model.getRoutes();
-        assertThat(routes.size(), is(1));
-        assertThat(routes.containsKey(externalListener.getName()), is(true));
-        assertThat(routes.get(externalListener.getName()).getMetadata().getName(), is(model.getDefaultResourceName() + "-" + externalListener.getName()));
-        assertThat(routes.get(externalListener.getName()).getSpec().getTo().getKind(), is("Service"));
-        assertThat(routes.get(externalListener.getName()).getSpec().getTo().getName(), is(model.getDefaultResourceName() + "-" + AbstractSecureEndpointModel.EXTERNAL_SERVICE_POSTFIX));
-        assertThat(routes.get(externalListener.getName()).getSpec().getPort().getTargetPort().getIntVal(), is(externalListener.getPort()));
-        assertThat(routes.get(externalListener.getName()).getSpec().getTls(), is(notNullValue()));
-        assertThat(routes.get(externalListener.getName()).getSpec().getTls().getTermination(), is("passthrough"));
-        assertThat(routes.get(externalListener.getName()).getSpec().getTls().getInsecureEdgeTerminationPolicy(), is("None"));
+        assertThat(routes, IsMapWithSize.aMapWithSize(1));
+        String externalRouteName = model.getRouteName(externalListenerName);
+        assertThat(routes, IsMapContaining.hasKey(externalRouteName));
+
+        Route externalRoute = routes.get(externalRouteName);
+        assertThat(externalRoute.getMetadata().getName(), is(model.getDefaultResourceName() + "-" + externalListenerName));
+        assertThat(externalRoute.getSpec().getTo().getKind(), is("Service"));
+        assertThat(externalRoute.getSpec().getTo().getName(), is(model.getDefaultResourceName() + "-" + AbstractSecureEndpointModel.EXTERNAL_SERVICE_POSTFIX));
+        assertThat(externalRoute.getSpec().getPort().getTargetPort().getIntVal(), is(externalListener.getPort()));
+        assertThat(externalRoute.getSpec().getTls(), is(notNullValue()));
+        assertThat(externalRoute.getSpec().getTls().getTermination(), is("passthrough"));
+        assertThat(externalRoute.getSpec().getTls().getInsecureEdgeTerminationPolicy(), is("None"));
     }
 
     @Test
     public void testCreateRoutesWithOneExternalPlainListener() {
         EventStreams instance = ModelUtils.createDefaultEventStreams(instanceName).build();
-        Listener externalListener = new Listener("test-external-name-1", false, true, 9080, spec -> Optional.empty());
+        String externalListenerName = "test-external-name-1";
+        Listener externalListener = new Listener(externalListenerName, false, true, 9080, spec -> Optional.empty());
         ComponentModel model = new ComponentModel(instance,
                 Collections.singletonList(externalListener));
 
         Map<String, Route> routes = model.getRoutes();
-        assertThat(routes.size(), is(1));
-        assertThat(routes.containsKey(externalListener.getName()), is(true));
-        assertThat(routes.get(externalListener.getName()).getMetadata().getName(), is(model.getDefaultResourceName() + "-" + externalListener.getName()));
-        assertThat(routes.get(externalListener.getName()).getSpec().getTo().getKind(), is("Service"));
-        assertThat(routes.get(externalListener.getName()).getSpec().getTo().getName(), is(model.getDefaultResourceName() + "-" + AbstractSecureEndpointModel.EXTERNAL_SERVICE_POSTFIX));
-        assertThat(routes.get(externalListener.getName()).getSpec().getPort().getTargetPort().getIntVal(), is(externalListener.getPort()));
-        assertThat(routes.get(externalListener.getName()).getSpec().getTls(), is(nullValue()));
+        assertThat(routes, IsMapWithSize.aMapWithSize(1));
+        String externalListenerRouteName = model.getRouteName(externalListenerName);
+        assertThat(routes, IsMapContaining.hasKey(externalListenerRouteName));
+
+        Route externalListenerRoute = routes.get(externalListenerRouteName);
+        assertThat(externalListenerRoute.getMetadata().getName(), is(model.getDefaultResourceName() + "-" + externalListener.getName()));
+        assertThat(externalListenerRoute.getSpec().getTo().getKind(), is("Service"));
+        assertThat(externalListenerRoute.getSpec().getTo().getName(), is(model.getDefaultResourceName() + "-" + AbstractSecureEndpointModel.EXTERNAL_SERVICE_POSTFIX));
+        assertThat(externalListenerRoute.getSpec().getPort().getTargetPort().getIntVal(), is(externalListener.getPort()));
+        assertThat(externalListenerRoute.getSpec().getTls(), is(nullValue()));
     }
 
     @Test
@@ -251,10 +265,17 @@ public class AbstractSecureEndpointModelTest {
                 Arrays.asList(externalListener1, externalListener2, internalListener1));
 
         Map<String, Route> routes = model.getRoutes();
-        assertThat(routes.size(), is(2));
-        assertThat(routes.containsKey(externalListener1.getName()), is(true));
-        assertThat(routes.containsKey(externalListener2.getName()), is(true));
-        assertThat(routes.get(externalListener1.getName()).getSpec().getTls(), is(notNullValue()));
-        assertThat(routes.get(externalListener2.getName()).getSpec().getTls(), is(nullValue()));
+        assertThat(routes, Matchers.aMapWithSize(2));
+
+        String commonRootPrefix = instanceName + "-" + AbstractModel.APP_NAME + "-" + ComponentModel.COMPONENT_NAME;
+        String route1 = commonRootPrefix + "-test-external-name-1";
+        String route2 = commonRootPrefix + "-test-external-name-2";
+
+        assertThat(routes, IsMapContaining.hasKey(route1));
+        assertThat(routes, IsMapContaining.hasKey(route2));
+
+        assertThat(routes.get(route1).getSpec().getTls(), is(notNullValue()));
+        // Route created from insecure listener should not have TLS set
+        assertThat(routes.get(route2).getSpec().getTls(), is(nullValue()));
     }
 }

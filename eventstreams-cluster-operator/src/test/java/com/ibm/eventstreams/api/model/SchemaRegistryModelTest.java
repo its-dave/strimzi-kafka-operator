@@ -38,6 +38,7 @@ import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
 import com.ibm.eventstreams.controller.EventStreamsOperatorConfig;
 
+import org.hamcrest.collection.IsMapContaining;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -522,7 +523,10 @@ public class SchemaRegistryModelTest {
     @Test
     public void testCreateSchemaRegistryRouteWithTlsEncryption() {
         EventStreams eventStreams = createDefaultEventStreams().build();
-        assertThat(new SchemaRegistryModel(eventStreams, imageConfig).getRoutes().get(Listener.EXTERNAL_TLS_NAME).getSpec().getTls().getTermination(), is("passthrough"));
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(eventStreams, imageConfig);
+        String expectedRouteName = instanceName + "-" + AbstractModel.APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME + "-" + Listener.EXTERNAL_TLS_NAME;
+        assertThat(schemaRegistryModel.getRoutes(), IsMapContaining.hasKey(expectedRouteName));
+        assertThat(schemaRegistryModel.getRoutes().get(expectedRouteName).getSpec().getTls().getTermination(),  is("passthrough"));
     }
 
     @Test

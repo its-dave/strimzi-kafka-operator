@@ -58,9 +58,9 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.ibm.eventstreams.api.model.AbstractSecureEndpointModel.INTERNAL_SERVICE_POSTFIX;
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.endsWith;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -128,13 +128,10 @@ public class AdminApiModelTest {
         assertThat(adminApiExternalService.getMetadata().getName(), startsWith(componentPrefix));
         assertThat(adminApiExternalService.getMetadata().getName(), endsWith(AbstractSecureEndpointModel.EXTERNAL_SERVICE_POSTFIX));
 
-        Route adminAPIRoute = adminApiModel.getRoute();
-        assertThat(adminAPIRoute.getMetadata().getName(), startsWith(componentPrefix));
-
-        Map<String, Route> schemaRegistryRoutes = adminApiModel.getRoutes();
-        schemaRegistryRoutes.forEach((key, route) -> {
+        Map<String, Route> routes = adminApiModel.getRoutes();
+        routes.forEach((routeName, route) -> {
             assertThat(route.getMetadata().getName(), startsWith(componentPrefix));
-            assertThat(route.getMetadata().getName(), containsString(key));
+            assertThat(route.getMetadata().getName(), is(routeName));
         });
     }
 
@@ -290,9 +287,6 @@ public class AdminApiModelTest {
             .getSpec()
             .getPodSelector()
             .getMatchLabels(), hasEntry(is(Labels.COMPONENT_LABEL), is(AdminApiModel.COMPONENT_NAME)));
-
-        Route adminApiRoute = adminApiModel.getRoute();
-        assertThat(adminApiRoute.getMetadata().getName(), startsWith(componentPrefix));
     }
 
     private void checkNetworkPolicy(NetworkPolicy networkPolicy, int egressIndex, int expectedNumberOfPorts, int expectedGetTo, int expectedMatchLabels, int expectedPort, String expectedComponentName) {
@@ -520,7 +514,7 @@ public class AdminApiModelTest {
         assertThat(new AdminApiModel(eventStreams, imageConfig, listeners, mockIcpClusterDataMap).getServiceAccount()
                         .getImagePullSecrets(), containsInAnyOrder(globalPullSecretOverride, componentPullSecretOverride));
     }
-  
+
     @Test
     public void testAdminApiContainerHasDefaultKafkaBootstrapEnvironmentVariables() {
         EventStreams defaultEs = createDefaultEventStreams().build();
@@ -822,7 +816,7 @@ public class AdminApiModelTest {
 
         EventStreams eventStreams = createDefaultEventStreams().build();
         AdminApiModel adminApiModel = new AdminApiModel(eventStreams, imageConfig, null, mockIcpClusterDataMap);
-        
+
         EnvVar expectedEnvVarPrometheusHost = new EnvVarBuilder().withName("PROMETHEUS_HOST").withValue(clusterAddress).build();
         EnvVar expectedEnvVarPrometheusPort = new EnvVarBuilder().withName("PROMETHEUS_PORT").withValue(clusterPort).build();
         EnvVar expectedEnvVarPrometheusClusterCaCert = new EnvVarBuilder().withName("CLUSTER_CACERT").withValue(caCert).build();
@@ -837,17 +831,28 @@ public class AdminApiModelTest {
     }
 
     @Test
-    public void testCreateAdminApiRouteWithTlsEncryption() {
+    public void testCreateAdminApiRouteWithTlsEncryptionHasARoutesWithTls() {
         EventStreams eventStreams = createDefaultEventStreams()
                 .editSpec()
-                .withSecurity(new SecuritySpecBuilder().withEncryption(SecuritySpec.Encryption.TLS).build())
+                    .withNewSecurity()
+                        .withEncryption(SecuritySpec.Encryption.TLS)
+                    .endSecurity()
                 .endSpec()
                 .build();
 
-        assertThat(new AdminApiModel(eventStreams, imageConfig, null, mockIcpClusterDataMap).getRoute().getSpec().getTls().getTermination(), is("passthrough"));
+        AdminApiModel adminApiModel = new AdminApiModel(eventStreams, imageConfig, null, mockIcpClusterDataMap);
 
-        eventStreams = createDefaultEventStreams().build();
-        assertThat(new AdminApiModel(eventStreams, imageConfig, null, mockIcpClusterDataMap).getRoutes().get(Listener.EXTERNAL_TLS_NAME).getSpec().getTls().getTermination(), is("passthrough"));
+        assertThat(adminApiModel.getRoutes().get(adminApiModel.getRouteName()).getSpec().getTls().getTermination(), is("passthrough"));
+        assertThat(adminApiModel.getRoutes().get(adminApiModel.getRouteName(Listener.EXTERNAL_TLS_NAME)).getSpec().getTls().getTermination(), is("passthrough"));
+    }
+
+    @Test
+    public void testCreateAdminApiRouteWithoutTlsEncryptionHasRoutesWithoutTls() {
+        EventStreams eventStreams = createDefaultEventStreams().build();
+
+        AdminApiModel adminApiModel = new AdminApiModel(eventStreams, imageConfig, null, mockIcpClusterDataMap);
+        assertThat(adminApiModel.getRoutes().get(adminApiModel.getRouteName()).getSpec().getTls(), is(nullValue()));
+        assertThat(adminApiModel.getRoutes().get(adminApiModel.getRouteName(Listener.EXTERNAL_TLS_NAME)).getSpec().getTls().getTermination(), is("passthrough"));
     }
 
     @Test
