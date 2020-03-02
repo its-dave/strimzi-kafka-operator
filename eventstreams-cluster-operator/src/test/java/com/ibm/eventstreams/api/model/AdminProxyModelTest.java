@@ -155,7 +155,7 @@ public class AdminProxyModelTest {
             .getPorts()
             .get(0)
             .getPort()
-            .getIntVal(), is(8080));
+            .getIntVal(), is(Listener.podToPodListener(false).getPort()));
         assertThat(networkPolicy.getSpec().getEgress().get(1).getTo().size(), is(1));
         assertThat(networkPolicy
             .getSpec()

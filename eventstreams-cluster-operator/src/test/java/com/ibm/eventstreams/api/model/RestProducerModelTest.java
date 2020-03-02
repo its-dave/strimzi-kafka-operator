@@ -14,11 +14,11 @@ package com.ibm.eventstreams.api.model;
 
 import com.ibm.eventstreams.Main;
 import com.ibm.eventstreams.api.Labels;
+import com.ibm.eventstreams.api.Listener;
 import com.ibm.eventstreams.api.model.utils.ModelUtils;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
 import com.ibm.eventstreams.api.spec.SecuritySpec;
-import com.ibm.eventstreams.api.spec.SecuritySpecBuilder;
 import com.ibm.eventstreams.controller.EventStreamsOperatorConfig;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.EnvVar;
@@ -35,9 +35,8 @@ import io.fabric8.kubernetes.api.model.networking.NetworkPolicyPeer;
 import io.fabric8.openshift.api.model.Route;
 import io.strimzi.api.kafka.model.status.ListenerStatus;
 import io.strimzi.api.kafka.model.status.ListenerStatusBuilder;
-import io.strimzi.api.kafka.model.ExternalLogging;
-import io.strimzi.api.kafka.model.InlineLogging;
 import io.strimzi.api.kafka.model.template.PodTemplateBuilder;
+import org.hamcrest.collection.IsMapWithSize;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -48,7 +47,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -91,11 +92,20 @@ public class RestProducerModelTest {
         assertThat(restProducerDeployment.getMetadata().getName(), startsWith(componentPrefix));
         assertThat(restProducerDeployment.getSpec().getReplicas(), is(defaultReplicas));
 
-        Service restProducerService = restProducerModel.getService();
-        assertThat(restProducerService.getMetadata().getName(), startsWith(componentPrefix));
+        Service adminApiInternalService = restProducerModel.getInternalService();
+        String expectedInternalServiceName = componentPrefix + "-" + AbstractSecureEndpointModel.INTERNAL_SERVICE_POSTFIX;
+        assertThat(adminApiInternalService.getMetadata().getName(), is(expectedInternalServiceName));
 
-        Route restProducerRoute = restProducerModel.getRoute();
-        assertThat(restProducerRoute.getMetadata().getName(), startsWith(componentPrefix));
+        Service adminApiExternalService = restProducerModel.getExternalService();
+        String expectedExternalServiceName = componentPrefix + "-" + AbstractSecureEndpointModel.EXTERNAL_SERVICE_POSTFIX;
+        assertThat(adminApiExternalService.getMetadata().getName(), is(expectedExternalServiceName));
+
+        Map<String, Route> restProducerRoutes = restProducerModel.getRoutes();
+        assertThat(restProducerRoutes, IsMapWithSize.aMapWithSize(2));
+        restProducerRoutes.forEach((key, route) -> {
+            assertThat(route.getMetadata().getName(), startsWith(componentPrefix));
+            assertThat(route.getMetadata().getName(), containsString(key));
+        });
     }
 
     @Test
@@ -140,10 +150,17 @@ public class RestProducerModelTest {
         assertThat(restProducerNetworkPolicy.getMetadata().getName(), is(expectedNetworkPolicyName));
         assertThat(restProducerNetworkPolicy.getKind(), is("NetworkPolicy"));
 
-        assertThat(restProducerNetworkPolicy.getSpec().getIngress().size(), is(1));
-        assertThat(restProducerNetworkPolicy.getSpec().getIngress().get(0).getFrom(), is(emptyIterableOf(NetworkPolicyPeer.class)));
-        assertThat(restProducerNetworkPolicy.getSpec().getIngress().get(0).getPorts().size(), is(1));
-        assertThat(restProducerNetworkPolicy.getSpec().getIngress().get(0).getPorts().get(0).getPort().getIntVal(), is(RestProducerModel.SERVICE_PORT));
+        int numberOfPodToPodListeners = 1;
+        int expectNumberOfIngresses = Listener.enabledListeners().size() + numberOfPodToPodListeners;
+        assertThat(restProducerNetworkPolicy.getSpec().getIngress().size(), is(expectNumberOfIngresses));
+        List<Listener> listeners = Listener.enabledListeners();
+        listeners.add(Listener.podToPodListener(false));
+        List<Integer> listenerPorts = listeners.stream().map(Listener::getPort).collect(Collectors.toList());
+        restProducerNetworkPolicy.getSpec().getIngress().forEach(ingress -> {
+            assertThat(ingress.getFrom(), is(emptyIterableOf(NetworkPolicyPeer.class)));
+            assertThat(ingress.getPorts().size(), is(1));
+            assertThat(listenerPorts, hasItem(ingress.getPorts().get(0).getPort().getIntVal()));
+        });
 
         assertThat(restProducerNetworkPolicy.getSpec().getEgress().size(), is(2));
         assertThat(restProducerNetworkPolicy.getSpec().getEgress().get(0).getPorts().size(), is(1));
@@ -184,7 +201,7 @@ public class RestProducerModelTest {
             .getPorts()
             .get(0)
             .getPort()
-            .getIntVal(), is(AdminProxyModel.SERVICE_PORT));
+            .getIntVal(), is(Listener.podToPodListener(false).getPort()));
         assertThat(restProducerNetworkPolicy
             .getSpec()
             .getEgress()
@@ -202,7 +219,7 @@ public class RestProducerModelTest {
             .get(0)
             .getPodSelector()
             .getMatchLabels()
-            .get(Labels.COMPONENT_LABEL), is(AdminProxyModel.COMPONENT_NAME));
+            .get(Labels.COMPONENT_LABEL), is(SchemaRegistryModel.COMPONENT_NAME));
 
         assertThat(restProducerNetworkPolicy.getSpec().getPodSelector().getMatchLabels().size(), is(1));
         assertThat(restProducerNetworkPolicy
@@ -352,7 +369,7 @@ public class RestProducerModelTest {
         RestProducerModel restProducerModel = new RestProducerModel(defaultEs, imageConfig, listeners);
 
         String kafkaBootstrap = instanceName + "-kafka-bootstrap." + restProducerModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_PORT;
-        EnvVar kafkaBootstrapUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_URL").withValue(kafkaBootstrap).build();
+        EnvVar kafkaBootstrapUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_SERVERS").withValue(kafkaBootstrap).build();
         Container adminApiContainer = restProducerModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0);
 
         assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapUrlEnv));
@@ -379,7 +396,7 @@ public class RestProducerModelTest {
         RestProducerModel restProducerModel = new RestProducerModel(defaultEs, imageConfig, listeners);
         String expectedKafkaBootstrap = hostName + ":" + port;
 
-        EnvVar kafkaBootstrapUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_URL").withValue(expectedKafkaBootstrap).build();
+        EnvVar kafkaBootstrapUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_SERVERS").withValue(expectedKafkaBootstrap).build();
         Container adminApiContainer = restProducerModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0);
 
         assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapUrlEnv));
@@ -412,7 +429,7 @@ public class RestProducerModelTest {
         RestProducerModel restProducerModel = new RestProducerModel(defaultEs, imageConfig, listeners);
         String expectedKafkaBootstrap = hostName + ":" + port;
 
-        EnvVar kafkaBootstrapUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_URL").withValue(expectedKafkaBootstrap).build();
+        EnvVar kafkaBootstrapUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_SERVERS").withValue(expectedKafkaBootstrap).build();
         Container adminApiContainer = restProducerModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0);
 
         assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapUrlEnv));
@@ -430,7 +447,7 @@ public class RestProducerModelTest {
         RestProducerModel restProducerModel = new RestProducerModel(defaultEs, imageConfig, listeners);
         String expectedKafkaBootstrap = instanceName + "-kafka-bootstrap." + restProducerModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_PORT;
 
-        EnvVar kafkaBootstrapUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_URL").withValue(expectedKafkaBootstrap).build();
+        EnvVar kafkaBootstrapUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_SERVERS").withValue(expectedKafkaBootstrap).build();
         Container adminApiContainer = restProducerModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0);
 
         assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapUrlEnv));
@@ -444,99 +461,26 @@ public class RestProducerModelTest {
         RestProducerModel restProducerModel = new RestProducerModel(defaultEs, imageConfig, null);
         String expectedKafkaBootstrap = instanceName + "-kafka-bootstrap." + restProducerModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_PORT;
 
-        EnvVar kafkaBootstrapUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_URL").withValue(expectedKafkaBootstrap).build();
+        EnvVar kafkaBootstrapUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_SERVERS").withValue(expectedKafkaBootstrap).build();
         Container adminApiContainer = restProducerModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0);
 
         assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapUrlEnv));
     }
 
     @Test
-    public void testDefaultLogging() {
-        EventStreams defaultEs = createDefaultEventStreams().build();
-        RestProducerModel restProducerModel = new RestProducerModel(defaultEs, imageConfig, listeners);
-
-        EnvVar expectedEnvVar = new EnvVarBuilder()
-                .withName("LOGGING_LEVEL")
-                .withValue("INFO")
-                .build();
-        List<EnvVar> envVars = restProducerModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getEnv();
-        assertThat(envVars, hasItem(expectedEnvVar));
-    }
-
-    @Test
-    public void testOverrideLoggingInLine() {
-        Map<String, String> loggers = new HashMap<>();
-        loggers.put("logger.one", "DEBUG");
-        loggers.put("logger.two", "WARN");
-        InlineLogging logging = new InlineLogging();
-        logging.setLoggers(loggers);
-
-        EventStreams eventStreams = createDefaultEventStreams()
-                .editSpec()
-                    .editRestProducer()
-                        .withLogging(logging)
-                    .endRestProducer()
-                .endSpec()
-                .build();
-        RestProducerModel restProducerModel = new RestProducerModel(eventStreams, imageConfig, listeners);
-
-        EnvVar expectedEnvVar = new EnvVarBuilder()
-                .withName("LOGGING_LEVEL")
-                .withValue("DEBUG")
-                .build();
-        List<EnvVar> envVars = restProducerModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getEnv();
-        assertThat(envVars, hasItem(expectedEnvVar));
-    }
-
-    @Test
-    public void testUsesDefaultLoggingIfNoLoggers() {
-        InlineLogging logging = new InlineLogging();
-
-        EventStreams eventStreams = createDefaultEventStreams()
-                .editSpec()
-                    .editRestProducer()
-                        .withLogging(logging)
-                    .endRestProducer()
-                .endSpec()
-                .build();
-        RestProducerModel restProducerModel = new RestProducerModel(eventStreams, imageConfig, listeners);
-
-        EnvVar expectedEnvVar = new EnvVarBuilder()
-                .withName("LOGGING_LEVEL")
-                .withValue("INFO")
-                .build();
-        List<EnvVar> envVars = restProducerModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getEnv();
-        assertThat(envVars, hasItem(expectedEnvVar));
-    }
-
-    @Test
-    public void testOverrideLoggingExternalIsIgnored() {
-        ExternalLogging logging = new ExternalLogging();
-        EventStreams eventStreams = createDefaultEventStreams()
-                .editSpec()
-                    .editRestProducer()
-                        .withLogging(logging)
-                    .endRestProducer()
-                .endSpec()
-                .build();
-        RestProducerModel restProducerModel = new RestProducerModel(eventStreams, imageConfig, listeners);
-
-        EnvVar expectedEnvVar = new EnvVarBuilder()
-                .withName("LOGGING_LEVEL")
-                .withValue("INFO")
-                .build();
-        List<EnvVar> envVars = restProducerModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getEnv();
-        assertThat(envVars, hasItem(expectedEnvVar));
-    }
-
-    @Test
     public void testCreateRestProducerRouteWithTlsEncryption() {
-        EventStreams eventStreams = createDefaultEventStreams()
-                .editSpec()
-                .withSecurity(new SecuritySpecBuilder().withEncryption(SecuritySpec.Encryption.TLS).build())
-                .endSpec()
-                .build();
+        EventStreams eventStreams = createDefaultEventStreams().build();
+        assertThat(new RestProducerModel(eventStreams, imageConfig, null).getRoutes().get(Listener.EXTERNAL_TLS_NAME).getSpec().getTls().getTermination(), is("passthrough"));
+    }
 
-        assertThat(new RestProducerModel(eventStreams, imageConfig, listeners).getRoute().getSpec().getTls().getTermination(), is("passthrough"));
+    @Test
+    public void testGenerationIdLabelOnDeployment() {
+        EventStreams eventStreams = createDefaultEventStreams().build();
+        RestProducerModel restProducerModel = new RestProducerModel(eventStreams, imageConfig, null);
+
+        assertThat(restProducerModel.getDeployment("newID").getMetadata().getLabels().containsKey(AbstractSecureEndpointModel.CERT_GENERATION_KEY), is(true));
+        assertThat(restProducerModel.getDeployment("newID").getMetadata().getLabels().get(AbstractSecureEndpointModel.CERT_GENERATION_KEY), is("newID"));
+        assertThat(restProducerModel.getDeployment("newID").getSpec().getTemplate().getMetadata().getLabels().containsKey(AbstractSecureEndpointModel.CERT_GENERATION_KEY), is(true));
+        assertThat(restProducerModel.getDeployment("newID").getSpec().getTemplate().getMetadata().getLabels().get(AbstractSecureEndpointModel.CERT_GENERATION_KEY), is("newID"));
     }
 }

@@ -700,7 +700,7 @@ public class EventStreamsOperatorTest {
             verifyKafkaBootstrapAdvertisedListeners(NAMESPACE, deploymentName, expectedExternalBootstrap);
 
             deploymentName = CLUSTER_NAME + "-" + APP_NAME + "-" + RestProducerModel.COMPONENT_NAME;
-            verifyKafkaBootstrapUrl(NAMESPACE, deploymentName, expectedInternalBootstrap);
+            verifyKafkaBootstrapServers(NAMESPACE, deploymentName, expectedInternalBootstrap);
 
             ArgumentCaptor<EventStreams> argument = ArgumentCaptor.forClass(EventStreams.class);
             verify(esResourceOperator).createOrUpdate(argument.capture());
@@ -1186,6 +1186,12 @@ public class EventStreamsOperatorTest {
         assertThat(envVars, hasItem(kafkaBootstrapUrlEnv));
     }
 
+    private void verifyKafkaBootstrapServers(String namespace, String deploymentName, String expectedKafkaBootstrap) {
+        List<EnvVar> envVars = getDeployEnvVars(namespace, deploymentName);
+        EnvVar kafkaBootstrapUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_SERVERS").withValue(expectedKafkaBootstrap).build();
+        assertThat(envVars, hasItem(kafkaBootstrapUrlEnv));
+    }
+
     private void verifyKafkaBootstrapAdvertisedListeners(String namespace, String deploymentName, String expectedExternalBootstrap) {
         List<EnvVar> envVars = getDeployEnvVars(namespace, deploymentName);
         EnvVar kafkaAdvertisedListenerEnv = new EnvVarBuilder().withName("KAFKA_ADVERTISED_LISTENER_BOOTSTRAP_ADDRESS").withValue(expectedExternalBootstrap).build();
@@ -1282,7 +1288,6 @@ public class EventStreamsOperatorTest {
     private Set<String> getExpectedServiceNames(String clusterName) {
         Set<String> expectedServices = new HashSet<>();
         expectedServices.add(clusterName + "-" + APP_NAME + "-" + AdminProxyModel.COMPONENT_NAME);
-        expectedServices.add(clusterName + "-" + APP_NAME + "-" + RestProducerModel.COMPONENT_NAME);
         expectedServices.add(clusterName + "-" + APP_NAME + "-" + AdminApiModel.COMPONENT_NAME);
         expectedServices.add(clusterName + "-" + APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME + "-" + AbstractSecureEndpointModel.EXTERNAL_SERVICE_POSTFIX);
         expectedServices.add(clusterName + "-" + APP_NAME + "-" + RestProducerModel.COMPONENT_NAME + "-" + AbstractSecureEndpointModel.EXTERNAL_SERVICE_POSTFIX);
@@ -1305,7 +1310,6 @@ public class EventStreamsOperatorTest {
         Set<String> expectedRoutes = new HashSet<>();
         expectedRoutes.add(PROXY_ROUTE_NAME);
         expectedRoutes.add(UI_ROUTE_NAME);
-        expectedRoutes.add(REST_PRODUCER_ROUTE_NAME);
         expectedRoutes.add(ADMIN_API_ROUTE_NAME);
         expectedRoutes.add(REST_PRODUCER_ROUTE_NAME + "-" + Listener.EXTERNAL_TLS_NAME);
         expectedRoutes.add(SCHEMA_REGISTRY_ROUTE_NAME + "-" + Listener.EXTERNAL_TLS_NAME);
@@ -1500,7 +1504,6 @@ public class EventStreamsOperatorTest {
         List<Route> routes = new ArrayList<>();
         routes.add(createRoute(PROXY_ROUTE_NAME, NAMESPACE));
         routes.add(createRoute(UI_ROUTE_NAME, NAMESPACE));
-        routes.add(createRoute(REST_PRODUCER_ROUTE_NAME, NAMESPACE));
         routes.add(createRoute(ADMIN_API_ROUTE_NAME, NAMESPACE));
         routes.add(createRoute(REST_PRODUCER_ROUTE_NAME + "-" + Listener.EXTERNAL_TLS_NAME, NAMESPACE));
         routes.add(createRoute(SCHEMA_REGISTRY_ROUTE_NAME + "-" + Listener.EXTERNAL_TLS_NAME, NAMESPACE));

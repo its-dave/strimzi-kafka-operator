@@ -567,16 +567,11 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 }
                 restProducerFutures.add(serviceAccountOperator.createOrUpdate(restProducer.getServiceAccount()));
                 // Keep old service for Route
-                restProducerFutures.add(serviceOperator.createOrUpdate(restProducer.getService()));
                 restProducerFutures.add(serviceOperator.createOrUpdate(restProducer.getExternalService()));
                 restProducerFutures.add(serviceOperator.createOrUpdate(restProducer.getInternalService()));
                 restProducerFutures.add(networkPolicyOperator.createOrUpdate(restProducer.getNetworkPolicy()));
                 restProducerFuture = CompositeFuture.join(restProducerFutures)
-                        .compose(res -> {
-                            Map<String, Route> routes = restProducer.getRoutes();
-                            routes.put("", restProducer.getRoute());
-                            return createOrUpdateRoutes(restProducer, routes);
-                        })
+                        .compose(res -> createOrUpdateRoutes(restProducer, restProducer.getRoutes()))
                         .compose(res -> reconcileCerts(restProducer, res, dateSupplier))
                         .compose(secretResult -> deploymentOperator.createOrUpdate(restProducer.getDeployment(secretResult.resource().getMetadata().getResourceVersion())));
             }
