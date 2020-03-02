@@ -29,25 +29,24 @@ import lombok.EqualsAndHashCode;
 @JsonDeserialize(using = JsonDeserializer.None.class)
 @Buildable(editableEnabled = false, generateBuilderPackage = false, builderPackage = "io.fabric8.kubernetes.api.builder")
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({ "replicas", "metadataConnectName", "bootstrapServers", "configStorageReplicationFactor", "offsetStorageReplicationFactor", "statusStorageReplicationFactor", "env" })
+@JsonPropertyOrder({ "replicas", "mirrorMaker2Spec" })
 @EqualsAndHashCode
-public class ReplicatorSpec extends KafkaMirrorMaker2Spec implements Serializable  {
+public class ReplicatorSpec  implements Serializable  {
 
     private static final long serialVersionUID = 1L;
-    
+
     private Integer replicas;
-    private String connectCluster;
+    private KafkaMirrorMaker2Spec mirrorMaker2Spec;
+
 
     public int hashCode() {
         return super.hashCode();
     }
 
-
     public boolean equals(Object obj) {
         return super.equals(obj);
     }
 
-    @Override
     @Description("The number of connect replicas to start for Event Streams replication")
     @DefaultValue("0")
     @JsonProperty(required = true)
@@ -59,17 +58,16 @@ public class ReplicatorSpec extends KafkaMirrorMaker2Spec implements Serializabl
         this.replicas = replicas;
     }
 
-    //Override needed so that this is no longer a required field in the Replicator CRD - we set it in the Model
-    @Override
     @JsonProperty(required = false)
-    @Description("The name of the Kafka Connect instance running the replicator")
-    public String getConnectCluster() {
-        return connectCluster;
+    public KafkaMirrorMaker2Spec getMirrorMaker2Spec() {
+        return mirrorMaker2Spec;
     }
 
-    public void setConnectCluster(String connectCluster) {
-        this.connectCluster = connectCluster;
+
+    public void setMirrorMaker2Spec(KafkaMirrorMaker2Spec mirrorMaker2Spec) {
+        this.mirrorMaker2Spec = mirrorMaker2Spec;
     }
+
 }
 
     

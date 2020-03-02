@@ -25,6 +25,8 @@ import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.SecretBuilder;
 import io.strimzi.api.kafka.model.Kafka;
+import io.strimzi.api.kafka.model.listener.KafkaListeners;
+import io.strimzi.api.kafka.model.listener.KafkaListenersBuilder;
 import io.strimzi.operator.cluster.model.AbstractModel;
 import io.strimzi.operator.cluster.model.Ca;
 import io.strimzi.operator.common.model.Labels;
@@ -128,7 +130,7 @@ public class ModelUtils {
                 .withLabels(labels)
             .endMetadata()
             .addToData("user.key", key.toString())
-            .addToData("user.crt", key.toString())
+            .addToData("user.crt", cert.toString())
             .addToData("user.password", "password")
             .build();
 
@@ -141,7 +143,7 @@ public class ModelUtils {
                 .withLabels(labels)
             .endMetadata()
             .addToData("user.key", key.toString())
-            .addToData("user.crt", key.toString())
+            .addToData("user.crt", cert.toString())
             .addToData("user.password", "password1")
             .build();
 
@@ -154,7 +156,7 @@ public class ModelUtils {
                 .withLabels(labels)
             .endMetadata()
             .addToData("user.key", key.toString())
-            .addToData("user.crt", key.toString())
+            .addToData("user.crt", cert.toString())
             .addToData("user.password", "password2")
             .build();
 
@@ -183,5 +185,75 @@ public class ModelUtils {
             createServices();
             createRoutes();
         }
+    }
+
+    public static KafkaListeners getMutualTLSOnBothInternalAndExternalListenerSpec() {
+
+        return new KafkaListenersBuilder()
+                .withNewKafkaListenerExternalRoute()
+                .withNewKafkaListenerAuthenticationTlsAuth()
+                .endKafkaListenerAuthenticationTlsAuth()
+                .endKafkaListenerExternalRoute()
+                .withNewTls()
+                .withNewKafkaListenerAuthenticationTlsAuth()
+                .endKafkaListenerAuthenticationTlsAuth()
+                .endTls()
+                .build();
+    }
+
+    public static KafkaListeners getMutualTLSOnInternalListenerSpec() {
+        return new KafkaListenersBuilder()
+                .withNewTls()
+                .withNewKafkaListenerAuthenticationTlsAuth()
+                .endKafkaListenerAuthenticationTlsAuth()
+                .endTls()
+                .build();
+    }
+
+    public static KafkaListeners getMutualTLSOnExternalListenerSpec() {
+        return new KafkaListenersBuilder()
+                .withNewKafkaListenerExternalRoute()
+                .withNewKafkaListenerAuthenticationTlsAuth()
+                .endKafkaListenerAuthenticationTlsAuth()
+                .endKafkaListenerExternalRoute()
+                .build();
+    }
+
+    public static KafkaListeners getMutualScramOnInternalListenerSpec() {
+        return new KafkaListenersBuilder()
+                .withNewTls()
+                .withNewKafkaListenerAuthenticationScramSha512Auth()
+                .endKafkaListenerAuthenticationScramSha512Auth()
+                .endTls()
+                .build();
+    }
+
+    public static KafkaListeners getMutualScramOnExternalListenerSpec() {
+        return new KafkaListenersBuilder()
+                .withNewKafkaListenerExternalRoute()
+                .withNewKafkaListenerAuthenticationScramSha512Auth()
+                .endKafkaListenerAuthenticationScramSha512Auth()
+                .endKafkaListenerExternalRoute()
+                .build();
+    }
+
+
+    public static KafkaListeners getServerAuthOnlyInternalListenerSpec() {
+        return new KafkaListenersBuilder()
+                .withNewTls()
+                .endTls()
+                .build();
+    }
+
+    public static KafkaListeners getServerAuthOnlyExternalListenerSpec() {
+        return new KafkaListenersBuilder()
+                .withNewKafkaListenerExternalRoute()
+                .endKafkaListenerExternalRoute()
+                .build();
+    }
+
+    public static KafkaListeners getNoSecurityListenerSpec() {
+        return new KafkaListenersBuilder()
+                .build();
     }
 }

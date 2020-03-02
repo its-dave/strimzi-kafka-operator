@@ -28,6 +28,9 @@ import io.strimzi.api.kafka.model.AclRuleTopicResource;
 import io.strimzi.api.kafka.model.KafkaSpecBuilder;
 import io.strimzi.api.kafka.model.KafkaUser;
 import io.strimzi.api.kafka.model.KafkaUserAuthorizationSimple;
+import io.strimzi.api.kafka.model.KafkaUserScramSha512ClientAuthentication;
+import io.strimzi.api.kafka.model.KafkaUserTlsClientAuthentication;
+import io.strimzi.api.kafka.model.listener.KafkaListeners;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -37,6 +40,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 @SuppressWarnings({"checkstyle:JavaNCSS", "checkstyle:MethodLength"})
@@ -50,7 +54,7 @@ public class ReplicatorUsersModelTest {
 
     private ReplicatorCredentials repUtils;
 
-    private EventStreamsBuilder createDefaultEventStreams() {
+    private EventStreamsBuilder createDefaultEventStreams(KafkaListeners listenerSpec) {
 
         return ModelUtils.createDefaultEventStreams(instanceName)
                 .withMetadata(new ObjectMetaBuilder()
@@ -59,18 +63,9 @@ public class ReplicatorUsersModelTest {
                         .build())
                 .editSpec()
                 .withStrimziOverrides(new KafkaSpecBuilder()
-                    .withNewKafka()
+                        .withNewKafka()
                         .withReplicas(3)
-                        .withNewListeners()
-                            .withNewKafkaListenerExternalRoute()
-                                .withNewKafkaListenerAuthenticationTlsAuth()
-                                .endKafkaListenerAuthenticationTlsAuth()
-                            .endKafkaListenerExternalRoute()
-                            .withNewTls()
-                                .withNewKafkaListenerAuthenticationTlsAuth()
-                                .endKafkaListenerAuthenticationTlsAuth()
-                            .endTls()
-                        .endListeners()
+                        .withListeners(listenerSpec)
                         .withNewTemplate()
                         .withNewPod()
                         .withNewMetadata()
@@ -87,13 +82,18 @@ public class ReplicatorUsersModelTest {
     }
 
     private ReplicatorModel createDefaultReplicatorModel() {
-        EventStreams instance = createDefaultEventStreams().build();
+        EventStreams instance = createDefaultEventStreams(ModelUtils.getMutualTLSOnBothInternalAndExternalListenerSpec()).build();
         repUtils = new ReplicatorCredentials(instance);
         return new ReplicatorModel(instance, repUtils);
     }
 
     private ReplicatorUsersModel createDefaultReplicatorUserModel() {
-        EventStreams instance = createDefaultEventStreams().build();
+        EventStreams instance = createDefaultEventStreams(ModelUtils.getMutualTLSOnBothInternalAndExternalListenerSpec()).build();
+        return new ReplicatorUsersModel(instance);
+    }
+
+    private ReplicatorUsersModel createReplicatorUserModel(KafkaListeners listenerSpec) {
+        EventStreams instance = createDefaultEventStreams(listenerSpec).build();
         return new ReplicatorUsersModel(instance);
     }
 
@@ -261,7 +261,7 @@ public class ReplicatorUsersModelTest {
         AclRule rule5read = acls.get(11);
         assertThat(rule5read.getResource(), instanceOf(AclRuleGroupResource.class));
         AclRuleGroupResource rule5readgroup = (AclRuleGroupResource) rule5read.getResource();
-        assertThat(rule5readgroup.getName(), is(ReplicatorModel.getReplicatorClusterName(instanceName)));
+        assertThat(rule5readgroup.getName(), is(ReplicatorModel.getDefaultReplicatorClusterName(instanceName)));
         assertThat(rule5readgroup.getPatternType(), is(AclResourcePatternType.PREFIX));
         assertThat(rule5read.getOperation(), is(AclOperation.READ));
         assertThat(rule5read.getHost(), is("*"));
@@ -269,7 +269,7 @@ public class ReplicatorUsersModelTest {
         AclRule rule5describe = acls.get(12);
         assertThat(rule5describe.getResource(), instanceOf(AclRuleGroupResource.class));
         AclRuleGroupResource rule5describegroup = (AclRuleGroupResource) rule5describe.getResource();
-        assertThat(rule5describegroup.getName(), is(ReplicatorModel.getReplicatorClusterName(instanceName)));
+        assertThat(rule5describegroup.getName(), is(ReplicatorModel.getDefaultReplicatorClusterName(instanceName)));
         assertThat(rule5describegroup.getPatternType(), is(AclResourcePatternType.LITERAL));
         assertThat(rule5describe.getOperation(), is(AclOperation.DESCRIBE));
         assertThat(rule5describe.getHost(), is("*"));
@@ -395,4 +395,96 @@ public class ReplicatorUsersModelTest {
         assertThat(rule3source.getHost(), is("*"));
 
     }
+
+
+    @Test
+    public void testReplicatorConnectUserWhenInternalTLSOnlyEnabledWithNoMutualAuth() {
+
+        ReplicatorUsersModel replicatorUsers =  createReplicatorUserModel(ModelUtils.getServerAuthOnlyInternalListenerSpec());
+
+        assertThat(replicatorUsers.getReplicatorConnectUser(), is(nullValue()));
+        assertThat(replicatorUsers.getReplicatorDestinationConnectorUser(), is(nullValue()));
+        assertThat(replicatorUsers.getReplicatorSourceConnectorUser(), is(nullValue()));
+
+    }
+    @Test
+    public void testReplicatorConnectUserWhenInternalTLSOnlyEnabledWithMutualAuthTLS() {
+        ReplicatorUsersModel replicatorUsers = createReplicatorUserModel(ModelUtils.getMutualTLSOnInternalListenerSpec());
+
+        assertThat(replicatorUsers.getReplicatorSourceConnectorUser(), is(nullValue()));
+
+        KafkaUser replicatorDestinationConnectorUser = replicatorUsers.getReplicatorDestinationConnectorUser();
+        KafkaUser replicatorConnectConnectorUser = replicatorUsers.getReplicatorConnectUser();
+
+        assertThat(replicatorDestinationConnectorUser.getSpec().getAuthentication(), is(instanceOf(KafkaUserTlsClientAuthentication.class)));
+        assertThat(replicatorConnectConnectorUser.getSpec().getAuthentication(), is(instanceOf(KafkaUserTlsClientAuthentication.class)));
+
+        assertThat(replicatorConnectConnectorUser.getSpec().getAuthorization().getType(), is("simple"));
+        assertThat(replicatorDestinationConnectorUser.getSpec().getAuthorization().getType(), is("simple"));
+    }
+
+    @Test
+    public void testReplicatorConnectUserWhenInternalTLSOnlyEnabledWithMutualAuthScram() {
+        ReplicatorUsersModel replicatorUsers = createReplicatorUserModel(ModelUtils.getMutualScramOnInternalListenerSpec());
+
+        assertThat(replicatorUsers.getReplicatorSourceConnectorUser(), is(nullValue()));
+
+        KafkaUser replicatorDestinationConnectorUser = replicatorUsers.getReplicatorDestinationConnectorUser();
+        KafkaUser replicatorConnectConnectorUser = replicatorUsers.getReplicatorConnectUser();
+
+        assertThat(replicatorDestinationConnectorUser.getSpec().getAuthentication(), is(instanceOf(KafkaUserScramSha512ClientAuthentication.class)));
+        assertThat(replicatorConnectConnectorUser.getSpec().getAuthentication(), is(instanceOf(KafkaUserScramSha512ClientAuthentication.class)));
+
+        assertThat(replicatorConnectConnectorUser.getSpec().getAuthorization().getType(), is("simple"));
+        assertThat(replicatorDestinationConnectorUser.getSpec().getAuthorization().getType(), is("simple"));
+    }
+
+    @Test
+    public void testReplicatorConnectUserWhenExternalTLSOnlyEnabledWithNoMutualAuth() {
+        ReplicatorUsersModel replicatorUsers = createReplicatorUserModel(ModelUtils.getServerAuthOnlyExternalListenerSpec());
+
+        assertThat(replicatorUsers.getReplicatorConnectUser(), is(nullValue()));
+        assertThat(replicatorUsers.getReplicatorDestinationConnectorUser(), is(nullValue()));
+        assertThat(replicatorUsers.getReplicatorSourceConnectorUser(), is(nullValue()));
+
+    }
+    @Test
+    public void testReplicatorConnectUserWhenExternalTLSOnlyEnabledWithMutualAuthTLS() {
+        ReplicatorUsersModel replicatorUsers = createReplicatorUserModel(ModelUtils.getMutualTLSOnExternalListenerSpec());
+
+        assertThat(replicatorUsers.getReplicatorConnectUser(), is(nullValue()));
+        assertThat(replicatorUsers.getReplicatorDestinationConnectorUser(), is(nullValue()));
+
+        KafkaUser replicatorSourceConnectorUser = replicatorUsers.getReplicatorSourceConnectorUser();
+        assertThat(replicatorSourceConnectorUser.getSpec().getAuthentication(), is(instanceOf(KafkaUserTlsClientAuthentication.class)));
+
+        assertThat(replicatorSourceConnectorUser.getSpec().getAuthorization().getType(), is("simple"));
+
+
+    }
+
+    @Test
+    public void testReplicatorConnectUserWhenExternalTLSOnlyEnabledWithMutualAuthScram() {
+        ReplicatorUsersModel replicatorUsers = createReplicatorUserModel(ModelUtils.getMutualScramOnExternalListenerSpec());
+
+        assertThat(replicatorUsers.getReplicatorConnectUser(), is(nullValue()));
+        assertThat(replicatorUsers.getReplicatorDestinationConnectorUser(), is(nullValue()));
+
+        KafkaUser replicatorSourceConnectorUser = replicatorUsers.getReplicatorSourceConnectorUser();
+
+        assertThat(replicatorSourceConnectorUser.getSpec().getAuthentication(), is(instanceOf(KafkaUserScramSha512ClientAuthentication.class)));
+        assertThat(replicatorSourceConnectorUser.getSpec().getAuthorization().getType(), is("simple"));
+
+    }
+
+    @Test
+    public void testReplicatorConnectUserWhenNoSecurity() {
+        ReplicatorUsersModel replicatorUsers = createReplicatorUserModel(ModelUtils.getNoSecurityListenerSpec());
+
+        assertThat(replicatorUsers.getReplicatorConnectUser(), is(nullValue()));
+        assertThat(replicatorUsers.getReplicatorDestinationConnectorUser(), is(nullValue()));
+        assertThat(replicatorUsers.getReplicatorSourceConnectorUser(), is(nullValue()));
+
+    }
+
 }

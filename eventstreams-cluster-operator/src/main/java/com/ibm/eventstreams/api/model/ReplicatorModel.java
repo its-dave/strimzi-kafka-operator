@@ -33,6 +33,7 @@ import io.fabric8.kubernetes.api.model.networking.NetworkPolicyIngressRuleBuilde
 import io.strimzi.api.kafka.model.KafkaClusterSpec;
 import io.strimzi.api.kafka.model.KafkaMirrorMaker2ClusterSpec;
 import io.strimzi.api.kafka.model.KafkaMirrorMaker2ClusterSpecBuilder;
+import io.strimzi.api.kafka.model.KafkaMirrorMaker2Spec;
 import io.strimzi.api.kafka.model.KafkaMirrorMaker2Tls;
 import io.strimzi.api.kafka.model.KafkaSpec;
 import io.strimzi.api.kafka.model.authentication.KafkaClientAuthentication;
@@ -52,7 +53,6 @@ import io.fabric8.kubernetes.api.model.networking.NetworkPolicy;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicyEgressRule;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicyIngressRule;
 
-
 public class ReplicatorModel extends AbstractModel {
 
     public static final String COMPONENT_NAME = "replicator";
@@ -69,6 +69,7 @@ public class ReplicatorModel extends AbstractModel {
     public static final String REPLICATOR_CONNECT_USER_NAME = "rep-connect-user";
     public static final String REPLICATOR_DESTINATION_CLUSTER_CONNNECTOR_USER_NAME = "rep-target-user";
     public static final String REPLICATOR_SOURCE_CLUSTER_CONNECTOR_USER_NAME = "rep-source-user";
+    public static final String BYTE_ARRAY_CONVERTER_NAME = "org.apache.kafka.connect.converters.ByteArrayConverter";
 
     private final NetworkPolicy networkPolicy;
     private final Secret secret;
@@ -102,15 +103,15 @@ public class ReplicatorModel extends AbstractModel {
         Optional<ReplicatorSpec> replicatorSpec = Optional.ofNullable(instance.getSpec())
                 .map(EventStreamsSpec::getReplicator);
 
+        int replicas = Optional.ofNullable(instance.getSpec())
+                .map(EventStreamsSpec::getReplicator)
+                .map(ReplicatorSpec::getReplicas).orElse(0);
+
         setOwnerReference(instance);
         setArchitecture(instance.getSpec().getArchitecture());
 
         this.caCert = replicatorCredentials.getReplicatorConnectTrustStore();
         this.clientAuthentication = replicatorCredentials.getReplicatorConnectClientAuth();
-
-        String connectCluster = Optional.ofNullable(instance.getSpec())
-                .map(EventStreamsSpec::getReplicator)
-                .map(ReplicatorSpec::getConnectCluster).orElse(ReplicatorModel.getReplicatorClusterName(getInstanceName()));
 
         Optional<KafkaListenerTls> internalSecurityEnabled = Optional.ofNullable(instance.getSpec())
                 .map(EventStreamsSpec::getStrimziOverrides)
@@ -118,14 +119,28 @@ public class ReplicatorModel extends AbstractModel {
                 .map(KafkaClusterSpec::getListeners)
                 .map(KafkaListeners::getTls);
 
-        String bootstrap;
+        KafkaMirrorMaker2Spec mm2Overrides = Optional
+                .ofNullable(instance)
+                .map(EventStreams::getSpec)
+                .map(EventStreamsSpec::getReplicator)
+                .map(ReplicatorSpec::getMirrorMaker2Spec)
+                .orElse(new KafkaMirrorMaker2Spec());
 
+        String connectCluster = Optional.ofNullable(mm2Overrides.getConnectCluster())
+                .orElse(ReplicatorModel.getDefaultReplicatorClusterName(getInstanceName()));
 
-        // TODO This was edited to cope with changes in KafkaMirrorMaker2 - needs reviewing
+        Optional<List<KafkaMirrorMaker2ClusterSpec>> mm2Clusters = Optional.ofNullable(mm2Overrides.getClusters());
+
+        String bootstrap = mm2Clusters.filter(list -> !list.isEmpty())
+                .map(list -> list.get(0))
+                .map(KafkaMirrorMaker2ClusterSpec::getBootstrapServers)
+                .orElse(null);
+
+        //Check is done on instance.getSpec()... as caCert might be null due to an error, or because oauth is on
         //We use the internal port for connect, so we don't query here on listeners.external
-        if (internalSecurityEnabled.isPresent()) {
+        if (internalSecurityEnabled.isPresent() && bootstrap == null) {
             bootstrap = getInstanceName() + "-kafka-bootstrap." + getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_PORT_TLS;
-        } else {
+        } else if (bootstrap == null) {
             //security off
             bootstrap = getInstanceName() + "-kafka-bootstrap." + getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_PORT;
         }
@@ -140,9 +155,9 @@ public class ReplicatorModel extends AbstractModel {
         kafkaMirrorMaker2Config.put("config.storage.topic", CONFIG_STORAGE_TOPIC_NAME);
         kafkaMirrorMaker2Config.put("offset.storage.topic", OFFSET_STORAGE_TOPIC_NAME);
         kafkaMirrorMaker2Config.put("status.storage.topic", STATUS_STORAGE_TOPIC_NAME);
-        kafkaMirrorMaker2Config.put("key.converter", "org.apache.kafka.connect.converters.ByteArrayConverter");
-        kafkaMirrorMaker2Config.put("value.converter", "org.apache.kafka.connect.converters.ByteArrayConverter");
-        kafkaMirrorMaker2Config.put("group.id", getReplicatorClusterName(getInstanceName()));
+        kafkaMirrorMaker2Config.put("key.converter", BYTE_ARRAY_CONVERTER_NAME);
+        kafkaMirrorMaker2Config.put("value.converter", BYTE_ARRAY_CONVERTER_NAME);
+        kafkaMirrorMaker2Config.put("group.id", getDefaultReplicatorClusterName(getInstanceName()));
 
         Map<String, String> labels = getComponentLabelsWithoutResourceGroup();
 
@@ -176,7 +191,8 @@ public class ReplicatorModel extends AbstractModel {
                 .withOwnerReferences(getEventStreamsOwnerReference())
                 .addToLabels(labels)
             .endMetadata()
-            .withNewSpecLike(replicatorSpec.get())
+            .withNewSpecLike(mm2Overrides)
+                .withReplicas(replicas)
                 .withTemplate(kafkaMirrorMaker2Template)
                 .withConnectCluster(connectCluster)
                 .withClusters(kafkaMirrorMaker2ClusterSpec)
@@ -230,7 +246,7 @@ public class ReplicatorModel extends AbstractModel {
 
     }
 
-    public static String getReplicatorClusterName(String instanceName) {
+    public static String getDefaultReplicatorClusterName(String instanceName) {
         return instanceName + "-" + ReplicatorModel.REPLICATOR_CLUSTER_NAME;
     }
 

@@ -200,7 +200,7 @@ public class ReplicatorUsersModel extends AbstractModel {
         //Connect also needs read on group.id
         AclRule connectClusterGroupRead = new AclRuleBuilder()
                 .withNewAclRuleGroupResource()
-                .withName(ReplicatorModel.getReplicatorClusterName(getInstanceName()))
+                .withName(ReplicatorModel.getDefaultReplicatorClusterName(getInstanceName()))
                 .withPatternType(AclResourcePatternType.PREFIX)
                 .endAclRuleGroupResource()
                 .withOperation(AclOperation.READ)
@@ -210,7 +210,7 @@ public class ReplicatorUsersModel extends AbstractModel {
         //Connect also needs describe on group.id
         AclRule connectClusterGroupDescribe = new AclRuleBuilder()
                 .withNewAclRuleGroupResource()
-                .withName(ReplicatorModel.getReplicatorClusterName(getInstanceName()))
+                .withName(ReplicatorModel.getDefaultReplicatorClusterName(getInstanceName()))
                 .withPatternType(AclResourcePatternType.LITERAL)
                 .endAclRuleGroupResource()
                 .withOperation(AclOperation.DESCRIBE)
