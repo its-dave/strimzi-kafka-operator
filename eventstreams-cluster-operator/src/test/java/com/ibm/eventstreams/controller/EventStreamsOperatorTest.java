@@ -1205,7 +1205,7 @@ public class EventStreamsOperatorTest {
 
     private void verifyKafkaBootstrapUrl(String namespace, String deploymentName, String expectedKafkaBootstrap) {
         List<EnvVar> envVars = getDeployEnvVars(namespace, deploymentName);
-        EnvVar kafkaBootstrapUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_URL").withValue(expectedKafkaBootstrap).build();
+        EnvVar kafkaBootstrapUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_SERVERS").withValue(expectedKafkaBootstrap).build();
         assertThat(envVars, hasItem(kafkaBootstrapUrlEnv));
     }
 
@@ -1217,7 +1217,7 @@ public class EventStreamsOperatorTest {
 
     private void verifyKafkaBootstrapAdvertisedListeners(String namespace, String deploymentName, String expectedExternalBootstrap) {
         List<EnvVar> envVars = getDeployEnvVars(namespace, deploymentName);
-        EnvVar kafkaAdvertisedListenerEnv = new EnvVarBuilder().withName("KAFKA_ADVERTISED_LISTENER_BOOTSTRAP_ADDRESS").withValue(expectedExternalBootstrap).build();
+        EnvVar kafkaAdvertisedListenerEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_EXTERNAL_URL").withValue(expectedExternalBootstrap).build();
         assertThat(envVars, hasItem(kafkaAdvertisedListenerEnv));
     }
 

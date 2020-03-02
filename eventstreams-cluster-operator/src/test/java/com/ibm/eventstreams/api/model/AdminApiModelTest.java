@@ -79,7 +79,6 @@ public class AdminApiModelTest {
     private final String instanceName = "test-instance";
     private final String componentPrefix = instanceName + "-" + AbstractModel.APP_NAME + "-" + AdminApiModel.COMPONENT_NAME;
     private final int defaultReplicas = 1;
-    private final String frontendRestImage = AdminApiModel.FRONTEND_REST_IMAGE;
     @Mock
     private EventStreamsOperatorConfig.ImageLookup imageConfig;
     private List<ListenerStatus> listeners = new ArrayList<>();
@@ -151,8 +150,8 @@ public class AdminApiModelTest {
         EnvVar kafkaConnectRestApiEnv = new EnvVarBuilder().withName("KAFKA_CONNECT_REST_API_ADDRESS").withValue(kafkaConnectRestEndpoint).build();
         EnvVar geoRepSecretNameEnv = new EnvVarBuilder().withName("GEOREPLICATION_SECRET_NAME").withValue(instanceName  + "-" + AbstractModel.APP_NAME + "-" + ReplicatorModel.REPLICATOR_SECRET_NAME).build();
         EnvVar clientCaCertPath = new EnvVarBuilder().withName("CLIENT_CA_PATH").withValue("/certs/client/ca.p12").build();
-        // Get env-vars from admin-api container, not frontend-rest
-        Container adminApiContainer = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(1);
+
+        Container adminApiContainer = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0);
         List<EnvVar> defaultEnvVars = adminApiContainer.getEnv();
         assertThat(defaultEnvVars, hasItem(kafkaBootstrapUrlEnv));
         assertThat(defaultEnvVars, hasItem(zkConnectEnv));
@@ -370,7 +369,6 @@ public class AdminApiModelTest {
                 .build();
 
         Map<String, String> expectedImages = new HashMap<>();
-        expectedImages.put(AdminApiModel.FRONTEND_REST_CONTAINER_NAME, frontendRestImage);
         expectedImages.put(AdminApiModel.ADMIN_API_CONTAINER_NAME, adminApiImage);
 
         List<Container> containers = new AdminApiModel(instance, imageConfig, listeners, mockIcpClusterDataMap).getDeployment().getSpec().getTemplate()
@@ -389,7 +387,6 @@ public class AdminApiModelTest {
         List<Container> containers = model.getDeployment().getSpec().getTemplate()
                 .getSpec().getContainers();
         Map<String, String> expectedImages = new HashMap<>();
-        expectedImages.put(AdminApiModel.FRONTEND_REST_CONTAINER_NAME, frontendRestImage);
         expectedImages.put(AdminApiModel.ADMIN_API_CONTAINER_NAME, adminApiImage);
 
         ModelUtils.assertCorrectImageOverridesOnContainers(containers, expectedImages);
@@ -417,7 +414,6 @@ public class AdminApiModelTest {
         List<Container> containers = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers();
 
         Map<String, String> expectedImages = new HashMap<>();
-        expectedImages.put(AdminApiModel.FRONTEND_REST_CONTAINER_NAME, frontendRestImage);
         expectedImages.put(AdminApiModel.ADMIN_API_CONTAINER_NAME, adminApiImage);
 
         ModelUtils.assertCorrectImageOverridesOnContainers(containers, expectedImages);
@@ -521,18 +517,12 @@ public class AdminApiModelTest {
         AdminApiModel adminApiModel = new AdminApiModel(defaultEs, imageConfig, listeners, mockIcpClusterDataMap);
 
         String kafkaBootstrap = instanceName + "-kafka-bootstrap." + adminApiModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_PORT;
-        EnvVar kafkaBootstrapUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_URL").withValue(kafkaBootstrap).build();
-        EnvVar kafkaAdvertisedListenerEnv = new EnvVarBuilder().withName("KAFKA_ADVERTISED_LISTENER_BOOTSTRAP_ADDRESS").withValue(kafkaBootstrap).build();
 
         EnvVar kafkaBootstrapInternalPlainUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_INTERNAL_PLAIN_URL").withValue(kafkaBootstrap).build();
         EnvVar kafkaBootstrapInternalTlsUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_INTERNAL_TLS_URL").withValue(kafkaBootstrap).build();
         EnvVar kafkaBootstrapExternalUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_EXTERNAL_URL").withValue(kafkaBootstrap).build();
 
-        Container restContainer = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0);
-        assertThat(restContainer.getEnv(), hasItem(kafkaBootstrapUrlEnv));
-        assertThat(restContainer.getEnv(), hasItem(kafkaAdvertisedListenerEnv));
-
-        Container adminApiContainer = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(1);
+        Container adminApiContainer = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0);
         assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapInternalPlainUrlEnv));
         assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapInternalTlsUrlEnv));
         assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapExternalUrlEnv));
@@ -602,21 +592,12 @@ public class AdminApiModelTest {
         listeners.add(externalListener);
 
         AdminApiModel adminApiModel = new AdminApiModel(defaultEs, imageConfig, listeners, mockIcpClusterDataMap);
-        String expectedKafkaBootstrap = kafkaPlainHost + ":" + kafkaPlainPort;
-        String expectedExternalBootstrap = externalHost + ":" + externalPort;
-
-        EnvVar kafkaBootstrapUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_URL").withValue(expectedKafkaBootstrap).build();
-        EnvVar kafkaAdvertisedListenerEnv = new EnvVarBuilder().withName("KAFKA_ADVERTISED_LISTENER_BOOTSTRAP_ADDRESS").withValue(expectedExternalBootstrap).build();
 
         EnvVar kafkaBootstrapInternalPlainUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_INTERNAL_PLAIN_URL").withValue(kafkaPlainHost + ":" + kafkaPlainPort).build();
         EnvVar kafkaBootstrapInternalTlsUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_INTERNAL_TLS_URL").withValue(kafkaTlsHost + ":" + kafkaTlsPort).build();
         EnvVar kafkaBootstrapExternalUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_EXTERNAL_URL").withValue(externalHost + ":" + externalPort).build();
 
-        Container restContainer = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0);
-        assertThat(restContainer.getEnv(), hasItem(kafkaBootstrapUrlEnv));
-        assertThat(restContainer.getEnv(), hasItem(kafkaAdvertisedListenerEnv));
-
-        Container adminApiContainer = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(1);
+        Container adminApiContainer = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0);
         assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapInternalPlainUrlEnv));
         assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapInternalTlsUrlEnv));
         assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapExternalUrlEnv));
@@ -665,7 +646,7 @@ public class AdminApiModelTest {
 
         EnvVar kafkaBootstrapUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_SERVERS").withValue(expectedRunAsKafkaBootstrap).build();
 
-        Container adminApiContainer = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(1);
+        Container adminApiContainer = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0);
 
         assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapUrlEnv));
     }
@@ -682,18 +663,11 @@ public class AdminApiModelTest {
         AdminApiModel adminApiModel = new AdminApiModel(defaultEs, imageConfig, listeners, mockIcpClusterDataMap);
         String expectedKafkaBootstrap = instanceName + "-kafka-bootstrap." + adminApiModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_PORT;
 
-        EnvVar kafkaBootstrapUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_URL").withValue(expectedKafkaBootstrap).build();
-        EnvVar kafkaAdvertisedListenerEnv = new EnvVarBuilder().withName("KAFKA_ADVERTISED_LISTENER_BOOTSTRAP_ADDRESS").withValue(expectedKafkaBootstrap).build();
-
         EnvVar kafkaBootstrapInternalPlainUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_INTERNAL_PLAIN_URL").withValue(expectedKafkaBootstrap).build();
         EnvVar kafkaBootstrapInternalTlsUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_INTERNAL_TLS_URL").withValue(expectedKafkaBootstrap).build();
         EnvVar kafkaBootstrapExternalUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_EXTERNAL_URL").withValue(expectedKafkaBootstrap).build();
 
-        Container restContainer = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0);
-        assertThat(restContainer.getEnv(), hasItem(kafkaBootstrapUrlEnv));
-        assertThat(restContainer.getEnv(), hasItem(kafkaAdvertisedListenerEnv));
-
-        Container adminApiContainer = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(1);
+        Container adminApiContainer = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0);
         assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapInternalPlainUrlEnv));
         assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapInternalTlsUrlEnv));
         assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapExternalUrlEnv));
@@ -707,18 +681,11 @@ public class AdminApiModelTest {
         AdminApiModel adminApiModel = new AdminApiModel(defaultEs, imageConfig, null, mockIcpClusterDataMap);
         String expectedKafkaBootstrap = instanceName + "-kafka-bootstrap." + adminApiModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_PORT;
 
-        EnvVar kafkaBootstrapUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_URL").withValue(expectedKafkaBootstrap).build();
-        EnvVar kafkaAdvertisedListenerEnv = new EnvVarBuilder().withName("KAFKA_ADVERTISED_LISTENER_BOOTSTRAP_ADDRESS").withValue(expectedKafkaBootstrap).build();
-
         EnvVar kafkaBootstrapInternalPlainUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_INTERNAL_PLAIN_URL").withValue(expectedKafkaBootstrap).build();
         EnvVar kafkaBootstrapInternalTlsUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_INTERNAL_TLS_URL").withValue(expectedKafkaBootstrap).build();
         EnvVar kafkaBootstrapExternalUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_EXTERNAL_URL").withValue(expectedKafkaBootstrap).build();
 
-        Container restContainer = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0);
-        assertThat(restContainer.getEnv(), hasItem(kafkaBootstrapUrlEnv));
-        assertThat(restContainer.getEnv(), hasItem(kafkaAdvertisedListenerEnv));
-
-        Container adminApiContainer = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(1);
+        Container adminApiContainer = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0);
         assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapInternalPlainUrlEnv));
         assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapInternalTlsUrlEnv));
         assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapExternalUrlEnv));
@@ -788,7 +755,7 @@ public class AdminApiModelTest {
 
         EnvVar expectedEnvVarTrustStorePath = new EnvVarBuilder().withName("SSL_TRUSTSTORE_PATH").withValue(clusterCertPath + File.separator + "podtls.p12").build();
         EnvVar expectedEnvVarKeyStorePath = new EnvVarBuilder().withName("SSL_KEYSTORE_PATH").withValue(userCertPath + File.separator + "podtls.p12").build();
-        List<EnvVar> actualEnvVars = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(1).getEnv();
+        List<EnvVar> actualEnvVars = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getEnv();
         assertThat(actualEnvVars, hasItem(expectedEnvVarTrustStorePath));
         assertThat(actualEnvVars, hasItem(expectedEnvVarKeyStorePath));
     }
@@ -825,7 +792,7 @@ public class AdminApiModelTest {
         assertThat(actualEnvVars, hasItem(expectedEnvVarPrometheusHost));
         assertThat(actualEnvVars, hasItem(expectedEnvVarPrometheusPort));
         assertThat(actualEnvVars, hasItem(expectedEnvVarPrometheusClusterCaCert));
-        List<EnvVar> actualAdminAPIEnvVars = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(1).getEnv();
+        List<EnvVar> actualAdminAPIEnvVars = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getEnv();
         assertThat(actualAdminAPIEnvVars, hasItem(expectedEnvVarIAMClusterName));
 
     }
