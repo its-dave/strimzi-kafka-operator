@@ -19,6 +19,7 @@ import com.ibm.eventstreams.api.model.EventStreamsKafkaModel;
 import com.ibm.eventstreams.api.model.ReplicatorModel;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
+import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.spec.SecuritySpec;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
@@ -46,6 +47,14 @@ public class ModelUtils {
                 .withMetadata(new ObjectMetaBuilder().withName(instanceName).build())
                 .withNewSpec()
                 .endSpec();
+    }
+
+    public static EventStreamsBuilder createEventStreams(String instanceName, EventStreamsSpec eventStreamsSpec) {
+        return new EventStreamsBuilder()
+                .withMetadata(new ObjectMetaBuilder().withName(instanceName).build())
+                .withNewSpecLike(eventStreamsSpec)
+                .endSpec();
+
     }
 
     public static void assertCorrectImageOverridesOnContainers(List<Container> containers, Map<String, String> imageOverrides) {
@@ -137,7 +146,7 @@ public class ModelUtils {
 
         Secret replicatorConnectorDest = new SecretBuilder()
             .withNewMetadata()
-                .withName(clusterName + "-" + appName + "-" + ReplicatorModel.REPLICATOR_DESTINATION_CLUSTER_CONNNECTOR_USER_NAME)
+                .withName(clusterName + "-" + appName + "-" + ReplicatorModel.REPLICATOR_TARGET_CLUSTER_CONNNECTOR_USER_NAME)
                 .withNamespace(namespace)
                 .addToAnnotations(Ca.ANNO_STRIMZI_IO_CA_KEY_GENERATION, "0")
                 .withLabels(labels)

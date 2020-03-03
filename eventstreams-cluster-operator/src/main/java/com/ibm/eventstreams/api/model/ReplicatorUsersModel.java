@@ -42,7 +42,7 @@ import java.util.Optional;
 public class ReplicatorUsersModel extends AbstractModel {
 
     private KafkaUser replicatorConnectUser;
-    private KafkaUser replicatorDestinationConnectorUser;
+    private KafkaUser replicatorTargetConnectorUser;
     private KafkaUser replicatorSourceConnectorUser;
 
     private static final Logger log = LogManager.getLogger(ReplicatorModel.class.getName());
@@ -56,7 +56,7 @@ public class ReplicatorUsersModel extends AbstractModel {
         KafkaListenerAuthentication kafkaInternalTlsAuth = getInternalTlsKafkaListenerAuthentication(instance);
         if (kafkaInternalTlsAuth != null) {
             createReplicatorConnectUser(kafkaInternalTlsAuth);
-            createReplicatorDestinationConnectorUser(kafkaInternalTlsAuth);
+            createReplicatorTargetConnectorUser(kafkaInternalTlsAuth);
         }
         
         KafkaListenerAuthentication kafkaExternalAuth = getExternalKafkaListenerAuthentication(instance);
@@ -181,7 +181,7 @@ public class ReplicatorUsersModel extends AbstractModel {
                 .withHost("*")
                 .build();
 
-        //Connect needs to be able to create the three Connect config topics defined in rules 1-3 + the topics being mirrored to the destination
+        //Connect needs to be able to create the three Connect config topics defined in rules 1-3 + the topics being mirrored to the target
         AclRule clusterResourceCreate = new AclRuleBuilder()
                 .withNewAclRuleClusterResource()
                 .endAclRuleClusterResource()
@@ -189,7 +189,7 @@ public class ReplicatorUsersModel extends AbstractModel {
                 .withHost("*")
                 .build();
 
-        //Connect needs to be able to create the three Connect config topics defined in rules 1-3 + the topics being mirrored to the destination
+        //Connect needs to be able to create the three Connect config topics defined in rules 1-3 + the topics being mirrored to the target
         AclRule clusterResourceDescribeConfigs = new AclRuleBuilder()
                 .withNewAclRuleClusterResource()
                 .endAclRuleClusterResource()
@@ -271,13 +271,13 @@ public class ReplicatorUsersModel extends AbstractModel {
         replicatorConnectUser = createKafkaUser(connectAclList, ReplicatorModel.REPLICATOR_CONNECT_USER_NAME, kafkaAuth);
     }
 
-    //A User to allow the mirror maker connector to create destination topics and ACLs
-    //Only created if the cluster is destination cluster
-    private void createReplicatorDestinationConnectorUser(KafkaListenerAuthentication kafkaAuth) {
+    //A User to allow the mirror maker connector to create target topics and ACLs
+    //Only created if the cluster is target cluster
+    private void createReplicatorTargetConnectorUser(KafkaListenerAuthentication kafkaAuth) {
 
-        List<AclRule> connectorDestinationAclList = new ArrayList<>();
+        List<AclRule> connectorTargetAcls = new ArrayList<>();
 
-        //Need the ability to create the destination topics (eg sourceClusterName.topic1)
+        //Need the ability to create the target topics (eg sourceClusterName.topic1)
         AclRule clusterResourceCreate = new AclRuleBuilder()
                 .withNewAclRuleClusterResource()
                 .endAclRuleClusterResource()
@@ -285,7 +285,7 @@ public class ReplicatorUsersModel extends AbstractModel {
                 .withHost("*")
                 .build();
 
-        //Need the ability to create the destination topics (eg sourceClusterName.topic1)
+        //Need the ability to create the target topics (eg sourceClusterName.topic1)
         AclRule clusterResourceAlter = new AclRuleBuilder()
                 .withNewAclRuleClusterResource()
                 .endAclRuleClusterResource()
@@ -293,10 +293,10 @@ public class ReplicatorUsersModel extends AbstractModel {
                 .withHost("*")
                 .build();
 
-        connectorDestinationAclList.add(clusterResourceCreate);
-        connectorDestinationAclList.add(clusterResourceAlter);
+        connectorTargetAcls.add(clusterResourceCreate);
+        connectorTargetAcls.add(clusterResourceAlter);
 
-        replicatorDestinationConnectorUser = createKafkaUser(connectorDestinationAclList, ReplicatorModel.REPLICATOR_DESTINATION_CLUSTER_CONNNECTOR_USER_NAME, kafkaAuth);
+        replicatorTargetConnectorUser = createKafkaUser(connectorTargetAcls, ReplicatorModel.REPLICATOR_TARGET_CLUSTER_CONNNECTOR_USER_NAME, kafkaAuth);
     }
 
     //Used to allow the mirror maker connector to create topics on the source cluster, read and write this topic and read from the source topic
@@ -418,10 +418,10 @@ public class ReplicatorUsersModel extends AbstractModel {
     }
 
     /**
-     * @return KafkaUser return the KafkaUser used to connect MirrorMaker connector to destination Kafka
+     * @return KafkaUser return the KafkaUser used to connect MirrorMaker connector to target Kafka
      */
-    public KafkaUser getReplicatorDestinationConnectorUser() {
-        return replicatorDestinationConnectorUser;
+    public KafkaUser getReplicatorTargetConnectorUser() {
+        return replicatorTargetConnectorUser;
     }
 
 }

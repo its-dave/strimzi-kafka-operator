@@ -1179,7 +1179,7 @@ public class EventStreamsOperatorTest {
                 if (replicatorSecret.getMetadata().getName().contains(ReplicatorModel.REPLICATOR_SECRET_NAME)) {
                     Encoder encoder = Base64.getEncoder();
                     String newSecretString = encoder.encodeToString(REPLICATOR_DATA.getBytes(StandardCharsets.UTF_8));
-                    Map<String, String> newSecretData = Collections.singletonMap(ReplicatorModel.REPLICATOR_SECRET_KEY_NAME, newSecretString);
+                    Map<String, String> newSecretData = Collections.singletonMap(ReplicatorModel.REPLICATOR_TARGET_CLUSTERS_SECRET_KEY_NAME, newSecretString);
                     replicatorSecret.setData(newSecretData);
                 } else {
                     LOGGER.debug("Replicator secret not found to set data");
@@ -1200,7 +1200,7 @@ public class EventStreamsOperatorTest {
         Encoder encoder = Base64.getEncoder();
         String newSecretString = encoder.encodeToString(REPLICATOR_DATA.getBytes(StandardCharsets.UTF_8));
         context.verify(() -> assertThat(
-                replicatorSecret.getData().get(ReplicatorModel.REPLICATOR_SECRET_KEY_NAME), is(newSecretString)));
+                replicatorSecret.getData().get(ReplicatorModel.REPLICATOR_TARGET_CLUSTERS_SECRET_KEY_NAME), is(newSecretString)));
     }
 
     private void verifyKafkaBootstrapUrl(String namespace, String deploymentName, String expectedKafkaBootstrap) {
@@ -1349,7 +1349,7 @@ public class EventStreamsOperatorTest {
         expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + AdminApiModel.COMPONENT_NAME + "-" + CertificateSecretModel.CERT_SECRET_NAME_POSTFIX);
         expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + ClusterSecretsModel.EVENTSTREAMS_IBMCLOUD_CA_CERT_SECRET_SUFFIX);
         expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + ReplicatorModel.REPLICATOR_SOURCE_CLUSTER_CONNECTOR_USER_NAME);
-        expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + ReplicatorModel.REPLICATOR_DESTINATION_CLUSTER_CONNNECTOR_USER_NAME);
+        expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + ReplicatorModel.REPLICATOR_TARGET_CLUSTER_CONNNECTOR_USER_NAME);
         expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + ReplicatorModel.REPLICATOR_CONNECT_USER_NAME);
 
         expectedSecrets.add(clusterName + "-cluster-ca");
@@ -1366,7 +1366,7 @@ public class EventStreamsOperatorTest {
 
     private Set<String> getExpectedKafkaUsers(String clusterName) {
         Set<String> expectedKafkaUsers = new HashSet<>();
-        expectedKafkaUsers.add(clusterName + "-" + APP_NAME + "-" + ReplicatorModel.REPLICATOR_DESTINATION_CLUSTER_CONNNECTOR_USER_NAME);
+        expectedKafkaUsers.add(clusterName + "-" + APP_NAME + "-" + ReplicatorModel.REPLICATOR_TARGET_CLUSTER_CONNNECTOR_USER_NAME);
         expectedKafkaUsers.add(clusterName + "-" + APP_NAME + "-" + ReplicatorModel.REPLICATOR_CONNECT_USER_NAME);
         expectedKafkaUsers.add(clusterName + "-" + APP_NAME + "-" + InternalKafkaUserModel.COMPONENT_NAME);
 

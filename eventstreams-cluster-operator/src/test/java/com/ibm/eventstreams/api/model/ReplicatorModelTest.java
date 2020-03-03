@@ -228,7 +228,7 @@ public class ReplicatorModelTest {
         assertThat(replicatorSecret.getMetadata().getNamespace(), is(namespace));
 
         Encoder encoder = Base64.getEncoder();
-        assertThat(replicatorSecret.getData().get(ReplicatorModel.REPLICATOR_SECRET_KEY_NAME), is(encoder.encodeToString("[]".getBytes(StandardCharsets.UTF_8))));
+        assertThat(replicatorSecret.getData().get(ReplicatorModel.REPLICATOR_TARGET_CLUSTERS_SECRET_KEY_NAME), is(encoder.encodeToString("[]".getBytes(StandardCharsets.UTF_8))));
 
         Map<String, String> replicatorSecretLabels = replicator.getSecret().getMetadata().getLabels();
 

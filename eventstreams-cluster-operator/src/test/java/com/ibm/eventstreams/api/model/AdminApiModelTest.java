@@ -18,6 +18,8 @@ import com.ibm.eventstreams.api.Listener;
 import com.ibm.eventstreams.api.model.utils.ModelUtils;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
+import com.ibm.eventstreams.api.spec.EventStreamsSpec;
+import com.ibm.eventstreams.api.spec.EventStreamsSpecBuilder;
 import com.ibm.eventstreams.api.spec.ExternalAccess;
 import com.ibm.eventstreams.api.spec.ExternalAccessBuilder;
 import com.ibm.eventstreams.api.spec.SecuritySpec;
@@ -32,6 +34,8 @@ import io.fabric8.kubernetes.api.model.Quantity;
 import io.fabric8.kubernetes.api.model.ResourceRequirements;
 import io.fabric8.kubernetes.api.model.ResourceRequirementsBuilder;
 import io.fabric8.kubernetes.api.model.Service;
+import io.fabric8.kubernetes.api.model.VolumeMount;
+import io.fabric8.kubernetes.api.model.VolumeMountBuilder;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicy;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicyPeer;
@@ -40,9 +44,11 @@ import io.fabric8.kubernetes.api.model.rbac.Subject;
 import io.fabric8.openshift.api.model.Route;
 import io.strimzi.api.kafka.model.ExternalLogging;
 import io.strimzi.api.kafka.model.InlineLogging;
+import io.strimzi.api.kafka.model.KafkaSpecBuilder;
 import io.strimzi.api.kafka.model.status.ListenerStatus;
 import io.strimzi.api.kafka.model.status.ListenerStatusBuilder;
 import io.strimzi.api.kafka.model.template.PodTemplateBuilder;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -88,6 +94,15 @@ public class AdminApiModelTest {
                     .withNewAdminApi()
                         .withReplicas(defaultReplicas)
                     .endAdminApi()
+                .endSpec();
+    }
+
+    private EventStreamsBuilder createEventStreams(EventStreamsSpec eventStreamsSpec) {
+        return ModelUtils.createEventStreams(instanceName, eventStreamsSpec)
+                .editSpec()
+                .withNewAdminApi()
+                .withReplicas(defaultReplicas)
+                .endAdminApi()
                 .endSpec();
     }
 
@@ -814,5 +829,104 @@ public class AdminApiModelTest {
         assertThat(adminApiModel.getDeployment("newID").getMetadata().getLabels().get(AbstractSecureEndpointModel.CERT_GENERATION_KEY), is("newID"));
         assertThat(adminApiModel.getDeployment("newID").getSpec().getTemplate().getMetadata().getLabels().containsKey(AbstractSecureEndpointModel.CERT_GENERATION_KEY), is(true));
         assertThat(adminApiModel.getDeployment("newID").getSpec().getTemplate().getMetadata().getLabels().get(AbstractSecureEndpointModel.CERT_GENERATION_KEY), is("newID"));
+    }
+
+    @Test
+    public void testVolumeMounts() {
+        EventStreams eventStreams = createDefaultEventStreams().build();
+        AdminApiModel adminApiModel = new AdminApiModel(eventStreams, imageConfig, null, mockIcpClusterDataMap);
+
+        List<VolumeMount> volumeMounts = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getVolumeMounts();
+
+        assertThat(volumeMounts.size(), is(7));
+
+        assertThat(volumeMounts.get(0).getName(), is(AdminApiModel.KAFKA_USER_SECRET_VOLUME_NAME));
+        assertThat(volumeMounts.get(0).getReadOnly(), is(true));
+        assertThat(volumeMounts.get(0).getMountPath(), is(AdminApiModel.KAFKA_USER_CERTIFICATE_PATH));
+
+        assertThat(volumeMounts.get(1).getName(), is(AdminApiModel.CERTS_VOLUME_MOUNT_NAME));
+        assertThat(volumeMounts.get(1).getReadOnly(), is(true));
+        assertThat(volumeMounts.get(1).getMountPath(), is(AdminApiModel.CERTIFICATE_PATH));
+
+        assertThat(volumeMounts.get(2).getName(), is(AdminApiModel.CLUSTER_CA_VOLUME_MOUNT_NAME));
+        assertThat(volumeMounts.get(2).getReadOnly(), is(true));
+        assertThat(volumeMounts.get(2).getMountPath(), is(AdminApiModel.CLUSTER_CERTIFICATE_PATH));
+
+        assertThat(volumeMounts.get(3).getName(), is(AdminApiModel.CLIENT_CA_VOLUME_MOUNT_NAME));
+        assertThat(volumeMounts.get(3).getReadOnly(), is(true));
+        assertThat(volumeMounts.get(3).getMountPath(), is(AdminApiModel.CLIENT_CA_CERTIFICATE_PATH));
+
+        assertThat(volumeMounts.get(4).getName(), is(ReplicatorModel.REPLICATOR_SECRET_NAME));
+        assertThat(volumeMounts.get(4).getReadOnly(), is(true));
+        assertThat(volumeMounts.get(4).getMountPath(), is(ReplicatorModel.REPLICATOR_SECRET_MOUNT_PATH));
+
+        assertThat(volumeMounts.get(5).getName(), is(AdminApiModel.KAFKA_CONFIGMAP_MOUNT_NAME));
+        assertThat(volumeMounts.get(5).getReadOnly(), is(true));
+        assertThat(volumeMounts.get(5).getMountPath(), is("/etc/kafka-cm"));
+
+        assertThat(volumeMounts.get(6).getName(), is(AdminApiModel.IBMCLOUD_CA_VOLUME_MOUNT_NAME));
+        assertThat(volumeMounts.get(6).getReadOnly(), is(true));
+        assertThat(volumeMounts.get(6).getMountPath(), is(AdminApiModel.IBMCLOUD_CA_CERTIFICATE_PATH));
+
+
+    }
+
+    @Test
+    public void testVolumeMountsWhenClientAuthEnabled() {
+        EventStreamsSpec spec = new EventStreamsSpecBuilder()
+                .withStrimziOverrides(new KafkaSpecBuilder()
+                        .withNewKafka()
+                        .withReplicas(1)
+                        .withNewListeners()
+                        .withNewKafkaListenerExternalRoute()
+                        .withNewKafkaListenerAuthenticationTlsAuth()
+                        .endKafkaListenerAuthenticationTlsAuth()
+                        .endKafkaListenerExternalRoute()
+                        .withNewTls()
+                        .withNewKafkaListenerAuthenticationTlsAuth()
+                        .endKafkaListenerAuthenticationTlsAuth()
+                        .endTls()
+                        .endListeners()
+                        .withNewTemplate()
+                        .withNewPod()
+                        .withNewMetadata()
+                        .endMetadata()
+                        .endPod()
+                        .endTemplate()
+                        .endKafka()
+                        .build()
+                )
+                .build();
+
+        EventStreams eventStreams = createEventStreams(spec).build();
+        AdminApiModel adminApiModel = new AdminApiModel(eventStreams, imageConfig, null, mockIcpClusterDataMap);
+
+        List<VolumeMount> volumeMounts = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getVolumeMounts();
+
+        assertThat(volumeMounts.size(), is(10));
+
+        VolumeMount sourceConnectorVolume = new VolumeMountBuilder()
+                .withMountPath(ReplicatorModel.REPLICATOR_CONNECT_SOURCE_SECRET_MOUNT_PATH)
+                .withReadOnly(true)
+                .withName(ReplicatorModel.REPLICATOR_SOURCE_CLUSTER_CONNECTOR_USER_NAME)
+                .build();
+
+        VolumeMount connectVolume = new VolumeMountBuilder()
+                .withMountPath(ReplicatorModel.REPLICATOR_CONNECT_SECRET_MOUNT_PATH)
+                .withReadOnly(true)
+                .withName(ReplicatorModel.REPLICATOR_CONNECT_USER_NAME)
+                .build();
+
+        VolumeMount targetConnectorVolume = new VolumeMountBuilder()
+                .withMountPath(ReplicatorModel.REPLICATOR_CONNECT_TARGET_SECRET_MOUNT_PATH)
+                .withReadOnly(true)
+                .withName(ReplicatorModel.REPLICATOR_TARGET_CLUSTER_CONNNECTOR_USER_NAME)
+                .build();
+
+
+        assertThat(volumeMounts, Matchers.hasItem(sourceConnectorVolume));
+        assertThat(volumeMounts, Matchers.hasItem(connectVolume));
+        assertThat(volumeMounts, Matchers.hasItem(targetConnectorVolume));
+
     }
 }

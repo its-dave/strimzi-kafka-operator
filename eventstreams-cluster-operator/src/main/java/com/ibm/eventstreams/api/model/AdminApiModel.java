@@ -66,19 +66,19 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
     public static final int DEFAULT_REPLICAS = 1;
     public static final String DEFAULT_IBMCOM_IMAGE = "ibmcom/admin-api:latest";
 
-    private static final String CLUSTER_CA_VOLUME_MOUNT_NAME = "cluster-ca";
-    private static final String CERTS_VOLUME_MOUNT_NAME = "certs";
-    private static final String IBMCLOUD_CA_VOLUME_MOUNT_NAME = "ibmcloud";
-    private static final String KAFKA_CONFIGMAP_MOUNT_NAME = "kafka-cm";
-    private static final String CLIENT_CA_VOLUME_MOUNT_NAME = "client-ca";
+    public static final String CLUSTER_CA_VOLUME_MOUNT_NAME = "cluster-ca";
+    public static final String CERTS_VOLUME_MOUNT_NAME = "certs";
+    public static final String IBMCLOUD_CA_VOLUME_MOUNT_NAME = "ibmcloud";
+    public static final String KAFKA_CONFIGMAP_MOUNT_NAME = "kafka-cm";
+    public static final String CLIENT_CA_VOLUME_MOUNT_NAME = "client-ca";
 
     public static final String ADMIN_CLUSTERROLE_NAME = "eventstreams-admin-clusterrole";
 
-    private static final String CERTIFICATE_PATH = "/certs";
-    private static final String KAFKA_USER_CERTIFICATE_PATH = CERTIFICATE_PATH + File.separator + "p2p";
-    private static final String CLUSTER_CERTIFICATE_PATH = CERTIFICATE_PATH + File.separator + "cluster";
-    private static final String CLIENT_CA_CERTIFICATE_PATH = CERTIFICATE_PATH + File.separator + "client";
-    private static final String IBMCLOUD_CA_CERTIFICATE_PATH = CERTIFICATE_PATH + File.separator + "ibmcloud";
+    public static final String CERTIFICATE_PATH = "/certs";
+    public static final String KAFKA_USER_CERTIFICATE_PATH = CERTIFICATE_PATH + File.separator + "p2p";
+    public static final String CLUSTER_CERTIFICATE_PATH = CERTIFICATE_PATH + File.separator + "cluster";
+    public static final String CLIENT_CA_CERTIFICATE_PATH = CERTIFICATE_PATH + File.separator + "client";
+    public static final String IBMCLOUD_CA_CERTIFICATE_PATH = CERTIFICATE_PATH + File.separator + "ibmcloud";
 
     private static final String CLIENT_ID_KEY = "CLIENT_ID";
     private static final String CLIENT_SECRET_KEY = "CLIENT_SECRET";
@@ -143,7 +143,7 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
                 .orElseGet(io.strimzi.api.kafka.model.Probe::new));
         setTraceString(adminApiSpec.map(ComponentSpec::getLogging).orElse(null));
 
-        deployment = createDeployment(getContainers(), getVolumes());
+        deployment = createDeployment(getContainers(instance), getVolumes(instance));
         serviceAccount = createServiceAccount();
 
         roleBinding = createRoleBinding(
@@ -165,7 +165,7 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
         networkPolicy = createNetworkPolicy();
     }
 
-    private List<Volume> getVolumes() {
+    private List<Volume> getVolumes(EventStreams instance) {
 
         List<Volume> volumes = new ArrayList<>();
         volumes.add(new VolumeBuilder()
@@ -188,11 +188,35 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
             .withNewName(ReplicatorModel.REPLICATOR_SECRET_NAME)
             .withNewSecret()
                 .withNewSecretName(getResourcePrefix() + "-" + ReplicatorModel.REPLICATOR_SECRET_NAME)
-                .addNewItem().withNewKey(ReplicatorModel.REPLICATOR_SECRET_KEY_NAME)
-                .withNewPath(ReplicatorModel.REPLICATOR_SECRET_KEY_NAME)
+                .addNewItem().withNewKey(ReplicatorModel.REPLICATOR_TARGET_CLUSTERS_SECRET_KEY_NAME)
+                .withNewPath(ReplicatorModel.REPLICATOR_TARGET_CLUSTERS_SECRET_KEY_NAME)
             .endItem()
             .endSecret()
             .build());
+
+        if (isReplicatorExternalClientAuthForConnectEnabled(instance)) {
+            volumes.add(new VolumeBuilder()
+                    .withNewName(ReplicatorModel.REPLICATOR_SOURCE_CLUSTER_CONNECTOR_USER_NAME)
+                    .withNewSecret()
+                    .withNewSecretName(getResourcePrefix() + "-" + ReplicatorModel.REPLICATOR_SOURCE_CLUSTER_CONNECTOR_USER_NAME) //mount everything in the secret into this volume
+                    .endSecret()
+                    .build());
+        }
+
+        if (isReplicatorInternalClientAuthForConnectEnabled(instance)) {
+            volumes.add(new VolumeBuilder()
+                    .withNewName(ReplicatorModel.REPLICATOR_CONNECT_USER_NAME)
+                    .withNewSecret()
+                    .withNewSecretName(getResourcePrefix() + "-" + ReplicatorModel.REPLICATOR_CONNECT_USER_NAME) //mount everything in the secret into this volume
+                    .endSecret()
+                    .build());
+            volumes.add(new VolumeBuilder()
+                    .withNewName(ReplicatorModel.REPLICATOR_TARGET_CLUSTER_CONNNECTOR_USER_NAME)
+                    .withNewSecret()
+                    .withNewSecretName(getResourcePrefix() + "-" + ReplicatorModel.REPLICATOR_TARGET_CLUSTER_CONNNECTOR_USER_NAME) //mount everything in the secret into this volume
+                    .endSecret()
+                    .build());
+        }
 
         volumes.add(new VolumeBuilder()
             .withNewName(KAFKA_CONFIGMAP_MOUNT_NAME)
@@ -228,11 +252,11 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
             .build());
     }
 
-    private List<Container> getContainers() {
-        return Arrays.asList(getAdminApiContainer());
+    private List<Container> getContainers(EventStreams instance) {
+        return Arrays.asList(getAdminApiContainer(instance));
     }
 
-    private Container getAdminApiContainer() {
+    private Container getAdminApiContainer(EventStreams instance) {
         String internalBootstrap = getInternalKafkaBootstrap(kafkaListeners);
         String runasBootstrap = getRunAsKafkaBootstrap(kafkaListeners);
         String kafkaBootstrapInternalPlainUrl = getInternalPlainKafkaBootstrap(kafkaListeners);
@@ -242,7 +266,7 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
         String zookeeperEndpoint = EventStreamsKafkaModel.getKafkaInstanceName(getInstanceName()) + "-" + EventStreamsKafkaModel.ZOOKEEPER_COMPONENT_NAME + "-client." + getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.ZOOKEEPER_PORT;
         String kafkaConnectRestEndpoint = "http://" + getResourcePrefix() + "-" + ReplicatorModel.COMPONENT_NAME + "-mirrormaker2-api." + getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + ReplicatorModel.REPLICATOR_PORT;
 
-        List<EnvVar> adminApiEnvVars = getAdminApiEnvVars(getEncryption() == SecuritySpec.Encryption.NONE ? internalBootstrap : runasBootstrap, kafkaBootstrapInternalPlainUrl, kafkaBootstrapInternalTlsUrl, kafkaBootstrapExternalUrl, schemaRegistryEndpoint, zookeeperEndpoint, kafkaConnectRestEndpoint);
+        List<EnvVar> adminApiEnvVars = getAdminApiEnvVars(getEncryption() == SecuritySpec.Encryption.NONE ? internalBootstrap : runasBootstrap, kafkaBootstrapInternalPlainUrl, kafkaBootstrapInternalTlsUrl, kafkaBootstrapExternalUrl, schemaRegistryEndpoint, zookeeperEndpoint, kafkaConnectRestEndpoint, instance);
 
         List<EnvVar> envVars = combineEnvVarListsNoDuplicateKeys(adminApiEnvVars);
 
@@ -282,7 +306,7 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
             .endVolumeMount()
             .addNewVolumeMount()
                 .withNewName(ReplicatorModel.REPLICATOR_SECRET_NAME)
-                .withMountPath("/etc/georeplication")
+                .withMountPath(ReplicatorModel.REPLICATOR_SECRET_MOUNT_PATH)
                 .withNewReadOnly(true)
             .endVolumeMount()
             .addNewVolumeMount()
@@ -294,6 +318,27 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
             .withResources(resourceRequirements)
             .withLivenessProbe(createLivenessProbe(Listener.podToPodListener(tlsEnabled()).getPort()))
             .withReadinessProbe(createReadinessProbe(Listener.podToPodListener(tlsEnabled()).getPort()));
+
+        //only add the replicator secret volume mounts if client auth enabled
+        if (isReplicatorExternalClientAuthForConnectEnabled(instance)) {
+            containerBuilder.addNewVolumeMount()
+                .withNewName(ReplicatorModel.REPLICATOR_SOURCE_CLUSTER_CONNECTOR_USER_NAME)
+                    .withMountPath(ReplicatorModel.REPLICATOR_CONNECT_SOURCE_SECRET_MOUNT_PATH)
+                    .withNewReadOnly(true)
+                .endVolumeMount();
+        }
+        if (isReplicatorInternalClientAuthForConnectEnabled(instance)) {
+            containerBuilder.addNewVolumeMount()
+                .withNewName(ReplicatorModel.REPLICATOR_CONNECT_USER_NAME)
+                .withMountPath(ReplicatorModel.REPLICATOR_CONNECT_SECRET_MOUNT_PATH)
+                .withNewReadOnly(true)
+            .endVolumeMount()
+            .addNewVolumeMount()
+                .withNewName(ReplicatorModel.REPLICATOR_TARGET_CLUSTER_CONNNECTOR_USER_NAME)
+                .withMountPath(ReplicatorModel.REPLICATOR_CONNECT_TARGET_SECRET_MOUNT_PATH)
+                .withNewReadOnly(true)
+                .endVolumeMount();
+        }
 
         // Add The IAM Specific Volume mount. If we need to build without IAM Support we can put a variable check
         // here.
@@ -316,7 +361,8 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
                                             final String kafkaBootstrapExternalUrl,
                                             final String schemaRegistryEndpoint,
                                             final String zookeeperEndpoint,
-                                            final String kafkaConnectRestEndpoint) {
+                                            final String kafkaConnectRestEndpoint,
+                                            EventStreams instance) {
         List<Listener> listeners = getListeners();
         listeners.add(Listener.podToPodListener(tlsEnabled()));
         List<EnvVar> envVars = new ArrayList<>();
@@ -344,6 +390,10 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
             new EnvVarBuilder().withName("KAFKA_CONNECT_REST_API_ADDRESS").withValue(kafkaConnectRestEndpoint).build(),
             new EnvVarBuilder().withName("GEOREPLICATION_SECRET_NAME").withValue(getResourcePrefix() + "-" + ReplicatorModel.REPLICATOR_SECRET_NAME).build(),
             new EnvVarBuilder().withName("TRACE_SPEC").withValue(traceString).build(), //TODO: temporary value
+            new EnvVarBuilder().withName("GEOREPLICATION_INTERNAL_CLIENT_AUTH_ENABLED").withValue(Boolean.toString(isReplicatorInternalClientAuthForConnectEnabled(instance))).build(),
+            new EnvVarBuilder().withName("GEOREPLICATION_EXTERNAL_CLIENT_AUTH_ENABLED").withValue(Boolean.toString(isReplicatorExternalClientAuthForConnectEnabled(instance))).build(),
+            new EnvVarBuilder().withName("GEOREPLICATION_INTERNAL_SERVER_AUTH_ENABLED").withValue(Boolean.toString(isReplicatorInternalServerAuthForConnectEnabled(instance))).build(),
+            new EnvVarBuilder().withName("GEOREPLICATION_EXTERNAL_SERVER_AUTH_ENABLED").withValue(Boolean.toString(isReplicatorExternalServerAuthForConnectEnabled(instance))).build(),
             new EnvVarBuilder()
                 .withName("SSL_TRUSTSTORE_PASSWORD")
                 .withNewValueFrom()

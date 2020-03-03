@@ -454,13 +454,13 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                         .createOrReplace(connectUser));
                 usersCreated.add(createKafkaConnectUser.map(v -> this));
 
-                KafkaUser destinationConnectorUser = replicatorUsersModel.getReplicatorDestinationConnectorUser();
+                KafkaUser targetConnectorUser = replicatorUsersModel.getReplicatorTargetConnectorUser();
 
-                Future<KafkaUser> createdDestinationConnectorKafkaUser = toFuture(() -> Crds
+                Future<KafkaUser> createdTargetConnectorKafkaUser = toFuture(() -> Crds
                         .kafkaUserOperation(client)
                         .inNamespace(instance.getMetadata().getNamespace())
-                        .createOrReplace(destinationConnectorUser));
-                usersCreated.add(createdDestinationConnectorKafkaUser.map(v -> this));
+                        .createOrReplace(targetConnectorUser));
+                usersCreated.add(createdTargetConnectorKafkaUser.map(v -> this));
 
             } else if (internalClientAuth.isPresent() && internalClientAuth.get() instanceof KafkaListenerAuthenticationOAuth) {
 

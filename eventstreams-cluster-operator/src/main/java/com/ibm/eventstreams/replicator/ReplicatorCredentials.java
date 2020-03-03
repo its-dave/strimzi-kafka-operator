@@ -76,8 +76,8 @@ public class ReplicatorCredentials {
             if (kafkaClientAuth.get() instanceof KafkaListenerAuthenticationTls) {
                 CertAndKeySecretSource certKey = new CertAndKeySecretSource();
                 certKey.setSecretName(connectUserSecret.getMetadata().getName());
-                certKey.setKey("user.key");
-                certKey.setCertificate("user.crt");
+                certKey.setKey(ReplicatorModel.USER_KEY);
+                certKey.setCertificate(ReplicatorModel.USER_CERT);
                 replicatorConnectClientAuth = new KafkaClientAuthenticationTlsBuilder()
                         .withCertificateAndKey(certKey)
                         .build();
@@ -87,7 +87,7 @@ public class ReplicatorCredentials {
                 replicatorConnectClientAuth = new KafkaClientAuthenticationScramSha512Builder()
                         .withPasswordSecret(new PasswordSecretSourceBuilder()
                             .withSecretName(connectUserSecret.getMetadata().getName())
-                            .withPassword("password")
+                            .withPassword(ReplicatorModel.SCRAM_PASSWORD)
                             .build())
                         .withNewUsername(instance.getMetadata().getName() + "-ibm-es-" + ReplicatorModel.REPLICATOR_CONNECT_USER_NAME)
                         .build();

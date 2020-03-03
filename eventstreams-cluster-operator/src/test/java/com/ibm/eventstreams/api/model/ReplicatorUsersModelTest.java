@@ -103,11 +103,11 @@ public class ReplicatorUsersModelTest {
         ReplicatorUsersModel replicatorUsers = createDefaultReplicatorUserModel();
         ReplicatorModel replicator = createDefaultReplicatorModel();
         KafkaUser replicatorConnectUser = replicatorUsers.getReplicatorConnectUser();
-        KafkaUser replicatorDestinationConnectorUser = replicatorUsers.getReplicatorDestinationConnectorUser();
+        KafkaUser replicatorDestinationConnectorUser = replicatorUsers.getReplicatorTargetConnectorUser();
         KafkaUser replicatorSourceConnectorUser = replicatorUsers.getReplicatorSourceConnectorUser();
 
         assertThat(replicatorConnectUser.getMetadata().getName(), is(instanceName + "-" + AbstractModel.APP_NAME + "-" + ReplicatorModel.REPLICATOR_CONNECT_USER_NAME));
-        assertThat(replicatorDestinationConnectorUser.getMetadata().getName(), is(instanceName + "-" + AbstractModel.APP_NAME + "-" + ReplicatorModel.REPLICATOR_DESTINATION_CLUSTER_CONNNECTOR_USER_NAME));
+        assertThat(replicatorDestinationConnectorUser.getMetadata().getName(), is(instanceName + "-" + AbstractModel.APP_NAME + "-" + ReplicatorModel.REPLICATOR_TARGET_CLUSTER_CONNNECTOR_USER_NAME));
         assertThat(replicatorSourceConnectorUser.getMetadata().getName(), is(instanceName + "-" + AbstractModel.APP_NAME + "-" + ReplicatorModel.REPLICATOR_SOURCE_CLUSTER_CONNECTOR_USER_NAME));
 
         Map<String, String> replicatorConnectUserLabels = replicatorConnectUser.getMetadata().getLabels();
@@ -330,7 +330,7 @@ public class ReplicatorUsersModelTest {
     public void testReplicatorConnectorUserAcls() {
 
         ReplicatorUsersModel replicatorUsers = createDefaultReplicatorUserModel();
-        KafkaUser replicatorDestinationConnectorUser = replicatorUsers.getReplicatorDestinationConnectorUser();
+        KafkaUser replicatorDestinationConnectorUser = replicatorUsers.getReplicatorTargetConnectorUser();
         KafkaUser replicatorSourceConnectorUser = replicatorUsers.getReplicatorSourceConnectorUser();
 
         //MM2 to destination Kafka ACL
@@ -403,7 +403,7 @@ public class ReplicatorUsersModelTest {
         ReplicatorUsersModel replicatorUsers =  createReplicatorUserModel(ModelUtils.getServerAuthOnlyInternalListenerSpec());
 
         assertThat(replicatorUsers.getReplicatorConnectUser(), is(nullValue()));
-        assertThat(replicatorUsers.getReplicatorDestinationConnectorUser(), is(nullValue()));
+        assertThat(replicatorUsers.getReplicatorTargetConnectorUser(), is(nullValue()));
         assertThat(replicatorUsers.getReplicatorSourceConnectorUser(), is(nullValue()));
 
     }
@@ -413,7 +413,7 @@ public class ReplicatorUsersModelTest {
 
         assertThat(replicatorUsers.getReplicatorSourceConnectorUser(), is(nullValue()));
 
-        KafkaUser replicatorDestinationConnectorUser = replicatorUsers.getReplicatorDestinationConnectorUser();
+        KafkaUser replicatorDestinationConnectorUser = replicatorUsers.getReplicatorTargetConnectorUser();
         KafkaUser replicatorConnectConnectorUser = replicatorUsers.getReplicatorConnectUser();
 
         assertThat(replicatorDestinationConnectorUser.getSpec().getAuthentication(), is(instanceOf(KafkaUserTlsClientAuthentication.class)));
@@ -429,7 +429,7 @@ public class ReplicatorUsersModelTest {
 
         assertThat(replicatorUsers.getReplicatorSourceConnectorUser(), is(nullValue()));
 
-        KafkaUser replicatorDestinationConnectorUser = replicatorUsers.getReplicatorDestinationConnectorUser();
+        KafkaUser replicatorDestinationConnectorUser = replicatorUsers.getReplicatorTargetConnectorUser();
         KafkaUser replicatorConnectConnectorUser = replicatorUsers.getReplicatorConnectUser();
 
         assertThat(replicatorDestinationConnectorUser.getSpec().getAuthentication(), is(instanceOf(KafkaUserScramSha512ClientAuthentication.class)));
@@ -444,7 +444,7 @@ public class ReplicatorUsersModelTest {
         ReplicatorUsersModel replicatorUsers = createReplicatorUserModel(ModelUtils.getServerAuthOnlyExternalListenerSpec());
 
         assertThat(replicatorUsers.getReplicatorConnectUser(), is(nullValue()));
-        assertThat(replicatorUsers.getReplicatorDestinationConnectorUser(), is(nullValue()));
+        assertThat(replicatorUsers.getReplicatorTargetConnectorUser(), is(nullValue()));
         assertThat(replicatorUsers.getReplicatorSourceConnectorUser(), is(nullValue()));
 
     }
@@ -453,7 +453,7 @@ public class ReplicatorUsersModelTest {
         ReplicatorUsersModel replicatorUsers = createReplicatorUserModel(ModelUtils.getMutualTLSOnExternalListenerSpec());
 
         assertThat(replicatorUsers.getReplicatorConnectUser(), is(nullValue()));
-        assertThat(replicatorUsers.getReplicatorDestinationConnectorUser(), is(nullValue()));
+        assertThat(replicatorUsers.getReplicatorTargetConnectorUser(), is(nullValue()));
 
         KafkaUser replicatorSourceConnectorUser = replicatorUsers.getReplicatorSourceConnectorUser();
         assertThat(replicatorSourceConnectorUser.getSpec().getAuthentication(), is(instanceOf(KafkaUserTlsClientAuthentication.class)));
@@ -468,7 +468,7 @@ public class ReplicatorUsersModelTest {
         ReplicatorUsersModel replicatorUsers = createReplicatorUserModel(ModelUtils.getMutualScramOnExternalListenerSpec());
 
         assertThat(replicatorUsers.getReplicatorConnectUser(), is(nullValue()));
-        assertThat(replicatorUsers.getReplicatorDestinationConnectorUser(), is(nullValue()));
+        assertThat(replicatorUsers.getReplicatorTargetConnectorUser(), is(nullValue()));
 
         KafkaUser replicatorSourceConnectorUser = replicatorUsers.getReplicatorSourceConnectorUser();
 
@@ -482,7 +482,7 @@ public class ReplicatorUsersModelTest {
         ReplicatorUsersModel replicatorUsers = createReplicatorUserModel(ModelUtils.getNoSecurityListenerSpec());
 
         assertThat(replicatorUsers.getReplicatorConnectUser(), is(nullValue()));
-        assertThat(replicatorUsers.getReplicatorDestinationConnectorUser(), is(nullValue()));
+        assertThat(replicatorUsers.getReplicatorTargetConnectorUser(), is(nullValue()));
         assertThat(replicatorUsers.getReplicatorSourceConnectorUser(), is(nullValue()));
 
     }

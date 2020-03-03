@@ -27,6 +27,7 @@ import com.ibm.eventstreams.Main;
 import com.ibm.eventstreams.api.Labels;
 import com.ibm.eventstreams.api.Listener;
 import com.ibm.eventstreams.api.spec.EventStreams;
+import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.spec.ExternalAccess;
 import com.ibm.eventstreams.api.spec.SecuritySpec.Encryption;
 
@@ -78,9 +79,15 @@ import io.fabric8.openshift.api.model.RouteBuilder;
 import io.fabric8.openshift.api.model.TLSConfig;
 import io.fabric8.openshift.api.model.TLSConfigBuilder;
 import io.strimzi.api.kafka.model.ContainerEnvVar;
+import io.strimzi.api.kafka.model.KafkaClusterSpec;
+import io.strimzi.api.kafka.model.KafkaSpec;
 import io.strimzi.api.kafka.model.KafkaUser;
 import io.strimzi.api.kafka.model.KafkaUserBuilder;
 import io.strimzi.api.kafka.model.KafkaUserSpec;
+import io.strimzi.api.kafka.model.listener.KafkaListenerAuthentication;
+import io.strimzi.api.kafka.model.listener.KafkaListenerExternal;
+import io.strimzi.api.kafka.model.listener.KafkaListenerTls;
+import io.strimzi.api.kafka.model.listener.KafkaListeners;
 import io.strimzi.api.kafka.model.status.ListenerAddress;
 import io.strimzi.api.kafka.model.status.ListenerStatus;
 import io.strimzi.api.kafka.model.template.PodTemplate;
@@ -117,6 +124,7 @@ public abstract class AbstractModel {
     public static final String USER_KEY = "user.key";
     public static final String USER_P12 = "user.p12";
     public static final String USER_P12_PASS = "user.password";
+    public static final String SCRAM_PASSWORD = "password";
 
     private String kind;
     private String apiVersion;
@@ -814,5 +822,45 @@ public abstract class AbstractModel {
         }
 
         return kafkaBootstrap;
+    }
+
+    public boolean isReplicatorInternalClientAuthForConnectEnabled(EventStreams instance) {
+        return Optional.ofNullable(instance.getSpec())
+                .map(EventStreamsSpec::getStrimziOverrides)
+                .map(KafkaSpec::getKafka)
+                .map(KafkaClusterSpec::getListeners)
+                .map(KafkaListeners::getTls)
+                .map(KafkaListenerTls::getAuth)
+                .isPresent();
+    }
+
+    public boolean isReplicatorInternalServerAuthForConnectEnabled(EventStreams instance) {
+        return Optional.ofNullable(instance.getSpec())
+                .map(EventStreamsSpec::getStrimziOverrides)
+                .map(KafkaSpec::getKafka)
+                .map(KafkaClusterSpec::getListeners)
+                .map(KafkaListeners::getTls)
+                .isPresent();
+    }
+
+    public boolean isReplicatorExternalClientAuthForConnectEnabled(EventStreams instance) {
+        return Optional.ofNullable(instance.getSpec())
+                .map(EventStreamsSpec::getStrimziOverrides)
+                .map(KafkaSpec::getKafka)
+                .map(KafkaClusterSpec::getListeners)
+                .map(KafkaListeners::getExternal)
+                .map(KafkaListenerExternal::getAuth)
+                .map(KafkaListenerAuthentication::getType)
+                .isPresent();
+    }
+
+    public boolean isReplicatorExternalServerAuthForConnectEnabled(EventStreams instance) {
+        return Optional.ofNullable(instance.getSpec())
+                .map(EventStreamsSpec::getStrimziOverrides)
+                .map(KafkaSpec::getKafka)
+                .map(KafkaClusterSpec::getListeners)
+                .map(KafkaListeners::getExternal)
+                .map(KafkaListenerExternal::getAuth)
+                .isPresent();
     }
 }

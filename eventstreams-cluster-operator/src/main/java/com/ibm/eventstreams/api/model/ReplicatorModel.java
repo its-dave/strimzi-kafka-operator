@@ -61,15 +61,20 @@ public class ReplicatorModel extends AbstractModel {
     public static final String REPLICATOR_SECRET_NAME = "replicator-secret";
     public static final String REPLICATOR_CLUSTER_NAME = "replicator-cluster";
 
-    public static final String REPLICATOR_SECRET_KEY_NAME = "georeplicationdestinationclusters";
+    public static final String REPLICATOR_TARGET_CLUSTERS_SECRET_KEY_NAME = "georeplicationdestinationclusters";
 
     protected static final String CONFIG_STORAGE_TOPIC_NAME = "__eventstreams_georeplicator_configs";
     protected static final String OFFSET_STORAGE_TOPIC_NAME = "__eventstreams_georeplicator_offsets";
     protected static final String STATUS_STORAGE_TOPIC_NAME = "__eventstreams_georeplicator_status";
     public static final String REPLICATOR_CONNECT_USER_NAME = "rep-connect-user";
-    public static final String REPLICATOR_DESTINATION_CLUSTER_CONNNECTOR_USER_NAME = "rep-target-user";
+    public static final String REPLICATOR_TARGET_CLUSTER_CONNNECTOR_USER_NAME = "rep-target-user";
     public static final String REPLICATOR_SOURCE_CLUSTER_CONNECTOR_USER_NAME = "rep-source-user";
     public static final String BYTE_ARRAY_CONVERTER_NAME = "org.apache.kafka.connect.converters.ByteArrayConverter";
+
+    public static final String REPLICATOR_SECRET_MOUNT_PATH = "/etc/georeplication";
+    public static final String REPLICATOR_CONNECT_SECRET_MOUNT_PATH = "/etc/georeplication/connectCreds";
+    public static final String REPLICATOR_CONNECT_TARGET_SECRET_MOUNT_PATH = "/etc/georeplication/connectTargetCreds";
+    public static final String REPLICATOR_CONNECT_SOURCE_SECRET_MOUNT_PATH = "/etc/georeplication/connectSourceCreds";
 
     private final NetworkPolicy networkPolicy;
     private final Secret secret;
@@ -88,7 +93,7 @@ public class ReplicatorModel extends AbstractModel {
         setArchitecture(instance.getSpec().getArchitecture());
 
         Encoder encoder = Base64.getEncoder();
-        Map<String, String> data = Collections.singletonMap(REPLICATOR_SECRET_KEY_NAME, encoder.encodeToString("[]".getBytes(StandardCharsets.UTF_8)));
+        Map<String, String> data = Collections.singletonMap(REPLICATOR_TARGET_CLUSTERS_SECRET_KEY_NAME, encoder.encodeToString("[]".getBytes(StandardCharsets.UTF_8)));
 
         this.secret = createSecret(namespace, getDefaultResourceName(getInstanceName(),  REPLICATOR_SECRET_NAME), data, getComponentLabels(),
                 getEventStreamsMeteringAnnotations(COMPONENT_NAME));
@@ -202,7 +207,7 @@ public class ReplicatorModel extends AbstractModel {
         this.networkPolicy = createNetworkPolicy();
 
         Encoder encoder = Base64.getEncoder();
-        Map<String, String> data = Collections.singletonMap(REPLICATOR_SECRET_KEY_NAME, encoder.encodeToString("[]".getBytes(StandardCharsets.UTF_8)));
+        Map<String, String> data = Collections.singletonMap(REPLICATOR_TARGET_CLUSTERS_SECRET_KEY_NAME, encoder.encodeToString("[]".getBytes(StandardCharsets.UTF_8)));
 
         this.secret = createSecret(getDefaultResourceName(getInstanceName(),  REPLICATOR_SECRET_NAME), data);
     }
