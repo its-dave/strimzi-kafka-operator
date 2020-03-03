@@ -30,10 +30,10 @@ import java.util.stream.Collectors;
 
 public class Listener {
     public static final String EXTERNAL_TLS_NAME = "external-tls";
-    private static final int EXTERNAL_TLS_PORT = 9444;
+    private static final int EXTERNAL_TLS_PORT = 9443;
 
     public static final String EXTERNAL_PLAIN_NAME = "external-plain";
-    private static final int EXTERNAL_PLAIN_PORT = 9081;
+    private static final int EXTERNAL_PLAIN_PORT = 9080;
 
     public static final String INTERNAL_TLS_NAME = "internal-tls";
     private static final int INTERNAL_TLS_PORT = 8443;

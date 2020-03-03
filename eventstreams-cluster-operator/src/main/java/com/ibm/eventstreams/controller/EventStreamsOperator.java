@@ -587,8 +587,6 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 customImageCount++;
             }
             adminApiFutures.add(serviceAccountOperator.createOrUpdate(adminApi.getServiceAccount()));
-            // Still add the old service for the old rest container
-            adminApiFutures.add(serviceOperator.createOrUpdate(adminApi.getService()));
             adminApiFutures.add(serviceOperator.createOrUpdate(adminApi.getExternalService()));
             adminApiFutures.add(serviceOperator.createOrUpdate(adminApi.getInternalService()));
             adminApiFutures.add(networkPolicyOperator.createOrUpdate(adminApi.getNetworkPolicy()));
@@ -597,7 +595,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             return CompositeFuture.join(adminApiFutures)
                     .compose(res -> createOrUpdateRoutes(adminApi, adminApi.getRoutes()))
                     .compose(routesHostMap -> {
-                        String adminRouteHost = routesHostMap.get(adminApi.getRouteName());
+                        String adminRouteHost = routesHostMap.get(adminApi.getRouteName(Listener.EXTERNAL_TLS_NAME));
                         String adminRouteUri = "https://" + adminRouteHost;
                         updateEndpoints(new EventStreamsEndpoint(EventStreamsEndpoint.ADMIN_KEY, EventStreamsEndpoint.EndpointType.api, adminRouteUri));
                         return Future.succeededFuture(routesHostMap);

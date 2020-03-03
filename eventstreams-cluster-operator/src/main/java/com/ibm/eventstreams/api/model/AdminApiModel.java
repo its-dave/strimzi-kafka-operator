@@ -33,7 +33,6 @@ import io.fabric8.kubernetes.api.model.ProbeBuilder;
 import io.fabric8.kubernetes.api.model.Quantity;
 import io.fabric8.kubernetes.api.model.ResourceRequirements;
 import io.fabric8.kubernetes.api.model.ResourceRequirementsBuilder;
-import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.ServiceAccount;
 import io.fabric8.kubernetes.api.model.Volume;
 import io.fabric8.kubernetes.api.model.VolumeBuilder;
@@ -45,7 +44,6 @@ import io.fabric8.kubernetes.api.model.networking.NetworkPolicyIngressRule;
 import io.fabric8.kubernetes.api.model.rbac.RoleBinding;
 import io.fabric8.kubernetes.api.model.rbac.RoleRefBuilder;
 import io.fabric8.kubernetes.api.model.rbac.SubjectBuilder;
-import io.fabric8.openshift.api.model.TLSConfig;
 import io.strimzi.api.kafka.model.InlineLogging;
 import io.strimzi.api.kafka.model.Logging;
 import io.strimzi.api.kafka.model.status.ListenerStatus;
@@ -65,10 +63,6 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
 
     public static final String COMPONENT_NAME = "admin-api";
     public static final String ADMIN_API_CONTAINER_NAME = "admin-api";
-    // This should be 9443 if we're enabling TLS, or 9080 if we're not
-    // Other classes should use the getServicePort method to get the port
-    private static final int SERVICE_PORT = 9080;
-    private static final int SERVICE_PORT_TLS = 9443;
     public static final int DEFAULT_REPLICAS = 1;
     public static final String DEFAULT_IBMCOM_IMAGE = "ibmcom/admin-api:latest";
 
@@ -99,7 +93,6 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
 
     private final Deployment deployment;
     private final ServiceAccount serviceAccount;
-    private final Service service;
     private final NetworkPolicy networkPolicy;
     private final RoleBinding roleBinding;
 
@@ -165,20 +158,16 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
             .withApiGroup("rbac.authorization.k8s.io")
             .build());
 
-        service = createService(getServicePort(tlsEnabled()));
         createInternalService();
         createExternalService();
         createRoutesFromListeners();
 
-        TLSConfig tlsConfig = tlsEnabled() ? getDefaultTlsConfig() : null;
-        routes.put(getRouteName(),
-                createRoute(getRouteName(), getDefaultResourceName(), getServicePort(tlsEnabled()), tlsConfig));
         networkPolicy = createNetworkPolicy();
     }
 
     private List<Volume> getVolumes() {
 
-        List<Volume> volumes = new ArrayList<Volume>();
+        List<Volume> volumes = new ArrayList<>();
         volumes.add(new VolumeBuilder()
                 .withNewName(CERTS_VOLUME_MOUNT_NAME)
                 .withNewSecret()
@@ -330,7 +319,7 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
                                             final String kafkaConnectRestEndpoint) {
         List<Listener> listeners = getListeners();
         listeners.add(Listener.podToPodListener(tlsEnabled()));
-        List<EnvVar> envVars = new ArrayList<EnvVar>();
+        List<EnvVar> envVars = new ArrayList<>();
         envVars.addAll(Arrays.asList(
             new EnvVarBuilder().withName("ENDPOINTS").withValue(Listener.createEndpointsString(listeners)).build(),
             new EnvVarBuilder().withName("AUTHENTICATION").withValue(Listener.createAuthorizationString(listeners)).build(),
@@ -392,10 +381,6 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
         configureIAMSpecificEnvVars(envVars);
 
         return envVars;
-    }
-
-    public static int getServicePort(boolean tlsEnabled) {
-        return tlsEnabled ? SERVICE_PORT_TLS : SERVICE_PORT;
     }
 
     protected Probe createLivenessProbe(int port) {
@@ -463,13 +448,6 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
     }
 
     /**
-     * @return Service return the service
-     */
-    public Service getService() {
-        return this.service;
-    }
-
-    /**
      * @return NetworkPolicy return the network policy
      */
     public NetworkPolicy getNetworkPolicy() {
@@ -511,7 +489,6 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
 
     private NetworkPolicy createNetworkPolicy() {
         List<NetworkPolicyIngressRule> ingressRules = new ArrayList<>(1);
-        ingressRules.add(createIngressRule(getServicePort(tlsEnabled()), new HashMap<>()));
         List<Listener> listeners = getListeners();
         listeners.add(Listener.podToPodListener(tlsEnabled()));
         listeners.forEach(listener -> {

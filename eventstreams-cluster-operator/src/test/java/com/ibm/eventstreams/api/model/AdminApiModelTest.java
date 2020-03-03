@@ -50,7 +50,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -115,9 +114,6 @@ public class AdminApiModelTest {
         Deployment adminApiDeployment = adminApiModel.getDeployment();
         assertThat(adminApiDeployment.getMetadata().getName(), startsWith(componentPrefix));
         assertThat(adminApiDeployment.getSpec().getReplicas(), is(defaultReplicas));
-
-        Service adminApiService = adminApiModel.getService();
-        assertThat(adminApiService.getMetadata().getName(), startsWith(componentPrefix));
 
         Service adminApiInternalService = adminApiModel.getInternalService();
         assertThat(adminApiInternalService.getMetadata().getName(), startsWith(componentPrefix));
@@ -205,12 +201,12 @@ public class AdminApiModelTest {
         assertThat(networkPolicy.getMetadata().getName(), is(expectedNetworkPolicyName));
         assertThat(networkPolicy.getKind(), is("NetworkPolicy"));
 
-        // + pod to pod as should be, but also + ingress for traffic to old rest
-        assertThat(networkPolicy.getSpec().getIngress().size(), is(Listener.enabledListeners().size() + 2));
+        int numberOfPodToPodListeners = 1;
+        int expectNumberOfIngresses = Listener.enabledListeners().size() + numberOfPodToPodListeners;
+        assertThat(networkPolicy.getSpec().getIngress().size(), is(expectNumberOfIngresses));
         List<Listener> listeners = Listener.enabledListeners();
         listeners.add(Listener.podToPodListener(false));
         List<Integer> listenerPorts = listeners.stream().map(Listener::getPort).collect(Collectors.toList());
-        listenerPorts.add(AdminApiModel.getServicePort(false)); //
         networkPolicy.getSpec().getIngress().forEach(ingress -> {
             assertThat(ingress.getFrom(), is(emptyIterableOf(NetworkPolicyPeer.class)));
             assertThat(ingress.getPorts().size(), is(1));
@@ -343,12 +339,12 @@ public class AdminApiModelTest {
         assertThat(networkPolicy.getMetadata().getName(), is(expectedNetworkPolicyName));
         assertThat(networkPolicy.getKind(), is("NetworkPolicy"));
 
-        // + pod to pod as should be, but also + ingress for traffic to old rest
-        assertThat(networkPolicy.getSpec().getIngress().size(), is(Listener.enabledListeners().size() + 2));
+        int numberOfPodToPodListeners = 1;
+        int expectNumberOfIngresses = Listener.enabledListeners().size() + numberOfPodToPodListeners;
+        assertThat(networkPolicy.getSpec().getIngress().size(), is(expectNumberOfIngresses));
         List<Listener> listeners = Listener.enabledListeners();
         listeners.add(Listener.podToPodListener(true));
         List<Integer> listenerPorts = listeners.stream().map(Listener::getPort).collect(Collectors.toList());
-        listenerPorts.add(AdminApiModel.getServicePort(true)); //
         networkPolicy.getSpec().getIngress().forEach(ingress -> {
             assertThat(ingress.getFrom(), is(emptyIterableOf(NetworkPolicyPeer.class)));
             assertThat(ingress.getPorts().size(), is(1));
@@ -761,16 +757,6 @@ public class AdminApiModelTest {
     }
 
     @Test
-    public void testExternalAccessOverrideWithRoutes() {
-        EventStreams instance = createDefaultEventStreamsWithExternalAccess(ExternalAccess.TYPE_ROUTE).build();
-        AdminApiModel adminApiModelK8s = new AdminApiModel(instance, imageConfig, null, mockIcpClusterDataMap);
-        assertThat(adminApiModelK8s.getService().getSpec().getType(), is("ClusterIP"));
-
-        AdminApiModel adminApiModelOpenShift = new AdminApiModel(instance, imageConfig, Collections.singletonList(new ListenerStatus()), mockIcpClusterDataMap);
-        assertThat(adminApiModelOpenShift.getService().getSpec().getType(), is("ClusterIP"));
-    }
-
-    @Test
     public void testICPClusterDataEnvironmentVariablesCorrectlySet() {
         String clusterAddress = "0.0.0.0";
         String clusterPort = "9080";
@@ -808,8 +794,6 @@ public class AdminApiModelTest {
                 .build();
 
         AdminApiModel adminApiModel = new AdminApiModel(eventStreams, imageConfig, null, mockIcpClusterDataMap);
-
-        assertThat(adminApiModel.getRoutes().get(adminApiModel.getRouteName()).getSpec().getTls().getTermination(), is("passthrough"));
         assertThat(adminApiModel.getRoutes().get(adminApiModel.getRouteName(Listener.EXTERNAL_TLS_NAME)).getSpec().getTls().getTermination(), is("passthrough"));
     }
 
@@ -818,8 +802,7 @@ public class AdminApiModelTest {
         EventStreams eventStreams = createDefaultEventStreams().build();
 
         AdminApiModel adminApiModel = new AdminApiModel(eventStreams, imageConfig, null, mockIcpClusterDataMap);
-        assertThat(adminApiModel.getRoutes().get(adminApiModel.getRouteName()).getSpec().getTls(), is(nullValue()));
-        assertThat(adminApiModel.getRoutes().get(adminApiModel.getRouteName(Listener.EXTERNAL_TLS_NAME)).getSpec().getTls().getTermination(), is("passthrough"));
+        assertThat(adminApiModel.getRoutes().get(adminApiModel.getRouteName(Listener.EXTERNAL_PLAIN_NAME)).getSpec().getTls(), is(nullValue()));
     }
 
     @Test

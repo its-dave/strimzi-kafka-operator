@@ -126,7 +126,7 @@ public class AdminProxyModelTest {
             .getPorts()
             .get(0)
             .getPort()
-            .getIntVal(), is(AdminApiModel.getServicePort(false)));
+            .getIntVal(), is(Listener.podToPodListener(false).getPort()));
         assertThat(networkPolicy.getSpec().getEgress().get(0).getTo().size(), is(1));
         assertThat(networkPolicy
             .getSpec()
@@ -239,7 +239,7 @@ public class AdminProxyModelTest {
                 .getPorts()
                 .get(0)
                 .getPort()
-                .getIntVal(), is(AdminApiModel.getServicePort(true)));
+                .getIntVal(), is(Listener.podToPodListener(true).getPort()));
         assertThat(networkPolicy.getSpec().getEgress().get(0).getTo().size(), is(1));
         assertThat(networkPolicy
                 .getSpec()

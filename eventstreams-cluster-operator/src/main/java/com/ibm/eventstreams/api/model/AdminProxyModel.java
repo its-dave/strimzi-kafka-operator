@@ -127,7 +127,7 @@ public class AdminProxyModel extends AbstractModel {
 
     private Map<String, String> getProxyConfigMap() {
 
-        String restAdminURL = getUrlProtocol() + getDefaultResourceName(getInstanceName(), AdminApiModel.COMPONENT_NAME) + "." + getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + AdminApiModel.getServicePort(tlsEnabled());
+        String restAdminURL = getUrlProtocol() + AbstractSecureEndpointModel.getInternalServiceName(getInstanceName(), AdminApiModel.COMPONENT_NAME) + "." + getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" +  Listener.podToPodListener(tlsEnabled()).getPort();
         String restProducerURL = getUrlProtocol() + AbstractSecureEndpointModel.getInternalServiceName(getInstanceName(), RestProducerModel.COMPONENT_NAME) + "." + getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + Listener.podToPodListener(tlsEnabled()).getPort();
         String schemaRegistryURL = getUrlProtocol() + AbstractSecureEndpointModel.getInternalServiceName(getInstanceName(), SchemaRegistryModel.COMPONENT_NAME) + "." + getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + Listener.podToPodListener(tlsEnabled()).getPort();
         String config = new StringBuilder()
@@ -354,7 +354,7 @@ public class AdminProxyModel extends AbstractModel {
 
     private NetworkPolicy createNetworkPolicy() {
         List<NetworkPolicyEgressRule> egressRules = new ArrayList<>(3);
-        egressRules.add(createEgressRule(AdminApiModel.getServicePort(tlsEnabled()), AdminApiModel.COMPONENT_NAME));
+        egressRules.add(createEgressRule(Listener.podToPodListener(tlsEnabled()).getPort(), AdminApiModel.COMPONENT_NAME));
         egressRules.add(createEgressRule(Listener.podToPodListener(tlsEnabled()).getPort(), RestProducerModel.COMPONENT_NAME));
         egressRules.add(createEgressRule(Listener.podToPodListener(tlsEnabled()).getPort(), SchemaRegistryModel.COMPONENT_NAME));
         List<NetworkPolicyIngressRule> ingressRules = new ArrayList<>(1);

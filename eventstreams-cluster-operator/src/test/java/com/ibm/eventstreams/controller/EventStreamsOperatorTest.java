@@ -376,7 +376,7 @@ public class EventStreamsOperatorTest {
                     new EventStreamsEndpointBuilder()
                         .withName("admin")
                         .withType(EventStreamsEndpoint.EndpointType.api)
-                        .withNewUri("https://" + ADMIN_API_ROUTE_NAME + "." + ROUTE_HOST_POSTFIX)
+                        .withNewUri("https://" + ADMIN_API_ROUTE_NAME + "-" + Listener.EXTERNAL_TLS_NAME + "." + ROUTE_HOST_POSTFIX)
                         .build(),
                     new EventStreamsEndpointBuilder()
                         .withName("ui")
@@ -1311,7 +1311,6 @@ public class EventStreamsOperatorTest {
     private Set<String> getExpectedServiceNames(String clusterName) {
         Set<String> expectedServices = new HashSet<>();
         expectedServices.add(clusterName + "-" + APP_NAME + "-" + AdminProxyModel.COMPONENT_NAME);
-        expectedServices.add(clusterName + "-" + APP_NAME + "-" + AdminApiModel.COMPONENT_NAME);
         expectedServices.add(clusterName + "-" + APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME + "-" + AbstractSecureEndpointModel.EXTERNAL_SERVICE_POSTFIX);
         expectedServices.add(clusterName + "-" + APP_NAME + "-" + RestProducerModel.COMPONENT_NAME + "-" + AbstractSecureEndpointModel.EXTERNAL_SERVICE_POSTFIX);
         expectedServices.add(clusterName + "-" + APP_NAME + "-" + AdminApiModel.COMPONENT_NAME + "-" + AbstractSecureEndpointModel.EXTERNAL_SERVICE_POSTFIX);
@@ -1333,7 +1332,6 @@ public class EventStreamsOperatorTest {
         Set<String> expectedRoutes = new HashSet<>();
         expectedRoutes.add(PROXY_ROUTE_NAME);
         expectedRoutes.add(UI_ROUTE_NAME);
-        expectedRoutes.add(ADMIN_API_ROUTE_NAME);
         expectedRoutes.add(REST_PRODUCER_ROUTE_NAME + "-" + Listener.EXTERNAL_TLS_NAME);
         expectedRoutes.add(SCHEMA_REGISTRY_ROUTE_NAME + "-" + Listener.EXTERNAL_TLS_NAME);
         expectedRoutes.add(ADMIN_API_ROUTE_NAME + "-" + Listener.EXTERNAL_TLS_NAME);
@@ -1527,7 +1525,6 @@ public class EventStreamsOperatorTest {
         List<Route> routes = new ArrayList<>();
         routes.add(createRoute(PROXY_ROUTE_NAME, NAMESPACE));
         routes.add(createRoute(UI_ROUTE_NAME, NAMESPACE));
-        routes.add(createRoute(ADMIN_API_ROUTE_NAME, NAMESPACE));
         routes.add(createRoute(REST_PRODUCER_ROUTE_NAME + "-" + Listener.EXTERNAL_TLS_NAME, NAMESPACE));
         routes.add(createRoute(SCHEMA_REGISTRY_ROUTE_NAME + "-" + Listener.EXTERNAL_TLS_NAME, NAMESPACE));
         routes.add(createRoute(ADMIN_API_ROUTE_NAME + "-" + Listener.EXTERNAL_TLS_NAME, NAMESPACE));
