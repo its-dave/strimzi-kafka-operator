@@ -293,7 +293,7 @@ public class CrdGenerator {
     private ObjectNode buildValidation(Class<? extends CustomResource> crdClass) {
         ObjectNode result = nf.objectNode();
         // OpenShift Origin 3.10-rc0 doesn't like the `type: object` in schema root
-        result.set("openAPIV3Schema", buildObjectSchema(crdClass, crdClass, false));
+        result.set("openAPIV3Schema", buildObjectSchema(crdClass, crdClass, true));
         return result;
     }
 
