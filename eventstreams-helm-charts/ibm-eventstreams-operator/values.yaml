@@ -56,7 +56,7 @@ adminApi:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: eventstreams-admin-icp-linux-amd64
-    tag: 2020-02-25-14.46.14-66d9e8e
+    tag: 2020-03-03-13.42.44-5d72fa6
 schemaRegistry:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com

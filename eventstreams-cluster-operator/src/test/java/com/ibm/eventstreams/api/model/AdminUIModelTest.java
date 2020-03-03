@@ -163,7 +163,7 @@ public class AdminUIModelTest {
                 new EnvVarBuilder().withName("API_URL").withValue(adminApiService).build(),
                 new EnvVarBuilder().withName("ICP_USER_MGMT_IP").withValue("icp-management-ingress.kube-system").build(),
                 new EnvVarBuilder().withName("ICP_USER_MGMT_PORT").withValue("443").build(),
-                new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue("false").build(),
+                new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue("true").build(),
                 new EnvVarBuilder().withName("SCHEMA_REGISTRY_URL").withValue(schemaRegistryService).build(),
                 new EnvVarBuilder().withName("ICP_USER_MGMT_HIGHEST_ROLE_FOR_CRN").withValue("idmgmt/identity/api/v1/teams/highestRole").build()));
 

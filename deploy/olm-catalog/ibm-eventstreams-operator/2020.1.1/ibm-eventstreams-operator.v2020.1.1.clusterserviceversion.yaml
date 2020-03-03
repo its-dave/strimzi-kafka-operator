@@ -962,7 +962,7 @@ spec:
                 - name: EVENTSTREAMS_DEFAULT_ADMIN_PROXY_IMAGE
                   value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-rest-proxy-icp-linux-amd64:2020-02-13-15.20.14-1b3fd35-exp
                 - name: EVENTSTREAMS_DEFAULT_ADMIN_API_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-admin-icp-linux-amd64:2020-02-25-14.46.14-66d9e8e
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-admin-icp-linux-amd64:2020-03-03-13.42.44-5d72fa6
                 - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_IMAGE
                   value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-registry-icp-linux-amd64:2020-02-03-13.47.39-995d533-dev
                 - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_AVRO_IMAGE

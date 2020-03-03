@@ -301,7 +301,7 @@ public class AdminUIModel extends AbstractModel {
         envVarDefaults.add(new EnvVarBuilder().withName("REDIS_HOST").withValue("127.0.0.1").build());
 
         envVarDefaults.add(new EnvVarBuilder().withName("CLUSTER_NAME").withValue(Main.CLUSTER_NAME).build());
-        envVarDefaults.add(new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue("false").build());
+        envVarDefaults.add(new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue("true").build());
         envVarDefaults.add(new EnvVarBuilder().withName("SCHEMA_REGISTRY_URL").withValue(schemaRegistryService).build());
         envVarDefaults.add(
             new EnvVarBuilder()

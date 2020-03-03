@@ -156,7 +156,7 @@ public class AdminApiModelTest {
         EnvVar kafkaBootstrapUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_SERVERS").withValue(kafkaBootstrap).build();
         EnvVar schemaRegistryUrlEnv = new EnvVarBuilder().withName("SCHEMA_REGISTRY_URL").withValue(schemaRegistryEndpoint).build();
         EnvVar zkConnectEnv = new EnvVarBuilder().withName("ZOOKEEPER_CONNECT").withValue(zookeeperEndpoint).build();
-        EnvVar geoRepEnabledEnv = new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue("false").build();
+        EnvVar geoRepEnabledEnv = new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue("true").build();
         EnvVar kafkaStsEnv = new EnvVarBuilder().withName("KAFKA_STS_NAME").withValue(instanceName + "-" + EventStreamsKafkaModel.KAFKA_COMPONENT_NAME).build();
         EnvVar kafkaConnectRestApiEnv = new EnvVarBuilder().withName("KAFKA_CONNECT_REST_API_ADDRESS").withValue(kafkaConnectRestEndpoint).build();
         EnvVar geoRepSecretNameEnv = new EnvVarBuilder().withName("GEOREPLICATION_SECRET_NAME").withValue(instanceName  + "-" + AbstractModel.APP_NAME + "-" + ReplicatorModel.REPLICATOR_SECRET_NAME).build();

@@ -385,7 +385,7 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
             new EnvVarBuilder().withName("PROMETHEUS_HOST").withValue(prometheusHost).build(),
             new EnvVarBuilder().withName("PROMETHEUS_PORT").withValue(prometheusPort).build(),
             new EnvVarBuilder().withName("CLUSTER_CACERT").withValue(clusterCaCert).build(),
-            new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue("false").build(),
+            new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue("true").build(),
             new EnvVarBuilder().withName("KAFKA_STS_NAME").withValue(EventStreamsKafkaModel.getKafkaInstanceName(getInstanceName()) + "-" + EventStreamsKafkaModel.KAFKA_COMPONENT_NAME).build(),
             new EnvVarBuilder().withName("KAFKA_CONNECT_REST_API_ADDRESS").withValue(kafkaConnectRestEndpoint).build(),
             new EnvVarBuilder().withName("GEOREPLICATION_SECRET_NAME").withValue(getResourcePrefix() + "-" + ReplicatorModel.REPLICATOR_SECRET_NAME).build(),

@@ -194,6 +194,7 @@ public class ReplicatorModel extends AbstractModel {
                 .withNamespace(getNamespace())
                 .withName(getDefaultResourceName(getInstanceName(), COMPONENT_NAME))
                 .withOwnerReferences(getEventStreamsOwnerReference())
+                .addToLabels(getServiceSelectorLabel(COMPONENT_NAME))
                 .addToLabels(labels)
             .endMetadata()
             .withNewSpecLike(mm2Overrides)
