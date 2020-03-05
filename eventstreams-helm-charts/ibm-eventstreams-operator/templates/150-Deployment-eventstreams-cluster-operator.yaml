@@ -31,6 +31,7 @@ spec:
       labels:
         name: eventstreams-cluster-operator
         eventstreams.ibm.com/kind: cluster-operator
+        app: eventstreams
     spec:
       imagePullSecrets:
       - name: ibm-entitlement-key
@@ -153,6 +154,9 @@ spec:
             requests:
               cpu: 200m
               memory: 256Mi
+          volumeMounts:
+            - name: eventstreams
+              mountPath: /etc/eventstreams
       volumes:
       - name: eventstreams
         secret:
