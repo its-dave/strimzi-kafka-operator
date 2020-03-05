@@ -194,11 +194,9 @@ public class ReplicatorModelTest {
         ReplicatorModel replicator = createDefaultReplicatorModel();
         NetworkPolicy networkPolicy = replicator.getNetworkPolicy();
 
-        String expectedNetworkPolicyName = componentPrefix + "-network-policy";
-
         String expectedClusterOperatorName = "cluster-operator";
 
-        assertThat(networkPolicy.getMetadata().getName(), is(expectedNetworkPolicyName));
+        assertThat(networkPolicy.getMetadata().getName(), is(componentPrefix));
         assertThat(networkPolicy.getKind(), is("NetworkPolicy"));
 
         assertThat(networkPolicy.getSpec().getEgress().size(), is(0));

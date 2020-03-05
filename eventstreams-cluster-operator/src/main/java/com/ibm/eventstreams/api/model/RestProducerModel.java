@@ -61,8 +61,9 @@ public class RestProducerModel extends AbstractSecureEndpointModel {
     private static final String KAFKA_USER_CERTIFICATE_PATH = CERTIFICATE_PATH + File.separator + "p2p";
     private static final String CLUSTER_CERTIFICATE_PATH = CERTIFICATE_PATH + File.separator + "cluster";
 
+    // Deployed resources
     private Deployment deployment;
-    private final ServiceAccount serviceAccount;
+    private ServiceAccount serviceAccount;
     private NetworkPolicy networkPolicy;
     private List<ListenerStatus> kafkaListeners;
 
@@ -74,37 +75,39 @@ public class RestProducerModel extends AbstractSecureEndpointModel {
 
         Optional<ComponentSpec> restProducerSpec = Optional.ofNullable(instance.getSpec()).map(EventStreamsSpec::getRestProducer);
 
-        setOwnerReference(instance);
-        setArchitecture(instance.getSpec().getArchitecture());
-        setReplicas(restProducerSpec.map(ComponentSpec::getReplicas).orElse(DEFAULT_REPLICAS));
-        setEnvVars(restProducerSpec.map(ContainerSpec::getEnvVars).orElseGet(ArrayList::new));
-        setResourceRequirements(restProducerSpec.map(ComponentSpec::getResources).orElseGet(ResourceRequirements::new));
-        setPodTemplate(restProducerSpec.map(ComponentSpec::getTemplate)
-                           .map(ComponentTemplate::getPod)
-                           .orElseGet(PodTemplate::new));
-        setEncryption(Optional.ofNullable(instance.getSpec())
-                           .map(EventStreamsSpec::getSecurity)
-                           .map(SecuritySpec::getEncryption)
-                           .orElse(DEFAULT_ENCRYPTION));
-        setGlobalPullSecrets(Optional.ofNullable(instance.getSpec()).map(EventStreamsSpec::getImages).map(
-            ImagesSpec::getPullSecrets).orElseGet(ArrayList::new));
-        setImage(firstDefinedImage(
-                DEFAULT_IBMCOM_IMAGE,
-                        restProducerSpec.map(ContainerSpec::getImage),
-                        imageConfig.getRestProducerImage()));
-        setCustomImage(DEFAULT_IBMCOM_IMAGE, imageConfig.getRestProducerImage());
-        setLivenessProbe(restProducerSpec.map(ComponentSpec::getLivenessProbe)
-                .orElseGet(io.strimzi.api.kafka.model.Probe::new));
-        setReadinessProbe(restProducerSpec.map(ComponentSpec::getReadinessProbe)
-                .orElseGet(io.strimzi.api.kafka.model.Probe::new));
+        if (restProducerSpec.isPresent()) {
+            setOwnerReference(instance);
+            setArchitecture(instance.getSpec().getArchitecture());
+            setReplicas(restProducerSpec.map(ComponentSpec::getReplicas).orElse(DEFAULT_REPLICAS));
+            setEnvVars(restProducerSpec.map(ContainerSpec::getEnvVars).orElseGet(ArrayList::new));
+            setResourceRequirements(restProducerSpec.map(ComponentSpec::getResources).orElseGet(ResourceRequirements::new));
+            setPodTemplate(restProducerSpec.map(ComponentSpec::getTemplate)
+                            .map(ComponentTemplate::getPod)
+                            .orElseGet(PodTemplate::new));
+            setEncryption(Optional.ofNullable(instance.getSpec())
+                            .map(EventStreamsSpec::getSecurity)
+                            .map(SecuritySpec::getEncryption)
+                            .orElse(DEFAULT_ENCRYPTION));
+            setGlobalPullSecrets(Optional.ofNullable(instance.getSpec()).map(EventStreamsSpec::getImages).map(
+                ImagesSpec::getPullSecrets).orElseGet(ArrayList::new));
+            setImage(firstDefinedImage(
+                    DEFAULT_IBMCOM_IMAGE,
+                            restProducerSpec.map(ContainerSpec::getImage),
+                            imageConfig.getRestProducerImage()));
+            setCustomImage(DEFAULT_IBMCOM_IMAGE, imageConfig.getRestProducerImage());
+            setLivenessProbe(restProducerSpec.map(ComponentSpec::getLivenessProbe)
+                    .orElseGet(io.strimzi.api.kafka.model.Probe::new));
+            setReadinessProbe(restProducerSpec.map(ComponentSpec::getReadinessProbe)
+                    .orElseGet(io.strimzi.api.kafka.model.Probe::new));
 
-        deployment = createDeployment(getContainers(), getVolumes());
-        serviceAccount = createServiceAccount();
-        networkPolicy = createNetworkPolicy();
+            deployment = createDeployment(getContainers(), getVolumes());
+            serviceAccount = createServiceAccount();
+            networkPolicy = createNetworkPolicy();
 
-        createInternalService();
-        createExternalService();
-        createRoutesFromListeners();
+            createInternalService();
+            createExternalService();
+            createRoutesFromListeners();
+        }
     }
 
     private List<Volume> getVolumes() {
@@ -264,8 +267,10 @@ public class RestProducerModel extends AbstractSecureEndpointModel {
      * to control rolling updates, for example when the cert secret changes.
      */
     public Deployment getDeployment(String certGenerationID) {
-        deployment.getMetadata().getLabels().put(CERT_GENERATION_KEY, certGenerationID);
-        deployment.getSpec().getTemplate().getMetadata().getLabels().put(CERT_GENERATION_KEY, certGenerationID);
+        if (certGenerationID != null) {
+            deployment.getMetadata().getLabels().put(CERT_GENERATION_KEY, certGenerationID);
+            deployment.getSpec().getTemplate().getMetadata().getLabels().put(CERT_GENERATION_KEY, certGenerationID);
+        }
         return deployment;
     }
 

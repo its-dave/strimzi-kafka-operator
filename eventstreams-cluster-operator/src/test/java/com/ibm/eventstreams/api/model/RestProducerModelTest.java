@@ -94,11 +94,11 @@ public class RestProducerModelTest {
         assertThat(restProducerDeployment.getSpec().getReplicas(), is(defaultReplicas));
 
         Service adminApiInternalService = restProducerModel.getInternalService();
-        String expectedInternalServiceName = componentPrefix + "-" + AbstractSecureEndpointModel.INTERNAL_SERVICE_POSTFIX;
+        String expectedInternalServiceName = componentPrefix + "-" + AbstractSecureEndpointModel.INTERNAL_SERVICE_SUFFIX;
         assertThat(adminApiInternalService.getMetadata().getName(), is(expectedInternalServiceName));
 
         Service adminApiExternalService = restProducerModel.getExternalService();
-        String expectedExternalServiceName = componentPrefix + "-" + AbstractSecureEndpointModel.EXTERNAL_SERVICE_POSTFIX;
+        String expectedExternalServiceName = componentPrefix + "-" + AbstractSecureEndpointModel.EXTERNAL_SERVICE_SUFFIX;
         assertThat(adminApiExternalService.getMetadata().getName(), is(expectedExternalServiceName));
 
         Map<String, Route> restProducerRoutes = restProducerModel.getRoutes();
@@ -147,7 +147,7 @@ public class RestProducerModelTest {
         RestProducerModel restProducerModel = createDefaultRestProducerModel();
 
         NetworkPolicy restProducerNetworkPolicy = restProducerModel.getNetworkPolicy();
-        String expectedNetworkPolicyName = componentPrefix +  AbstractModel.NETWORK_POLICY_SUFFIX;
+        String expectedNetworkPolicyName = componentPrefix;
         assertThat(restProducerNetworkPolicy.getMetadata().getName(), is(expectedNetworkPolicyName));
         assertThat(restProducerNetworkPolicy.getKind(), is("NetworkPolicy"));
 

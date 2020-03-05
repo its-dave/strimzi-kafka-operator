@@ -84,16 +84,16 @@ public class AdminUIModel extends AbstractModel {
     public static final String ICP_CM_CLUSTER_NAME_KEY = "cluster_name";
 
     // deployable objects
-    private final Deployment deployment;
-    private final ServiceAccount serviceAccount;
-    private final Service service;
-    private final RoleBinding roleBinding;
-    private final Route route;
-    private final NetworkPolicy networkPolicy;
+    private Deployment deployment;
+    private ServiceAccount serviceAccount;
+    private Service service;
+    private RoleBinding roleBinding;
+    private Route route;
+    private NetworkPolicy networkPolicy;
 
-    private final List<ContainerEnvVar> redisEnvVars;
-    private final String redisImage;
-    private final ResourceRequirements redisResourceRequirements;
+    private List<ContainerEnvVar> redisEnvVars;
+    private String redisImage;
+    private ResourceRequirements redisResourceRequirements;
     private io.strimzi.api.kafka.model.Probe redisLivenessProbe;
     private io.strimzi.api.kafka.model.Probe redisReadinessProbe;
     private String traceString = "ExpressApp;INFO,Simulated;INFO,KubernetesClient;INFO";
@@ -117,86 +117,88 @@ public class AdminUIModel extends AbstractModel {
             .ofNullable(instance.getSpec())
             .map(EventStreamsSpec::getAdminUI);
 
-        setReplicas(userInterfaceSpec.map(ComponentSpec::getReplicas).orElse(DEFAULT_REPLICAS));
-        setArchitecture(instance.getSpec().getArchitecture());
-        setOwnerReference(instance);
-        setEnvVars(userInterfaceSpec.map(ContainerSpec::getEnvVars).orElseGet(ArrayList::new));
-        setResourceRequirements(userInterfaceSpec.map(ContainerSpec::getResources).orElseGet(ResourceRequirements::new));
-        setPodTemplate(userInterfaceSpec.map(ComponentSpec::getTemplate)
-                           .map(ComponentTemplate::getPod)
-                           .orElseGet(PodTemplate::new));
-        setEncryption(SecuritySpec.Encryption.TLS);
-        crEncryptionValue = Optional.ofNullable(instance.getSpec())
-            .map(EventStreamsSpec::getSecurity)
-            .map(SecuritySpec::getEncryption)
-            .orElse(DEFAULT_ENCRYPTION);
-        setGlobalPullSecrets(Optional.ofNullable(instance.getSpec()).map(EventStreamsSpec::getImages).map(
-            ImagesSpec::getPullSecrets).orElseGet(ArrayList::new));
-        setImage(firstDefinedImage(
-            DEFAULT_IBMCOM_UI_IMAGE, userInterfaceSpec.map(ComponentSpec::getImage),
-                        imageConfig.getAdminUIImage()));
+        if (userInterfaceSpec.isPresent()) {
+            setReplicas(userInterfaceSpec.map(ComponentSpec::getReplicas).orElse(DEFAULT_REPLICAS));
+            setArchitecture(instance.getSpec().getArchitecture());
+            setOwnerReference(instance);
+            setEnvVars(userInterfaceSpec.map(ContainerSpec::getEnvVars).orElseGet(ArrayList::new));
+            setResourceRequirements(userInterfaceSpec.map(ContainerSpec::getResources).orElseGet(ResourceRequirements::new));
+            setPodTemplate(userInterfaceSpec.map(ComponentSpec::getTemplate)
+                            .map(ComponentTemplate::getPod)
+                            .orElseGet(PodTemplate::new));
+            setEncryption(SecuritySpec.Encryption.TLS);
+            crEncryptionValue = Optional.ofNullable(instance.getSpec())
+                .map(EventStreamsSpec::getSecurity)
+                .map(SecuritySpec::getEncryption)
+                .orElse(DEFAULT_ENCRYPTION);
+            setGlobalPullSecrets(Optional.ofNullable(instance.getSpec()).map(EventStreamsSpec::getImages).map(
+                ImagesSpec::getPullSecrets).orElseGet(ArrayList::new));
+            setImage(firstDefinedImage(
+                DEFAULT_IBMCOM_UI_IMAGE, userInterfaceSpec.map(ComponentSpec::getImage),
+                            imageConfig.getAdminUIImage()));
 
-        setLivenessProbe(userInterfaceSpec.map(ComponentSpec::getLivenessProbe)
-                .orElseGet(io.strimzi.api.kafka.model.Probe::new));
-        setReadinessProbe(userInterfaceSpec.map(ComponentSpec::getReadinessProbe)
-                .orElseGet(io.strimzi.api.kafka.model.Probe::new));
-        setTraceString(userInterfaceSpec.map(ComponentSpec::getLogging).orElse(null));
-        
-        enableProducerMetricsPanels = Optional.ofNullable(instance.getSpec())
-            .map(EventStreamsSpec::getStrimziOverrides)
-            .map(KafkaSpec::getKafka)
-            .map(KafkaClusterSpec::getConfig)
-            .filter(map -> map.containsKey("interceptor.class.names"))
-            .orElse(null) == null ? "false" : "true"; 
-        enableMetricsPanels = Optional.ofNullable(instance.getSpec())
-            .map(EventStreamsSpec::getStrimziOverrides)
-            .map(KafkaSpec::getKafka)
-            .map(KafkaClusterSpec::getMetrics)
-            .isPresent() ? "true" : "false";
-        Optional<ContainerSpec> redisSpec = userInterfaceSpec.map(AdminUISpec::getRedis);
+            setLivenessProbe(userInterfaceSpec.map(ComponentSpec::getLivenessProbe)
+                    .orElseGet(io.strimzi.api.kafka.model.Probe::new));
+            setReadinessProbe(userInterfaceSpec.map(ComponentSpec::getReadinessProbe)
+                    .orElseGet(io.strimzi.api.kafka.model.Probe::new));
+            setTraceString(userInterfaceSpec.map(ComponentSpec::getLogging).orElse(null));
+            
+            enableProducerMetricsPanels = Optional.ofNullable(instance.getSpec())
+                .map(EventStreamsSpec::getStrimziOverrides)
+                .map(KafkaSpec::getKafka)
+                .map(KafkaClusterSpec::getConfig)
+                .filter(map -> map.containsKey("interceptor.class.names"))
+                .orElse(null) == null ? "false" : "true"; 
+            enableMetricsPanels = Optional.ofNullable(instance.getSpec())
+                .map(EventStreamsSpec::getStrimziOverrides)
+                .map(KafkaSpec::getKafka)
+                .map(KafkaClusterSpec::getMetrics)
+                .isPresent() ? "true" : "false";
+            Optional<ContainerSpec> redisSpec = userInterfaceSpec.map(AdminUISpec::getRedis);
 
-        redisEnvVars = redisSpec.map(ContainerSpec::getEnvVars).orElseGet(ArrayList::new);
-        redisImage = firstDefinedImage(
-                DEFAULT_IBMCOM_REDIS_IMAGE, redisSpec.map(ContainerSpec::getImage),
-                        imageConfig.getAdminUIRedisImage());
-        redisResourceRequirements = redisSpec.map(ContainerSpec::getResources).orElseGet(ResourceRequirements::new);
-        redisLivenessProbe = redisSpec.map(ContainerSpec::getLivenessProbe)
-                .orElseGet(io.strimzi.api.kafka.model.Probe::new);
-        redisReadinessProbe = redisSpec.map(ContainerSpec::getLivenessProbe)
-                .orElseGet(io.strimzi.api.kafka.model.Probe::new);
+            redisEnvVars = redisSpec.map(ContainerSpec::getEnvVars).orElseGet(ArrayList::new);
+            redisImage = firstDefinedImage(
+                    DEFAULT_IBMCOM_REDIS_IMAGE, redisSpec.map(ContainerSpec::getImage),
+                            imageConfig.getAdminUIRedisImage());
+            redisResourceRequirements = redisSpec.map(ContainerSpec::getResources).orElseGet(ResourceRequirements::new);
+            redisLivenessProbe = redisSpec.map(ContainerSpec::getLivenessProbe)
+                    .orElseGet(io.strimzi.api.kafka.model.Probe::new);
+            redisReadinessProbe = redisSpec.map(ContainerSpec::getLivenessProbe)
+                    .orElseGet(io.strimzi.api.kafka.model.Probe::new);
 
-        setCustomImages(imageConfig.getAdminUIImage(), imageConfig.getAdminUIRedisImage());
+            setCustomImages(imageConfig.getAdminUIImage(), imageConfig.getAdminUIRedisImage());
 
-        deployment = createDeployment(getContainers(), getVolumes());
-        serviceAccount = createServiceAccount();
-        // create required role ref, subject and cluster role binding so the UI can get a list of pods
-        roleBinding = createRoleBinding(
-                new SubjectBuilder()
-                        .withKind("ServiceAccount")
-                        .withName(getDefaultResourceName())
-                        .withNamespace(getNamespace())
-                        .build(),
-                new RoleRefBuilder()
-                        .withKind("ClusterRole")
-                        .withName("eventstreams-ui-clusterrole")
-                        .withApiGroup("rbac.authorization.k8s.io")
-                        .build());
+            deployment = createDeployment(getContainers(), getVolumes());
+            serviceAccount = createServiceAccount();
+            // create required role ref, subject and cluster role binding so the UI can get a list of pods
+            roleBinding = createRoleBinding(
+                    new SubjectBuilder()
+                            .withKind("ServiceAccount")
+                            .withName(getDefaultResourceName())
+                            .withNamespace(getNamespace())
+                            .build(),
+                    new RoleRefBuilder()
+                            .withKind("ClusterRole")
+                            .withName("eventstreams-ui-clusterrole")
+                            .withApiGroup("rbac.authorization.k8s.io")
+                            .build());
 
-        ExternalAccess defaultExternalAccess = new ExternalAccessBuilder()
-                .withNewType(hasRoutes ? ExternalAccess.TYPE_ROUTE : ExternalAccess.TYPE_DEFAULT)
-                .build();
-        setExternalAccess(userInterfaceSpec.map(ComponentSpec::getExternalAccess)
-                .orElse(defaultExternalAccess));
+            ExternalAccess defaultExternalAccess = new ExternalAccessBuilder()
+                    .withNewType(hasRoutes ? ExternalAccess.TYPE_ROUTE : ExternalAccess.TYPE_DEFAULT)
+                    .build();
+            setExternalAccess(userInterfaceSpec.map(ComponentSpec::getExternalAccess)
+                    .orElse(defaultExternalAccess));
 
-        service = createService();
-        networkPolicy = createNetworkPolicy();
+            service = createService();
+            networkPolicy = createNetworkPolicy();
 
-        // AdminUI uses OpenShift-generated certificate with TLS `reencrypt` method.
-        // It does not use spec.security.encryption setting from from CR
-        TLSConfig tlsConfig = new TLSConfigBuilder()
-                .withNewTermination("reencrypt")
-                .build();
-        route = createRoute(getRouteName(), getDefaultResourceName(), UI_SERVICE_PORT, tlsConfig);
+            // AdminUI uses OpenShift-generated certificate with TLM `reencrypt` method.
+            // It does not use spec.security.encryption setting from from CR
+            TLSConfig tlsConfig = new TLSConfigBuilder()
+                    .withNewTermination("reencrypt")
+                    .build();
+            route = createRoute(getRouteName(), getDefaultResourceName(), UI_SERVICE_PORT, tlsConfig);
+        }
     }
 
     public AdminUIModel(EventStreams instance,

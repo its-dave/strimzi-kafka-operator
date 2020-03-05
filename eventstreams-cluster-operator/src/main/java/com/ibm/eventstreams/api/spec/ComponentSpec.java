@@ -25,14 +25,14 @@ import lombok.EqualsAndHashCode;
 
 @JsonDeserialize(using = JsonDeserializer.None.class)
 @Buildable(editableEnabled = false, generateBuilderPackage = false, builderPackage = "io.fabric8.kubernetes.api.builder")
-@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonInclude(JsonInclude.Include.NON_DEFAULT)
 @JsonPropertyOrder({"replicas", "template", "externalAccess"})
 @EqualsAndHashCode(callSuper = true)
 public class ComponentSpec extends ContainerSpec implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private int replicas;
+    private Integer replicas;
     private ExternalAccess externalAccess;
     private ComponentTemplate template;
 
@@ -45,11 +45,11 @@ public class ComponentSpec extends ContainerSpec implements Serializable {
     }
 
     @Description("The number of instances to deploy.")
-    public int getReplicas() {
+    public Integer getReplicas() {
         return replicas;
     }
 
-    public void setReplicas(int replicas) {
+    public void setReplicas(Integer replicas) {
         this.replicas = replicas;
     }
 

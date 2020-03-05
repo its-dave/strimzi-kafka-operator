@@ -104,15 +104,14 @@ public class SchemaRegistryModelTest {
 
         Service schemaRegistryInternalService = schemaRegistryModel.getInternalService();
         assertThat(schemaRegistryInternalService.getMetadata().getName(), startsWith(componentPrefix));
-        assertThat(schemaRegistryInternalService.getMetadata().getName(), endsWith(AbstractSecureEndpointModel.INTERNAL_SERVICE_POSTFIX));
+        assertThat(schemaRegistryInternalService.getMetadata().getName(), endsWith(AbstractSecureEndpointModel.INTERNAL_SERVICE_SUFFIX));
 
         Service schemaRegistryExternalService = schemaRegistryModel.getExternalService();
         assertThat(schemaRegistryExternalService.getMetadata().getName(), startsWith(componentPrefix));
-        assertThat(schemaRegistryExternalService.getMetadata().getName(), endsWith(AbstractSecureEndpointModel.EXTERNAL_SERVICE_POSTFIX));
+        assertThat(schemaRegistryExternalService.getMetadata().getName(), endsWith(AbstractSecureEndpointModel.EXTERNAL_SERVICE_SUFFIX));
 
         NetworkPolicy schemaRegistryNetworkPolicy = schemaRegistryModel.getNetworkPolicy();
-        String expectedNetworkPolicyName = componentPrefix + "-network-policy";
-        assertThat(schemaRegistryNetworkPolicy.getMetadata().getName(), is(expectedNetworkPolicyName));
+        assertThat(schemaRegistryNetworkPolicy.getMetadata().getName(), is(componentPrefix));
         assertThat(schemaRegistryNetworkPolicy.getKind(), is("NetworkPolicy"));
 
         assertThat(schemaRegistryNetworkPolicy.getSpec().getIngress().size(), is(Listener.enabledListeners().size() + 1));

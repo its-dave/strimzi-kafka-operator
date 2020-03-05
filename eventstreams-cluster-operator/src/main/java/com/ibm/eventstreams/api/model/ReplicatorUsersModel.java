@@ -15,6 +15,8 @@ package com.ibm.eventstreams.api.model;
 
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
+import com.ibm.eventstreams.api.spec.ReplicatorSpec;
+
 import io.strimzi.api.kafka.model.AclOperation;
 import io.strimzi.api.kafka.model.AclResourcePatternType;
 import io.strimzi.api.kafka.model.AclRule;
@@ -53,15 +55,21 @@ public class ReplicatorUsersModel extends AbstractModel {
         setOwnerReference(instance);
         setArchitecture(instance.getSpec().getArchitecture());
 
-        KafkaListenerAuthentication kafkaInternalTlsAuth = getInternalTlsKafkaListenerAuthentication(instance);
-        if (kafkaInternalTlsAuth != null) {
-            createReplicatorConnectUser(kafkaInternalTlsAuth);
-            createReplicatorTargetConnectorUser(kafkaInternalTlsAuth);
-        }
-        
-        KafkaListenerAuthentication kafkaExternalAuth = getExternalKafkaListenerAuthentication(instance);
-        if (kafkaExternalAuth != null) {
-            createReplicatorSourceConnectorUser(kafkaExternalAuth);
+        Boolean replicationEnabled = Optional.ofNullable(instance.getSpec().getReplicator())
+                .map(ReplicatorSpec::getReplicas)
+                .map(replicas -> replicas > 0)
+                .orElse(false);
+
+        if (replicationEnabled) {
+            KafkaListenerAuthentication kafkaInternalTlsAuth = getInternalTlsKafkaListenerAuthentication(instance);
+            if (kafkaInternalTlsAuth != null) {
+                createReplicatorConnectUser(kafkaInternalTlsAuth);
+                createReplicatorTargetConnectorUser(kafkaInternalTlsAuth);
+            }
+            KafkaListenerAuthentication kafkaExternalAuth = getExternalKafkaListenerAuthentication(instance);
+            if (kafkaExternalAuth != null) {
+                createReplicatorSourceConnectorUser(kafkaExternalAuth);
+            }
         }
     }
 

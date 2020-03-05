@@ -112,8 +112,7 @@ public class AdminProxyModelTest {
         AdminProxyModel adminProxyModel = createDefaultAdminProxyModel();
 
         NetworkPolicy networkPolicy = adminProxyModel.getNetworkPolicy();
-        String expectedNetworkPolicyName = componentPrefix + "-network-policy";
-        assertThat(networkPolicy.getMetadata().getName(), is(expectedNetworkPolicyName));
+        assertThat(networkPolicy.getMetadata().getName(), is(componentPrefix));
         assertThat(networkPolicy.getKind(), is("NetworkPolicy"));
 
         assertThat(networkPolicy.getSpec().getEgress().size(), is(3));
@@ -225,8 +224,7 @@ public class AdminProxyModelTest {
         AdminProxyModel adminProxyModel = new AdminProxyModel(eventStreams, imageConfig);
 
         NetworkPolicy networkPolicy = adminProxyModel.getNetworkPolicy();
-        String expectedNetworkPolicyName = componentPrefix + "-network-policy";
-        assertThat(networkPolicy.getMetadata().getName(), is(expectedNetworkPolicyName));
+        assertThat(networkPolicy.getMetadata().getName(), is(componentPrefix));
         assertThat(networkPolicy.getKind(), is("NetworkPolicy"));
 
         assertThat(networkPolicy.getSpec().getEgress().size(), is(3));

@@ -12,15 +12,6 @@
  */
 package com.ibm.eventstreams.api.model;
 
-import com.ibm.eventstreams.api.Listener;
-import com.ibm.eventstreams.api.spec.EventStreams;
-import io.fabric8.kubernetes.api.model.Secret;
-import io.fabric8.kubernetes.api.model.Service;
-import io.fabric8.kubernetes.api.model.ServicePort;
-import io.fabric8.openshift.api.model.Route;
-import io.fabric8.openshift.api.model.TLSConfig;
-import io.strimzi.certs.CertAndKey;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -31,9 +22,19 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.ibm.eventstreams.api.Listener;
+import com.ibm.eventstreams.api.spec.EventStreams;
+
+import io.fabric8.kubernetes.api.model.Secret;
+import io.fabric8.kubernetes.api.model.Service;
+import io.fabric8.kubernetes.api.model.ServicePort;
+import io.fabric8.openshift.api.model.Route;
+import io.fabric8.openshift.api.model.TLSConfig;
+import io.strimzi.certs.CertAndKey;
+
 public abstract class AbstractSecureEndpointModel extends AbstractModel {
-    public static final String EXTERNAL_SERVICE_POSTFIX = "external";
-    public static final String INTERNAL_SERVICE_POSTFIX = "internal";
+    public static final String EXTERNAL_SERVICE_SUFFIX = "external";
+    public static final String INTERNAL_SERVICE_SUFFIX = "internal";
     public static final String CERT_GENERATION_KEY = "certificateGenerationID";
     protected static final Set<String> DEFAULT_LISTENERS_WITH_ROUTES = new HashSet<>(Arrays.asList(Listener.EXTERNAL_PLAIN_NAME, Listener.EXTERNAL_TLS_NAME));
 
@@ -67,7 +68,7 @@ public abstract class AbstractSecureEndpointModel extends AbstractModel {
                 .stream()
                 .map(super::createServicePort)
                 .collect(Collectors.toList());
-        internalService = createService("ClusterIP", getDefaultResourceNameWithSuffix(INTERNAL_SERVICE_POSTFIX), internalPorts, Collections.emptyMap());
+        internalService = createService("ClusterIP", getDefaultResourceNameWithSuffix(INTERNAL_SERVICE_SUFFIX), internalPorts, Collections.emptyMap());
     }
 
     protected void createExternalService() {
@@ -128,8 +129,12 @@ public abstract class AbstractSecureEndpointModel extends AbstractModel {
         return certificateSecretModel.getKeyID(name);
     }
 
-    public Secret getCertificateSecretModel() {
+    public Secret getCertificateSecretModelSecret() {
         return certificateSecretModel.getSecret();
+    }
+
+    public void createCertificateSecretModelSecret() {
+        certificateSecretModel.createSecret();
     }
 
     /**
@@ -150,18 +155,25 @@ public abstract class AbstractSecureEndpointModel extends AbstractModel {
      * @return Service return the internal service name
      */
     public static String getInternalServiceName(String instanceName, String componentName) {
-        return getDefaultResourceNameWithSuffix(INTERNAL_SERVICE_POSTFIX, instanceName, componentName);
+        return getDefaultResourceNameWithSuffix(INTERNAL_SERVICE_SUFFIX, instanceName, componentName);
+    }
+
+    /**
+     * @return Service return the internal service name
+     */
+    public String getInternalServiceName() {
+        return getInternalServiceName(getInstanceName(), getComponentName());
     }
 
     /**
      * @return Service return the external service name
      */
-    private String getExternalServiceName() {
+    public String getExternalServiceName() {
         return getExternalServiceName(getInstanceName(), getComponentName());
     }
 
     public static String getExternalServiceName(String instanceName, String componentName) {
-        return getDefaultResourceNameWithSuffix(EXTERNAL_SERVICE_POSTFIX, instanceName, componentName);
+        return getDefaultResourceNameWithSuffix(EXTERNAL_SERVICE_SUFFIX, instanceName, componentName);
     }
 
     /**

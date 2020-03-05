@@ -13,6 +13,7 @@
 package com.ibm.eventstreams.api.spec;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
@@ -23,22 +24,23 @@ import lombok.EqualsAndHashCode;
 
 @JsonDeserialize(using = JsonDeserializer.None.class)
 @Buildable(editableEnabled = false, generateBuilderPackage = false, builderPackage = "io.fabric8.kubernetes.api.builder")
-@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonInclude(JsonInclude.Include.NON_DEFAULT)
+@JsonPropertyOrder({"replicas"})
 @EqualsAndHashCode
 public class AdminProxySpec extends ComponentSpec {
 
     private static final long serialVersionUID = 1L;
 
-    private int replicas;
+    private Integer replicas;
 
     @Override
     @Minimum(1)
     @Description("The number of instances of the admin API proxy to run.")
-    public int getReplicas() {
+    public Integer getReplicas() {
         return replicas;
     }
 
-    public void setReplicas(int replicas) {
+    public void setReplicas(Integer replicas) {
         this.replicas = replicas;
     }
 }

@@ -72,43 +72,46 @@ public class CollectorModel extends AbstractModel {
         super(instance.getMetadata().getName(), instance.getMetadata().getNamespace(), COMPONENT_NAME);
         Optional<ComponentSpec> collectorSpec = Optional.ofNullable(instance.getSpec())
             .map(EventStreamsSpec::getCollector);
+        
+        if (collectorSpec.isPresent()) {
 
-        setOwnerReference(instance);
-        setArchitecture(instance.getSpec().getArchitecture());
-        setReplicas(collectorSpec.map(ComponentSpec::getReplicas).orElse(DEFAULT_REPLICAS));
-        setResourceRequirements(collectorSpec.map(ComponentSpec::getResources).orElseGet(ResourceRequirements::new));
-        setEnvVars(collectorSpec.map(ContainerSpec::getEnvVars).orElseGet(ArrayList::new));
-        setPodTemplate(collectorSpec.map(ComponentSpec::getTemplate)
-                           .map(ComponentTemplate::getPod)
-                           .orElseGet(PodTemplate::new));
-        setEncryption(Optional.ofNullable(instance.getSpec())
-                           .map(EventStreamsSpec::getSecurity)
-                           .map(SecuritySpec::getEncryption)
-                           .orElse(DEFAULT_ENCRYPTION));
-        setGlobalPullSecrets(Optional.ofNullable(instance.getSpec()).map(EventStreamsSpec::getImages).map(
-            ImagesSpec::getPullSecrets).orElseGet(ArrayList::new));
-        setImage(firstDefinedImage(
-            DEFAULT_IBMCOM_IMAGE,
-                        collectorSpec.map(ComponentSpec::getImage),
-                        imageConfig.getCollectorImage()));
-        setCustomImage(DEFAULT_IBMCOM_IMAGE, imageConfig.getCollectorImage());
-        setLivenessProbe(collectorSpec.map(ComponentSpec::getLivenessProbe)
-                .orElseGet(io.strimzi.api.kafka.model.Probe::new));
-        setReadinessProbe(collectorSpec.map(ComponentSpec::getReadinessProbe)
-                .orElseGet(io.strimzi.api.kafka.model.Probe::new));
-        setTraceLevel(collectorSpec.map(ComponentSpec::getLogging).orElse(null));
+            setOwnerReference(instance);
+            setArchitecture(instance.getSpec().getArchitecture());
+            setReplicas(collectorSpec.map(ComponentSpec::getReplicas).orElse(DEFAULT_REPLICAS));
+            setResourceRequirements(collectorSpec.map(ComponentSpec::getResources).orElseGet(ResourceRequirements::new));
+            setEnvVars(collectorSpec.map(ContainerSpec::getEnvVars).orElseGet(ArrayList::new));
+            setPodTemplate(collectorSpec.map(ComponentSpec::getTemplate)
+                            .map(ComponentTemplate::getPod)
+                            .orElseGet(PodTemplate::new));
+            setEncryption(Optional.ofNullable(instance.getSpec())
+                            .map(EventStreamsSpec::getSecurity)
+                            .map(SecuritySpec::getEncryption)
+                            .orElse(DEFAULT_ENCRYPTION));
+            setGlobalPullSecrets(Optional.ofNullable(instance.getSpec()).map(EventStreamsSpec::getImages).map(
+                ImagesSpec::getPullSecrets).orElseGet(ArrayList::new));
+            setImage(firstDefinedImage(
+                DEFAULT_IBMCOM_IMAGE,
+                            collectorSpec.map(ComponentSpec::getImage),
+                            imageConfig.getCollectorImage()));
+            setCustomImage(DEFAULT_IBMCOM_IMAGE, imageConfig.getCollectorImage());
+            setLivenessProbe(collectorSpec.map(ComponentSpec::getLivenessProbe)
+                    .orElseGet(io.strimzi.api.kafka.model.Probe::new));
+            setReadinessProbe(collectorSpec.map(ComponentSpec::getReadinessProbe)
+                    .orElseGet(io.strimzi.api.kafka.model.Probe::new));
+            setTraceLevel(collectorSpec.map(ComponentSpec::getLogging).orElse(null));
 
-        Boolean enableProducerMetrics = Optional.ofNullable(instance.getSpec())
-            .map(EventStreamsSpec::getStrimziOverrides)
-            .map(KafkaSpec::getKafka)
-            .map(KafkaClusterSpec::getConfig)
-            .filter(map -> map.containsKey("interceptor.class.names"))
-            .orElse(null) == null ? false : true;                        
-                            
-        this.deployment = createDeployment(getContainers(), getVolumes());
-        this.service = createService(enableProducerMetrics);
-        this.networkPolicy = createNetworkPolicy();
-        this.serviceAccount = createServiceAccount();
+            Boolean enableProducerMetrics = Optional.ofNullable(instance.getSpec())
+                .map(EventStreamsSpec::getStrimziOverrides)
+                .map(KafkaSpec::getKafka)
+                .map(KafkaClusterSpec::getConfig)
+                .filter(map -> map.containsKey("interceptor.class.names"))
+                .isPresent();
+                                
+            deployment = createDeployment(getContainers(), getVolumes());
+            service = createService(enableProducerMetrics);
+            networkPolicy = createNetworkPolicy();
+            serviceAccount = createServiceAccount();
+        }
     }
 
 

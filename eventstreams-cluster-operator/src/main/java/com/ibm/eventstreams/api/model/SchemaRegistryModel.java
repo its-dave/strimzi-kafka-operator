@@ -82,11 +82,11 @@ public class SchemaRegistryModel extends AbstractSecureEndpointModel {
     private String avroLogString;
 
     // deployable objects
-    private final Deployment deployment;
-    private final ServiceAccount serviceAccount;
-    private final NetworkPolicy networkPolicy;
-    private final PersistentVolumeClaim pvc;
-    private final String avroImage;
+    private Deployment deployment;
+    private ServiceAccount serviceAccount;
+    private NetworkPolicy networkPolicy;
+    private PersistentVolumeClaim pvc;
+    private String avroImage;
     private List<ContainerEnvVar> avroEnvVars;
     private ResourceRequirements avroResourceRequirements;
     private io.strimzi.api.kafka.model.Probe avroLivenessProbe;
@@ -101,67 +101,69 @@ public class SchemaRegistryModel extends AbstractSecureEndpointModel {
 
         Optional<SchemaRegistrySpec> schemaRegistrySpec = Optional.ofNullable(instance.getSpec()).map(EventStreamsSpec::getSchemaRegistry);
 
-        setOwnerReference(instance);
-        setArchitecture(instance.getSpec().getArchitecture());
-        int replicas = schemaRegistrySpec.map(ComponentSpec::getReplicas).orElse(DEFAULT_REPLICAS);
-        setReplicas(replicas);
-        setEnvVars(schemaRegistrySpec.map(ContainerSpec::getEnvVars).orElseGet(ArrayList::new));
-        setResourceRequirements(schemaRegistrySpec.map(ComponentSpec::getResources).orElseGet(ResourceRequirements::new));
-        setPodTemplate(schemaRegistrySpec.map(ComponentSpec::getTemplate)
-                    .map(ComponentTemplate::getPod)
-                    .orElseGet(PodTemplate::new));
-        setGlobalPullSecrets(Optional.ofNullable(instance.getSpec())
-                    .map(EventStreamsSpec::getImages)
-                    .map(ImagesSpec::getPullSecrets)
-                    .orElseGet(Collections::emptyList));
-        setEncryption(Optional.ofNullable(instance.getSpec())
-                    .map(EventStreamsSpec::getSecurity)
-                    .map(SecuritySpec::getEncryption)
-                    .orElse(DEFAULT_ENCRYPTION));
+        if (schemaRegistrySpec.isPresent()) {
+            setOwnerReference(instance);
+            setArchitecture(instance.getSpec().getArchitecture());
+            int replicas = schemaRegistrySpec.map(ComponentSpec::getReplicas).orElse(DEFAULT_REPLICAS);
+            setReplicas(replicas);
+            setEnvVars(schemaRegistrySpec.map(ContainerSpec::getEnvVars).orElseGet(ArrayList::new));
+            setResourceRequirements(schemaRegistrySpec.map(ComponentSpec::getResources).orElseGet(ResourceRequirements::new));
+            setPodTemplate(schemaRegistrySpec.map(ComponentSpec::getTemplate)
+                        .map(ComponentTemplate::getPod)
+                        .orElseGet(PodTemplate::new));
+            setGlobalPullSecrets(Optional.ofNullable(instance.getSpec())
+                        .map(EventStreamsSpec::getImages)
+                        .map(ImagesSpec::getPullSecrets)
+                        .orElseGet(Collections::emptyList));
+            setEncryption(Optional.ofNullable(instance.getSpec())
+                        .map(EventStreamsSpec::getSecurity)
+                        .map(SecuritySpec::getEncryption)
+                        .orElse(DEFAULT_ENCRYPTION));
 
-        storage = schemaRegistrySpec.map(SchemaRegistrySpec::getStorage)
-                .orElseGet(EphemeralStorage::new);
+            storage = schemaRegistrySpec.map(SchemaRegistrySpec::getStorage)
+                    .orElseGet(EphemeralStorage::new);
 
 
-        setImage(firstDefinedImage(
-            DEFAULT_IBMCOM_SCHEMA_REGISTRY_IMAGE,
-                        schemaRegistrySpec.map(ComponentSpec::getImage),
-                        imageConfig.getSchemaRegistryImage()));
-        setLivenessProbe(schemaRegistrySpec.map(ComponentSpec::getLivenessProbe)
-                .orElseGet(io.strimzi.api.kafka.model.Probe::new));
-        setReadinessProbe(schemaRegistrySpec.map(ComponentSpec::getReadinessProbe)
-                .orElseGet(io.strimzi.api.kafka.model.Probe::new));
-        logString = getLoggingString(schemaRegistrySpec.map(ComponentSpec::getLogging).orElse(null), DEFAULT_LOG_STRING);
+            setImage(firstDefinedImage(
+                DEFAULT_IBMCOM_SCHEMA_REGISTRY_IMAGE,
+                            schemaRegistrySpec.map(ComponentSpec::getImage),
+                            imageConfig.getSchemaRegistryImage()));
+            setLivenessProbe(schemaRegistrySpec.map(ComponentSpec::getLivenessProbe)
+                    .orElseGet(io.strimzi.api.kafka.model.Probe::new));
+            setReadinessProbe(schemaRegistrySpec.map(ComponentSpec::getReadinessProbe)
+                    .orElseGet(io.strimzi.api.kafka.model.Probe::new));
+            logString = getLoggingString(schemaRegistrySpec.map(ComponentSpec::getLogging).orElse(null), DEFAULT_LOG_STRING);
 
-        Optional<ContainerSpec> avroSpec = schemaRegistrySpec.map(SchemaRegistrySpec::getAvro);
+            Optional<ContainerSpec> avroSpec = schemaRegistrySpec.map(SchemaRegistrySpec::getAvro);
 
-        avroLogString = getLoggingString(avroSpec.map(ContainerSpec::getLogging).orElse(null), DEFAULT_AVRO_LOG_STRING);
+            avroLogString = getLoggingString(avroSpec.map(ContainerSpec::getLogging).orElse(null), DEFAULT_AVRO_LOG_STRING);
 
-        avroEnvVars = avroSpec.map(ContainerSpec::getEnvVars).orElseGet(ArrayList::new);
-        avroImage = firstDefinedImage(
-            DEFAULT_IBMCOM_AVRO_IMAGE,
-                        avroSpec.map(ContainerSpec::getImage),
-                        imageConfig.getSchemaRegistryAvroImage());
-        avroResourceRequirements = avroSpec.map(ContainerSpec::getResources).orElseGet(ResourceRequirements::new);
-        avroLivenessProbe = avroSpec.map(ContainerSpec::getLivenessProbe)
-                .orElseGet(io.strimzi.api.kafka.model.Probe::new);
-        avroReadinessProbe = avroSpec.map(ContainerSpec::getLivenessProbe)
-                .orElseGet(io.strimzi.api.kafka.model.Probe::new);
+            avroEnvVars = avroSpec.map(ContainerSpec::getEnvVars).orElseGet(ArrayList::new);
+            avroImage = firstDefinedImage(
+                DEFAULT_IBMCOM_AVRO_IMAGE,
+                            avroSpec.map(ContainerSpec::getImage),
+                            imageConfig.getSchemaRegistryAvroImage());
+            avroResourceRequirements = avroSpec.map(ContainerSpec::getResources).orElseGet(ResourceRequirements::new);
+            avroLivenessProbe = avroSpec.map(ContainerSpec::getLivenessProbe)
+                    .orElseGet(io.strimzi.api.kafka.model.Probe::new);
+            avroReadinessProbe = avroSpec.map(ContainerSpec::getLivenessProbe)
+                    .orElseGet(io.strimzi.api.kafka.model.Probe::new);
 
-        setCustomImages(imageConfig.getSchemaRegistryImage(), imageConfig.getSchemaRegistryAvroImage());
+            setCustomImages(imageConfig.getSchemaRegistryImage(), imageConfig.getSchemaRegistryAvroImage());
 
-        deployment = createDeployment(getContainers(), getVolumes());
+            deployment = createDeployment(getContainers(), getVolumes());
 
-        createInternalService();
-        createExternalService();
-        createRoutesFromListeners();
+            createInternalService();
+            createExternalService();
+            createRoutesFromListeners();
 
-        serviceAccount = createServiceAccount();
-        networkPolicy = createNetworkPolicy();
-        if (storage instanceof PersistentClaimStorage) {
-            pvc = createSchemaRegistryPersistentVolumeClaim(instance.getMetadata().getNamespace(), replicas, (PersistentClaimStorage) storage);
-        } else {
-            pvc = null;
+            serviceAccount = createServiceAccount();
+            networkPolicy = createNetworkPolicy();
+            if (storage instanceof PersistentClaimStorage) {
+                pvc = createSchemaRegistryPersistentVolumeClaim(instance.getMetadata().getNamespace(), replicas, (PersistentClaimStorage) storage);
+            } else {
+                pvc = null;
+            }
         }
     }
 
@@ -449,8 +451,10 @@ public class SchemaRegistryModel extends AbstractSecureEndpointModel {
      * to control rolling updates, for example when the cert secret changes.
      */
     public Deployment getDeployment(String certGenerationID) {
-        deployment.getMetadata().getLabels().put(CERT_GENERATION_KEY, certGenerationID);
-        deployment.getSpec().getTemplate().getMetadata().getLabels().put(CERT_GENERATION_KEY, certGenerationID);
+        if (certGenerationID != null) {
+            deployment.getMetadata().getLabels().put(CERT_GENERATION_KEY, certGenerationID);
+            deployment.getSpec().getTemplate().getMetadata().getLabels().put(CERT_GENERATION_KEY, certGenerationID);
+        }
         return deployment;
     }
 

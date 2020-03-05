@@ -12,7 +12,7 @@
  */
 package com.ibm.eventstreams.api.model;
 
-import static com.ibm.eventstreams.api.model.AbstractSecureEndpointModel.INTERNAL_SERVICE_POSTFIX;
+import static com.ibm.eventstreams.api.model.AbstractSecureEndpointModel.INTERNAL_SERVICE_SUFFIX;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.startsWith;
@@ -153,8 +153,8 @@ public class AdminUIModelTest {
         // confirm ui container has required envars
 
 
-        String adminApiService = "http://" + instanceName + "-" + AbstractModel.APP_NAME + "-" + AdminApiModel.COMPONENT_NAME + "-" + INTERNAL_SERVICE_POSTFIX + "." +  namespace + ".svc." + Main.CLUSTER_NAME + ":" + Listener.podToPodListener(true).getPort();
-        String schemaRegistryService = "http://" + instanceName + "-" + AbstractModel.APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME + "-" + INTERNAL_SERVICE_POSTFIX + "." +  namespace + ".svc." + Main.CLUSTER_NAME + ":" + Listener.podToPodListener(true).getPort();
+        String adminApiService = "http://" + instanceName + "-" + AbstractModel.APP_NAME + "-" + AdminApiModel.COMPONENT_NAME + "-" + INTERNAL_SERVICE_SUFFIX + "." +  namespace + ".svc." + Main.CLUSTER_NAME + ":" + Listener.podToPodListener(true).getPort();
+        String schemaRegistryService = "http://" + instanceName + "-" + AbstractModel.APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME + "-" + INTERNAL_SERVICE_SUFFIX + "." +  namespace + ".svc." + Main.CLUSTER_NAME + ":" + Listener.podToPodListener(true).getPort();
 
         assertThat(uiContainers.get(0).getEnv(), hasItems(
                 new EnvVarBuilder().withName("ID").withValue(instanceName).build(),
@@ -198,8 +198,7 @@ public class AdminUIModelTest {
         AdminUIModel adminUIModel = createDefaultAdminUIModel();
 
         NetworkPolicy userInterfaceNetworkPolicy = adminUIModel.getNetworkPolicy();
-        String expectedNetworkPolicyName = componentPrefix + "-network-policy";
-        assertThat(userInterfaceNetworkPolicy.getMetadata().getName(), is(expectedNetworkPolicyName));
+        assertThat(userInterfaceNetworkPolicy.getMetadata().getName(), is(componentPrefix));
         assertThat(userInterfaceNetworkPolicy.getKind(), is("NetworkPolicy"));
 
         assertThat(userInterfaceNetworkPolicy.getSpec().getEgress().size(), is(2));

@@ -25,6 +25,7 @@ public class CertificateSecretModel extends AbstractModel {
     public static final String KEY_ID_POSTFIX = "key";
     private static final String ID_FORMAT = "%s.%s";
     private Map<String, CertAndKey> certificates = new HashMap<>();
+    private Secret secret;
 
     public CertificateSecretModel(EventStreams instance, String namespace, String componentName) {
         super(instance.getMetadata().getName(), namespace, componentName);
@@ -52,7 +53,11 @@ public class CertificateSecretModel extends AbstractModel {
     }
 
     public Secret getSecret() {
-        return createSecret(getNamespace(), getSecretName(), formSecretData(), getComponentLabels(), null);
+        return secret;
+    }
+
+    public void createSecret() {
+        secret = createSecret(getNamespace(), getSecretName(), formSecretData(), getComponentLabels(), null);
     }
 
     public void setCertAndKey(String id, CertAndKey certAndKey) {

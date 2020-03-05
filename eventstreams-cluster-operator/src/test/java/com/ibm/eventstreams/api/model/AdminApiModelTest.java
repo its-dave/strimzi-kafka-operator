@@ -62,7 +62,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static com.ibm.eventstreams.api.model.AbstractSecureEndpointModel.INTERNAL_SERVICE_POSTFIX;
+import static com.ibm.eventstreams.api.model.AbstractSecureEndpointModel.INTERNAL_SERVICE_SUFFIX;
 import static org.hamcrest.CoreMatchers.endsWith;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -132,11 +132,11 @@ public class AdminApiModelTest {
 
         Service adminApiInternalService = adminApiModel.getInternalService();
         assertThat(adminApiInternalService.getMetadata().getName(), startsWith(componentPrefix));
-        assertThat(adminApiInternalService.getMetadata().getName(), endsWith(AbstractSecureEndpointModel.INTERNAL_SERVICE_POSTFIX));
+        assertThat(adminApiInternalService.getMetadata().getName(), endsWith(AbstractSecureEndpointModel.INTERNAL_SERVICE_SUFFIX));
 
         Service adminApiExternalService = adminApiModel.getExternalService();
         assertThat(adminApiExternalService.getMetadata().getName(), startsWith(componentPrefix));
-        assertThat(adminApiExternalService.getMetadata().getName(), endsWith(AbstractSecureEndpointModel.EXTERNAL_SERVICE_POSTFIX));
+        assertThat(adminApiExternalService.getMetadata().getName(), endsWith(AbstractSecureEndpointModel.EXTERNAL_SERVICE_SUFFIX));
 
         Map<String, Route> routes = adminApiModel.getRoutes();
         routes.forEach((routeName, route) -> {
@@ -149,7 +149,7 @@ public class AdminApiModelTest {
     public void testDefaultAdminApiEnvVars() {
         AdminApiModel adminApiModel = createDefaultAdminApiModel();
         String kafkaBootstrap = instanceName + "-kafka-bootstrap." + adminApiModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_PORT;
-        String schemaRegistryEndpoint = instanceName  + "-" + AbstractModel.APP_NAME + "-schema-registry" + "-" + INTERNAL_SERVICE_POSTFIX  + "." + adminApiModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + Listener.podToPodListener(adminApiModel.tlsEnabled()).getPort();
+        String schemaRegistryEndpoint = instanceName  + "-" + AbstractModel.APP_NAME + "-schema-registry" + "-" + INTERNAL_SERVICE_SUFFIX  + "." + adminApiModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + Listener.podToPodListener(adminApiModel.tlsEnabled()).getPort();
         String zookeeperEndpoint = instanceName + "-" + EventStreamsKafkaModel.ZOOKEEPER_COMPONENT_NAME + "-client." + adminApiModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.ZOOKEEPER_PORT;
         String kafkaConnectRestEndpoint = "http://" + instanceName  + "-" + AbstractModel.APP_NAME + "-" + ReplicatorModel.COMPONENT_NAME + "-mirrormaker2-api." + adminApiModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + ReplicatorModel.REPLICATOR_PORT;
 
@@ -212,8 +212,7 @@ public class AdminApiModelTest {
         AdminApiModel adminApiModel = createDefaultAdminApiModel();
 
         NetworkPolicy networkPolicy = adminApiModel.getNetworkPolicy();
-        String expectedNetworkPolicyName = componentPrefix + "-network-policy";
-        assertThat(networkPolicy.getMetadata().getName(), is(expectedNetworkPolicyName));
+        assertThat(networkPolicy.getMetadata().getName(), is(componentPrefix));
         assertThat(networkPolicy.getKind(), is("NetworkPolicy"));
 
         int numberOfPodToPodListeners = 1;
@@ -350,8 +349,7 @@ public class AdminApiModelTest {
         AdminApiModel adminApiModel = new AdminApiModel(eventStreams, imageConfig, listeners, mockIcpClusterDataMap);
 
         NetworkPolicy networkPolicy = adminApiModel.getNetworkPolicy();
-        String expectedNetworkPolicyName = componentPrefix + "-network-policy";
-        assertThat(networkPolicy.getMetadata().getName(), is(expectedNetworkPolicyName));
+        assertThat(networkPolicy.getMetadata().getName(), is(componentPrefix));
         assertThat(networkPolicy.getKind(), is("NetworkPolicy"));
 
         int numberOfPodToPodListeners = 1;

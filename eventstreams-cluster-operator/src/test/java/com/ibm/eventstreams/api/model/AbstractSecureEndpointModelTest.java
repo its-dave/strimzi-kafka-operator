@@ -75,7 +75,8 @@ public class AbstractSecureEndpointModelTest {
         String keyData = "test-key";
         CertAndKey certAndKey = new CertAndKey(keyData.getBytes(), certData.getBytes());
         model.setCertAndKey(listener.getName(), certAndKey);
-        Secret certSecret = model.getCertificateSecretModel();
+        model.createCertificateSecretModelSecret();
+        Secret certSecret = model.getCertificateSecretModelSecret();
         assertThat("Secret contains the cert data base64 encoded", new String(Base64.getDecoder().decode(certSecret.getData().get(model.getCertSecretCertID(listener.getName())))), is(certData));
         assertThat("Secret contains the key data base64 encoded", new String(Base64.getDecoder().decode(certSecret.getData().get(model.getCertSecretKeyID(listener.getName())))), is(keyData));
         assertThat("Secret name is correct", certSecret.getMetadata().getName(), is(model.getCertSecretName()));
@@ -87,12 +88,12 @@ public class AbstractSecureEndpointModelTest {
         ComponentModel model = new ComponentModel(instance, Collections.emptyList());
 
         Service externalService = model.getExternalService();
-        assertThat(externalService.getMetadata().getName(), is(model.getDefaultResourceName() + "-" + AbstractSecureEndpointModel.EXTERNAL_SERVICE_POSTFIX));
+        assertThat(externalService.getMetadata().getName(), is(model.getDefaultResourceName() + "-" + AbstractSecureEndpointModel.EXTERNAL_SERVICE_SUFFIX));
         assertThat(externalService.getSpec().getType(), is("ClusterIP"));
         assertThat(externalService.getSpec().getPorts().size(), is(0));
 
         Service internalService = model.getInternalService();
-        assertThat(internalService.getMetadata().getName(), is(model.getDefaultResourceName() + "-" + AbstractSecureEndpointModel.INTERNAL_SERVICE_POSTFIX));
+        assertThat(internalService.getMetadata().getName(), is(model.getDefaultResourceName() + "-" + AbstractSecureEndpointModel.INTERNAL_SERVICE_SUFFIX));
         assertThat(internalService.getSpec().getType(), is("ClusterIP"));
         assertThat(internalService.getSpec().getPorts().size(), is(1));
         assertThat(internalService.getSpec().getPorts().get(0).getName(), is(model.getComponentName() + "-" + Listener.podToPodListener(true).getName()));
@@ -107,12 +108,12 @@ public class AbstractSecureEndpointModelTest {
         ComponentModel model = new ComponentModel(instance, Collections.singletonList(listener));
 
         Service externalService = model.getExternalService();
-        assertThat(externalService.getMetadata().getName(), is(model.getDefaultResourceName() + "-" + AbstractSecureEndpointModel.EXTERNAL_SERVICE_POSTFIX));
+        assertThat(externalService.getMetadata().getName(), is(model.getDefaultResourceName() + "-" + AbstractSecureEndpointModel.EXTERNAL_SERVICE_SUFFIX));
         assertThat(externalService.getSpec().getType(), is("ClusterIP"));
         assertThat(externalService.getSpec().getPorts().size(), is(0));
 
         Service internalService = model.getInternalService();
-        assertThat(internalService.getMetadata().getName(), is(model.getDefaultResourceName() + "-" + AbstractSecureEndpointModel.INTERNAL_SERVICE_POSTFIX));
+        assertThat(internalService.getMetadata().getName(), is(model.getDefaultResourceName() + "-" + AbstractSecureEndpointModel.INTERNAL_SERVICE_SUFFIX));
         assertThat(internalService.getSpec().getType(), is("ClusterIP"));
         assertThat(internalService.getSpec().getPorts().size(), is(2));
         boolean foundPodToPodPort = internalService.getSpec().getPorts().stream().anyMatch(port -> {
@@ -136,7 +137,7 @@ public class AbstractSecureEndpointModelTest {
         ComponentModel model = new ComponentModel(instance, Collections.singletonList(listener));
 
         Service externalService = model.getExternalService();
-        assertThat(externalService.getMetadata().getName(), is(model.getDefaultResourceName() + "-" + AbstractSecureEndpointModel.EXTERNAL_SERVICE_POSTFIX));
+        assertThat(externalService.getMetadata().getName(), is(model.getDefaultResourceName() + "-" + AbstractSecureEndpointModel.EXTERNAL_SERVICE_SUFFIX));
         assertThat(externalService.getSpec().getType(), is("ClusterIP"));
         assertThat(externalService.getSpec().getPorts().size(), is(1));
         assertThat(externalService.getSpec().getPorts().get(0).getName(), is(model.getComponentName() + "-" + listener.getName()));
@@ -144,7 +145,7 @@ public class AbstractSecureEndpointModelTest {
         assertThat(externalService.getSpec().getPorts().get(0).getProtocol(), is("TCP"));
 
         Service internalService = model.getInternalService();
-        assertThat(internalService.getMetadata().getName(), is(model.getDefaultResourceName() + "-" + AbstractSecureEndpointModel.INTERNAL_SERVICE_POSTFIX));
+        assertThat(internalService.getMetadata().getName(), is(model.getDefaultResourceName() + "-" + AbstractSecureEndpointModel.INTERNAL_SERVICE_SUFFIX));
         assertThat(internalService.getSpec().getType(), is("ClusterIP"));
         assertThat(internalService.getSpec().getPorts().size(), is(1));
     }
@@ -157,7 +158,7 @@ public class AbstractSecureEndpointModelTest {
         ComponentModel model = new ComponentModel(instance, Arrays.asList(externalListener, internalListener));
 
         Service externalService = model.getExternalService();
-        assertThat(externalService.getMetadata().getName(), is(model.getDefaultResourceName() + "-" + AbstractSecureEndpointModel.EXTERNAL_SERVICE_POSTFIX));
+        assertThat(externalService.getMetadata().getName(), is(model.getDefaultResourceName() + "-" + AbstractSecureEndpointModel.EXTERNAL_SERVICE_SUFFIX));
         assertThat(externalService.getSpec().getType(), is("ClusterIP"));
         assertThat(externalService.getSpec().getPorts().size(), is(1));
         assertThat(externalService.getSpec().getPorts().get(0).getName(), is(model.getComponentName() + "-" + externalListener.getName()));
@@ -165,7 +166,7 @@ public class AbstractSecureEndpointModelTest {
         assertThat(externalService.getSpec().getPorts().get(0).getProtocol(), is("TCP"));
 
         Service internalService = model.getInternalService();
-        assertThat(internalService.getMetadata().getName(), is(model.getDefaultResourceName() + "-" + AbstractSecureEndpointModel.INTERNAL_SERVICE_POSTFIX));
+        assertThat(internalService.getMetadata().getName(), is(model.getDefaultResourceName() + "-" + AbstractSecureEndpointModel.INTERNAL_SERVICE_SUFFIX));
         assertThat(internalService.getSpec().getType(), is("ClusterIP"));
         assertThat(internalService.getSpec().getPorts().size(), is(2));
         boolean foundInternalListenerPort = internalService.getSpec().getPorts().stream().anyMatch(port -> {
@@ -188,12 +189,12 @@ public class AbstractSecureEndpointModelTest {
                 Arrays.asList(externalListener1, externalListener2, internalListener1, internalListener2, internalListener3));
 
         Service externalService = model.getExternalService();
-        assertThat(externalService.getMetadata().getName(), is(model.getDefaultResourceName() + "-" + AbstractSecureEndpointModel.EXTERNAL_SERVICE_POSTFIX));
+        assertThat(externalService.getMetadata().getName(), is(model.getDefaultResourceName() + "-" + AbstractSecureEndpointModel.EXTERNAL_SERVICE_SUFFIX));
         assertThat(externalService.getSpec().getType(), is("ClusterIP"));
         assertThat(externalService.getSpec().getPorts().size(), is(2));
 
         Service internalService = model.getInternalService();
-        assertThat(internalService.getMetadata().getName(), is(model.getDefaultResourceName() + "-" + AbstractSecureEndpointModel.INTERNAL_SERVICE_POSTFIX));
+        assertThat(internalService.getMetadata().getName(), is(model.getDefaultResourceName() + "-" + AbstractSecureEndpointModel.INTERNAL_SERVICE_SUFFIX));
         assertThat(internalService.getSpec().getType(), is("ClusterIP"));
         assertThat(internalService.getSpec().getPorts().size(), is(4));
     }
@@ -216,7 +217,7 @@ public class AbstractSecureEndpointModelTest {
         Route externalRoute = routes.get(externalRouteName);
         assertThat(externalRoute.getMetadata().getName(), is(model.getDefaultResourceName() + "-" + externalListenerName));
         assertThat(externalRoute.getSpec().getTo().getKind(), is("Service"));
-        assertThat(externalRoute.getSpec().getTo().getName(), is(model.getDefaultResourceName() + "-" + AbstractSecureEndpointModel.EXTERNAL_SERVICE_POSTFIX));
+        assertThat(externalRoute.getSpec().getTo().getName(), is(model.getDefaultResourceName() + "-" + AbstractSecureEndpointModel.EXTERNAL_SERVICE_SUFFIX));
         assertThat(externalRoute.getSpec().getPort().getTargetPort().getIntVal(), is(externalListener.getPort()));
         assertThat(externalRoute.getSpec().getTls(), is(notNullValue()));
         assertThat(externalRoute.getSpec().getTls().getTermination(), is("passthrough"));
@@ -239,7 +240,7 @@ public class AbstractSecureEndpointModelTest {
         Route externalListenerRoute = routes.get(externalListenerRouteName);
         assertThat(externalListenerRoute.getMetadata().getName(), is(model.getDefaultResourceName() + "-" + externalListener.getName()));
         assertThat(externalListenerRoute.getSpec().getTo().getKind(), is("Service"));
-        assertThat(externalListenerRoute.getSpec().getTo().getName(), is(model.getDefaultResourceName() + "-" + AbstractSecureEndpointModel.EXTERNAL_SERVICE_POSTFIX));
+        assertThat(externalListenerRoute.getSpec().getTo().getName(), is(model.getDefaultResourceName() + "-" + AbstractSecureEndpointModel.EXTERNAL_SERVICE_SUFFIX));
         assertThat(externalListenerRoute.getSpec().getPort().getTargetPort().getIntVal(), is(externalListener.getPort()));
         assertThat(externalListenerRoute.getSpec().getTls(), is(nullValue()));
     }

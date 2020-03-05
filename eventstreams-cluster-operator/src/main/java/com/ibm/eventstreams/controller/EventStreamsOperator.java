@@ -12,6 +12,19 @@
  */
 package com.ibm.eventstreams.controller;
 
+import java.io.UnsupportedEncodingException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+
 import com.ibm.eventstreams.api.Listener;
 import com.ibm.eventstreams.api.model.AbstractModel;
 import com.ibm.eventstreams.api.model.AbstractSecureEndpointModel;
@@ -24,17 +37,16 @@ import com.ibm.eventstreams.api.model.EventStreamsKafkaModel;
 import com.ibm.eventstreams.api.model.InternalKafkaUserModel;
 import com.ibm.eventstreams.api.model.ReplicatorModel;
 import com.ibm.eventstreams.api.model.ReplicatorUsersModel;
-import com.ibm.eventstreams.api.spec.EventStreamsSpec;
-import com.ibm.eventstreams.api.spec.ReplicatorSpec;
-import com.ibm.eventstreams.api.status.EventStreamsEndpoint;
-import com.ibm.eventstreams.replicator.ReplicatorCredentials;
 import com.ibm.eventstreams.api.model.RestProducerModel;
 import com.ibm.eventstreams.api.model.SchemaRegistryModel;
 import com.ibm.eventstreams.api.spec.EventStreams;
+import com.ibm.eventstreams.api.spec.EventStreamsSpec;
+import com.ibm.eventstreams.api.status.EventStreamsEndpoint;
 import com.ibm.eventstreams.api.status.EventStreamsStatus;
 import com.ibm.eventstreams.api.status.EventStreamsStatusBuilder;
 import com.ibm.eventstreams.controller.certificates.EventStreamsCertificateException;
 import com.ibm.eventstreams.controller.certificates.EventStreamsCertificateManager;
+import com.ibm.eventstreams.replicator.ReplicatorCredentials;
 import com.ibm.eventstreams.rest.NameValidation;
 import com.ibm.eventstreams.rest.VersionValidation;
 import com.ibm.iam.api.model.ClientModel;
@@ -42,18 +54,12 @@ import com.ibm.iam.api.spec.Client;
 import com.ibm.iam.api.spec.ClientDoneable;
 import com.ibm.iam.api.spec.ClientList;
 
-import io.strimzi.api.kafka.model.KafkaClusterSpec;
-import io.strimzi.api.kafka.model.KafkaSpec;
-import io.strimzi.api.kafka.model.listener.KafkaListenerAuthentication;
-import io.strimzi.api.kafka.model.listener.KafkaListenerAuthenticationOAuth;
-import io.strimzi.api.kafka.model.listener.KafkaListenerExternal;
-import io.strimzi.api.kafka.model.listener.KafkaListenerTls;
-import io.strimzi.api.kafka.model.listener.KafkaListeners;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.Service;
-import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
@@ -62,7 +68,14 @@ import io.fabric8.openshift.api.model.Route;
 import io.strimzi.api.kafka.Crds;
 import io.strimzi.api.kafka.model.CertAndKeySecretSource;
 import io.strimzi.api.kafka.model.Kafka;
+import io.strimzi.api.kafka.model.KafkaClusterSpec;
+import io.strimzi.api.kafka.model.KafkaSpec;
 import io.strimzi.api.kafka.model.KafkaUser;
+import io.strimzi.api.kafka.model.listener.KafkaListenerAuthentication;
+import io.strimzi.api.kafka.model.listener.KafkaListenerAuthenticationOAuth;
+import io.strimzi.api.kafka.model.listener.KafkaListenerExternal;
+import io.strimzi.api.kafka.model.listener.KafkaListenerTls;
+import io.strimzi.api.kafka.model.listener.KafkaListeners;
 import io.strimzi.api.kafka.model.status.Condition;
 import io.strimzi.api.kafka.model.status.ConditionBuilder;
 import io.strimzi.api.kafka.model.status.KafkaStatus;
@@ -80,27 +93,10 @@ import io.strimzi.operator.common.operator.resource.RouteOperator;
 import io.strimzi.operator.common.operator.resource.SecretOperator;
 import io.strimzi.operator.common.operator.resource.ServiceAccountOperator;
 import io.strimzi.operator.common.operator.resource.ServiceOperator;
-
-
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.io.UnsupportedEncodingException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 public class EventStreamsOperator extends AbstractOperator<EventStreams, EventStreamsResourceOperator> {
 
@@ -199,25 +195,22 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
     class ReconciliationState {
         final Reconciliation reconciliation;
         final EventStreams instance;
+        final String namespace;
         final EventStreamsStatusBuilder status;
         final EventStreamsOperatorConfig.ImageLookup imageConfig;
         final EventStreamsCertificateManager certificateManager;
         Map<String, String> icpClusterData = null;
-        private ReplicatorCredentials replicatorCredentials;
 
         ReconciliationState(Reconciliation reconciliation, EventStreams instance, EventStreamsOperatorConfig.ImageLookup imageConfig) {
             this.reconciliation = reconciliation;
             this.instance = instance;
-
+            this.namespace = instance.getMetadata().getNamespace();
             this.status = instance.getStatus() == null ? new EventStreamsStatusBuilder()
                 .withRoutes(new HashMap<>())
                 .withConditions()
                 .withNewVersions()
                 .endVersions()
                 : new EventStreamsStatusBuilder(instance.getStatus());
-
-            this.replicatorCredentials = new ReplicatorCredentials(instance);
-
             this.imageConfig = imageConfig;
             this.certificateManager = new EventStreamsCertificateManager(secretOperator, reconciliation.namespace(), EventStreamsKafkaModel.getKafkaInstanceName(instance.getMetadata().getName()));
         }
@@ -365,14 +358,13 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         Future<ReconciliationState> createKafkaCustomResource() {
             EventStreamsKafkaModel kafka = new EventStreamsKafkaModel(instance);
             Future<Kafka> createdKafka = toFuture(() -> Crds.kafkaOperation(client)
-                .inNamespace(instance.getMetadata().getNamespace())
+                .inNamespace(namespace)
                 .createOrReplace(kafka.getKafka()));
 
             return createdKafka.map(v -> this);
         }
 
         Future<ReconciliationState> waitForKafkaStatus() {
-            String namespace = instance.getMetadata().getNamespace();
             String kafkaInstanceName = EventStreamsKafkaModel.getKafkaInstanceName(instance.getMetadata().getName());
 
             return resourceOperator.kafkaCRHasReadyStatus(namespace, kafkaInstanceName, defaultPollIntervalMs, kafkaStatusReadyTimeoutMs)
@@ -411,23 +403,23 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                     .map(KafkaListeners::getExternal)
                     .map(KafkaListenerExternal::getAuth);
 
-            Optional<Integer> replicationEnabled =
-                    Optional.ofNullable(instance.getSpec())
-                            .map(EventStreamsSpec::getReplicator)
-                            .map(ReplicatorSpec::getReplicas);
-
             ReplicatorUsersModel replicatorUsersModel = new ReplicatorUsersModel(instance);
 
             if (externalClientAuth.isPresent() && !(externalClientAuth.get() instanceof KafkaListenerAuthenticationOAuth)) {
 
                 KafkaUser sourceConnectorUser = replicatorUsersModel.getReplicatorSourceConnectorUser();
-
-                Future<KafkaUser> createdSourceConnectorKafkaUser = toFuture(() -> Crds
-                        .kafkaUserOperation(client)
-                        .inNamespace(instance.getMetadata().getNamespace())
-                        .createOrReplace(sourceConnectorUser));
-                usersCreated.add(createdSourceConnectorKafkaUser.map(v -> this));
-
+                if (sourceConnectorUser != null) {
+                    Future<KafkaUser> createdSourceConnectorKafkaUser = toFuture(() -> Crds
+                            .kafkaUserOperation(client)
+                            .inNamespace(namespace)
+                            .createOrReplace(sourceConnectorUser));
+                    usersCreated.add(createdSourceConnectorKafkaUser.map(v -> this));
+                } else {
+                    Crds.kafkaUserOperation(client)
+                        .inNamespace(namespace)
+                        .withName(ReplicatorModel.REPLICATOR_SOURCE_CLUSTER_CONNECTOR_USER_NAME)
+                        .delete();
+                }
             } else if (externalClientAuth.isPresent() && externalClientAuth.get() instanceof KafkaListenerAuthenticationOAuth) {
 
                 Condition authConfigNotSupportedForReplication = buildErrorCondition(OAUTH_REPLICATOR_ERROR);
@@ -437,30 +429,39 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 instance.setStatus(informativeStatus);
                 resourceOperator.createOrUpdate(instance);
                 usersCreated.add(Future.failedFuture(OAUTH_REPLICATOR_ERROR));
-
             }
 
-
             if (internalClientAuth.isPresent()
-                    && !(internalClientAuth.get() instanceof KafkaListenerAuthenticationOAuth)
-                    && replicationEnabled.isPresent()
-                    && replicationEnabled.get() > 0) {
+                    && !(internalClientAuth.get() instanceof KafkaListenerAuthenticationOAuth)) {
 
                 KafkaUser connectUser = replicatorUsersModel.getReplicatorConnectUser();
-
-                Future<KafkaUser> createKafkaConnectUser = toFuture(() -> Crds
-                        .kafkaUserOperation(client)
-                        .inNamespace(instance.getMetadata().getNamespace())
-                        .createOrReplace(connectUser));
-                usersCreated.add(createKafkaConnectUser.map(v -> this));
+                if (connectUser != null) {
+                    Future<KafkaUser> createKafkaConnectUser = toFuture(() -> Crds
+                            .kafkaUserOperation(client)
+                            .inNamespace(namespace)
+                            .createOrReplace(connectUser));
+                    usersCreated.add(createKafkaConnectUser.map(v -> this));
+                } else {
+                    Crds.kafkaUserOperation(client)
+                        .inNamespace(namespace)
+                        .withName(ReplicatorModel.REPLICATOR_CONNECT_USER_NAME)
+                        .delete();
+                }
 
                 KafkaUser targetConnectorUser = replicatorUsersModel.getReplicatorTargetConnectorUser();
 
-                Future<KafkaUser> createdTargetConnectorKafkaUser = toFuture(() -> Crds
+                if (targetConnectorUser != null) {
+                    Future<KafkaUser> createdDestinationConnectorKafkaUser = toFuture(() -> Crds
                         .kafkaUserOperation(client)
-                        .inNamespace(instance.getMetadata().getNamespace())
+                        .inNamespace(namespace)
                         .createOrReplace(targetConnectorUser));
-                usersCreated.add(createdTargetConnectorKafkaUser.map(v -> this));
+                    usersCreated.add(createdDestinationConnectorKafkaUser.map(v -> this));
+                } else {
+                    Crds.kafkaUserOperation(client)
+                        .inNamespace(namespace)
+                        .withName(ReplicatorModel.REPLICATOR_TARGET_CLUSTER_CONNNECTOR_USER_NAME)
+                        .delete();
+                }
 
             } else if (internalClientAuth.isPresent() && internalClientAuth.get() instanceof KafkaListenerAuthenticationOAuth) {
 
@@ -472,56 +473,47 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 instance.setStatus(informativeStatus);
                 resourceOperator.createOrUpdate(instance);
                 usersCreated.add(Future.failedFuture(oauthReplicatorError));
-
             }
-
-
-
-
             return CompositeFuture.join(usersCreated)
                     .map(v -> this);
-
         }
 
 
         Future<ReconciliationState> createReplicator() {
 
-            Promise<ReconciliationState> replicatorPromise = Promise.promise();
+            ReplicatorCredentials replicatorCredentials = new ReplicatorCredentials(instance);
+            
+            return setTrustStoreForReplicator(replicatorCredentials)
+                .compose(v -> setClientAuthForReplicator(replicatorCredentials))
+                
+                //Can't make the replicatorModel until after setTrustStoreForReplicator and setClientAuthForReplicator have completed
+                .compose(v -> { 
+                    ReplicatorModel replicatorModel = new ReplicatorModel(instance, replicatorCredentials);
+                    String secretName = replicatorModel.getSecretName();
+                    
+                    List<Future> replicatorFutures = new ArrayList<>();
 
-            Optional<Integer> replicationEnabled =
-                    Optional.ofNullable(instance.getSpec().getReplicator())
-                            .map(ReplicatorSpec::getReplicas);
-
-            if (replicationEnabled.isPresent() && replicationEnabled.get() > 0) {
-
-                Future<ReconciliationState>  replicatorFuture = setTrustStoreForReplicator()
-                        .compose(res -> setClientAuthForReplicator())
-
-                        //Can't make the replicatorModel until after setTrustStoreForReplicator and setClientAuthForReplicator have completed
-                        .compose(res -> {
-
-                            List<Future> replicatorFutures = new ArrayList<>();
-                            ReplicatorModel replicatorModel = new ReplicatorModel(instance, replicatorCredentials);
-
-                            replicatorFutures.add(networkPolicyOperator.createOrUpdate(replicatorModel.getNetworkPolicy()));
-                            replicatorFutures.add(
-                                    toFuture(() -> Crds.kafkaMirrorMaker2Operation(client)
-                                            .inNamespace(instance.getMetadata().getNamespace())
-                                            .createOrReplace(replicatorModel.getReplicator())));
-                            return CompositeFuture.join(replicatorFutures)
-                                    .map(v -> this);
-                        });
-                replicatorFuture.onSuccess(f -> {
-                    replicatorPromise.complete();
-                }).onFailure(f -> {
-                    log.warn("Replicator failed to be instantiated " + f.getMessage());
-                    replicatorPromise.fail(f.getMessage());
-                });
-            } else {
-                replicatorPromise.complete();
-            }
-
-            return replicatorPromise.future().map(v -> this);
+                    replicatorFutures.add(secretOperator.getAsync(namespace, secretName).compose(secret -> {
+                        if (secret == null) {
+                            log.debug("reconcilling replicator secret {} with value {}", secretName, secret);
+                            return secretOperator.reconcile(namespace, secretName, replicatorModel.getSecret()).map(res -> this);
+                        }
+                        return Future.succeededFuture(this);
+                    }));
+                    replicatorFutures.add(networkPolicyOperator.reconcile(namespace, replicatorModel.getDefaultResourceName(), replicatorModel.getNetworkPolicy()));
+                    if (replicatorModel.getReplicator() != null) {
+                        replicatorFutures.add(toFuture(() -> Crds.kafkaMirrorMaker2Operation(client)
+                            .inNamespace(namespace)
+                            .createOrReplace(replicatorModel.getReplicator())));
+                    } else {
+                        Crds.kafkaMirrorMaker2Operation(client)
+                            .inNamespace(namespace)
+                            .withName(replicatorModel.getDefaultResourceName())
+                            .delete(); 
+                    }
+                    return CompositeFuture.join(replicatorFutures)
+                        .map(res -> this);
+                }).map(v -> this);
         }
 
         Future<ReconciliationState> createInternalKafkaUser() {
@@ -530,7 +522,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                     .getKafkaUser();
             Future<KafkaUser> createdKafkaUser = toFuture(() -> Crds
                 .kafkaUserOperation(client)
-                .inNamespace(instance.getMetadata().getNamespace())
+                .inNamespace(namespace)
                 .createOrReplace(kafkaUser));
             return createdKafkaUser.map(v -> this);
         }
@@ -557,32 +549,34 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         }
 
         Future<ReconciliationState> createRestProducer(Supplier<Date> dateSupplier) {
-            Future<ReconcileResult<Deployment>> restProducerFuture = Future.succeededFuture();
             log.info("Starting rest producer reconcile");
-            if (instance.getSpec().getRestProducer() != null) {
-                List<Future> restProducerFutures = new ArrayList<>();
-                RestProducerModel restProducer = new RestProducerModel(instance, imageConfig, status.getKafkaListeners());
-                if (restProducer.getCustomImage()) {
-                    customImageCount++;
-                }
-                restProducerFutures.add(serviceAccountOperator.createOrUpdate(restProducer.getServiceAccount()));
-                // Keep old service for Route
-                restProducerFutures.add(serviceOperator.createOrUpdate(restProducer.getExternalService()));
-                restProducerFutures.add(serviceOperator.createOrUpdate(restProducer.getInternalService()));
-                restProducerFutures.add(networkPolicyOperator.createOrUpdate(restProducer.getNetworkPolicy()));
-                restProducerFuture = CompositeFuture.join(restProducerFutures)
-                        .compose(res -> createOrUpdateRoutes(restProducer, restProducer.getRoutes()))
-                        .compose(routesHostMap -> reconcileCerts(restProducer, routesHostMap, dateSupplier))
-                        .compose(secretResult -> deploymentOperator.createOrUpdate(restProducer.getDeployment(secretResult.resource().getMetadata().getResourceVersion())));
+            List<Future> restProducerFutures = new ArrayList<>();
+            RestProducerModel restProducer = new RestProducerModel(instance, imageConfig, status.getKafkaListeners());
+            if (restProducer.getCustomImage()) {
+                customImageCount++;
             }
-
-            return restProducerFuture.map(v -> this);
+            restProducerFutures.add(serviceAccountOperator.reconcile(namespace, restProducer.getDefaultResourceName(), restProducer.getServiceAccount()));
+            // Keep old service for Route
+            restProducerFutures.add(serviceOperator.reconcile(namespace, restProducer.getInternalServiceName(), restProducer.getInternalService()));
+            restProducerFutures.add(serviceOperator.reconcile(namespace, restProducer.getExternalServiceName(), restProducer.getExternalService()));
+            restProducerFutures.add(networkPolicyOperator.reconcile(namespace, restProducer.getDefaultResourceName(), restProducer.getNetworkPolicy()));
+            return CompositeFuture.join(restProducerFutures)
+                .compose(res -> {
+                    return reconcileRoutes(restProducer, restProducer.getRoutes());
+                })
+                .compose(res -> reconcileCerts(restProducer, res, dateSupplier))
+                .compose(secretResult -> {
+                    String certGenerationID = null;
+                    if (secretResult.resourceOpt().isPresent()) {
+                        certGenerationID = secretResult.resource().getMetadata().getResourceVersion();
+                    }
+                    return deploymentOperator.reconcile(namespace, restProducer.getDefaultResourceName(), restProducer.getDeployment(certGenerationID));
+                }).map(this);
         }
 
         Future<ReconciliationState> createAdminApi(Supplier<Date> dateSupplier) {
             List<Future> adminApiFutures = new ArrayList<>();
             AdminApiModel adminApi = new AdminApiModel(instance, imageConfig, status.getKafkaListeners(), icpClusterData);
-            ReplicatorModel replicatorModel = new ReplicatorModel(instance);
             if (adminApi.getCustomImage()) {
                 customImageCount++;
             }
@@ -591,9 +585,8 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             adminApiFutures.add(serviceOperator.createOrUpdate(adminApi.getInternalService()));
             adminApiFutures.add(networkPolicyOperator.createOrUpdate(adminApi.getNetworkPolicy()));
             adminApiFutures.add(roleBindingOperator.createOrUpdate(adminApi.getRoleBinding()));
-            adminApiFutures.add(createReplicatorSecretIfRequired(replicatorModel));
             return CompositeFuture.join(adminApiFutures)
-                    .compose(res -> createOrUpdateRoutes(adminApi, adminApi.getRoutes()))
+                    .compose(res -> reconcileRoutes(adminApi, adminApi.getRoutes()))
                     .compose(routesHostMap -> {
                         String adminRouteHost = routesHostMap.get(adminApi.getRouteName(Listener.EXTERNAL_TLS_NAME));
                         String adminRouteUri = "https://" + adminRouteHost;
@@ -612,24 +605,30 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 customImageCount++;
             }
             if (schemaRegistry.getPersistentVolumeClaim() != null) {
-                schemaRegistryFutures.add(pvcOperator.createOrUpdate(schemaRegistry.getPersistentVolumeClaim()));
+                schemaRegistryFutures.add(pvcOperator.reconcile(namespace, schemaRegistry.getDefaultResourceName(), schemaRegistry.getPersistentVolumeClaim()));
+
             }
-            schemaRegistryFutures.add(serviceAccountOperator.createOrUpdate(schemaRegistry.getServiceAccount()));
-            schemaRegistryFutures.add(serviceOperator.createOrUpdate(schemaRegistry.getExternalService()));
-            schemaRegistryFutures.add(serviceOperator.createOrUpdate(schemaRegistry.getInternalService()));
-            schemaRegistryFutures.add(networkPolicyOperator.createOrUpdate(schemaRegistry.getNetworkPolicy()));
+            schemaRegistryFutures.add(serviceAccountOperator.reconcile(namespace, schemaRegistry.getDefaultResourceName(), schemaRegistry.getServiceAccount()));
+            schemaRegistryFutures.add(serviceOperator.reconcile(namespace, schemaRegistry.getExternalServiceName(), schemaRegistry.getExternalService()));
+            schemaRegistryFutures.add(serviceOperator.reconcile(namespace, schemaRegistry.getInternalServiceName(), schemaRegistry.getInternalService()));
+            schemaRegistryFutures.add(networkPolicyOperator.reconcile(namespace, schemaRegistry.getDefaultResourceName(), schemaRegistry.getNetworkPolicy()));
+
             return CompositeFuture.join(schemaRegistryFutures)
-                    // TODO the fact this returns the hostmap is unideal
-                    .compose(res -> createOrUpdateRoutes(schemaRegistry, schemaRegistry.getRoutes()))
+                    .compose(res -> reconcileRoutes(schemaRegistry, schemaRegistry.getRoutes()))
                     .compose(routesHostMap -> {
                         String schemaRouteHost = routesHostMap.get(schemaRegistry.getRouteName(Listener.EXTERNAL_TLS_NAME));
                         String schemaRouteUri = "https://" + schemaRouteHost;
                         updateEndpoints(new EventStreamsEndpoint(EventStreamsEndpoint.SCHEMA_REGISTRY_KEY, EventStreamsEndpoint.EndpointType.api, schemaRouteUri));
                         return Future.succeededFuture(routesHostMap);
                     })
-                    .compose(routesHostMap -> reconcileCerts(schemaRegistry, routesHostMap, dateSupplier))
-                    .compose(secretResult -> deploymentOperator.createOrUpdate(schemaRegistry.getDeployment(secretResult.resource().getMetadata().getResourceVersion())))
-                    .map(this);
+                    .compose(res -> reconcileCerts(schemaRegistry, res, dateSupplier))
+                    .compose(secretResult -> {
+                        String certGenerationID = null;
+                        if (secretResult.resourceOpt().isPresent()) {
+                            certGenerationID = secretResult.resource().getMetadata().getResourceVersion();
+                        }
+                        return deploymentOperator.reconcile(namespace, schemaRegistry.getDefaultResourceName(), schemaRegistry.getDeployment(certGenerationID));
+                    }).map(this);
         }
 
         Future<ReconciliationState> createAdminUI() {
@@ -638,20 +637,23 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             if (ui.getCustomImage()) {
                 customImageCount++;
             }
-            adminUIFutures.add(deploymentOperator.createOrUpdate(ui.getDeployment()));
-            adminUIFutures.add(serviceAccountOperator.createOrUpdate(ui.getServiceAccount()));
-            adminUIFutures.add(roleBindingOperator.createOrUpdate(ui.getRoleBinding()));
-            adminUIFutures.add(serviceOperator.createOrUpdate(ui.getService()));
-            adminUIFutures.add(networkPolicyOperator.createOrUpdate(ui.getNetworkPolicy()));
+            adminUIFutures.add(serviceAccountOperator.reconcile(namespace, ui.getDefaultResourceName(), ui.getServiceAccount()));
+            adminUIFutures.add(deploymentOperator.reconcile(namespace, ui.getDefaultResourceName(), ui.getDeployment()));
+            adminUIFutures.add(roleBindingOperator.reconcile(namespace, ui.getDefaultResourceName(), ui.getRoleBinding()));
+            adminUIFutures.add(serviceOperator.reconcile(namespace, ui.getDefaultResourceName(), ui.getService()));
+            adminUIFutures.add(networkPolicyOperator.reconcile(namespace, ui.getDefaultResourceName(), ui.getNetworkPolicy()));
+
             if (pfa.hasRoutes() && routeOperator != null) {
-                adminUIFutures.add(routeOperator.createOrUpdate(ui.getRoute()).compose(route -> {
-                    String uiRouteHost = route.resource().getSpec().getHost();
-                    String uiRouteUri = "https://" + uiRouteHost;
+                adminUIFutures.add(routeOperator.reconcile(namespace, ui.getRouteName(), ui.getRoute()).compose(route -> {
+                    if (route.resourceOpt().isPresent()) {
+                        String uiRouteHost = route.resource().getSpec().getHost();
+                        String uiRouteUri = "https://" + uiRouteHost;
 
-                    status.addToRoutes(AdminUIModel.COMPONENT_NAME, uiRouteHost);
-                    status.withNewAdminUiUrl(uiRouteUri);
-                    updateEndpoints(new EventStreamsEndpoint(EventStreamsEndpoint.UI_KEY, EventStreamsEndpoint.EndpointType.ui, uiRouteUri));
-
+                        status.addToRoutes(AdminUIModel.COMPONENT_NAME, uiRouteHost);
+                        status.withNewAdminUiUrl(uiRouteUri);
+                        
+                        updateEndpoints(new EventStreamsEndpoint("ui", EventStreamsEndpoint.EndpointType.ui, uiRouteUri));
+                    }
                     return Future.succeededFuture();
                 }));
             }
@@ -665,10 +667,10 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             if (collector.getCustomImage()) {
                 customImageCount++;
             }
-            collectorFutures.add(deploymentOperator.createOrUpdate(collector.getDeployment()));
-            collectorFutures.add(serviceAccountOperator.createOrUpdate(collector.getServiceAccount()));
-            collectorFutures.add(serviceOperator.createOrUpdate(collector.getService()));
-            collectorFutures.add(networkPolicyOperator.createOrUpdate(collector.getNetworkPolicy()));
+            collectorFutures.add(deploymentOperator.reconcile(namespace, collector.getDefaultResourceName(), collector.getDeployment()));
+            collectorFutures.add(serviceAccountOperator.reconcile(namespace, collector.getDefaultResourceName(), collector.getServiceAccount()));
+            collectorFutures.add(serviceOperator.reconcile(namespace, collector.getDefaultResourceName(), collector.getService()));
+            collectorFutures.add(networkPolicyOperator.reconcile(namespace, collector.getDefaultResourceName(), collector.getNetworkPolicy()));
             return CompositeFuture.join(collectorFutures)
                     .map(v -> this);
         }
@@ -692,7 +694,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 // that it exists already and repeat this process each time through the reconsitiation loop we would reset the
                 // clientid each time and break the UI. We need to ensure the client is created a single time and not updated. As a
                 // result, we have to check if it already exists and only attempt to create it if its not present.
-                Resource<Client, ClientDoneable> res = clientcr.inNamespace(instance.getMetadata().getNamespace()).withName(clientName);
+                Resource<Client, ClientDoneable> res = clientcr.inNamespace(namespace).withName(clientName);
                 Client existingClient = null;
                 if (res != null) {
                     existingClient = res.get();
@@ -701,7 +703,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 if (existingClient == null) {
                     log.info("Creating OAuth client '{}'", clientName);
                     Future<Client> createdClient = toFuture(() -> clientcr
-                            .inNamespace(instance.getMetadata().getNamespace())
+                            .inNamespace(namespace)
                             .createOrReplace(oidcclient));
                     return createdClient.map(v -> this);
 
@@ -756,13 +758,11 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         Future<ReconcileResult<Secret>> reconcileCerts(AbstractSecureEndpointModel model, Map<String, String> additionalHosts, Supplier<Date> dateSupplier) {
             log.info("Starting certificate reconciliation for: " + model.getComponentName());
             try {
-
                 boolean regenSecret = false;
                 Optional<Secret> certSecret = certificateManager.getSecret(model.getCertSecretName());
                 for (Listener listener: model.getTlsListeners()) {
 
                     String host = listener.isExposed() ? additionalHosts.getOrDefault(model.getRouteName(listener.getName()), "") : "";
-
                     List<String> hosts = host.isEmpty() ? Collections.emptyList() : Collections.singletonList(host);
                     Service service = listener.isExposed() ? model.getExternalService() : model.getInternalService();
                     Optional<CertAndKeySecretSource> certAndKeySecretSource = listener.getCertOverride(instance.getSpec());
@@ -789,16 +789,20 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                         regenSecret = true;
                     }
                 }
-
+                // services being null indicates that the secret should be deleted
+                if (model.getExternalService() != null || model.getInternalService() != null) {
+                    model.createCertificateSecretModelSecret();
+                }
                 // regen can't be false and the current certSecret not exist
-                return regenSecret ? secretOperator.createOrUpdate(model.getCertificateSecretModel()) : Future.succeededFuture(ReconcileResult.noop(certSecret.get()));
+                // get certificate can return n ull and hence delete the secret
+                return regenSecret ? secretOperator.reconcile(namespace, model.getCertSecretName(), model.getCertificateSecretModelSecret()) : Future.succeededFuture(ReconcileResult.noop(certSecret.get()));
             } catch (EventStreamsCertificateException e) {
                 log.error(e);
                 return Future.failedFuture(e);
             }
         }
 
-        private Future<Void> setTrustStoreForReplicator() {
+        private Future<Void> setTrustStoreForReplicator(ReplicatorCredentials replicatorCredentials) {
 
             Promise<Void> setAuthSet = Promise.promise();
 
@@ -812,7 +816,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             if (internalServerAuth.isPresent()) {
                 //get the truststore from the cluster
                 String resourceNameCA = instance.getMetadata().getName() + "-" + CLUSTER_CA_CERT_SECRET_NAME;
-                secretOperator.getAsync(instance.getMetadata().getNamespace(), resourceNameCA).setHandler(getRes -> {
+                secretOperator.getAsync(namespace, resourceNameCA).setHandler(getRes -> {
 
                     if (getRes.succeeded()) {
                         if (getRes.result() != null) {
@@ -833,7 +837,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             return setAuthSet.future();
         }
 
-        private Future<Void> setClientAuthForReplicator() {
+        private Future<Void> setClientAuthForReplicator(ReplicatorCredentials replicatorCredentials) {
 
             Promise<Void> setAuthSet = Promise.promise();
 
@@ -852,7 +856,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             if (internalClientAuth.isPresent()) {
 
                 // get the secret created by the KafkaUser
-                secretOperator.getAsync(instance.getMetadata().getNamespace(), resourceName).setHandler(getRes -> {
+                secretOperator.getAsync(namespace, resourceName).setHandler(getRes -> {
                     if (getRes.succeeded()) {
                         if (getRes.result() != null) {
                             replicatorCredentials.setReplicatorClientAuth(getRes.result());
@@ -872,33 +876,6 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             return setAuthSet.future();
         }
 
-        Future<Void> createReplicatorSecretIfRequired(ReplicatorModel replicatorModel) {
-            Promise<Void> createSecretPromise = Promise.promise();
-
-            String resourceName = instance.getMetadata().getName() + "-" + AbstractModel.APP_NAME + "-" + ReplicatorModel.REPLICATOR_SECRET_NAME;
-            secretOperator.getAsync(instance.getMetadata().getNamespace(), resourceName).setHandler(getRes -> {
-                if (getRes.succeeded()) {
-                    if (getRes.result() == null) {
-                        secretOperator.createOrUpdate(replicatorModel.getSecret()).setHandler(createSecretResult -> {
-                            if (createSecretResult.succeeded()) {
-                                createSecretPromise.complete();
-                            } else {
-                                log.error("Failed to create  the Replicator Secret", getRes.cause());
-                                createSecretPromise.fail(createSecretResult.cause());
-                            }
-                        });
-                    } else {
-                        log.debug("Replicator Secret Exists");
-                        createSecretPromise.complete();
-                    }
-                } else {
-                    log.error("Failed to query for the Replicator Secret", getRes.cause());
-                    createSecretPromise.fail("Failed to query for the Replicator Secret" + getRes.cause());
-                }
-            });
-            return createSecretPromise.future();
-        }
-
         private Condition buildErrorCondition(String message) {
             return new ConditionBuilder()
                 .withLastTransitionTime(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ").format(new Date()))
@@ -909,25 +886,27 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 .build();
         }
 
-        protected Future<Map<String, String>> createOrUpdateRoutes(AbstractSecureEndpointModel model, Map<String, Route> routes) {
+        protected Future<Map<String, String>> reconcileRoutes(AbstractSecureEndpointModel model, Map<String, Route> routes) {
             if (!pfa.hasRoutes() || routeOperator == null) {
                 return Future.succeededFuture(Collections.emptyMap());
             }
+
             List<Future> routeFutures = routes.entrySet()
                     .stream()
-                    .map(entry -> routeOperator.createOrUpdate(entry.getValue())
-                    .compose(routeResult -> {
-                        String routeHost = routeResult.resource().getSpec().getHost();
-                        if (routeHost.isEmpty()) {
-                            return Future.failedFuture("Cannot find host for " + routeResult.resource().getMetadata().getName());
-                        }
-
-                        // TODO this is a hack, change this
-                        status.addToRoutes(entry.getKey().replaceFirst(model.getResourcePrefix() + "-", ""), routeHost);
-                        Map<String, String> map = new HashMap<>(1); // Has to be HashMap for putAll
-                        map.put(entry.getKey(), routeHost);
-                        return Future.succeededFuture(map);
-                    }))
+                    .map(entry -> routeOperator.reconcile(namespace, entry.getKey(), entry.getValue())
+                        .compose(routeResult -> {
+                            
+                            Map<String, String> map = new HashMap<>(1); // Has to be HashMap for putAll
+                            if (!routeResult.resourceOpt().isPresent()) {
+                                map.put(entry.getKey(), "");
+                                return Future.succeededFuture(map);
+                            }
+                            String routeHost = routeResult.resource().getSpec().getHost();
+                            status.addToRoutes(entry.getKey().replaceFirst(model.getResourcePrefix() + "-", ""), routeHost);
+                            map.put(entry.getKey(), routeHost);
+                            return Future.succeededFuture(map);
+                        })
+                    )
                     .collect(Collectors.toList());
 
             return CompositeFuture.join(routeFutures)

@@ -124,15 +124,17 @@ public class EventStreamsCertificateManager {
 
     public Subject createSubject(Service service, List<String> additionalHosts) {
         Subject subject = new Subject();
-        String serviceName = service.getMetadata().getName();
-        String namespace = service.getMetadata().getNamespace();
-        subject.setOrganizationName(ORGANISATION_NAME);
-        subject.setCommonName(serviceName);
         Map<String, String> sbjAltNames = new HashMap<>();
-        sbjAltNames.put("DNS.1", serviceName);
-        sbjAltNames.put("DNS.2", String.format("%s.%s", serviceName, namespace));
-        sbjAltNames.put("DNS.3", String.format("%s.%s.svc", serviceName, namespace));
-        sbjAltNames.put("DNS.4", String.format("%s.%s.svc.%s", serviceName, namespace, ModelUtils.KUBERNETES_SERVICE_DNS_DOMAIN));
+        if (service != null) {
+            String serviceName = service.getMetadata().getName();
+            String namespace = service.getMetadata().getNamespace();
+            subject.setOrganizationName(ORGANISATION_NAME);
+            subject.setCommonName(serviceName);
+            sbjAltNames.put("DNS.1", serviceName);
+            sbjAltNames.put("DNS.2", String.format("%s.%s", serviceName, namespace));
+            sbjAltNames.put("DNS.3", String.format("%s.%s.svc", serviceName, namespace));
+            sbjAltNames.put("DNS.4", String.format("%s.%s.svc.%s", serviceName, namespace, ModelUtils.KUBERNETES_SERVICE_DNS_DOMAIN));
+        }
         for (int i = 0; i < additionalHosts.size(); i++) {
             sbjAltNames.put(String.format("DNS.%d", i + 5), additionalHosts.get(i));
         }

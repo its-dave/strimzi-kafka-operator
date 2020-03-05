@@ -99,7 +99,6 @@ public abstract class AbstractModel {
     public static final String DEFAULT_PROMETHEUS_PORT = "8081";
 
     public static final String CONFIG_MAP_SUFFIX = "-config";
-    public static final String NETWORK_POLICY_SUFFIX = "-network-policy";
 
     private static final String KUBERNETES_ARCHITECTURE_LABEL_NAME = "beta.kubernetes.io/arch";
     private static final String DEFAULT_ARCHITECTURE = "amd64";
@@ -645,7 +644,7 @@ public abstract class AbstractModel {
                                                 List<NetworkPolicyEgressRule> egressRules) {
         return new NetworkPolicyBuilder()
             .withNewMetadata()
-                .withName(getDefaultResourceName() + NETWORK_POLICY_SUFFIX)
+                .withName(getDefaultResourceName())
                 .withNamespace(namespace)
                 .withOwnerReferences(getEventStreamsOwnerReference())
                 .addToLabels(getComponentLabels())

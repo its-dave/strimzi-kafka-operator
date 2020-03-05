@@ -6265,6 +6265,10 @@ spec:
             adminApi:
               type: object
               properties:
+                replicas:
+                  type: integer
+                  minimum: 1
+                  description: The number of instances of the admin API pod to run.
                 envVars:
                   type: array
                   items:
@@ -6355,10 +6359,6 @@ spec:
                       type: integer
                       minimum: 0
                       description: The timeout for each attempted health check.
-                replicas:
-                  type: integer
-                  minimum: 1
-                  description: The number of instances of the admin API pod to run.
                 resources:
                   type: object
                   properties:
@@ -6688,6 +6688,10 @@ spec:
             adminProxy:
               type: object
               properties:
+                replicas:
+                  type: integer
+                  minimum: 1
+                  description: The number of instances of the admin API proxy to run.
                 envVars:
                   type: array
                   items:
@@ -6778,10 +6782,6 @@ spec:
                       type: integer
                       minimum: 0
                       description: The timeout for each attempted health check.
-                replicas:
-                  type: integer
-                  minimum: 1
-                  description: The number of instances of the admin API proxy to run.
                 resources:
                   type: object
                   properties:
