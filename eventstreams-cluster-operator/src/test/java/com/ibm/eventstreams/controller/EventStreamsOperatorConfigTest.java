@@ -32,7 +32,6 @@ public class EventStreamsOperatorConfigTest {
         Map<String, String> envMap = Stream
             .of(new String[][]{
                 {EventStreamsOperatorConfig.EVENTSTREAMS_DEFAULT_ADMIN_API_IMAGE, "api"},
-                {EventStreamsOperatorConfig.EVENTSTREAMS_DEFAULT_ADMIN_PROXY_IMAGE, "proxy"},
                 {EventStreamsOperatorConfig.EVENTSTREAMS_DEFAULT_ADMIN_UI_IMAGE, "ui"},
                 {EventStreamsOperatorConfig.EVENTSTREAMS_DEFAULT_ADMIN_UI_REDIS_IMAGE, "ui-redis" },
                 {EventStreamsOperatorConfig.EVENTSTREAMS_DEFAULT_COLLECTOR_IMAGE, "collector"},
@@ -48,8 +47,6 @@ public class EventStreamsOperatorConfigTest {
 
         assertThat(imageConfig.getAdminApiImage().get(),
                    is(envMap.get(EventStreamsOperatorConfig.EVENTSTREAMS_DEFAULT_ADMIN_API_IMAGE)));
-        assertThat(imageConfig.getAdminProxyImage().get(),
-                   is(envMap.get(EventStreamsOperatorConfig.EVENTSTREAMS_DEFAULT_ADMIN_PROXY_IMAGE)));
         assertThat(imageConfig.getAdminUIImage().get(),
                    is(envMap.get(EventStreamsOperatorConfig.EVENTSTREAMS_DEFAULT_ADMIN_UI_IMAGE)));
         assertThat(imageConfig.getAdminUIRedisImage().get(),
@@ -72,7 +69,6 @@ public class EventStreamsOperatorConfigTest {
         EventStreamsOperatorConfig.ImageLookup imageConfig = eventStreamsOperatorConfig.getImages();
 
         assertThat(imageConfig.getAdminApiImage(), is(Optional.empty()));
-        assertThat(imageConfig.getAdminProxyImage(), is(Optional.empty()));
         assertThat(imageConfig.getAdminUIImage(), is(Optional.empty()));
         assertThat(imageConfig.getAdminUIRedisImage(), is(Optional.empty()));
         assertThat(imageConfig.getCollectorImage(), is(Optional.empty()));

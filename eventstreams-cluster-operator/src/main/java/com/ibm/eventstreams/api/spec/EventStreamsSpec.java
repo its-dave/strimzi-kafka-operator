@@ -28,7 +28,7 @@ import java.io.Serializable;
 @JsonDeserialize(using = JsonDeserializer.None.class)
 @Buildable(editableEnabled = false, generateBuilderPackage = false, builderPackage = "io.fabric8.kubernetes.api.builder")
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({"architecture", "images", "adminApiComponent", "restProducerComponent", "adminProxyComponent", "adminUIComponent", "schemaRegistryComponent", "collectorComponent", "monitoring", "security", "replicator", "strimziOverrides"})
+@JsonPropertyOrder({"architecture", "images", "adminApiComponent", "restProducerComponent", "adminUIComponent", "schemaRegistryComponent", "collectorComponent", "monitoring", "security", "replicator", "strimziOverrides"})
 @EqualsAndHashCode
 public class EventStreamsSpec implements Serializable {
 
@@ -38,7 +38,6 @@ public class EventStreamsSpec implements Serializable {
     private String appVersion;
     private AdminApiSpec adminApi;
     private ComponentSpec restProducer;
-    private AdminProxySpec adminProxy;
     private AdminUISpec adminUI;
     private SchemaRegistrySpec schemaRegistry;
     private ComponentSpec collector;
@@ -102,15 +101,6 @@ public class EventStreamsSpec implements Serializable {
 
     public void setRestProducer(ComponentSpec spec) {
         this.restProducer = spec;
-    }
-
-    @JsonProperty(required = true)
-    public AdminProxySpec getAdminProxy() {
-        return adminProxy;
-    }
-
-    public void setAdminProxy(AdminProxySpec spec) {
-        this.adminProxy = spec;
     }
 
     @Description("The specification of the admin user interface")

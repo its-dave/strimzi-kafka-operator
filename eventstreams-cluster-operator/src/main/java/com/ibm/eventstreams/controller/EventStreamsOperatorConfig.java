@@ -34,7 +34,6 @@ public class EventStreamsOperatorConfig {
     public static final String EVENTSTREAMS_FULL_RECONCILIATION_INTERVAL_MS = "EVENTSTREAMS_FULL_RECONCILIATION_INTERVAL_MS";
 
     public static final String EVENTSTREAMS_DEFAULT_REST_PRODUCER_IMAGE = "EVENTSTREAMS_DEFAULT_REST_PRODUCER_IMAGE";
-    public static final String EVENTSTREAMS_DEFAULT_ADMIN_PROXY_IMAGE = "EVENTSTREAMS_DEFAULT_ADMIN_PROXY_IMAGE";
     public static final String EVENTSTREAMS_DEFAULT_ADMIN_API_IMAGE = "EVENTSTREAMS_DEFAULT_ADMIN_API_IMAGE";
     public static final String EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_IMAGE = "EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_IMAGE";
     public static final String EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_AVRO_IMAGE = "EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_AVRO_IMAGE";
@@ -133,10 +132,6 @@ public class EventStreamsOperatorConfig {
 
         public Optional<String> getAdminApiImage() {
             return Optional.ofNullable(images.get(EVENTSTREAMS_DEFAULT_ADMIN_API_IMAGE));
-        }
-
-        public Optional<String> getAdminProxyImage() {
-            return Optional.ofNullable(images.get(EVENTSTREAMS_DEFAULT_ADMIN_PROXY_IMAGE));
         }
 
         public Optional<String> getAdminUIImage() {

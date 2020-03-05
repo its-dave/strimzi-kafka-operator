@@ -29,7 +29,6 @@ import com.ibm.eventstreams.api.Listener;
 import com.ibm.eventstreams.api.model.AbstractModel;
 import com.ibm.eventstreams.api.model.AbstractSecureEndpointModel;
 import com.ibm.eventstreams.api.model.AdminApiModel;
-import com.ibm.eventstreams.api.model.AdminProxyModel;
 import com.ibm.eventstreams.api.model.AdminUIModel;
 import com.ibm.eventstreams.api.model.ClusterSecretsModel;
 import com.ibm.eventstreams.api.model.CollectorModel;
@@ -172,7 +171,6 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 .compose(state -> state.waitForKafkaStatus())
                 .compose(state -> state.createReplicatorUsers()) //needs to be before createReplicator and createAdminAPI
                 .compose(state -> state.createInternalKafkaUser())
-                .compose(state -> state.createAdminProxy())
                 .compose(state -> state.createRestProducer(this::dateSupplier))
                 .compose(state -> state.createReplicator())
                 .compose(state -> state.createAdminApi(this::dateSupplier))
@@ -525,27 +523,6 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 .inNamespace(namespace)
                 .createOrReplace(kafkaUser));
             return createdKafkaUser.map(v -> this);
-        }
-
-        Future<ReconciliationState> createAdminProxy() {
-            List<Future> adminProxyFutures = new ArrayList<>();
-            AdminProxyModel adminProxy = new AdminProxyModel(instance, imageConfig, pfa.hasRoutes());
-            if (adminProxy.getCustomImage()) {
-                customImageCount++;
-            }
-            adminProxyFutures.add(deploymentOperator.createOrUpdate(adminProxy.getDeployment()));
-            adminProxyFutures.add(serviceAccountOperator.createOrUpdate(adminProxy.getServiceAccount()));
-            adminProxyFutures.add(configMapOperator.createOrUpdate(adminProxy.getConfigMap()));
-            adminProxyFutures.add(serviceOperator.createOrUpdate(adminProxy.getService()));
-            adminProxyFutures.add(networkPolicyOperator.createOrUpdate(adminProxy.getNetworkPolicy()));
-            if (pfa.hasRoutes() && routeOperator != null) {
-                adminProxyFutures.add(routeOperator.createOrUpdate(adminProxy.getRoute()).compose(route -> {
-                    status.addToRoutes(AdminProxyModel.COMPONENT_NAME, route.resource().getSpec().getHost());
-                    return Future.succeededFuture();
-                }));
-            }
-            return CompositeFuture.join(adminProxyFutures)
-                    .map(v -> this);
         }
 
         Future<ReconciliationState> createRestProducer(Supplier<Date> dateSupplier) {

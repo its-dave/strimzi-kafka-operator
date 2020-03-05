@@ -40,10 +40,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class EventStreamsIT {
 
     private static final String NAMESPACE = "es-it";
-    private static final String EVENTSTREAMS_CUSTOM_RESOURCE_DEFINITION = System.getProperty("installDirectory") + "/cluster-operator/140-Crd-EventStreams.yaml";
+    private static final String EVENTSTREAMS_CUSTOM_RESOURCE_DEFINITION = System.getProperty("installDirectory") + "/ibm-eventstreams-operator/140-Crd-eventstreams.yaml";
     private static final String API_VERSION = "eventstreams.ibm.com/v1beta1";
     private static final String NAME = "my-es";
     private static final String ARCHITECTURE = "amd64";
+    private static final String VERSION = "2020.1.1";
 
     private KafkaSpec validKafkaSpec;
     private KubeClusterResource cluster = KubeClusterResource.getInstance();
@@ -107,7 +108,12 @@ class EventStreamsIT {
             .withApiVersion(API_VERSION)
             .withMetadata(new ObjectMetaBuilder().withName(NAME).build())
             .withNewSpec()
+                .withAppVersion(VERSION)
                 .withArchitecture(ARCHITECTURE)
+                .withNewAdminApi()
+                    .withReplicas(1)
+                .endAdminApi()
+                .withStrimziOverrides(validKafkaSpec)
             .endSpec()
             .build();
 
@@ -120,13 +126,11 @@ class EventStreamsIT {
             .withApiVersion(API_VERSION)
             .withMetadata(new ObjectMetaBuilder().withName(NAME).build())
             .withNewSpec()
+                .withAppVersion(VERSION)
                 .withArchitecture(ARCHITECTURE)
                 .withNewAdminApi()
                     .withReplicas(1)
                 .endAdminApi()
-                .withNewAdminProxy()
-                    .withReplicas(1)
-                .endAdminProxy()
                 .withNewRestProducer()
                     .withReplicas(1)
                 .endRestProducer()
@@ -160,6 +164,7 @@ class EventStreamsIT {
             .withApiVersion(API_VERSION)
             .withMetadata(new ObjectMetaBuilder().withName(NAME).build())
             .withNewSpec()
+                .withAppVersion(VERSION)
                 .withArchitecture(ARCHITECTURE)
                 .withStrimziOverrides(invalidKafkaReplicasKafkaSpec)
             .endSpec()
@@ -181,6 +186,7 @@ class EventStreamsIT {
             .withApiVersion(API_VERSION)
             .withMetadata(new ObjectMetaBuilder().withName(NAME).build())
             .withNewSpec()
+                .withAppVersion(VERSION)
                 .withArchitecture(ARCHITECTURE)
                 .withStrimziOverrides(invalidZookeeperReplicasKafkaSpec)
             .endSpec()
@@ -195,6 +201,7 @@ class EventStreamsIT {
             .withApiVersion(API_VERSION)
             .withMetadata(new ObjectMetaBuilder().withName(NAME).build())
             .withNewSpec()
+                .withAppVersion(VERSION)
                 .withArchitecture(ARCHITECTURE)
                 .withNewAdminApi()
                     .withReplicas(0)
@@ -211,26 +218,11 @@ class EventStreamsIT {
             .withApiVersion(API_VERSION)
             .withMetadata(new ObjectMetaBuilder().withName(NAME).build())
             .withNewSpec()
+                .withAppVersion(VERSION)
                 .withArchitecture(ARCHITECTURE)
                 .withNewRestProducer()
                     .withReplicas(0)
                 .endRestProducer()
-            .endSpec()
-            .build();
-
-        assertThrows(KubeClusterException.InvalidResource.class, () -> createDeleteResource(instance));
-    }
-
-    @Test
-    void testAdminProxyZeroReplicas() {
-        EventStreams instance = new EventStreamsBuilder()
-            .withApiVersion(API_VERSION)
-            .withMetadata(new ObjectMetaBuilder().withName(NAME).build())
-            .withNewSpec()
-                .withArchitecture(ARCHITECTURE)
-                .withNewAdminProxy()
-                    .withReplicas(0)
-                .endAdminProxy()
             .endSpec()
             .build();
 
@@ -243,6 +235,7 @@ class EventStreamsIT {
             .withApiVersion(API_VERSION)
             .withMetadata(new ObjectMetaBuilder().withName(NAME).build())
             .withNewSpec()
+                .withAppVersion(VERSION)
                 .withArchitecture(ARCHITECTURE)
                 .withNewAdminUI()
                     .withReplicas(0)
@@ -259,6 +252,7 @@ class EventStreamsIT {
             .withApiVersion(API_VERSION)
             .withMetadata(new ObjectMetaBuilder().withName(NAME).build())
             .withNewSpec()
+                .withAppVersion(VERSION)
                 .withArchitecture(ARCHITECTURE)
                 .withNewSchemaRegistry()
                     .withReplicas(0)
@@ -275,6 +269,7 @@ class EventStreamsIT {
             .withApiVersion(API_VERSION)
             .withMetadata(new ObjectMetaBuilder().withName(NAME).build())
             .withNewSpec()
+                .withAppVersion(VERSION)
                 .withArchitecture(ARCHITECTURE)
                 .withNewCollector()
                     .withReplicas(0)

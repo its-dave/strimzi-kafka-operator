@@ -20,8 +20,6 @@ import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.spec.EventStreamsSpecBuilder;
-import com.ibm.eventstreams.api.spec.ExternalAccess;
-import com.ibm.eventstreams.api.spec.ExternalAccessBuilder;
 import com.ibm.eventstreams.api.spec.SecuritySpec;
 import com.ibm.eventstreams.api.spec.SecuritySpecBuilder;
 import com.ibm.eventstreams.controller.EventStreamsOperatorConfig;
@@ -109,18 +107,6 @@ public class AdminApiModelTest {
     private AdminApiModel createDefaultAdminApiModel() {
         EventStreams eventStreamsResource = createDefaultEventStreams().build();
         return new AdminApiModel(eventStreamsResource, imageConfig, listeners, mockIcpClusterDataMap);
-    }
-
-    private EventStreamsBuilder createDefaultEventStreamsWithExternalAccess(String type) {
-        ExternalAccess externalAccess = new ExternalAccessBuilder().withNewType(type).build();
-
-        return ModelUtils.createDefaultEventStreams(instanceName)
-                .editSpec()
-                .withNewAdminProxy()
-                .withReplicas(defaultReplicas)
-                .withExternalAccess(externalAccess)
-                .endAdminProxy()
-                .endSpec();
     }
 
     @Test

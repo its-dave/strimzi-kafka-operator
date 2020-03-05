@@ -122,8 +122,6 @@ spec:
                   fieldPath: metadata.name
             - name: EVENTSTREAMS_DEFAULT_REST_PRODUCER_IMAGE
               value: "{{ default .Values.restProducer.image.repository .Values.imageRepositoryOverride }}/{{ .Values.restProducer.image.name }}:{{ .Values.restProducer.image.tag }}"
-            - name: EVENTSTREAMS_DEFAULT_ADMIN_PROXY_IMAGE
-              value: "{{ default .Values.adminProxy.image.repository .Values.imageRepositoryOverride }}/{{ .Values.adminProxy.image.name }}:{{ .Values.adminProxy.image.tag }}"
             - name: EVENTSTREAMS_DEFAULT_ADMIN_API_IMAGE
               value: "{{ default .Values.adminApi.image.repository .Values.imageRepositoryOverride }}/{{ .Values.adminApi.image.name }}:{{ .Values.adminApi.image.tag }}"
             - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_IMAGE

@@ -52,10 +52,8 @@ import java.util.stream.Collectors;
 
 import com.ibm.eventstreams.api.Labels;
 import com.ibm.eventstreams.api.Listener;
-import com.ibm.eventstreams.api.model.AbstractModel;
 import com.ibm.eventstreams.api.model.AbstractSecureEndpointModel;
 import com.ibm.eventstreams.api.model.AdminApiModel;
-import com.ibm.eventstreams.api.model.AdminProxyModel;
 import com.ibm.eventstreams.api.model.AdminUIModel;
 import com.ibm.eventstreams.api.model.CertificateSecretModel;
 import com.ibm.eventstreams.api.model.ClusterSecretsModel;
@@ -149,7 +147,6 @@ public class EventStreamsOperatorTest {
 
     private static final String NAMESPACE = "test-namespace";
     private static final String CLUSTER_NAME = "my-es";
-    private static final String PROXY_ROUTE_NAME = CLUSTER_NAME + "-ibm-es-" + AdminProxyModel.COMPONENT_NAME;
     private static final String UI_ROUTE_NAME = CLUSTER_NAME + "-ibm-es-" + AdminUIModel.COMPONENT_NAME;
     private static final String REST_PRODUCER_ROUTE_NAME = CLUSTER_NAME + "-ibm-es-" + RestProducerModel.COMPONENT_NAME;
     private static final String SCHEMA_REGISTRY_ROUTE_NAME = CLUSTER_NAME + "-ibm-es-" + SchemaRegistryModel.COMPONENT_NAME;
@@ -257,7 +254,6 @@ public class EventStreamsOperatorTest {
         Set<String> expectedResources = expectedResourcesWithReplicas.keySet();
         Set<String> expectedServices = getExpectedServiceNames(CLUSTER_NAME);
         Set<String> expectedRoutes = getExpectedRouteNames(CLUSTER_NAME);
-        Set<String> expectedConfigMaps = getExpectedConfigMapNames(CLUSTER_NAME);
         Set<String> expectedSecrets = getExpectedSecretNames(CLUSTER_NAME);
         Set<String> expectedKafkaUsers = getExpectedKafkaUsers(CLUSTER_NAME);
         Set<String> expectedKafkas = getExpectedKafkas(CLUSTER_NAME);
@@ -271,7 +267,6 @@ public class EventStreamsOperatorTest {
                 }
                 assertTrue(ar.succeeded());
             });
-            verifyHasOnlyResources(context, expectedConfigMaps, KubeResourceType.CONFIG_MAPS);
             verifyHasOnlyResources(context, expectedResources, KubeResourceType.DEPLOYMENTS);
             verifyReplicasInDeployments(context, expectedResourcesWithReplicas);
             verifyHasOnlyResources(context, expectedServices, KubeResourceType.SERVICES);
@@ -311,13 +306,11 @@ public class EventStreamsOperatorTest {
         Set<String> expectedResources = expectedResourcesWithReplicas.keySet();
         Set<String> expectedServices = getExpectedServiceNames(CLUSTER_NAME);
         Set<String> expectedRoutes = new HashSet<>();
-        Set<String> expectedConfigMaps = getExpectedConfigMapNames(CLUSTER_NAME);
         Set<String> expectedSecrets = getExpectedSecretNames(CLUSTER_NAME);
 
         Checkpoint async = context.checkpoint();
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster).setHandler(ar -> {
             context.verify(() -> assertTrue(ar.succeeded(), ar.toString()));
-            verifyHasOnlyResources(context, expectedConfigMaps, KubeResourceType.CONFIG_MAPS);
             verifyHasOnlyResources(context, expectedResources, KubeResourceType.DEPLOYMENTS);
             verifyHasOnlyResources(context, expectedServices, KubeResourceType.SERVICES);
             verifyHasOnlyResources(context, expectedRoutes, KubeResourceType.ROUTES);
@@ -561,7 +554,6 @@ public class EventStreamsOperatorTest {
         Set<String> expectedResources = expectedResourcesWithReplicas.keySet();
         Set<String> expectedServices = getExpectedServiceNames(CLUSTER_NAME);
         Set<String> expectedRoutes = getExpectedRouteNames(CLUSTER_NAME);
-        Set<String> expectedConfigMaps = getExpectedConfigMapNames(CLUSTER_NAME);
         Set<String> expectedSecrets = getExpectedSecretNames(CLUSTER_NAME);
 
         // Create a cluster
@@ -573,7 +565,6 @@ public class EventStreamsOperatorTest {
                 }
                 assertTrue(ar.succeeded());
             });
-            verifyHasOnlyResources(context, expectedConfigMaps, KubeResourceType.CONFIG_MAPS);
             verifyHasOnlyResources(context, expectedResources, KubeResourceType.DEPLOYMENTS);
             verifyHasOnlyResources(context, expectedServices, KubeResourceType.SERVICES);
             verifyHasOnlyResources(context, expectedRoutes, KubeResourceType.ROUTES);
@@ -586,7 +577,6 @@ public class EventStreamsOperatorTest {
         install.compose(v -> {
             return esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster).setHandler(ar -> {
                 context.verify(() -> assertTrue(ar.succeeded()));
-                verifyHasOnlyResources(context, expectedConfigMaps, KubeResourceType.CONFIG_MAPS);
                 verifyHasOnlyResources(context, expectedResources, KubeResourceType.DEPLOYMENTS);
                 verifyHasOnlyResources(context, expectedServices, KubeResourceType.SERVICES);
                 verifyHasOnlyResources(context, expectedRoutes, KubeResourceType.ROUTES);
@@ -677,7 +667,6 @@ public class EventStreamsOperatorTest {
         Set<String> expectedResources = expectedResourcesWithReplicas.keySet();
         Set<String> expectedServices = getExpectedServiceNames(CLUSTER_NAME);
         Set<String> expectedRoutes = getExpectedRouteNames(CLUSTER_NAME);
-        Set<String> expectedConfigMaps = getExpectedConfigMapNames(CLUSTER_NAME);
 
         Kafka mockKafka = new Kafka();
         mockKafka.setMetadata(new ObjectMetaBuilder().withName(CLUSTER_NAME).withNamespace(NAMESPACE).build());
@@ -688,7 +677,6 @@ public class EventStreamsOperatorTest {
         Checkpoint async = context.checkpoint();
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster).setHandler(ar -> {
             context.verify(() -> assertTrue(ar.succeeded(), ar.toString()));
-            verifyHasOnlyResources(context, expectedConfigMaps, KubeResourceType.CONFIG_MAPS);
             verifyHasOnlyResources(context, expectedResources, KubeResourceType.DEPLOYMENTS);
             verifyHasOnlyResources(context, expectedServices, KubeResourceType.SERVICES);
             verifyHasOnlyResources(context, expectedRoutes, KubeResourceType.ROUTES);
@@ -1180,8 +1168,6 @@ public class EventStreamsOperatorTest {
                     .withNewAppVersion(DEFAULT_VERSION)
                     .withNewAdminApi()
                     .endAdminApi()
-                    .withNewAdminProxy()
-                    .endAdminProxy()
                     .withStrimziOverrides(new KafkaSpecBuilder()
                             .withNewKafka()
                                 .withReplicas(1)
@@ -1200,11 +1186,9 @@ public class EventStreamsOperatorTest {
             .build();
 
         Set<String> expectedDeployments = new HashSet<>();
-        expectedDeployments.add(CLUSTER_NAME + "-" + APP_NAME + "-" + AdminProxyModel.COMPONENT_NAME);
         expectedDeployments.add(CLUSTER_NAME + "-" + APP_NAME + "-" + AdminApiModel.COMPONENT_NAME);
 
         Set<String> expectedServices = new HashSet<>();
-        expectedServices.add(CLUSTER_NAME + "-" + APP_NAME + "-" + AdminProxyModel.COMPONENT_NAME);
         expectedServices.add(CLUSTER_NAME + "-" + APP_NAME + "-" + AdminApiModel.COMPONENT_NAME + "-" + AbstractSecureEndpointModel.EXTERNAL_SERVICE_SUFFIX);
         expectedServices.add(CLUSTER_NAME + "-" + APP_NAME + "-" + AdminApiModel.COMPONENT_NAME + "-" + AbstractSecureEndpointModel.INTERNAL_SERVICE_SUFFIX);
 
@@ -1212,15 +1196,12 @@ public class EventStreamsOperatorTest {
         // expectedRoutes.add(PROXY_ROUTE_NAME);
         // expectedRoutes.add(ADMIN_API_ROUTE_NAME);
 
-        Set<String> expectedConfigMaps = new HashSet<>();
-        expectedConfigMaps.add(CLUSTER_NAME + "-" + APP_NAME + "-" + AdminProxyModel.COMPONENT_NAME + AbstractModel.CONFIG_MAP_SUFFIX);
 
         // Set<String> expectedSecrets = getExpectedSecretNames(CLUSTER_NAME);
         // expectedSecrets.add(CLUSTER_NAME + "-" + APP_NAME + "-" + AdminApiModel.COMPONENT_NAME + "-" + CertificateSecretModel.CERT_SECRET_NAME_POSTFIX);
 
         Checkpoint async = context.checkpoint();
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), minimalCluster).onComplete(context.succeeding(ar -> {
-            verifyHasOnlyResources(context, expectedConfigMaps, KubeResourceType.CONFIG_MAPS);
             verifyHasOnlyResources(context, expectedDeployments, KubeResourceType.DEPLOYMENTS);
             verifyHasOnlyResources(context, expectedServices, KubeResourceType.SERVICES);
             // verifyResources(context, expectedRoutes, KubeResourceType.ROUTES);
@@ -1243,8 +1224,6 @@ public class EventStreamsOperatorTest {
                     .withNewAppVersion(DEFAULT_VERSION)
                     .withNewAdminApi()
                     .endAdminApi()
-                    .withNewAdminProxy()
-                    .endAdminProxy()
                     .withStrimziOverrides(new KafkaSpecBuilder()
                             .withNewKafka()
                                 .withReplicas(1)
@@ -1563,7 +1542,6 @@ public class EventStreamsOperatorTest {
 
     private Map<String, Integer> getExpectedResourcesWithReplicas(String clusterName) {
         Map<String, Integer> expectedDeployments = new HashMap<>();
-        expectedDeployments.put(clusterName + "-" + APP_NAME + "-" + AdminProxyModel.COMPONENT_NAME, EXPECTED_DEFAULT_REPLICAS);
         expectedDeployments.put(clusterName + "-" + APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME, EXPECTED_DEFAULT_REPLICAS);
         expectedDeployments.put(clusterName + "-" + APP_NAME + "-" + RestProducerModel.COMPONENT_NAME, EXPECTED_DEFAULT_REPLICAS);
         expectedDeployments.put(clusterName + "-" + APP_NAME + "-" + AdminApiModel.COMPONENT_NAME, EXPECTED_DEFAULT_REPLICAS);
@@ -1574,7 +1552,6 @@ public class EventStreamsOperatorTest {
 
     private Set<String> getExpectedServiceNames(String clusterName) {
         Set<String> expectedServices = new HashSet<>();
-        expectedServices.add(clusterName + "-" + APP_NAME + "-" + AdminProxyModel.COMPONENT_NAME);
         expectedServices.add(clusterName + "-" + APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME + "-" + AbstractSecureEndpointModel.EXTERNAL_SERVICE_SUFFIX);
         expectedServices.add(clusterName + "-" + APP_NAME + "-" + RestProducerModel.COMPONENT_NAME + "-" + AbstractSecureEndpointModel.EXTERNAL_SERVICE_SUFFIX);
         expectedServices.add(clusterName + "-" + APP_NAME + "-" + AdminApiModel.COMPONENT_NAME + "-" + AbstractSecureEndpointModel.EXTERNAL_SERVICE_SUFFIX);
@@ -1586,15 +1563,8 @@ public class EventStreamsOperatorTest {
         return expectedServices;
     }
 
-    private Set<String> getExpectedConfigMapNames(String clusterName) {
-        Set<String> expectedCm = new HashSet<>();
-        expectedCm.add(clusterName + "-" + APP_NAME + "-" + AdminProxyModel.COMPONENT_NAME + AdminProxyModel.CONFIG_MAP_SUFFIX);
-        return expectedCm;
-    }
-
     private Set<String> getExpectedRouteNames(String clusterName) {
         Set<String> expectedRoutes = new HashSet<>();
-        expectedRoutes.add(PROXY_ROUTE_NAME);
         expectedRoutes.add(UI_ROUTE_NAME);
         expectedRoutes.add(REST_PRODUCER_ROUTE_NAME + "-" + Listener.EXTERNAL_TLS_NAME);
         expectedRoutes.add(SCHEMA_REGISTRY_ROUTE_NAME + "-" + Listener.EXTERNAL_TLS_NAME);
@@ -1759,9 +1729,6 @@ public class EventStreamsOperatorTest {
                     .withNewRestProducer()
                         .withReplicas(1)
                     .endRestProducer()
-                    .withNewAdminProxy()
-                        .withReplicas(1)
-                    .endAdminProxy()
                     .withNewSchemaRegistry()
                         .withReplicas(1)
                     .endSchemaRegistry()
@@ -1786,7 +1753,6 @@ public class EventStreamsOperatorTest {
 
     private void createRoutesInMockClient() {
         List<Route> routes = new ArrayList<>();
-        routes.add(createRoute(PROXY_ROUTE_NAME, NAMESPACE));
         routes.add(createRoute(UI_ROUTE_NAME, NAMESPACE));
         routes.add(createRoute(REST_PRODUCER_ROUTE_NAME + "-" + Listener.EXTERNAL_TLS_NAME, NAMESPACE));
         routes.add(createRoute(SCHEMA_REGISTRY_ROUTE_NAME + "-" + Listener.EXTERNAL_TLS_NAME, NAMESPACE));

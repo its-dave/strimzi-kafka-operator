@@ -12,8 +12,6 @@ spec:
   architecture: "amd64"
   adminApi:
     replicas: 1
-  adminProxy:
-    replicas: 1
   adminUI:
     replicas: 1
   restProducer:
