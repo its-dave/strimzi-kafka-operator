@@ -4,7 +4,7 @@ set -e
 
 echo "Attempting to curl yq..."
 
-sudo curl -Lvo /usr/local/bin/yq "https://github.com/mikefarah/yq/releases/download/2.4.0/yq_linux_${B_ARCH}"
+sudo curl -Lvo /usr/local/bin/yq "https://github.com/mikefarah/yq/releases/download/3.2.1/yq_linux_${B_ARCH}"
 sudo chmod +x /usr/local/bin/yq
 
 OPERATOR_SDK_VERSION=v0.15.1
