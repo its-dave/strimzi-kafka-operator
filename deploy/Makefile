@@ -22,11 +22,14 @@ KAFKA_BRIDGE_CRD_FILE := $(CRD_DIR)/eventstreams.ibm.com_kafkabridge_crd.yaml
 KAFKA_CONNECTOR_CRD_FILE := $(CRD_DIR)/eventstreams.ibm.com_kafkaconnector_crd.yaml
 KAFKA_MIRROR_MAKER_2_CRD_FILE := $(CRD_DIR)/eventstreams.ibm.com_kafkamirrormaker2_crd.yaml
 
-
 BUNDLE_DIR = $(WORKING_DIR)/olm-catalog/$(OPERATOR_NAME)/$(CSV_VERSION)
 GENERATED_CSV := $(BUNDLE_DIR)/$(OPERATOR_NAME).v$(CSV_VERSION).clusterserviceversion.yaml
 OPERATOR_FILE := $(TEMP_DIR)/operator.yaml
 ROLE_FILE := $(TEMP_DIR)/role.yaml
+SCORECARD_OPERATOR_FILE := $(WORKING_DIR)/operator.yaml
+SCORECARD_ROLE_FILE := $(WORKING_DIR)/role.yaml
+SCORECARD_ROLE_BINDING_FILE := $(WORKING_DIR)/role_binding.yaml
+SCORECARD_SERVICE_ACCOUNT_FILE := $(WORKING_DIR)/service_account.yaml
 
 DATE := $(shell date "+%Y-%m-%dT%H:%M:%SZ")
 IMAGE_TAG := $(shell date "+%Y-%m-%d-%H.%M.%S")
@@ -43,14 +46,55 @@ all: build_csv deploy
 
 verify: build_csv docker_build
 
-clean:
+clean_crds:
+	rm -rf ${CRD_DIR};
+
+clean: clean_crds
 	rm -rf $(TEMP_DIR)
-	rm -rf $(CRD_DIR)
 	rm -rf $(BUILD_DIR)
 	mkdir -p $(TEMP_DIR)
 	mkdir -p $(CRD_DIR)
 	mkdir -p $(BUILD_DIR)
 	touch $(BUILD_DIR)/Dockerfile
+
+build_scorecard: build_csv
+	mkdir ${CRD_DIR};
+
+	# populate the crds fodler with the contents of the install folder
+	$(CP) ${INSTALL_DIR}/010-ServiceAccount-strimzi-cluster-operator.yaml ${CRD_DIR}
+	$(CP) ${INSTALL_DIR}/020-ClusterRole-strimzi-cluster-operator-role.yaml ${CRD_DIR}
+	$(CP) ${INSTALL_DIR}/020-RoleBinding-strimzi-cluster-operator.yaml ${CRD_DIR}
+	$(CP) ${INSTALL_DIR}/021-ClusterRole-strimzi-cluster-operator-role.yaml ${CRD_DIR}
+	$(CP) ${INSTALL_DIR}/021-ClusterRoleBinding-strimzi-cluster-operator.yaml ${CRD_DIR}
+	$(CP) ${INSTALL_DIR}/030-ClusterRole-strimzi-kafka-broker.yaml ${CRD_DIR}
+	$(CP) ${INSTALL_DIR}/030-ClusterRoleBinding-strimzi-cluster-operator-kafka-broker-delegation.yaml ${CRD_DIR}
+	$(CP) ${INSTALL_DIR}/031-ClusterRole-strimzi-entity-operator.yaml ${CRD_DIR}
+	$(CP) ${INSTALL_DIR}/032-ClusterRole-strimzi-topic-operator.yaml ${CRD_DIR}
+	$(CP) ${INSTALL_DIR}/032-RoleBinding-strimzi-cluster-operator-topic-operator-delegation.yaml ${CRD_DIR}
+	$(CP) ${INSTALL_DIR}/040-Crd-kafka.yaml $(CRD_DIR)
+	$(CP) ${INSTALL_DIR}/041-Crd-kafkaconnect.yaml $(CRD_DIR)
+	$(CP) ${INSTALL_DIR}/042-Crd-kafkaconnects2i.yaml $(CRD_DIR)
+	$(CP) ${INSTALL_DIR}/043-Crd-kafkatopic.yaml $(CRD_DIR)
+	$(CP) ${INSTALL_DIR}/044-Crd-kafkauser.yaml $(CRD_DIR)
+	$(CP) ${INSTALL_DIR}/045-Crd-kafkamirrormaker.yaml $(CRD_DIR)
+	$(CP) ${INSTALL_DIR}/046-Crd-kafkabridge.yaml $(CRD_DIR)
+	$(CP) ${INSTALL_DIR}/047-Crd-kafkaconnector.yaml $(CRD_DIR)
+	$(CP) ${INSTALL_DIR}/048-Crd-kafkamirrormaker2.yaml $(CRD_DIR)
+	$(CP) ${INSTALL_DIR}/100-SecurityContextConstraints-eventstreams.yaml ${CRD_DIR}
+	$(CP) ${INSTALL_DIR}/122-ClusterRole-eventstreams-ui.yaml ${CRD_DIR}
+	$(CP) ${INSTALL_DIR}/123-ClusterRole-eventstreams-admin.yaml ${CRD_DIR}
+	$(CP) ${INSTALL_DIR}/140-Crd-eventstreams.yaml $(CRD_DIR)
+
+	# mandatory files in order for scorecard to work
+	$(CP) ${INSTALL_DIR}/020-ClusterRole-strimzi-cluster-operator-role.yaml $(SCORECARD_ROLE_FILE)
+	$(CP) ${INSTALL_DIR}/150-Deployment-eventstreams-cluster-operator.yaml $(SCORECARD_OPERATOR_FILE)
+	# keep the roleRef as namespaced, but change the kind to ClusterRoleBinding in order for the Scorecard to work
+	${SED} s/"RoleBinding.*"/"ClusterRoleBinding"/g ${CRD_DIR}/020-RoleBinding-strimzi-cluster-operator.yaml > ${SCORECARD_ROLE_BINDING_FILE}
+	$(CP) ${INSTALL_DIR}/010-ServiceAccount-strimzi-cluster-operator.yaml $(SCORECARD_SERVICE_ACCOUNT_FILE)
+
+	# prepare the operator.yaml file in order to accept the scorecard-proxy container and run the scorecard tests
+	# run with a script in order to avoid the complaints from the Makefile regarding the indentation since yq is very strict on that
+	${WORKING_DIR}/scorecard-preparation.sh
 
 build_csv: clean
 	$(CP) ${INSTALL_DIR}/040-Crd-kafka.yaml $(KAFKA_CRD_FILE)
