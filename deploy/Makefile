@@ -58,6 +58,7 @@ clean: clean_crds
 	touch $(BUILD_DIR)/Dockerfile
 
 build_scorecard: build_csv
+	rm -rf ${CRD_DIR};
 	mkdir ${CRD_DIR};
 
 	# populate the crds fodler with the contents of the install folder
