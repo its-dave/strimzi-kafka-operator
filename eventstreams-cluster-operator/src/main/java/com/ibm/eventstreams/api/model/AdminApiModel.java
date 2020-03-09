@@ -83,7 +83,7 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
     private static final String CLIENT_ID_KEY = "CLIENT_ID";
     private static final String CLIENT_SECRET_KEY = "CLIENT_SECRET";
 
-    private String traceString = "*=info";
+    private String traceString = "info";
     private final String prometheusHost;
     private final String prometheusPort;
     private final String clusterCaCert;
@@ -389,7 +389,7 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
             new EnvVarBuilder().withName("KAFKA_STS_NAME").withValue(EventStreamsKafkaModel.getKafkaInstanceName(getInstanceName()) + "-" + EventStreamsKafkaModel.KAFKA_COMPONENT_NAME).build(),
             new EnvVarBuilder().withName("KAFKA_CONNECT_REST_API_ADDRESS").withValue(kafkaConnectRestEndpoint).build(),
             new EnvVarBuilder().withName("GEOREPLICATION_SECRET_NAME").withValue(getResourcePrefix() + "-" + ReplicatorModel.REPLICATOR_SECRET_NAME).build(),
-            new EnvVarBuilder().withName("TRACE_SPEC").withValue(traceString).build(), //TODO: temporary value
+            new EnvVarBuilder().withName("TRACE_SPEC").withValue(traceString).build(),
             new EnvVarBuilder().withName("GEOREPLICATION_INTERNAL_CLIENT_AUTH_ENABLED").withValue(Boolean.toString(isReplicatorInternalClientAuthForConnectEnabled(instance))).build(),
             new EnvVarBuilder().withName("GEOREPLICATION_EXTERNAL_CLIENT_AUTH_ENABLED").withValue(Boolean.toString(isReplicatorExternalClientAuthForConnectEnabled(instance))).build(),
             new EnvVarBuilder().withName("GEOREPLICATION_INTERNAL_SERVER_AUTH_ENABLED").withValue(Boolean.toString(isReplicatorInternalServerAuthForConnectEnabled(instance))).build(),
@@ -571,11 +571,11 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
     private void setTraceString(Logging logging) {
         if (logging != null && InlineLogging.TYPE_INLINE.equals(logging.getType())) {
             Map<String, String> loggers = ((InlineLogging) logging).getLoggers();
-            List<String> loggersArray = new ArrayList<>();
-            loggers.forEach((k, v) -> {
-                loggersArray.add(k + "=" + v);
+            loggers.keySet().stream().findFirst().ifPresent(firstKey -> {
+                String loggingLevel = loggers.get(firstKey);
+                this.traceString = loggingLevel;
+                log.debug("API Admin logging level set to {}", loggingLevel);
             });
-            this.traceString = String.join(",", loggersArray);
         }
     }
 
