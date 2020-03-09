@@ -538,10 +538,8 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             restProducerFutures.add(serviceOperator.reconcile(namespace, restProducer.getExternalServiceName(), restProducer.getExternalService()));
             restProducerFutures.add(networkPolicyOperator.reconcile(namespace, restProducer.getDefaultResourceName(), restProducer.getNetworkPolicy()));
             return CompositeFuture.join(restProducerFutures)
-                .compose(res -> {
-                    return reconcileRoutes(restProducer, restProducer.getRoutes());
-                })
-                .compose(res -> reconcileCerts(restProducer, res, dateSupplier))
+                .compose(v -> reconcileRoutes(restProducer, restProducer.getRoutes()))
+                .compose(routesMap -> reconcileCerts(restProducer, routesMap, dateSupplier))
                 .compose(secretResult -> {
                     String certGenerationID = null;
                     if (secretResult.resourceOpt().isPresent()) {
@@ -739,7 +737,10 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 Optional<Secret> certSecret = certificateManager.getSecret(model.getCertSecretName());
                 for (Listener listener: model.getTlsListeners()) {
 
-                    String host = listener.isExposed() ? additionalHosts.getOrDefault(model.getRouteName(listener.getName()), "") : "";
+                    String host = listener.isExposed() ?
+                        Optional.ofNullable(additionalHosts.get(model.getRouteName(listener.getName())))
+                            .orElse("") :
+                        "";
                     List<String> hosts = host.isEmpty() ? Collections.emptyList() : Collections.singletonList(host);
                     Service service = listener.isExposed() ? model.getExternalService() : model.getInternalService();
                     Optional<CertAndKeySecretSource> certAndKeySecretSource = listener.getCertOverride(instance.getSpec());
@@ -870,20 +871,21 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
 
             List<Future> routeFutures = routes.entrySet()
                     .stream()
-                    .map(entry -> routeOperator.reconcile(namespace, entry.getKey(), entry.getValue())
-                        .compose(routeResult -> {
-                            
-                            Map<String, String> map = new HashMap<>(1); // Has to be HashMap for putAll
-                            if (!routeResult.resourceOpt().isPresent()) {
-                                map.put(entry.getKey(), "");
+                    .map(entry ->
+                        routeOperator.reconcile(namespace, entry.getKey(), entry.getValue())
+                            .compose(routeResult -> {
+                                Map<String, String> map = new HashMap<>(1);
+                                // Do not add to Route to status if Route has been deleted
+                                if (routeResult.resourceOpt().isPresent()) {
+                                    String routeHost = routeResult.resource().getSpec().getHost();
+                                    // Do not add to Route to status if Route has no hostname
+                                    if (routeHost != null && !routeHost.isEmpty()) {
+                                        status.addToRoutes(entry.getKey().replaceFirst(model.getResourcePrefix() + "-", ""), routeHost);
+                                        map.put(entry.getKey(), routeHost);
+                                    }
+                                }
                                 return Future.succeededFuture(map);
-                            }
-                            String routeHost = routeResult.resource().getSpec().getHost();
-                            status.addToRoutes(entry.getKey().replaceFirst(model.getResourcePrefix() + "-", ""), routeHost);
-                            map.put(entry.getKey(), routeHost);
-                            return Future.succeededFuture(map);
-                        })
-                    )
+                            }))
                     .collect(Collectors.toList());
 
             return CompositeFuture.join(routeFutures)

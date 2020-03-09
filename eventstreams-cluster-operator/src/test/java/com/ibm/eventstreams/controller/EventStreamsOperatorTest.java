@@ -18,8 +18,11 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.aMapWithSize;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasKey;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.IsNull.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -74,12 +77,12 @@ import com.ibm.eventstreams.api.status.EventStreamsStatusBuilder;
 import com.ibm.eventstreams.api.status.EventStreamsVersions;
 import com.ibm.eventstreams.controller.utils.ControllerUtils;
 
+import io.strimzi.api.kafka.KafkaMirrorMaker2List;
+import io.strimzi.api.kafka.model.DoneableKafkaMirrorMaker2;
+import io.strimzi.api.kafka.model.KafkaMirrorMaker2;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.hamcrest.Matchers;
-import org.hamcrest.collection.IsCollectionWithSize;
-import org.hamcrest.collection.IsMapContaining;
-import org.hamcrest.collection.IsMapWithSize;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -173,8 +176,11 @@ public class EventStreamsOperatorTest {
         CONFIG_MAPS,
         ROUTES,
         SECRETS,
+        SERVICE_ACCOUNTS,
+        NETWORK_POLICYS,
         KAFKAS,
-        KAFKA_USERS
+        KAFKA_USERS,
+        KAFKA_MIRROR_MAKER_2S
     };
 
     @BeforeAll
@@ -235,6 +241,7 @@ public class EventStreamsOperatorTest {
         when(mockNamespaceOperation.withName("ibmcloud-cluster-ca-cert")).thenReturn(mockSecret);
         when(mockSecret.get()).thenReturn(ibmCloudClusterCaCert);
 
+        mockRoutes();
     }
 
     @AfterEach
@@ -244,7 +251,6 @@ public class EventStreamsOperatorTest {
         
     @Test
     public void testCreateDefaultEventStreamsInstanceOpenShift(VertxTestContext context) {
-        mockRoutes();
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
 
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
@@ -257,7 +263,6 @@ public class EventStreamsOperatorTest {
         Set<String> expectedSecrets = getExpectedSecretNames(CLUSTER_NAME);
         Set<String> expectedKafkaUsers = getExpectedKafkaUsers(CLUSTER_NAME);
         Set<String> expectedKafkas = getExpectedKafkas(CLUSTER_NAME);
-
 
         Checkpoint async = context.checkpoint();
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster).setHandler(ar -> {
@@ -322,8 +327,6 @@ public class EventStreamsOperatorTest {
 
     @Test
     public void testVersions(VertxTestContext context) {
-        mockRoutes();
-
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
         EventStreams esCluster = createESCluster(NAMESPACE, CLUSTER_NAME);
@@ -346,21 +349,19 @@ public class EventStreamsOperatorTest {
 
     @Test
     public void testDefaultClusterProducesEndpointsInStatus(VertxTestContext context) {
-        mockRoutes();
-
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
         EventStreams esCluster = createESCluster(NAMESPACE, CLUSTER_NAME);
 
         Checkpoint async = context.checkpoint(1);
-        esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster).setHandler(ar -> {
-            if (ar.succeeded()) {
+        esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster)
+            .setHandler(context.succeeding(v -> context.verify(() -> {
                 ArgumentCaptor<EventStreams> argument = ArgumentCaptor.forClass(EventStreams.class);
                 verify(esResourceOperator).createOrUpdate(argument.capture());
 
                 List<EventStreamsEndpoint> endpoints = argument.getValue().getStatus().getEndpoints();
                 // check that there aren't duplicates in the list
-                assertThat(endpoints, IsCollectionWithSize.hasSize(3));
+                assertThat(endpoints, hasSize(3));
 
                 // check that each expected endpoint is present
                 assertThat(endpoints, Matchers.hasItems(
@@ -380,10 +381,7 @@ public class EventStreamsOperatorTest {
                         .withNewUri("https://" + SCHEMA_REGISTRY_ROUTE_NAME + "-external-tls." + ROUTE_HOST_POSTFIX)
                         .build()));
                 context.completeNow();
-            } else {
-                context.failNow(ar.cause());
-            }
-        });
+            })));
     }
 
     @Test
@@ -542,8 +540,7 @@ public class EventStreamsOperatorTest {
     }
 
     @Test
-    public void testUpdateEventStreamsInstanceOpenShift(VertxTestContext context) {
-        mockRoutes();
+    public void testUpdateEventStreamsInstanceOpenShiftNoChanges(VertxTestContext context) {
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
 
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator,
@@ -558,33 +555,29 @@ public class EventStreamsOperatorTest {
 
         // Create a cluster
         Checkpoint async = context.checkpoint(2);
-        Future<Void> install = esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster).setHandler(ar -> {
-            context.verify(() -> {
-                if (ar.failed()) {
-                    ar.cause().printStackTrace(System.err);
-                }
-                assertTrue(ar.succeeded());
-            });
-            verifyHasOnlyResources(context, expectedResources, KubeResourceType.DEPLOYMENTS);
-            verifyHasOnlyResources(context, expectedServices, KubeResourceType.SERVICES);
-            verifyHasOnlyResources(context, expectedRoutes, KubeResourceType.ROUTES);
-            verifyHasOnlyResources(context, expectedSecrets, KubeResourceType.SECRETS);
-            verifyReplicasInDeployments(context, expectedResourcesWithReplicas);
-            async.flag();
-        });
-        // update the cluster
-        LOGGER.debug("Start updating cluster");
-        install.compose(v -> {
-            return esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster).setHandler(ar -> {
-                context.verify(() -> assertTrue(ar.succeeded()));
+
+        esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster)
+            .onComplete(context.succeeding(ar -> {
+//                verifyHasOnlyResources(context, expectedConfigMaps, KubeResourceType.CONFIG_MAPS);
                 verifyHasOnlyResources(context, expectedResources, KubeResourceType.DEPLOYMENTS);
                 verifyHasOnlyResources(context, expectedServices, KubeResourceType.SERVICES);
                 verifyHasOnlyResources(context, expectedRoutes, KubeResourceType.ROUTES);
                 verifyHasOnlyResources(context, expectedSecrets, KubeResourceType.SECRETS);
                 verifyReplicasInDeployments(context, expectedResourcesWithReplicas);
                 async.flag();
-            });
-        });
+                LOGGER.debug("Start updating cluster");
+            }))
+            // update the cluster
+            .compose(v -> esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster))
+            .onComplete(context.succeeding(ar -> {
+//                verifyHasOnlyResources(context, expectedConfigMaps, KubeResourceType.CONFIG_MAPS);
+                verifyHasOnlyResources(context, expectedResources, KubeResourceType.DEPLOYMENTS);
+                verifyHasOnlyResources(context, expectedServices, KubeResourceType.SERVICES);
+                verifyHasOnlyResources(context, expectedRoutes, KubeResourceType.ROUTES);
+                verifyHasOnlyResources(context, expectedSecrets, KubeResourceType.SECRETS);
+                verifyReplicasInDeployments(context, expectedResourcesWithReplicas);
+                async.flag();
+            }));
     }
 
     @Test
@@ -708,8 +701,6 @@ public class EventStreamsOperatorTest {
 
     @Test
     public void testStatusIsCorrectlyDisplayed(VertxTestContext context) {
-        mockRoutes();
-
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
         EventStreams esCluster = createESCluster(NAMESPACE, CLUSTER_NAME);
@@ -759,7 +750,7 @@ public class EventStreamsOperatorTest {
             assertThat("The expected secret is created", secret, is(notNullValue()));
             CertAndKey certAndKey = reconciliationState.certificateManager.certificateAndKey(secret, endpointModel.getCertSecretCertID(listener.getName()), endpointModel.getCertSecretKeyID(listener.getName()));
             X509Certificate certificate = ControllerUtils.checkCertificate(reconciliationState.certificateManager, certAndKey);
-            ControllerUtils.checkSans(reconciliationState.certificateManager, certificate, endpointModel.getExternalService(), additionalHosts.get(routeName));
+            ControllerUtils.checkSans(context, reconciliationState.certificateManager, certificate, endpointModel.getExternalService(), additionalHosts.get(routeName));
             async.flag();
         });
     }
@@ -784,7 +775,7 @@ public class EventStreamsOperatorTest {
         Map<String, String> additionalHosts = Collections.singletonMap(endpointModel.getRouteName(externalTlsListener.getName()), "extra.host.name");
 
         reconciliationState.reconcileCerts(endpointModel, additionalHosts, Date::new).setHandler(ar -> {
-            assertThat("The number of secrets does not match", mockClient.secrets().list().getItems(), IsCollectionWithSize.hasSize(6));
+            assertThat("The number of secrets does not match", mockClient.secrets().list().getItems(), hasSize(6));
             Secret secret = mockClient.secrets().withName(endpointModel.getCertSecretName()).get();
             assertThat("The certificate secret should be created", secret, is(notNullValue()));
             assertThat("The secret does not contain cert key ID for plain listener", secret.getData().containsKey(endpointModel.getCertSecretKeyID(internalListener.getName())), is(false));
@@ -795,8 +786,8 @@ public class EventStreamsOperatorTest {
 
             X509Certificate internalTlsCertificate = ControllerUtils.checkCertificate(reconciliationState.certificateManager, internalTlsCertAndKey);
             X509Certificate externalTlsCertificate = ControllerUtils.checkCertificate(reconciliationState.certificateManager, externalTlsCertAndKey);
-            ControllerUtils.checkSans(reconciliationState.certificateManager, internalTlsCertificate, endpointModel.getInternalService(), "");
-            ControllerUtils.checkSans(reconciliationState.certificateManager, externalTlsCertificate, endpointModel.getExternalService(), additionalHosts.get(endpointModel.getRouteName(externalTlsListener.getName())));
+            ControllerUtils.checkSans(context, reconciliationState.certificateManager, internalTlsCertificate, endpointModel.getInternalService(), "");
+            ControllerUtils.checkSans(context, reconciliationState.certificateManager, externalTlsCertificate, endpointModel.getExternalService(), additionalHosts.get(endpointModel.getRouteName(externalTlsListener.getName())));
             async.flag();
         });
     }
@@ -980,7 +971,7 @@ public class EventStreamsOperatorTest {
             assertThat("The admin api cert secret has not been populated with the internal provided key", secret.getData().get(endpointModel.getCertSecretKeyID(internalTlsListener.getName())), not(providedSecret.getData().get(secretKey)));
             CertAndKey internalTlsCertAndKey = reconciliationState.certificateManager.certificateAndKey(secret, endpointModel.getCertSecretCertID(internalTlsListener.getName()), endpointModel.getCertSecretKeyID(internalTlsListener.getName()));
             X509Certificate internalTlsCertificate = ControllerUtils.checkCertificate(reconciliationState.certificateManager, internalTlsCertAndKey);
-            ControllerUtils.checkSans(reconciliationState.certificateManager, internalTlsCertificate, endpointModel.getInternalService(), "");
+            ControllerUtils.checkSans(context, reconciliationState.certificateManager, internalTlsCertificate, endpointModel.getInternalService(), "");
             assertThat("The admin api cert secret has been populated with the external provided cert", secret.getData().get(endpointModel.getCertSecretCertID(externalTlsListener.getName())), is(providedSecret.getData().get(secretCertificate)));
             assertThat("The admin api cert secret has been populated with the external provided key", secret.getData().get(endpointModel.getCertSecretKeyID(externalTlsListener.getName())), is(providedSecret.getData().get(secretKey)));
             mockClient.secrets().delete(providedSecret);
@@ -990,44 +981,45 @@ public class EventStreamsOperatorTest {
 
     @Test
     public void testAllSecureEndpointModelsCertsCreatedOpenShift(VertxTestContext context) {
-        mockRoutes();
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
         EventStreams esCluster = createESCluster(NAMESPACE, CLUSTER_NAME);
         Checkpoint async = context.checkpoint(2);
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
-        EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always"));
-        reconciliationState.icpClusterData = Collections.emptyMap();
+        EventStreamsOperator.ReconciliationState state = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always"));
+        state.icpClusterData = Collections.emptyMap();
         Listener listener = Listener.externalTls();
         Listener.setEnabledListeners(Collections.singletonList(listener));
 
-        CompositeFuture.join(reconciliationState.createRestProducer(Date::new),
-            reconciliationState.createSchemaRegistry(Date::new),
-            reconciliationState.createAdminApi(Date::new)).setHandler(ar -> {
+        CompositeFuture.join(state.createRestProducer(Date::new),
+            state.createSchemaRegistry(Date::new),
+            state.createAdminApi(Date::new))
+            .setHandler(context.succeeding(v -> context.verify(() -> {
                 List<Secret> secrets = mockClient.secrets().withLabel(Labels.INSTANCE_LABEL, CLUSTER_NAME).list().getItems();
                 secrets.forEach(secret -> {
                     if (secret.getMetadata().getName().endsWith("-cert")) {
                         Optional<Service> serviceOpt = mockClient.services().list().getItems()
-                            .stream()
-                            .filter(service -> service.getMetadata().getName().contains("external"))
-                            .filter(service -> service.getMetadata().getName().startsWith(secret.getMetadata().getName().replace("-cert", "")))
-                            .findAny();
+                                .stream()
+                                .filter(service -> service.getMetadata().getName().contains("external"))
+                                .filter(service -> service.getMetadata().getName().startsWith(secret.getMetadata().getName().replace("-cert", "")))
+                                .findAny();
                         Optional<Route> routeOpt = mockClient.adapt(OpenShiftClient.class).routes().list().getItems()
-                            .stream()
-                            .filter(route -> route.getMetadata().getName().endsWith("tls"))
-                            .filter(route -> route.getMetadata().getName().startsWith(secret.getMetadata().getName().replace("-cert", "")))
-                            .findAny();
-                        assertThat("We found the service for this secret", serviceOpt.isPresent(), is(true));
-                        assertThat("We found the route for this secret", routeOpt.isPresent(), is(true));
+                                .stream()
+                                .filter(route -> route.getMetadata().getName().endsWith("tls"))
+                                .filter(route -> route.getMetadata().getName().startsWith(secret.getMetadata().getName().replace("-cert", "")))
+                                .findAny();
+                        assertThat("We found the service for the secret " + secret.getMetadata().getName(), serviceOpt.isPresent(), is(true));
+                        assertThat("We found the route for the secret " + secret.getMetadata().getName(), routeOpt.isPresent(), is(true));
+
                         String certID = secret.getData().keySet().stream().filter(string -> string.endsWith(CertificateSecretModel.formatCertID(listener.getName()))).findAny().get();
                         String keyID = secret.getData().keySet().stream().filter(string -> string.endsWith(CertificateSecretModel.formatKeyID(listener.getName()))).findAny().get();
-                        CertAndKey certAndKey = reconciliationState.certificateManager.certificateAndKey(secret, certID, keyID);
-                        X509Certificate certificate = ControllerUtils.checkCertificate(reconciliationState.certificateManager, certAndKey);
-                        ControllerUtils.checkSans(reconciliationState.certificateManager, certificate, serviceOpt.get(), routeOpt.get().getSpec().getHost());
+                        CertAndKey certAndKey = state.certificateManager.certificateAndKey(secret, certID, keyID);
+                        X509Certificate certificate = ControllerUtils.checkCertificate(state.certificateManager, certAndKey);
+                        ControllerUtils.checkSans(context, state.certificateManager, certificate, serviceOpt.get(), routeOpt.get().getSpec().getHost());
                     }
                 });
                 async.flag();
-            });
+            })));
         Listener.setEnabledListeners(Arrays.asList(Listener.externalTls(), Listener.externalPlain(), Listener.internalTls()));
         async.flag();
     }
@@ -1095,7 +1087,6 @@ public class EventStreamsOperatorTest {
 
     @Test
     public void testCreateOrUpdateRoutesMapOpenShiftNoExternalListeners(VertxTestContext context) {
-        mockRoutes();
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
         EventStreams esCluster = createESCluster(NAMESPACE, CLUSTER_NAME);
@@ -1120,7 +1111,6 @@ public class EventStreamsOperatorTest {
     @Test
     public void testCreateOrUpdateRoutesMapOpenShift(VertxTestContext context) {
         Checkpoint async = context.checkpoint(1);
-        mockRoutes();
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
 
@@ -1137,22 +1127,18 @@ public class EventStreamsOperatorTest {
         // Use admin api name for route matching with the mock client
         ModelUtils.EndpointModel endpointModel = new ModelUtils.EndpointModel(esCluster, NAMESPACE, "admin-api", listeners);
 
-        reconciliationState.reconcileRoutes(endpointModel, endpointModel.getRoutes()).setHandler(ar -> {
-            if (ar.failed()) {
-                context.failNow(ar.cause());
-            }
-            Map<String, String> routes = ar.result();
-            assertThat(routes, IsMapWithSize.aMapWithSize(2));
+        reconciliationState.reconcileRoutes(endpointModel, endpointModel.getRoutes()).setHandler(context.succeeding(routes -> context.verify(() -> {
+            assertThat(routes, aMapWithSize(2));
             String externalTlsListenerRoute = endpointModel.getRouteName(externalTlsListener.getName());
             String externalPlainListenerRoute = endpointModel.getRouteName(externalPlainListener.getName());
 
-            assertThat(routes, IsMapContaining.hasKey(externalTlsListenerRoute));
-            assertThat(routes, IsMapContaining.hasKey(externalPlainListenerRoute));
+            assertThat(routes, hasKey(externalTlsListenerRoute));
+            assertThat(routes, hasKey(externalPlainListenerRoute));
 
-            assertThat(routes.get(externalTlsListenerRoute), is(formatRouteHost(ADMIN_API_ROUTE_NAME + "-" + Listener.EXTERNAL_TLS_NAME)));
-            assertThat(routes.get(externalPlainListenerRoute), is(formatRouteHost(ADMIN_API_ROUTE_NAME + "-" + Listener.EXTERNAL_PLAIN_NAME)));
+            assertThat("routes : " + routes.toString(), routes.get(externalTlsListenerRoute), is(formatRouteHost(ADMIN_API_ROUTE_NAME + "-" + Listener.EXTERNAL_TLS_NAME)));
+            assertThat("routes : " + routes.toString(), routes.get(externalPlainListenerRoute), is(formatRouteHost(ADMIN_API_ROUTE_NAME + "-" + Listener.EXTERNAL_PLAIN_NAME)));
             async.flag();
-        });
+        })));
     }
 
     @Test
@@ -1280,7 +1266,7 @@ public class EventStreamsOperatorTest {
 
     @Test
     public void testRestProducerComponentCreatedAndDeletedWhenAddedAndRemovedFromCR(VertxTestContext context) {
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(false, KubernetesVersion.V1_9);
+        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
 
         EventStreams minimalInstance = new EventStreamsBuilder()
@@ -1315,30 +1301,56 @@ public class EventStreamsOperatorTest {
                 .endSpec()
                 .build();
 
-        String restProducerDeploymentName = CLUSTER_NAME + "-" + APP_NAME + "-" + RestProducerModel.COMPONENT_NAME;
+        String defaultComponentResourceName = CLUSTER_NAME + "-" + APP_NAME + "-" + RestProducerModel.COMPONENT_NAME;
+
+        String serviceAccountName = defaultComponentResourceName;
+        String networkPolicyName = defaultComponentResourceName;
+        String deploymentName = defaultComponentResourceName;
+        String internalServiceName = defaultComponentResourceName + "-internal";
+        String externalServiceName = defaultComponentResourceName + "-external";
+        Set<String> serviceNames = new HashSet<>();
+        serviceNames.add(internalServiceName);
+        serviceNames.add(externalServiceName);
+        String externalPlainRouteName = defaultComponentResourceName + "-" + Listener.EXTERNAL_PLAIN_NAME;
+        String externalTlsRouteName = defaultComponentResourceName + "-" + Listener.EXTERNAL_TLS_NAME;
+        Set<String> routeNames = new HashSet<>();
+        routeNames.add(externalPlainRouteName);
+        routeNames.add(externalTlsRouteName);
 
         Checkpoint async = context.checkpoint(3);
 
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), minimalInstance)
-                .onComplete(context.succeeding(ar -> {
-                    verifyContainsResource(context, restProducerDeploymentName, KubeResourceType.DEPLOYMENTS, false);
-                    async.flag();
-                }))
-                .compose(v -> esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), instance))
-                .onComplete(context.succeeding(ar -> {
-                    verifyContainsResource(context, restProducerDeploymentName, KubeResourceType.DEPLOYMENTS, true);
-                    async.flag();
-                }))
-                .compose(v -> esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), minimalInstance))
-                .onComplete(context.succeeding(ar -> {
-                    verifyContainsResource(context, restProducerDeploymentName, KubeResourceType.DEPLOYMENTS, false);
-                    async.flag();
-                }));
+            .onComplete(context.succeeding(v -> {
+                verifyContainsResource(context, serviceAccountName, KubeResourceType.SERVICE_ACCOUNTS, false);
+                verifyContainsResource(context, networkPolicyName, KubeResourceType.NETWORK_POLICYS, false);
+                verifyContainsResource(context, deploymentName, KubeResourceType.DEPLOYMENTS, false);
+                verifyContainsResources(context, serviceNames, KubeResourceType.SERVICES, false);
+                verifyContainsResources(context, routeNames, KubeResourceType.ROUTES, false);
+                async.flag();
+            }))
+            .compose(v -> esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), instance))
+            .onComplete(context.succeeding(v -> {
+                verifyContainsResource(context, serviceAccountName, KubeResourceType.SERVICE_ACCOUNTS, true);
+                verifyContainsResource(context, networkPolicyName, KubeResourceType.NETWORK_POLICYS, true);
+                verifyContainsResource(context, deploymentName, KubeResourceType.DEPLOYMENTS, true);
+                verifyContainsResources(context, serviceNames, KubeResourceType.SERVICES, true);
+                verifyContainsResources(context, routeNames, KubeResourceType.ROUTES, true);
+                async.flag();
+            }))
+            .compose(v -> esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), minimalInstance))
+            .onComplete(context.succeeding(v -> {
+                verifyContainsResource(context, serviceAccountName, KubeResourceType.SERVICE_ACCOUNTS, false);
+                verifyContainsResource(context, networkPolicyName, KubeResourceType.NETWORK_POLICYS, false);
+                verifyContainsResource(context, deploymentName, KubeResourceType.DEPLOYMENTS, false);
+                verifyContainsResources(context, serviceNames, KubeResourceType.SERVICES, false);
+                verifyContainsResources(context, routeNames, KubeResourceType.ROUTES, false);
+                async.flag();
+            }));
     }
 
     @Test
     public void testAdminUIComponentCreatedAndDeletedWhenAddedAndRemovedFromCR(VertxTestContext context) {
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(false, KubernetesVersion.V1_9);
+        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
 
         EventStreams minimalInstance = new EventStreamsBuilder()
@@ -1373,23 +1385,276 @@ public class EventStreamsOperatorTest {
                 .endSpec()
                 .build();
 
-        String adminUIDeploymentName = CLUSTER_NAME + "-" + APP_NAME + "-" + AdminUIModel.COMPONENT_NAME;
+        String defaultComponentResourceName = CLUSTER_NAME + "-" + APP_NAME + "-" + AdminUIModel.COMPONENT_NAME;
+
+        String serviceAccountName = defaultComponentResourceName;
+        String networkPolicyName = defaultComponentResourceName;
+        String deploymentName = defaultComponentResourceName;
+        String serviceName = defaultComponentResourceName;
+        String routeName = defaultComponentResourceName;
 
         Checkpoint async = context.checkpoint(3);
 
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), minimalInstance)
-                .onComplete(context.succeeding(ar -> {
-                    verifyContainsResource(context, adminUIDeploymentName, KubeResourceType.DEPLOYMENTS, false);
+                .onComplete(context.succeeding(v -> {
+                    verifyContainsResource(context, serviceAccountName, KubeResourceType.SERVICE_ACCOUNTS, false);
+                    verifyContainsResource(context, networkPolicyName, KubeResourceType.NETWORK_POLICYS, false);
+                    verifyContainsResource(context, deploymentName, KubeResourceType.DEPLOYMENTS, false);
+                    verifyContainsResource(context, serviceName, KubeResourceType.SERVICES, false);
+                    verifyContainsResource(context, routeName, KubeResourceType.ROUTES, false);
                     async.flag();
                 }))
                 .compose(v -> esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), instance))
-                .onComplete(context.succeeding(ar -> {
-                    verifyContainsResource(context, adminUIDeploymentName, KubeResourceType.DEPLOYMENTS, true);
+                .onComplete(context.succeeding(v -> {
+                    verifyContainsResource(context, serviceAccountName, KubeResourceType.SERVICE_ACCOUNTS, true);
+                    verifyContainsResource(context, networkPolicyName, KubeResourceType.NETWORK_POLICYS, true);
+                    verifyContainsResource(context, deploymentName, KubeResourceType.DEPLOYMENTS, true);
+                    verifyContainsResource(context, serviceName, KubeResourceType.SERVICES, true);
+                    verifyContainsResource(context, routeName, KubeResourceType.ROUTES, true);
                     async.flag();
                 }))
                 .compose(v -> esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), minimalInstance))
-                .onComplete(context.succeeding(ar -> {
-                    verifyContainsResource(context, adminUIDeploymentName, KubeResourceType.DEPLOYMENTS, false);
+                .onComplete(context.succeeding(v -> {
+                    verifyContainsResource(context, serviceAccountName, KubeResourceType.SERVICE_ACCOUNTS, false);
+                    verifyContainsResource(context, networkPolicyName, KubeResourceType.NETWORK_POLICYS, false);
+                    verifyContainsResource(context, deploymentName, KubeResourceType.DEPLOYMENTS, false);
+                    verifyContainsResource(context, serviceName, KubeResourceType.SERVICES, false);
+                    verifyContainsResource(context, routeName, KubeResourceType.ROUTES, false);
+                    async.flag();
+                }));
+    }
+
+    @Test
+    public void testCollectorComponentCreatedAndDeletedWhenAddedAndRemovedFromCR(VertxTestContext context) {
+        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
+        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
+
+        EventStreams minimalInstance = new EventStreamsBuilder()
+                .withMetadata(new ObjectMetaBuilder()
+                        .withNewName(CLUSTER_NAME)
+                        .withNewNamespace(NAMESPACE)
+                        .build())
+                .withNewSpec()
+                .withNewAppVersion(DEFAULT_VERSION)
+                .withStrimziOverrides(new KafkaSpecBuilder()
+                        .withNewKafka()
+                        .withReplicas(1)
+                        .withNewListeners()
+                        .endListeners()
+                        .withNewEphemeralStorage()
+                        .endEphemeralStorage()
+                        .endKafka()
+                        .withNewZookeeper()
+                        .withReplicas(1)
+                        .withNewEphemeralStorage()
+                        .endEphemeralStorage()
+                        .endZookeeper()
+                        .build())
+                .endSpec()
+                .build();
+
+        EventStreams instance = new EventStreamsBuilder(minimalInstance)
+                .editSpec()
+                    .withNewCollector()
+                        .withReplicas(1)
+                    .endCollector()
+                .endSpec()
+                .build();
+
+        String defaultComponentResourceName = CLUSTER_NAME + "-" + APP_NAME + "-" + CollectorModel.COMPONENT_NAME;
+
+        String serviceAccountName = defaultComponentResourceName;
+        String networkPolicyName = defaultComponentResourceName;
+        String deploymentName = defaultComponentResourceName;
+        String serviceName = defaultComponentResourceName;
+
+        Checkpoint async = context.checkpoint(3);
+
+        esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), minimalInstance)
+                .onComplete(context.succeeding(v -> {
+                    verifyContainsResource(context, serviceAccountName, KubeResourceType.SERVICE_ACCOUNTS, false);
+                    verifyContainsResource(context, networkPolicyName, KubeResourceType.NETWORK_POLICYS, false);
+                    verifyContainsResource(context, deploymentName, KubeResourceType.DEPLOYMENTS, false);
+                    verifyContainsResource(context, serviceName, KubeResourceType.SERVICES, false);
+                    async.flag();
+                }))
+                .compose(v -> esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), instance))
+                .onComplete(context.succeeding(v -> {
+                    verifyContainsResource(context, serviceAccountName, KubeResourceType.SERVICE_ACCOUNTS, true);
+                    verifyContainsResource(context, networkPolicyName, KubeResourceType.NETWORK_POLICYS, true);
+                    verifyContainsResource(context, deploymentName, KubeResourceType.DEPLOYMENTS, true);
+                    verifyContainsResource(context, serviceName, KubeResourceType.SERVICES, true);
+                    async.flag();
+                }))
+                .compose(v -> esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), minimalInstance))
+                .onComplete(context.succeeding(v -> {
+                    verifyContainsResource(context, serviceAccountName, KubeResourceType.SERVICE_ACCOUNTS, false);
+                    verifyContainsResource(context, networkPolicyName, KubeResourceType.NETWORK_POLICYS, false);
+                    verifyContainsResource(context, deploymentName, KubeResourceType.DEPLOYMENTS, false);
+                    verifyContainsResource(context, serviceName, KubeResourceType.SERVICES, false);
+                    async.flag();
+                }));
+    }
+
+    @Test
+    public void testReplicatorComponentCreatedAndDeletedWhenAddedAndRemovedFromCR(VertxTestContext context) {
+        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
+        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
+
+        EventStreams minimalInstance = new EventStreamsBuilder()
+                .withMetadata(new ObjectMetaBuilder()
+                        .withNewName(CLUSTER_NAME)
+                        .withNewNamespace(NAMESPACE)
+                        .build())
+                .withNewSpec()
+                .withNewAppVersion(DEFAULT_VERSION)
+                .withStrimziOverrides(new KafkaSpecBuilder()
+                        .withNewKafka()
+                            .withReplicas(1)
+                            .withListeners(ModelUtils.getMutualTLSOnBothInternalAndExternalListenerSpec())
+                            .withNewEphemeralStorage()
+                            .endEphemeralStorage()
+                        .endKafka()
+                        .withNewZookeeper()
+                            .withReplicas(1)
+                            .withNewEphemeralStorage()
+                            .endEphemeralStorage()
+                        .endZookeeper()
+                        .build())
+                .endSpec()
+                .build();
+
+        EventStreams instance = new EventStreamsBuilder(minimalInstance)
+                .editSpec()
+                    .withNewReplicator()
+                        .withReplicas(1)
+                    .endReplicator()
+                .endSpec()
+                .build();
+
+        String defaultComponentResourceName = CLUSTER_NAME + "-" + APP_NAME + "-" + ReplicatorModel.COMPONENT_NAME;
+
+        String kafkaMirrorMaker2Name = defaultComponentResourceName;
+        String networkPolicyName = defaultComponentResourceName;
+        String secretName = defaultComponentResourceName + "-secret";
+        Set<String> kafkaUserNames = new HashSet<>();
+        String replicatorConnectUserName = CLUSTER_NAME + "-" + APP_NAME + "-rep-connect-user";
+        String replicatorTargetConnectorUser = CLUSTER_NAME + "-" + APP_NAME + "-rep-target-user";
+        String replicatorSourceConnectorUser = CLUSTER_NAME + "-" + APP_NAME + "-rep-source-user";
+        kafkaUserNames.add(replicatorConnectUserName);
+        kafkaUserNames.add(replicatorTargetConnectorUser);
+        kafkaUserNames.add(replicatorSourceConnectorUser);
+
+        Boolean secretNotOptional = true;
+
+        Checkpoint async = context.checkpoint(3);
+
+        esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), minimalInstance)
+                .onComplete(context.succeeding(v -> {
+                    verifyContainsResource(context, kafkaMirrorMaker2Name, KubeResourceType.KAFKA_MIRROR_MAKER_2S, false);
+                    verifyContainsResource(context, networkPolicyName, KubeResourceType.NETWORK_POLICYS, false);
+                    verifyContainsResources(context, kafkaUserNames, KubeResourceType.KAFKA_USERS, false);
+                    verifyContainsResource(context, secretName, KubeResourceType.SECRETS, secretNotOptional);
+                    async.flag();
+                }))
+                .compose(v -> esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), instance))
+                .onComplete(context.succeeding(v -> {
+                    verifyContainsResource(context, kafkaMirrorMaker2Name, KubeResourceType.KAFKA_MIRROR_MAKER_2S, true);
+                    verifyContainsResource(context, networkPolicyName, KubeResourceType.NETWORK_POLICYS, true);
+                    verifyContainsResources(context, kafkaUserNames, KubeResourceType.KAFKA_USERS, true);
+                    verifyContainsResource(context, secretName, KubeResourceType.SECRETS, secretNotOptional);
+                    async.flag();
+                }))
+                .compose(v -> esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), minimalInstance))
+                .onComplete(context.succeeding(v -> {
+                    verifyContainsResource(context, kafkaMirrorMaker2Name, KubeResourceType.KAFKA_MIRROR_MAKER_2S, false);
+                    verifyContainsResource(context, networkPolicyName, KubeResourceType.NETWORK_POLICYS, false);
+                    verifyContainsResources(context, kafkaUserNames, KubeResourceType.KAFKA_USERS, true);
+                    verifyContainsResource(context, secretName, KubeResourceType.SECRETS, secretNotOptional);
+                    async.flag();
+                }));
+    }
+
+    @Test
+    public void testSchemaRegistryComponentCreatedAndDeletedWhenAddedAndRemovedFromCR(VertxTestContext context) {
+        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
+        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
+
+        EventStreams minimalInstance = new EventStreamsBuilder()
+                .withMetadata(new ObjectMetaBuilder()
+                        .withNewName(CLUSTER_NAME)
+                        .withNewNamespace(NAMESPACE)
+                        .build())
+                .withNewSpec()
+                .withNewAppVersion(DEFAULT_VERSION)
+                .withStrimziOverrides(new KafkaSpecBuilder()
+                        .withNewKafka()
+                            .withReplicas(1)
+                            .withNewListeners()
+                            .endListeners()
+                            .withNewEphemeralStorage()
+                            .endEphemeralStorage()
+                        .endKafka()
+                        .withNewZookeeper()
+                            .withReplicas(1)
+                            .withNewEphemeralStorage()
+                            .endEphemeralStorage()
+                        .endZookeeper()
+                        .build())
+                .endSpec()
+                .build();
+
+        EventStreams instance = new EventStreamsBuilder(minimalInstance)
+                .editSpec()
+                    .withNewSchemaRegistry()
+                        .withReplicas(1)
+                    .endSchemaRegistry()
+                .endSpec()
+                .build();
+
+        String defaultComponentResourceName = CLUSTER_NAME + "-" + APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME;
+
+        String serviceAccountName = defaultComponentResourceName;
+        String networkPolicyName = defaultComponentResourceName;
+        String deploymentName = defaultComponentResourceName;
+        String internalServiceName = defaultComponentResourceName + "-internal";
+        String externalServiceName = defaultComponentResourceName + "-external";
+        Set<String> serviceNames = new HashSet<>();
+        serviceNames.add(internalServiceName);
+        serviceNames.add(externalServiceName);
+        String externalPlainRouteName = defaultComponentResourceName + "-" + Listener.EXTERNAL_PLAIN_NAME;
+        String externalTlsRouteName = defaultComponentResourceName + "-" + Listener.EXTERNAL_TLS_NAME;
+        Set<String> routeNames = new HashSet<>();
+        routeNames.add(externalPlainRouteName);
+        routeNames.add(externalTlsRouteName);
+
+        Checkpoint async = context.checkpoint(3);
+
+        esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), minimalInstance)
+                .onComplete(context.succeeding(v -> {
+                    verifyContainsResource(context, serviceAccountName, KubeResourceType.SERVICE_ACCOUNTS, false);
+                    verifyContainsResource(context, networkPolicyName, KubeResourceType.NETWORK_POLICYS, false);
+                    verifyContainsResource(context, deploymentName, KubeResourceType.DEPLOYMENTS, false);
+                    verifyContainsResources(context, serviceNames, KubeResourceType.SERVICES, false);
+                    verifyContainsResources(context, routeNames, KubeResourceType.ROUTES, false);
+                    async.flag();
+                }))
+                .compose(v -> esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), instance))
+                .onComplete(context.succeeding(v -> {
+                    verifyContainsResource(context, serviceAccountName, KubeResourceType.SERVICE_ACCOUNTS, true);
+                    verifyContainsResource(context, networkPolicyName, KubeResourceType.NETWORK_POLICYS, true);
+                    verifyContainsResource(context, deploymentName, KubeResourceType.DEPLOYMENTS, true);
+                    verifyContainsResources(context, serviceNames, KubeResourceType.SERVICES, true);
+                    verifyContainsResources(context, routeNames, KubeResourceType.ROUTES, true);
+                    async.flag();
+                }))
+                .compose(v -> esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), minimalInstance))
+                .onComplete(context.succeeding(v -> {
+                    verifyContainsResource(context, serviceAccountName, KubeResourceType.SERVICE_ACCOUNTS, false);
+                    verifyContainsResource(context, networkPolicyName, KubeResourceType.NETWORK_POLICYS, false);
+                    verifyContainsResource(context, deploymentName, KubeResourceType.DEPLOYMENTS, false);
+                    verifyContainsResources(context, serviceNames, KubeResourceType.SERVICES, false);
+                    verifyContainsResources(context, routeNames, KubeResourceType.ROUTES, false);
                     async.flag();
                 }));
     }
@@ -1478,9 +1743,9 @@ public class EventStreamsOperatorTest {
         Set<HasMetadata> actualResources =  getResources(NAMESPACE, type);
         Set<String> actualResourceNames = actualResources.stream().map(res -> res.getMetadata().getName()).collect(Collectors.toSet());
         if (shouldExist) {
-            context.verify(() -> assertTrue(actualResourceNames.containsAll(resources), "expected: " + actualResourceNames.toString() + " to contain: " + resources.toString()));
+            context.verify(() -> assertTrue(actualResourceNames.containsAll(resources), "for type: " + type + " expected: " + actualResourceNames.toString() + " to contain: " + resources.toString()));
         } else {
-            context.verify(() -> assertFalse(actualResourceNames.containsAll(resources), "expected: " + actualResourceNames.toString() + " to not contain: " + resources.toString()));
+            context.verify(() -> assertFalse(actualResourceNames.containsAll(resources), "for type: " + type + " expected: " + actualResourceNames.toString() + " to not contain: " + resources.toString()));
         }
     }
 
@@ -1488,9 +1753,9 @@ public class EventStreamsOperatorTest {
         Set<HasMetadata> actualResources =  getResources(NAMESPACE, type);
         Set<String> actualResourceNames = actualResources.stream().map(res -> res.getMetadata().getName()).collect(Collectors.toSet());
         if (shouldExist) {
-            context.verify(() -> assertTrue(actualResourceNames.contains(resource), "expected: " + actualResourceNames.toString() + " to contain: " + resource));
+            context.verify(() -> assertTrue(actualResourceNames.contains(resource), "for type: " + type + " expected: " + actualResourceNames.toString() + " to contain: " + resource));
         } else {
-            context.verify(() -> assertFalse(actualResourceNames.contains(resource), "expected: " + actualResourceNames.toString() + " to not contain: " + resource));
+            context.verify(() -> assertFalse(actualResourceNames.contains(resource), "for type: " + type + " expected: " + actualResourceNames.toString() + " to not contain: " + resource));
         }
     }
 
@@ -1625,12 +1890,23 @@ public class EventStreamsOperatorTest {
             case SECRETS:
                 result = new HashSet<>(mockClient.secrets().inNamespace(namespace).list().getItems());
                 break;
+            case SERVICE_ACCOUNTS:
+                result = new HashSet<>(mockClient.serviceAccounts().inNamespace(namespace).list().getItems());
+                break;
+            case NETWORK_POLICYS:
+                result = new HashSet<>(mockClient.network().networkPolicies().inNamespace(namespace).list().getItems());
+                break;
             case KAFKA_USERS:
                 result = new HashSet<>(mockClient.customResources(io.strimzi.api.kafka.Crds.kafkaUser(), KafkaUser.class, KafkaUserList.class, DoneableKafkaUser.class).inNamespace(namespace).list().getItems());
                 break;
             case KAFKAS:
                 result = new HashSet<>(mockClient.customResources(io.strimzi.api.kafka.Crds.kafka(), Kafka.class, KafkaList.class, DoneableKafka.class).inNamespace(namespace).list().getItems());
                 break;
+            case KAFKA_MIRROR_MAKER_2S:
+                result = new HashSet<>(mockClient.customResources(io.strimzi.api.kafka.Crds.kafkaMirrorMaker2(), KafkaMirrorMaker2.class, KafkaMirrorMaker2List.class, DoneableKafkaMirrorMaker2.class).inNamespace(namespace).list().getItems());
+                break;
+            default:
+                System.out.println("Unexpected type " + type);
         }
         return result;
     }
@@ -1765,8 +2041,10 @@ public class EventStreamsOperatorTest {
     }
 
     private void deployRouteInMockClient(Route route) {
+        // dunno if needed
         when(routeOperator.get(anyString(), eq(route.getMetadata().getName()))).thenReturn(route);
-        mockClient.adapt(OpenShiftClient.class).routes().inNamespace(NAMESPACE).create(route);
+        // hey is this right?
+        mockClient.adapt(OpenShiftClient.class).routes().inNamespace(NAMESPACE).createOrReplace(route);
     }
 
     private Route createRoute(String name, String namespace) {
@@ -1784,19 +2062,39 @@ public class EventStreamsOperatorTest {
     private void mockRoutes() {
         routeOperator = mock(RouteOperator.class);
 
+        int namespaceIndex = 0;
+        int resourceNamesIndex = 1;
+        int desiredRouteIndex = 2;
+
         when(routeOperator.reconcile(anyString(), anyString(), any())).thenAnswer(params -> {
-            if (params.getArgument(2) != null) {
-                Route route = createRoute(params.getArgument(1), params.getArgument(0));
-                return Future.succeededFuture(ReconcileResult.created(route));
+            String namespace = params.getArgument(namespaceIndex);
+            String name = params.getArgument(resourceNamesIndex);
+            Route desiredRoute = params.getArgument(desiredRouteIndex);
+
+            if (desiredRoute != null) {
+                // Create a new route with a host
+                // This mocks what would happen when a route is applied to OpenShift
+                Route routeWithHost = new RouteBuilder(desiredRoute)
+                        .editOrNewSpec()
+                            .withNewHost(formatRouteHost(name))
+                        .endSpec()
+                        .build();
+                deployRouteInMockClient(routeWithHost);
+                return Future.succeededFuture(ReconcileResult.created(routeWithHost));
             } else {
+                mockClient.adapt(OpenShiftClient.class)
+                    .routes().inNamespace(namespace).withName(name)
+                    .delete();
                 return Future.succeededFuture(ReconcileResult.deleted());
             }
         });
 
-        when(routeOperator.createOrUpdate(any(Route.class))).thenAnswer(params -> {
-            return Future.succeededFuture(ReconcileResult.created(params.getArgument(0)));
-        });
+        when(routeOperator.createOrUpdate(any(Route.class)))
+            .thenAnswer(params -> {
+                Route route = params.getArgument(0);
+                deployRouteInMockClient(route);
+                return Future.succeededFuture(ReconcileResult.created(route));
+            });
 
-        createRoutesInMockClient();
     }
 }

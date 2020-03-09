@@ -60,15 +60,18 @@ public class ReplicatorUsersModel extends AbstractModel {
                 .map(replicas -> replicas > 0)
                 .orElse(false);
 
+        KafkaListenerAuthentication kafkaExternalAuth = getExternalKafkaListenerAuthentication(instance);
+        if (kafkaExternalAuth != null) {
+            // ReplicatorSourceConnectorUser should always be created, regardless of whether replicator is enabled
+            // This is to allow other Replicator instances to source events from the cluster
+            createReplicatorSourceConnectorUser(kafkaExternalAuth);
+        }
+
         if (replicationEnabled) {
             KafkaListenerAuthentication kafkaInternalTlsAuth = getInternalTlsKafkaListenerAuthentication(instance);
             if (kafkaInternalTlsAuth != null) {
                 createReplicatorConnectUser(kafkaInternalTlsAuth);
                 createReplicatorTargetConnectorUser(kafkaInternalTlsAuth);
-            }
-            KafkaListenerAuthentication kafkaExternalAuth = getExternalKafkaListenerAuthentication(instance);
-            if (kafkaExternalAuth != null) {
-                createReplicatorSourceConnectorUser(kafkaExternalAuth);
             }
         }
     }
