@@ -57,9 +57,11 @@ clean: clean_crds
 	mkdir -p $(BUILD_DIR)
 	touch $(BUILD_DIR)/Dockerfile
 
-build_scorecard: build_csv
-	rm -rf ${CRD_DIR};
-	mkdir ${CRD_DIR};
+build_scorecard:
+	if [ -d "${CRD_DIR}" ]; then \
+		rm -rf ${CRD_DIR}; \
+		mkdir ${CRD_DIR}; \
+	fi
 
 	# populate the crds fodler with the contents of the install folder
 	$(CP) ${INSTALL_DIR}/010-ServiceAccount-strimzi-cluster-operator.yaml ${CRD_DIR}
