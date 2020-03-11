@@ -16,7 +16,7 @@ package com.ibm.eventstreams.api.model.utils;
 import com.ibm.eventstreams.api.Listener;
 import com.ibm.eventstreams.api.model.AbstractSecureEndpointModel;
 import com.ibm.eventstreams.api.model.EventStreamsKafkaModel;
-import com.ibm.eventstreams.api.model.ReplicatorModel;
+import com.ibm.eventstreams.api.model.ReplicatorUsersModel;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
@@ -133,7 +133,7 @@ public class ModelUtils {
 
         Secret replicatorConnect = new SecretBuilder()
             .withNewMetadata()
-                .withName(clusterName + "-" + appName + "-" + ReplicatorModel.REPLICATOR_CONNECT_USER_NAME)
+                .withName(clusterName + "-" + appName + "-" + ReplicatorUsersModel.CONNECT_KAFKA_USER_NAME)
                 .withNamespace(namespace)
                 .addToAnnotations(Ca.ANNO_STRIMZI_IO_CA_KEY_GENERATION, "0")
                 .withLabels(labels)
@@ -146,7 +146,7 @@ public class ModelUtils {
 
         Secret replicatorConnectorDest = new SecretBuilder()
             .withNewMetadata()
-                .withName(clusterName + "-" + appName + "-" + ReplicatorModel.REPLICATOR_TARGET_CLUSTER_CONNNECTOR_USER_NAME)
+                .withName(clusterName + "-" + appName + "-" + ReplicatorUsersModel.TARGET_CONNECTOR_KAFKA_USER_NAME)
                 .withNamespace(namespace)
                 .addToAnnotations(Ca.ANNO_STRIMZI_IO_CA_KEY_GENERATION, "0")
                 .withLabels(labels)
@@ -159,7 +159,7 @@ public class ModelUtils {
 
         Secret replicatorConnectorSource = new SecretBuilder()
             .withNewMetadata()
-                .withName(clusterName + "-" + appName + "-" + ReplicatorModel.REPLICATOR_SOURCE_CLUSTER_CONNECTOR_USER_NAME)
+                .withName(clusterName + "-" + appName + "-" + ReplicatorUsersModel.SOURCE_CONNECTOR_KAFKA_USER_NAME)
                 .withNamespace(namespace)
                 .addToAnnotations(Ca.ANNO_STRIMZI_IO_CA_KEY_GENERATION, "0")
                 .withLabels(labels)
@@ -201,12 +201,12 @@ public class ModelUtils {
 
         return new KafkaListenersBuilder()
                 .withNewKafkaListenerExternalRoute()
-                .withNewKafkaListenerAuthenticationTlsAuth()
-                .endKafkaListenerAuthenticationTlsAuth()
+                    .withNewKafkaListenerAuthenticationTlsAuth()
+                    .endKafkaListenerAuthenticationTlsAuth()
                 .endKafkaListenerExternalRoute()
                 .withNewTls()
-                .withNewKafkaListenerAuthenticationTlsAuth()
-                .endKafkaListenerAuthenticationTlsAuth()
+                    .withNewKafkaListenerAuthenticationTlsAuth()
+                    .endKafkaListenerAuthenticationTlsAuth()
                 .endTls()
                 .build();
     }
@@ -214,8 +214,8 @@ public class ModelUtils {
     public static KafkaListeners getMutualTLSOnInternalListenerSpec() {
         return new KafkaListenersBuilder()
                 .withNewTls()
-                .withNewKafkaListenerAuthenticationTlsAuth()
-                .endKafkaListenerAuthenticationTlsAuth()
+                    .withNewKafkaListenerAuthenticationTlsAuth()
+                    .endKafkaListenerAuthenticationTlsAuth()
                 .endTls()
                 .build();
     }
@@ -223,8 +223,8 @@ public class ModelUtils {
     public static KafkaListeners getMutualTLSOnExternalListenerSpec() {
         return new KafkaListenersBuilder()
                 .withNewKafkaListenerExternalRoute()
-                .withNewKafkaListenerAuthenticationTlsAuth()
-                .endKafkaListenerAuthenticationTlsAuth()
+                    .withNewKafkaListenerAuthenticationTlsAuth()
+                    .endKafkaListenerAuthenticationTlsAuth()
                 .endKafkaListenerExternalRoute()
                 .build();
     }
@@ -232,8 +232,8 @@ public class ModelUtils {
     public static KafkaListeners getMutualScramOnInternalListenerSpec() {
         return new KafkaListenersBuilder()
                 .withNewTls()
-                .withNewKafkaListenerAuthenticationScramSha512Auth()
-                .endKafkaListenerAuthenticationScramSha512Auth()
+                    .withNewKafkaListenerAuthenticationScramSha512Auth()
+                    .endKafkaListenerAuthenticationScramSha512Auth()
                 .endTls()
                 .build();
     }
@@ -241,8 +241,8 @@ public class ModelUtils {
     public static KafkaListeners getMutualScramOnExternalListenerSpec() {
         return new KafkaListenersBuilder()
                 .withNewKafkaListenerExternalRoute()
-                .withNewKafkaListenerAuthenticationScramSha512Auth()
-                .endKafkaListenerAuthenticationScramSha512Auth()
+                    .withNewKafkaListenerAuthenticationScramSha512Auth()
+                    .endKafkaListenerAuthenticationScramSha512Auth()
                 .endKafkaListenerExternalRoute()
                 .build();
     }

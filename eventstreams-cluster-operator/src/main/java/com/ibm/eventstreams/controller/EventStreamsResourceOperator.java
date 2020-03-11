@@ -37,8 +37,8 @@ public class EventStreamsResourceOperator extends
 
     private KubernetesClient client;
 
-    public EventStreamsResourceOperator(Vertx vertx, KubernetesClient client, String resourceKind) {
-        super(vertx, client, resourceKind);
+    public EventStreamsResourceOperator(Vertx vertx, KubernetesClient client) {
+        super(vertx, client, EventStreams.RESOURCE_KIND);
         log.info("Creating EventStreamsResourceOperator");
         this.client = client;
     }

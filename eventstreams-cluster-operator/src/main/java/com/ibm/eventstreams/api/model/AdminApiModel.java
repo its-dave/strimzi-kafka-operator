@@ -196,24 +196,24 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
 
         if (isReplicatorExternalClientAuthForConnectEnabled(instance)) {
             volumes.add(new VolumeBuilder()
-                    .withNewName(ReplicatorModel.REPLICATOR_SOURCE_CLUSTER_CONNECTOR_USER_NAME)
+                    .withNewName(ReplicatorUsersModel.SOURCE_CONNECTOR_KAFKA_USER_NAME)
                     .withNewSecret()
-                    .withNewSecretName(getResourcePrefix() + "-" + ReplicatorModel.REPLICATOR_SOURCE_CLUSTER_CONNECTOR_USER_NAME) //mount everything in the secret into this volume
+                    .withNewSecretName(ReplicatorUsersModel.getSourceConnectorKafkaUserName(getInstanceName())) //mount everything in the secret into this volume
                     .endSecret()
                     .build());
         }
 
         if (isReplicatorInternalClientAuthForConnectEnabled(instance)) {
             volumes.add(new VolumeBuilder()
-                    .withNewName(ReplicatorModel.REPLICATOR_CONNECT_USER_NAME)
+                    .withNewName(ReplicatorUsersModel.CONNECT_KAFKA_USER_NAME)
                     .withNewSecret()
-                    .withNewSecretName(getResourcePrefix() + "-" + ReplicatorModel.REPLICATOR_CONNECT_USER_NAME) //mount everything in the secret into this volume
+                    .withNewSecretName(ReplicatorUsersModel.getConnectKafkaUserName(getInstanceName())) //mount everything in the secret into this volume
                     .endSecret()
                     .build());
             volumes.add(new VolumeBuilder()
-                    .withNewName(ReplicatorModel.REPLICATOR_TARGET_CLUSTER_CONNNECTOR_USER_NAME)
+                    .withNewName(ReplicatorUsersModel.TARGET_CONNECTOR_KAFKA_USER_NAME)
                     .withNewSecret()
-                    .withNewSecretName(getResourcePrefix() + "-" + ReplicatorModel.REPLICATOR_TARGET_CLUSTER_CONNNECTOR_USER_NAME) //mount everything in the secret into this volume
+                    .withNewSecretName(ReplicatorUsersModel.getTargetConnectorKafkaUserName(getInstanceName())) //mount everything in the secret into this volume
                     .endSecret()
                     .build());
         }
@@ -322,20 +322,20 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
         //only add the replicator secret volume mounts if client auth enabled
         if (isReplicatorExternalClientAuthForConnectEnabled(instance)) {
             containerBuilder.addNewVolumeMount()
-                .withNewName(ReplicatorModel.REPLICATOR_SOURCE_CLUSTER_CONNECTOR_USER_NAME)
-                    .withMountPath(ReplicatorModel.REPLICATOR_CONNECT_SOURCE_SECRET_MOUNT_PATH)
+                .withNewName(ReplicatorUsersModel.SOURCE_CONNECTOR_KAFKA_USER_NAME)
+                    .withMountPath(ReplicatorModel.SOURCE_CONNECTOR_SECRET_MOUNT_PATH)
                     .withNewReadOnly(true)
                 .endVolumeMount();
         }
         if (isReplicatorInternalClientAuthForConnectEnabled(instance)) {
             containerBuilder.addNewVolumeMount()
-                .withNewName(ReplicatorModel.REPLICATOR_CONNECT_USER_NAME)
-                .withMountPath(ReplicatorModel.REPLICATOR_CONNECT_SECRET_MOUNT_PATH)
+                .withNewName(ReplicatorUsersModel.CONNECT_KAFKA_USER_NAME)
+                .withMountPath(ReplicatorModel.CONNECT_SECRET_MOUNT_PATH)
                 .withNewReadOnly(true)
             .endVolumeMount()
             .addNewVolumeMount()
-                .withNewName(ReplicatorModel.REPLICATOR_TARGET_CLUSTER_CONNNECTOR_USER_NAME)
-                .withMountPath(ReplicatorModel.REPLICATOR_CONNECT_TARGET_SECRET_MOUNT_PATH)
+                .withNewName(ReplicatorUsersModel.TARGET_CONNECTOR_KAFKA_USER_NAME)
+                .withMountPath(ReplicatorModel.TARGET_CONNECTOR_SECRET_MOUNT_PATH)
                 .withNewReadOnly(true)
                 .endVolumeMount();
         }
@@ -411,7 +411,7 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
                 .withName("SSL_KEYSTORE_PASSWORD")
                 .withNewValueFrom()
                 .withNewSecretKeyRef()
-                .withName(getInternalKafkaUserSecretName())
+                .withName(InternalKafkaUserModel.getInternalKafkaUserSecretName(getInstanceName()))
                 .withKey(USER_P12_PASS)
                 .endSecretKeyRef()
                 .endValueFrom()

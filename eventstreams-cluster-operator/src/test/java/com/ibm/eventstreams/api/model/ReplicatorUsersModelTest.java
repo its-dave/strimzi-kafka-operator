@@ -98,19 +98,19 @@ public class ReplicatorUsersModelTest {
     }
 
     @Test
-    public void testReplicatorUsersCreated() {
+    public void testReplicatorUsersCreatedWithTlsAuthentication() {
 
         ReplicatorUsersModel replicatorUsers = createDefaultReplicatorUserModel();
         ReplicatorModel replicator = createDefaultReplicatorModel();
-        KafkaUser replicatorConnectUser = replicatorUsers.getReplicatorConnectUser();
-        KafkaUser replicatorDestinationConnectorUser = replicatorUsers.getReplicatorTargetConnectorUser();
-        KafkaUser replicatorSourceConnectorUser = replicatorUsers.getReplicatorSourceConnectorUser();
+        KafkaUser connectKafkaUser = replicatorUsers.getConnectKafkaUser();
+        KafkaUser targetConnectorKafkaUser = replicatorUsers.getTargetConnectorKafkaUser();
+        KafkaUser sourceConnectorKafkaUser = replicatorUsers.getSourceConnectorKafkaUser();
 
-        assertThat(replicatorConnectUser.getMetadata().getName(), is(instanceName + "-" + AbstractModel.APP_NAME + "-" + ReplicatorModel.REPLICATOR_CONNECT_USER_NAME));
-        assertThat(replicatorDestinationConnectorUser.getMetadata().getName(), is(instanceName + "-" + AbstractModel.APP_NAME + "-" + ReplicatorModel.REPLICATOR_TARGET_CLUSTER_CONNNECTOR_USER_NAME));
-        assertThat(replicatorSourceConnectorUser.getMetadata().getName(), is(instanceName + "-" + AbstractModel.APP_NAME + "-" + ReplicatorModel.REPLICATOR_SOURCE_CLUSTER_CONNECTOR_USER_NAME));
+        assertThat(connectKafkaUser.getMetadata().getName(), is(instanceName + "-" + AbstractModel.APP_NAME + "-" + ReplicatorUsersModel.CONNECT_KAFKA_USER_NAME));
+        assertThat(targetConnectorKafkaUser.getMetadata().getName(), is(instanceName + "-" + AbstractModel.APP_NAME + "-" + ReplicatorUsersModel.TARGET_CONNECTOR_KAFKA_USER_NAME));
+        assertThat(sourceConnectorKafkaUser.getMetadata().getName(), is(instanceName + "-" + AbstractModel.APP_NAME + "-" + ReplicatorUsersModel.SOURCE_CONNECTOR_KAFKA_USER_NAME));
 
-        Map<String, String> replicatorConnectUserLabels = replicatorConnectUser.getMetadata().getLabels();
+        Map<String, String> replicatorConnectUserLabels = connectKafkaUser.getMetadata().getLabels();
         for (Map.Entry<String, String> label : replicatorConnectUserLabels.entrySet()) {
             if (!label.getKey().equals(io.strimzi.operator.common.model.Labels.STRIMZI_CLUSTER_LABEL)) {
                 assertThat(label.getKey(), not(containsString(io.strimzi.operator.common.model.Labels.STRIMZI_DOMAIN)));
@@ -118,7 +118,7 @@ public class ReplicatorUsersModelTest {
         }
         assertThat(replicatorConnectUserLabels.get(io.strimzi.operator.common.model.Labels.STRIMZI_CLUSTER_LABEL), is(instanceName));
 
-        Map<String, String> replicatorDestinationConnectorUserLabels = replicatorDestinationConnectorUser.getMetadata().getLabels();
+        Map<String, String> replicatorDestinationConnectorUserLabels = targetConnectorKafkaUser.getMetadata().getLabels();
         for (Map.Entry<String, String> label : replicatorDestinationConnectorUserLabels.entrySet()) {
             if (!label.getKey().equals(io.strimzi.operator.common.model.Labels.STRIMZI_CLUSTER_LABEL)) {
                 assertThat(label.getKey(), not(containsString(io.strimzi.operator.common.model.Labels.STRIMZI_DOMAIN)));
@@ -127,7 +127,7 @@ public class ReplicatorUsersModelTest {
         assertThat(replicatorDestinationConnectorUserLabels.get(io.strimzi.operator.common.model.Labels.STRIMZI_CLUSTER_LABEL), is(instanceName));
 
 
-        Map<String, String> replicatorSourceConnectorUserLabels = replicatorSourceConnectorUser.getMetadata().getLabels();
+        Map<String, String> replicatorSourceConnectorUserLabels = sourceConnectorKafkaUser.getMetadata().getLabels();
         for (Map.Entry<String, String> label : replicatorSourceConnectorUserLabels.entrySet()) {
             if (!label.getKey().equals(io.strimzi.operator.common.model.Labels.STRIMZI_CLUSTER_LABEL)) {
                 assertThat(label.getKey(), not(containsString(io.strimzi.operator.common.model.Labels.STRIMZI_DOMAIN)));
@@ -135,13 +135,13 @@ public class ReplicatorUsersModelTest {
         }
         assertThat(replicatorSourceConnectorUserLabels.get(io.strimzi.operator.common.model.Labels.STRIMZI_CLUSTER_LABEL), is(instanceName));
 
-        assertThat(replicatorConnectUser.getKind(), is("KafkaUser"));
-        assertThat(replicatorDestinationConnectorUser.getKind(), is("KafkaUser"));
-        assertThat(replicatorSourceConnectorUser.getKind(), is("KafkaUser"));
+        assertThat(connectKafkaUser.getKind(), is("KafkaUser"));
+        assertThat(targetConnectorKafkaUser.getKind(), is("KafkaUser"));
+        assertThat(sourceConnectorKafkaUser.getKind(), is("KafkaUser"));
 
-        assertThat(replicatorConnectUser.getMetadata().getNamespace(), is(namespace));
-        assertThat(replicatorDestinationConnectorUser.getMetadata().getNamespace(), is(namespace));
-        assertThat(replicatorSourceConnectorUser.getMetadata().getNamespace(), is(namespace));
+        assertThat(connectKafkaUser.getMetadata().getNamespace(), is(namespace));
+        assertThat(targetConnectorKafkaUser.getMetadata().getNamespace(), is(namespace));
+        assertThat(sourceConnectorKafkaUser.getMetadata().getNamespace(), is(namespace));
 
         Map<String, String> replicatorConnectUserSecretLabels = replicator.getSecret().getMetadata().getLabels();
         assertThat(replicatorConnectUserSecretLabels.get(Labels.APP_LABEL), is(AbstractModel.APP_NAME));
@@ -158,9 +158,9 @@ public class ReplicatorUsersModelTest {
         assertThat(replicatorSourceConnectorUserSecretLabels.get(Labels.INSTANCE_LABEL), is(instanceName));
         assertThat(replicatorSourceConnectorUserSecretLabels.get(Labels.RELEASE_LABEL), is(instanceName));
 
-        assertThat(replicatorConnectUser.getSpec().getAuthorization().getType(), is("simple"));
-        assertThat(replicatorDestinationConnectorUser.getSpec().getAuthorization().getType(), is("simple"));
-        assertThat(replicatorSourceConnectorUser.getSpec().getAuthorization().getType(), is("simple"));
+        assertThat(connectKafkaUser.getSpec().getAuthorization().getType(), is("simple"));
+        assertThat(targetConnectorKafkaUser.getSpec().getAuthorization().getType(), is("simple"));
+        assertThat(sourceConnectorKafkaUser.getSpec().getAuthorization().getType(), is("simple"));
     }
 
 
@@ -168,7 +168,7 @@ public class ReplicatorUsersModelTest {
     public void testReplicatorConnectUserAcls() {
 
         ReplicatorUsersModel replicatorUsers = createDefaultReplicatorUserModel();
-        KafkaUser replicatorConnectUser = replicatorUsers.getReplicatorConnectUser();
+        KafkaUser replicatorConnectUser = replicatorUsers.getConnectKafkaUser();
 
         //Connect User ACLs
         assertThat(replicatorConnectUser.getSpec().getAuthorization(), instanceOf(KafkaUserAuthorizationSimple.class));
@@ -330,8 +330,8 @@ public class ReplicatorUsersModelTest {
     public void testReplicatorConnectorUserAcls() {
 
         ReplicatorUsersModel replicatorUsers = createDefaultReplicatorUserModel();
-        KafkaUser replicatorDestinationConnectorUser = replicatorUsers.getReplicatorTargetConnectorUser();
-        KafkaUser replicatorSourceConnectorUser = replicatorUsers.getReplicatorSourceConnectorUser();
+        KafkaUser replicatorDestinationConnectorUser = replicatorUsers.getTargetConnectorKafkaUser();
+        KafkaUser replicatorSourceConnectorUser = replicatorUsers.getSourceConnectorKafkaUser();
 
         //MM2 to destination Kafka ACL
         assertThat(replicatorDestinationConnectorUser.getSpec().getAuthorization(), instanceOf(KafkaUserAuthorizationSimple.class));
@@ -402,19 +402,19 @@ public class ReplicatorUsersModelTest {
 
         ReplicatorUsersModel replicatorUsers =  createReplicatorUserModel(ModelUtils.getServerAuthOnlyInternalListenerSpec());
 
-        assertThat(replicatorUsers.getReplicatorConnectUser(), is(nullValue()));
-        assertThat(replicatorUsers.getReplicatorTargetConnectorUser(), is(nullValue()));
-        assertThat(replicatorUsers.getReplicatorSourceConnectorUser(), is(nullValue()));
+        assertThat(replicatorUsers.getConnectKafkaUser(), is(nullValue()));
+        assertThat(replicatorUsers.getTargetConnectorKafkaUser(), is(nullValue()));
+        assertThat(replicatorUsers.getSourceConnectorKafkaUser(), is(nullValue()));
 
     }
     @Test
     public void testReplicatorConnectUserWhenInternalTLSOnlyEnabledWithMutualAuthTLS() {
         ReplicatorUsersModel replicatorUsers = createReplicatorUserModel(ModelUtils.getMutualTLSOnInternalListenerSpec());
 
-        assertThat(replicatorUsers.getReplicatorSourceConnectorUser(), is(nullValue()));
+        assertThat(replicatorUsers.getSourceConnectorKafkaUser(), is(nullValue()));
 
-        KafkaUser replicatorDestinationConnectorUser = replicatorUsers.getReplicatorTargetConnectorUser();
-        KafkaUser replicatorConnectConnectorUser = replicatorUsers.getReplicatorConnectUser();
+        KafkaUser replicatorDestinationConnectorUser = replicatorUsers.getTargetConnectorKafkaUser();
+        KafkaUser replicatorConnectConnectorUser = replicatorUsers.getConnectKafkaUser();
 
         assertThat(replicatorDestinationConnectorUser.getSpec().getAuthentication(), is(instanceOf(KafkaUserTlsClientAuthentication.class)));
         assertThat(replicatorConnectConnectorUser.getSpec().getAuthentication(), is(instanceOf(KafkaUserTlsClientAuthentication.class)));
@@ -427,10 +427,10 @@ public class ReplicatorUsersModelTest {
     public void testReplicatorConnectUserWhenInternalTLSOnlyEnabledWithMutualAuthScram() {
         ReplicatorUsersModel replicatorUsers = createReplicatorUserModel(ModelUtils.getMutualScramOnInternalListenerSpec());
 
-        assertThat(replicatorUsers.getReplicatorSourceConnectorUser(), is(nullValue()));
+        assertThat(replicatorUsers.getSourceConnectorKafkaUser(), is(nullValue()));
 
-        KafkaUser replicatorDestinationConnectorUser = replicatorUsers.getReplicatorTargetConnectorUser();
-        KafkaUser replicatorConnectConnectorUser = replicatorUsers.getReplicatorConnectUser();
+        KafkaUser replicatorDestinationConnectorUser = replicatorUsers.getTargetConnectorKafkaUser();
+        KafkaUser replicatorConnectConnectorUser = replicatorUsers.getConnectKafkaUser();
 
         assertThat(replicatorDestinationConnectorUser.getSpec().getAuthentication(), is(instanceOf(KafkaUserScramSha512ClientAuthentication.class)));
         assertThat(replicatorConnectConnectorUser.getSpec().getAuthentication(), is(instanceOf(KafkaUserScramSha512ClientAuthentication.class)));
@@ -443,19 +443,19 @@ public class ReplicatorUsersModelTest {
     public void testReplicatorConnectUserWhenExternalTLSOnlyEnabledWithNoMutualAuth() {
         ReplicatorUsersModel replicatorUsers = createReplicatorUserModel(ModelUtils.getServerAuthOnlyExternalListenerSpec());
 
-        assertThat(replicatorUsers.getReplicatorConnectUser(), is(nullValue()));
-        assertThat(replicatorUsers.getReplicatorTargetConnectorUser(), is(nullValue()));
-        assertThat(replicatorUsers.getReplicatorSourceConnectorUser(), is(nullValue()));
+        assertThat(replicatorUsers.getConnectKafkaUser(), is(nullValue()));
+        assertThat(replicatorUsers.getTargetConnectorKafkaUser(), is(nullValue()));
+        assertThat(replicatorUsers.getSourceConnectorKafkaUser(), is(nullValue()));
 
     }
     @Test
     public void testReplicatorConnectUserWhenExternalTLSOnlyEnabledWithMutualAuthTLS() {
         ReplicatorUsersModel replicatorUsers = createReplicatorUserModel(ModelUtils.getMutualTLSOnExternalListenerSpec());
 
-        assertThat(replicatorUsers.getReplicatorConnectUser(), is(nullValue()));
-        assertThat(replicatorUsers.getReplicatorTargetConnectorUser(), is(nullValue()));
+        assertThat(replicatorUsers.getConnectKafkaUser(), is(nullValue()));
+        assertThat(replicatorUsers.getTargetConnectorKafkaUser(), is(nullValue()));
 
-        KafkaUser replicatorSourceConnectorUser = replicatorUsers.getReplicatorSourceConnectorUser();
+        KafkaUser replicatorSourceConnectorUser = replicatorUsers.getSourceConnectorKafkaUser();
         assertThat(replicatorSourceConnectorUser.getSpec().getAuthentication(), is(instanceOf(KafkaUserTlsClientAuthentication.class)));
 
         assertThat(replicatorSourceConnectorUser.getSpec().getAuthorization().getType(), is("simple"));
@@ -467,10 +467,10 @@ public class ReplicatorUsersModelTest {
     public void testReplicatorConnectUserWhenExternalTLSOnlyEnabledWithMutualAuthScram() {
         ReplicatorUsersModel replicatorUsers = createReplicatorUserModel(ModelUtils.getMutualScramOnExternalListenerSpec());
 
-        assertThat(replicatorUsers.getReplicatorConnectUser(), is(nullValue()));
-        assertThat(replicatorUsers.getReplicatorTargetConnectorUser(), is(nullValue()));
+        assertThat(replicatorUsers.getConnectKafkaUser(), is(nullValue()));
+        assertThat(replicatorUsers.getTargetConnectorKafkaUser(), is(nullValue()));
 
-        KafkaUser replicatorSourceConnectorUser = replicatorUsers.getReplicatorSourceConnectorUser();
+        KafkaUser replicatorSourceConnectorUser = replicatorUsers.getSourceConnectorKafkaUser();
 
         assertThat(replicatorSourceConnectorUser.getSpec().getAuthentication(), is(instanceOf(KafkaUserScramSha512ClientAuthentication.class)));
         assertThat(replicatorSourceConnectorUser.getSpec().getAuthorization().getType(), is("simple"));
@@ -481,9 +481,9 @@ public class ReplicatorUsersModelTest {
     public void testReplicatorConnectUserWhenNoSecurity() {
         ReplicatorUsersModel replicatorUsers = createReplicatorUserModel(ModelUtils.getNoSecurityListenerSpec());
 
-        assertThat(replicatorUsers.getReplicatorConnectUser(), is(nullValue()));
-        assertThat(replicatorUsers.getReplicatorTargetConnectorUser(), is(nullValue()));
-        assertThat(replicatorUsers.getReplicatorSourceConnectorUser(), is(nullValue()));
+        assertThat(replicatorUsers.getConnectKafkaUser(), is(nullValue()));
+        assertThat(replicatorUsers.getTargetConnectorKafkaUser(), is(nullValue()));
+        assertThat(replicatorUsers.getSourceConnectorKafkaUser(), is(nullValue()));
 
     }
 

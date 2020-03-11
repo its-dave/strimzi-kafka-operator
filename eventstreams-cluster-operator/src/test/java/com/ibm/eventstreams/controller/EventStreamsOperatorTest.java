@@ -63,6 +63,7 @@ import com.ibm.eventstreams.api.model.ClusterSecretsModel;
 import com.ibm.eventstreams.api.model.CollectorModel;
 import com.ibm.eventstreams.api.model.InternalKafkaUserModel;
 import com.ibm.eventstreams.api.model.ReplicatorModel;
+import com.ibm.eventstreams.api.model.ReplicatorUsersModel;
 import com.ibm.eventstreams.api.model.RestProducerModel;
 import com.ibm.eventstreams.api.model.SchemaRegistryModel;
 import com.ibm.eventstreams.api.model.utils.MockEventStreamsKube;
@@ -255,7 +256,7 @@ public class EventStreamsOperatorTest {
 
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
 
-        EventStreams esCluster = createESCluster(NAMESPACE, CLUSTER_NAME);
+        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
         Map<String, Integer> expectedResourcesWithReplicas = getExpectedResourcesWithReplicas(CLUSTER_NAME);
         Set<String> expectedResources = expectedResourcesWithReplicas.keySet();
         Set<String> expectedServices = getExpectedServiceNames(CLUSTER_NAME);
@@ -265,39 +266,34 @@ public class EventStreamsOperatorTest {
         Set<String> expectedKafkas = getExpectedKafkas(CLUSTER_NAME);
 
         Checkpoint async = context.checkpoint();
-        esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster).setHandler(ar -> {
-            context.verify(() -> {
-                if (ar.failed()) {
-                    ar.cause().printStackTrace(System.err);
-                }
-                assertTrue(ar.succeeded());
-            });
-            verifyHasOnlyResources(context, expectedResources, KubeResourceType.DEPLOYMENTS);
-            verifyReplicasInDeployments(context, expectedResourcesWithReplicas);
-            verifyHasOnlyResources(context, expectedServices, KubeResourceType.SERVICES);
-            verifyHasOnlyResources(context, expectedRoutes, KubeResourceType.ROUTES);
-            verifyHasOnlyResources(context, expectedSecrets, KubeResourceType.SECRETS);
+        esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster)
+            .setHandler(context.succeeding(v -> context.verify(() -> {
+                verifyHasOnlyResources(context, expectedResources, KubeResourceType.DEPLOYMENTS);
+                verifyReplicasInDeployments(context, expectedResourcesWithReplicas);
+                verifyHasOnlyResources(context, expectedServices, KubeResourceType.SERVICES);
+                verifyHasOnlyResources(context, expectedRoutes, KubeResourceType.ROUTES);
+                verifyHasOnlyResources(context, expectedSecrets, KubeResourceType.SECRETS);
 
-            verifyHasOnlyResources(context, expectedKafkas, KubeResourceType.KAFKAS);
-            Set<HasMetadata> kafkas = getResources(NAMESPACE, KubeResourceType.KAFKAS);
-            kafkas.forEach(user -> {
-                for (Map.Entry<String, String> label: user.getMetadata().getLabels().entrySet()) {
-                    assertThat("Kafka Custom Resources should not contain reserved domain labels", label.getKey(), not(containsString(io.strimzi.operator.common.model.Labels.STRIMZI_DOMAIN)));
-                }
-            });
-
-            verifyHasOnlyResources(context, expectedKafkaUsers, KubeResourceType.KAFKA_USERS);
-            Set<HasMetadata> kafkaUsers = getResources(NAMESPACE, KubeResourceType.KAFKA_USERS);
-            kafkaUsers.forEach(user -> {
-                for (Map.Entry<String, String> label: user.getMetadata().getLabels().entrySet()) {
-                    if (!label.getKey().equals(io.strimzi.operator.common.model.Labels.STRIMZI_CLUSTER_LABEL)) {
-                        assertThat("KafkaUser Custom Resources should not contain reserved domain labels, with the exception of the cluster label", label.getKey(), not(containsString(io.strimzi.operator.common.model.Labels.STRIMZI_DOMAIN)));
+                verifyHasOnlyResources(context, expectedKafkas, KubeResourceType.KAFKAS);
+                Set<HasMetadata> kafkas = getResources(NAMESPACE, KubeResourceType.KAFKAS);
+                kafkas.forEach(user -> {
+                    for (Map.Entry<String, String> label: user.getMetadata().getLabels().entrySet()) {
+                        assertThat("Kafka Custom Resources should not contain reserved domain labels", label.getKey(), not(containsString(io.strimzi.operator.common.model.Labels.STRIMZI_DOMAIN)));
                     }
-                }
-            });
+                });
 
-            async.flag();
-        });
+                verifyHasOnlyResources(context, expectedKafkaUsers, KubeResourceType.KAFKA_USERS);
+                Set<HasMetadata> kafkaUsers = getResources(NAMESPACE, KubeResourceType.KAFKA_USERS);
+                kafkaUsers.forEach(user -> {
+                    for (Map.Entry<String, String> label: user.getMetadata().getLabels().entrySet()) {
+                        if (!label.getKey().equals(io.strimzi.operator.common.model.Labels.STRIMZI_CLUSTER_LABEL)) {
+                            assertThat("KafkaUser Custom Resources should not contain reserved domain labels, with the exception of the cluster label", label.getKey(), not(containsString(io.strimzi.operator.common.model.Labels.STRIMZI_DOMAIN)));
+                        }
+                    }
+                });
+
+                async.flag();
+            })));
     }
 
     @Test
@@ -306,7 +302,7 @@ public class EventStreamsOperatorTest {
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator,
                                               imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
 
-        EventStreams esCluster = createESCluster(NAMESPACE, CLUSTER_NAME);
+        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
         Map<String, Integer> expectedResourcesWithReplicas = getExpectedResourcesWithReplicas(CLUSTER_NAME);
         Set<String> expectedResources = expectedResourcesWithReplicas.keySet();
         Set<String> expectedServices = getExpectedServiceNames(CLUSTER_NAME);
@@ -329,7 +325,7 @@ public class EventStreamsOperatorTest {
     public void testVersions(VertxTestContext context) {
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
-        EventStreams esCluster = createESCluster(NAMESPACE, CLUSTER_NAME);
+        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
 
         Checkpoint async = context.checkpoint();
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster)
@@ -351,9 +347,9 @@ public class EventStreamsOperatorTest {
     public void testDefaultClusterProducesEndpointsInStatus(VertxTestContext context) {
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
-        EventStreams esCluster = createESCluster(NAMESPACE, CLUSTER_NAME);
+        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
 
-        Checkpoint async = context.checkpoint(1);
+        Checkpoint async = context.checkpoint();
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster)
             .setHandler(context.succeeding(v -> context.verify(() -> {
                 ArgumentCaptor<EventStreams> argument = ArgumentCaptor.forClass(EventStreams.class);
@@ -380,7 +376,7 @@ public class EventStreamsOperatorTest {
                         .withType(EventStreamsEndpoint.EndpointType.api)
                         .withNewUri("https://" + SCHEMA_REGISTRY_ROUTE_NAME + "-external-tls." + ROUTE_HOST_POSTFIX)
                         .build()));
-                context.completeNow();
+                async.flag();
             })));
     }
 
@@ -397,7 +393,7 @@ public class EventStreamsOperatorTest {
 
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
-        EventStreams esCluster = createESCluster(NAMESPACE, CLUSTER_NAME);
+        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
 
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster).setHandler(ar -> {
             if (ar.succeeded()) {
@@ -421,7 +417,7 @@ public class EventStreamsOperatorTest {
 
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
-        EventStreams esCluster = createESCluster(NAMESPACE, CLUSTER_NAME);
+        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
 
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster).setHandler(ar -> {
             if (ar.succeeded()) {
@@ -444,7 +440,7 @@ public class EventStreamsOperatorTest {
 
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(false, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
-        EventStreams esCluster = createESCluster(NAMESPACE, CLUSTER_NAME);
+        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
 
         esCluster.getSpec().getAdminUI().setImage("adminUi-image:test");
 
@@ -466,7 +462,7 @@ public class EventStreamsOperatorTest {
 
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
-        EventStreams esCluster = createESCluster(NAMESPACE, CLUSTER_NAME);
+        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
 
         esCluster.getSpec().getAdminApi().setImage(AdminApiModel.DEFAULT_IBMCOM_IMAGE);
 
@@ -492,7 +488,7 @@ public class EventStreamsOperatorTest {
         // 17 Characters long
         String clusterName = "long-instancename";
 
-        EventStreams esCluster = createESCluster(NAMESPACE, clusterName);
+        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, clusterName);
         ArgumentCaptor<EventStreams> updatedEventStreams = ArgumentCaptor.forClass(EventStreams.class);
         Checkpoint async = context.checkpoint(1);
 
@@ -519,7 +515,7 @@ public class EventStreamsOperatorTest {
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
 
         String clusterName = "instancename";
-        EventStreams esCluster = createESCluster(NAMESPACE, clusterName);
+        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, clusterName);
         esCluster.getSpec().setAppVersion("2018.1.1");
         ArgumentCaptor<EventStreams> updatedEventStreams = ArgumentCaptor.forClass(EventStreams.class);
         Checkpoint async = context.checkpoint(1);
@@ -540,13 +536,56 @@ public class EventStreamsOperatorTest {
     }
 
     @Test
+    public void testEventStreamsInvalidListenerAuthenticationOauth(VertxTestContext context) {
+        mockRoutes();
+        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
+
+        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
+
+        KafkaSpec kafka = new KafkaSpecBuilder()
+                .editOrNewKafka()
+                    .withReplicas(3)
+                    .withNewListeners()
+                        .withNewTls()
+                            .withNewKafkaListenerAuthenticationOAuth()
+                            .endKafkaListenerAuthenticationOAuth()
+                        .endTls()
+                        .withNewKafkaListenerExternalRoute()
+                            .withNewKafkaListenerAuthenticationOAuth()
+                            .endKafkaListenerAuthenticationOAuth()
+                        .endKafkaListenerExternalRoute()
+                    .endListeners()
+                .endKafka()
+                .editOrNewZookeeper()
+                    .withReplicas(3)
+                .endZookeeper()
+                .build();
+
+        EventStreams eventStreams = createEventStreamsWithStrimziOverrides(NAMESPACE, CLUSTER_NAME, kafka);
+
+        ArgumentCaptor<EventStreams> updatedEventStreams = ArgumentCaptor.forClass(EventStreams.class);
+
+        Checkpoint async = context.checkpoint(1);
+        esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), eventStreams)
+            .setHandler(context.failing(e -> context.verify(() -> {
+                assertThat(e.getMessage(), containsString("Invalid Custom Resource: check status"));
+                // check status
+                verify(esResourceOperator).createOrUpdate(updatedEventStreams.capture());
+                assertThat("Status is incorrect, found status : " + updatedEventStreams.getValue().getStatus(),
+                        updatedEventStreams.getValue().getStatus().getConditions().get(0).getMessage()
+                                .equals("Listener client authentication unsupported for Geo Replication. Supported versions are TLS and SCRAM"));
+                async.flag();
+            })));
+    }
+
+    @Test
     public void testUpdateEventStreamsInstanceOpenShiftNoChanges(VertxTestContext context) {
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
 
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator,
                                               imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
 
-        EventStreams esCluster = createESCluster(NAMESPACE, CLUSTER_NAME);
+        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
         Map<String, Integer> expectedResourcesWithReplicas = getExpectedResourcesWithReplicas(CLUSTER_NAME);
         Set<String> expectedResources = expectedResourcesWithReplicas.keySet();
         Set<String> expectedServices = getExpectedServiceNames(CLUSTER_NAME);
@@ -586,7 +625,7 @@ public class EventStreamsOperatorTest {
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(false, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
 
-        EventStreams esCluster = createESCluster(NAMESPACE, CLUSTER_NAME);
+        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
         Set<String> expectedSecrets = getExpectedSecretNames(CLUSTER_NAME);
         Checkpoint async = context.checkpoint(3);
 
@@ -626,7 +665,7 @@ public class EventStreamsOperatorTest {
         mockRoutes();
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
-        EventStreams esCluster = createESCluster(NAMESPACE, CLUSTER_NAME);
+        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
         Condition condition = new ConditionBuilder()
                 .withNewLastTransitionTime(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ").format(new Date()))
                 .withNewType("Ready")
@@ -703,7 +742,7 @@ public class EventStreamsOperatorTest {
     public void testStatusIsCorrectlyDisplayed(VertxTestContext context) {
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
-        EventStreams esCluster = createESCluster(NAMESPACE, CLUSTER_NAME);
+        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
 
         Set<String> expectedRouteHosts = getExpectedRouteNames(CLUSTER_NAME).stream()
                 .map(this::formatRouteHost)
@@ -734,7 +773,7 @@ public class EventStreamsOperatorTest {
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(false, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
         Checkpoint async = context.checkpoint(1);
-        EventStreams esCluster = createESCluster(NAMESPACE, CLUSTER_NAME);
+        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always"));
         reconciliationState.icpClusterData = Collections.emptyMap();
@@ -761,7 +800,7 @@ public class EventStreamsOperatorTest {
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
         Checkpoint async = context.checkpoint(1);
 
-        EventStreams esCluster = createESCluster(NAMESPACE, CLUSTER_NAME);
+        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always"));
         reconciliationState.icpClusterData = Collections.emptyMap();
@@ -797,7 +836,7 @@ public class EventStreamsOperatorTest {
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(false, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
         Checkpoint async = context.checkpoint(1);
-        EventStreams esCluster = createESCluster(NAMESPACE, CLUSTER_NAME);
+        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always"));
         reconciliationState.icpClusterData = Collections.emptyMap();
@@ -822,7 +861,7 @@ public class EventStreamsOperatorTest {
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(false, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
         Checkpoint async = context.checkpoint(1);
-        EventStreams esCluster = createESCluster(NAMESPACE, CLUSTER_NAME);
+        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always"));
         reconciliationState.icpClusterData = Collections.emptyMap();
@@ -847,7 +886,7 @@ public class EventStreamsOperatorTest {
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(false, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
         Checkpoint async = context.checkpoint(1);
-        EventStreams esCluster = createESCluster(NAMESPACE, CLUSTER_NAME);
+        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always"));
         reconciliationState.icpClusterData = Collections.emptyMap();
@@ -875,7 +914,7 @@ public class EventStreamsOperatorTest {
         Checkpoint async = context.checkpoint(1);
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(false, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
-        EventStreams esCluster = createESCluster(NAMESPACE, CLUSTER_NAME);
+        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
 
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always"));
@@ -983,7 +1022,7 @@ public class EventStreamsOperatorTest {
     public void testAllSecureEndpointModelsCertsCreatedOpenShift(VertxTestContext context) {
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
-        EventStreams esCluster = createESCluster(NAMESPACE, CLUSTER_NAME);
+        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
         Checkpoint async = context.checkpoint(2);
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState state = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always"));
@@ -1030,7 +1069,7 @@ public class EventStreamsOperatorTest {
     public void testNoRollingUpdateForDeploymentWhenCertificatesDoNotChange(VertxTestContext context) {
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(false, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
-        EventStreams esCluster = createESCluster(NAMESPACE, CLUSTER_NAME);
+        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
         Checkpoint async = context.checkpoint(3);
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always"));
@@ -1066,7 +1105,7 @@ public class EventStreamsOperatorTest {
     public void testCreateOrUpdateRoutesReturnNothingk8s(VertxTestContext context) {
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(false, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
-        EventStreams esCluster = createESCluster(NAMESPACE, CLUSTER_NAME);
+        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
         Checkpoint async = context.checkpoint(1);
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always"));
@@ -1089,7 +1128,7 @@ public class EventStreamsOperatorTest {
     public void testCreateOrUpdateRoutesMapOpenShiftNoExternalListeners(VertxTestContext context) {
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
-        EventStreams esCluster = createESCluster(NAMESPACE, CLUSTER_NAME);
+        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
         Checkpoint async = context.checkpoint(1);
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always"));
@@ -1114,7 +1153,7 @@ public class EventStreamsOperatorTest {
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
 
-        EventStreams esCluster = createESCluster(NAMESPACE, CLUSTER_NAME);
+        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always"));
         reconciliationState.icpClusterData = Collections.emptyMap();
@@ -1511,7 +1550,6 @@ public class EventStreamsOperatorTest {
                 .withStrimziOverrides(new KafkaSpecBuilder()
                         .withNewKafka()
                             .withReplicas(1)
-                            .withListeners(ModelUtils.getMutualTLSOnBothInternalAndExternalListenerSpec())
                             .withNewEphemeralStorage()
                             .endEphemeralStorage()
                         .endKafka()
@@ -1526,6 +1564,11 @@ public class EventStreamsOperatorTest {
 
         EventStreams instance = new EventStreamsBuilder(minimalInstance)
                 .editSpec()
+                    .withStrimziOverrides(new KafkaSpecBuilder(minimalInstance.getSpec().getStrimziOverrides())
+                            .editOrNewKafka()
+                                .withListeners(ModelUtils.getMutualTLSOnBothInternalAndExternalListenerSpec())
+                            .endKafka()
+                            .build())
                     .withNewReplicator()
                         .withReplicas(1)
                     .endReplicator()
@@ -1536,14 +1579,17 @@ public class EventStreamsOperatorTest {
 
         String kafkaMirrorMaker2Name = defaultComponentResourceName;
         String networkPolicyName = defaultComponentResourceName;
+
         String secretName = defaultComponentResourceName + "-secret";
-        Set<String> kafkaUserNames = new HashSet<>();
         String replicatorConnectUserName = CLUSTER_NAME + "-" + APP_NAME + "-rep-connect-user";
         String replicatorTargetConnectorUser = CLUSTER_NAME + "-" + APP_NAME + "-rep-target-user";
         String replicatorSourceConnectorUser = CLUSTER_NAME + "-" + APP_NAME + "-rep-source-user";
+
+        Set<String> kafkaUserNames = new HashSet<>();
         kafkaUserNames.add(replicatorConnectUserName);
         kafkaUserNames.add(replicatorTargetConnectorUser);
         kafkaUserNames.add(replicatorSourceConnectorUser);
+
 
         Boolean secretNotOptional = true;
 
@@ -1569,7 +1615,7 @@ public class EventStreamsOperatorTest {
                 .onComplete(context.succeeding(v -> {
                     verifyContainsResource(context, kafkaMirrorMaker2Name, KubeResourceType.KAFKA_MIRROR_MAKER_2S, false);
                     verifyContainsResource(context, networkPolicyName, KubeResourceType.NETWORK_POLICYS, false);
-                    verifyContainsResources(context, kafkaUserNames, KubeResourceType.KAFKA_USERS, true);
+                    verifyContainsResources(context, kafkaUserNames, KubeResourceType.KAFKA_USERS, false);
                     verifyContainsResource(context, secretName, KubeResourceType.SECRETS, secretNotOptional);
                     async.flag();
                 }));
@@ -1847,9 +1893,9 @@ public class EventStreamsOperatorTest {
         expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME + "-" + CertificateSecretModel.CERT_SECRET_NAME_POSTFIX);
         expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + AdminApiModel.COMPONENT_NAME + "-" + CertificateSecretModel.CERT_SECRET_NAME_POSTFIX);
         expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + ClusterSecretsModel.EVENTSTREAMS_IBMCLOUD_CA_CERT_SECRET_SUFFIX);
-        expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + ReplicatorModel.REPLICATOR_SOURCE_CLUSTER_CONNECTOR_USER_NAME);
-        expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + ReplicatorModel.REPLICATOR_TARGET_CLUSTER_CONNNECTOR_USER_NAME);
-        expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + ReplicatorModel.REPLICATOR_CONNECT_USER_NAME);
+        expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + ReplicatorUsersModel.CONNECT_KAFKA_USER_NAME);
+        expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + ReplicatorUsersModel.SOURCE_CONNECTOR_KAFKA_USER_NAME);
+        expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + ReplicatorUsersModel.TARGET_CONNECTOR_KAFKA_USER_NAME);
 
         expectedSecrets.add(clusterName + "-cluster-ca");
         expectedSecrets.add(clusterName + "-cluster-ca-cert");
@@ -1865,8 +1911,9 @@ public class EventStreamsOperatorTest {
 
     private Set<String> getExpectedKafkaUsers(String clusterName) {
         Set<String> expectedKafkaUsers = new HashSet<>();
-        expectedKafkaUsers.add(clusterName + "-" + APP_NAME + "-" + ReplicatorModel.REPLICATOR_TARGET_CLUSTER_CONNNECTOR_USER_NAME);
-        expectedKafkaUsers.add(clusterName + "-" + APP_NAME + "-" + ReplicatorModel.REPLICATOR_CONNECT_USER_NAME);
+        expectedKafkaUsers.add(clusterName + "-" + APP_NAME + "-" + ReplicatorUsersModel.CONNECT_KAFKA_USER_NAME);
+        expectedKafkaUsers.add(clusterName + "-" + APP_NAME + "-" + ReplicatorUsersModel.SOURCE_CONNECTOR_KAFKA_USER_NAME);
+        expectedKafkaUsers.add(clusterName + "-" + APP_NAME + "-" + ReplicatorUsersModel.TARGET_CONNECTOR_KAFKA_USER_NAME);
         expectedKafkaUsers.add(clusterName + "-" + APP_NAME + "-" + InternalKafkaUserModel.COMPONENT_NAME);
 
         return expectedKafkaUsers;
@@ -1911,7 +1958,7 @@ public class EventStreamsOperatorTest {
         return result;
     }
 
-    private EventStreams createESCluster(String namespace, String clusterName) {
+    private EventStreams createDefaultEventStreams(String namespace, String clusterName) {
         KafkaSpecBuilder kafka = new KafkaSpecBuilder()
             .editOrNewKafka()
                 .withReplicas(3)
@@ -1920,13 +1967,17 @@ public class EventStreamsOperatorTest {
                         .withNewKafkaListenerAuthenticationTlsAuth()
                         .endKafkaListenerAuthenticationTlsAuth()
                     .endTls()
+                    .withNewKafkaListenerExternalRoute()
+                        .withNewKafkaListenerAuthenticationTlsAuth()
+                        .endKafkaListenerAuthenticationTlsAuth()
+                    .endKafkaListenerExternalRoute()
                 .endListeners()
             .endKafka()
             .editOrNewZookeeper()
                 .withReplicas(3)
             .endZookeeper();
 
-        return createESClusterWithStrimziOverrides(namespace, clusterName, kafka.build());
+        return createEventStreamsWithStrimziOverrides(namespace, clusterName, kafka.build());
     }
 
     private EventStreams createESClusterWithProvidedExternalBrokerCerts(String namespace, String clusterName, String secretName, String secretKey, String secretCertificate) {
@@ -1953,7 +2004,7 @@ public class EventStreamsOperatorTest {
                     .withReplicas(3)
                 .endZookeeper();
 
-        return createESClusterWithStrimziOverrides(namespace, clusterName, kafka.build());
+        return createEventStreamsWithStrimziOverrides(namespace, clusterName, kafka.build());
     }
 
     private EventStreams createESClusterWithProvidedBrokerCerts(String namespace, String clusterName, String secretName, String secretKey, String secretCertificate) {
@@ -1992,10 +2043,10 @@ public class EventStreamsOperatorTest {
                 .withReplicas(3)
                 .endZookeeper();
 
-        return createESClusterWithStrimziOverrides(namespace, clusterName, kafka.build());
+        return createEventStreamsWithStrimziOverrides(namespace, clusterName, kafka.build());
     }
 
-    private EventStreams createESClusterWithStrimziOverrides(String namespace, String clusterName, KafkaSpec kafka) {
+    private EventStreams createEventStreamsWithStrimziOverrides(String namespace, String clusterName, KafkaSpec kafka) {
         return new EventStreamsBuilder()
                 .withMetadata(new ObjectMetaBuilder().withName(clusterName).withNamespace(namespace).build())
                 .withNewSpec()

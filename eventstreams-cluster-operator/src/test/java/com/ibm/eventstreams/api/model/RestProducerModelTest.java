@@ -483,7 +483,8 @@ public class RestProducerModelTest {
         assertThat(routes, IsMapWithSize.aMapWithSize(2));
         assertThat(routes.get(restProducerModel.getRouteName(Listener.EXTERNAL_TLS_NAME)).getSpec().getTls().getTermination(), is("passthrough"));
     }
-      
+
+    @Test
     public void testGenerationIdLabelOnDeployment() {
         EventStreams eventStreams = createDefaultEventStreams().build();
         RestProducerModel restProducerModel = new RestProducerModel(eventStreams, imageConfig, null);

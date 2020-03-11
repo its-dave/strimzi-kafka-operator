@@ -80,7 +80,7 @@ public class EventStreamsVerticle extends AbstractVerticle {
             log.info("EventStreamsVerticle for namespace {} started.", this.namespace);
             KubernetesDeserializer.registerCustomKind(EventStreams.RESOURCE_GROUP + "/" + EventStreams.V1BETA1, EventStreams.RESOURCE_KIND, EventStreams.class);
 
-            EventStreamsResourceOperator resourceOperator = new EventStreamsResourceOperator(vertx, client, EventStreams.RESOURCE_KIND);
+            EventStreamsResourceOperator resourceOperator = new EventStreamsResourceOperator(vertx, client);
             EventStreamsOperator eventStreamsOperator = new EventStreamsOperator(vertx, client, EventStreams.RESOURCE_KIND, pfa, resourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMilliSecs);
             eventStreamsOperator.createWatch(namespace, eventStreamsOperator.recreateWatch(namespace))
                     .compose(w -> {

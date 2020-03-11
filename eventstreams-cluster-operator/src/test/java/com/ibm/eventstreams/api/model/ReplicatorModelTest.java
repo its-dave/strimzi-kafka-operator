@@ -322,7 +322,7 @@ public class ReplicatorModelTest {
 
         Secret replicatorConnectSecret = new SecretBuilder()
                 .withNewMetadata()
-                .withName(instanceName + "-ibm-es-" + ReplicatorModel.REPLICATOR_CONNECT_USER_NAME)
+                .withName(instanceName + "-ibm-es-" + ReplicatorUsersModel.CONNECT_KAFKA_USER_NAME)
                 .withNamespace(namespace)
                 .addToAnnotations(Ca.ANNO_STRIMZI_IO_CA_KEY_GENERATION, "0")
                 .endMetadata()

@@ -176,7 +176,7 @@ public class RestProducerModel extends AbstractSecureEndpointModel {
                 .withName("SSL_KEYSTORE_PASSWORD")
                 .withNewValueFrom()
                 .withNewSecretKeyRef()
-                .withName(getInternalKafkaUserSecretName())
+                .withName(InternalKafkaUserModel.getInternalKafkaUserSecretName(getInstanceName()))
                 .withKey(USER_P12_PASS)
                 .endSecretKeyRef()
                 .endValueFrom()

@@ -26,7 +26,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import com.ibm.eventstreams.api.Listener;
-import com.ibm.eventstreams.api.model.AbstractModel;
 import com.ibm.eventstreams.api.model.AbstractSecureEndpointModel;
 import com.ibm.eventstreams.api.model.AdminApiModel;
 import com.ibm.eventstreams.api.model.AdminUIModel;
@@ -69,10 +68,7 @@ import io.strimzi.api.kafka.model.CertAndKeySecretSource;
 import io.strimzi.api.kafka.model.Kafka;
 import io.strimzi.api.kafka.model.KafkaClusterSpec;
 import io.strimzi.api.kafka.model.KafkaSpec;
-import io.strimzi.api.kafka.model.KafkaUser;
 import io.strimzi.api.kafka.model.listener.KafkaListenerAuthentication;
-import io.strimzi.api.kafka.model.listener.KafkaListenerAuthenticationOAuth;
-import io.strimzi.api.kafka.model.listener.KafkaListenerExternal;
 import io.strimzi.api.kafka.model.listener.KafkaListenerTls;
 import io.strimzi.api.kafka.model.listener.KafkaListeners;
 import io.strimzi.api.kafka.model.status.Condition;
@@ -103,6 +99,8 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
 
     private final KubernetesClient client;
     private final EventStreamsResourceOperator resourceOperator;
+    private final KafkaUserOperator kafkaUserOperator;
+    private final KafkaMirrorMaker2Operator kafkaMirrorMaker2Operator;
     private final DeploymentOperator deploymentOperator;
     private final ServiceAccountOperator serviceAccountOperator;
     private final RoleBindingOperator roleBindingOperator;
@@ -121,7 +119,6 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
     private int customImageCount = 0;
     private static final String ENCODED_IBMCLOUD_CA_CERT = "icp_public_cacert_encoded";
     private static final String CLUSTER_CA_CERT_SECRET_NAME = "cluster-ca-cert";
-    private static final String OAUTH_REPLICATOR_ERROR = "Listener Oauth client authentication unsupported for Geo Replication";
 
     public EventStreamsOperator(Vertx vertx, KubernetesClient client, String kind, PlatformFeaturesAvailability pfa,
                                 EventStreamsResourceOperator resourceOperator,
@@ -133,6 +130,8 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         this.resourceOperator = resourceOperator;
         this.client = client;
         this.pfa = pfa;
+        this.kafkaUserOperator = new KafkaUserOperator(vertx, client);
+        this.kafkaMirrorMaker2Operator = new KafkaMirrorMaker2Operator(vertx, client);
         this.deploymentOperator = new DeploymentOperator(vertx, client);
         this.serviceAccountOperator = new ServiceAccountOperator(vertx, client);
         this.roleBindingOperator = new RoleBindingOperator(vertx, client);
@@ -227,13 +226,19 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             List<Condition> conditions = new ArrayList<>();
 
             if (NameValidation.shouldReject(instance)) {
-                Condition nameTooLongCondition = buildErrorCondition("Invalid custom resource: EventStreams metadata name too long. Maximum length is " + NameValidation.MAX_NAME_LENGTH);
+                Condition nameTooLongCondition = buildErrorCondition("NameTooLong", "Invalid custom resource: EventStreams metadata name too long. Maximum length is " + NameValidation.MAX_NAME_LENGTH);
                 conditions.add(nameTooLongCondition);
                 isValidCR = false;
             }
             if (VersionValidation.shouldReject(instance)) {
-                Condition invalidVersionCondition = buildErrorCondition("Invalid custom resource: Unsupported version. Supported versions are " + VersionValidation.VALID_APP_VERSIONS.toString());
+                Condition invalidVersionCondition = buildErrorCondition("InvalidVersion", "Invalid custom resource: Unsupported version. Supported versions are " + VersionValidation.VALID_APP_VERSIONS.toString());
                 conditions.add(invalidVersionCondition);
+                isValidCR = false;
+            }
+
+            if (!ReplicatorUsersModel.isValidInstance(instance)) {
+                Condition invalidAuthorizationCondition = buildErrorCondition("UnsupportedAuthorization", "Listener client authentication unsupported for Geo Replication. Supported versions are TLS and SCRAM");
+                conditions.add(invalidAuthorizationCondition);
                 isValidCR = false;
             }
 
@@ -264,7 +269,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             log.info("{}: IAM status: {}", reconciliation, iamPresent);
 
             if (!iamPresent) {
-                Condition iamNotPresent = buildErrorCondition("Could not retrieve cloud pak resources");
+                Condition iamNotPresent = buildErrorCondition("DependencyMissing", "Could not retrieve cloud pak resources");
                 EventStreamsStatus informativeStatus = status
                     .withConditions(iamNotPresent)
                     .build();
@@ -298,7 +303,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                         clusterCaSecretPromise.fail(e);
                     }
                 } else {
-                    Condition caCertNotPresent = buildErrorCondition("could not get secret 'ibmcloud-cluster-ca-cert' in namespace 'kube-public'");
+                    Condition caCertNotPresent = buildErrorCondition("DependencyMissing", "could not get secret 'ibmcloud-cluster-ca-cert' in namespace 'kube-public'");
 
                     EventStreamsStatus informativeStatus = status
                         .withConditions(caCertNotPresent)
@@ -326,7 +331,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                         clusterCaSecretPromise.complete();
                     })
                     .onFailure(err -> {
-                        Condition caCertSecretNotCreated = buildErrorCondition(err.getMessage());
+                        Condition caCertSecretNotCreated = buildErrorCondition("FailedCreate", err.getMessage());
                         EventStreamsStatus informativeStatus = status
                             .withConditions(caCertSecretNotCreated)
                             .build();
@@ -338,7 +343,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                         });
                     });
             } else {
-                Condition caCertNotPresent = buildErrorCondition("Encoded ICP CA Cert not in ICPClusterData");
+                Condition caCertNotPresent = buildErrorCondition("DependencyMissing", "Encoded ICP CA Cert not in ICPClusterData");
                 EventStreamsStatus informativeStatus = status
                     .withConditions(caCertNotPresent)
                     .build();
@@ -385,93 +390,20 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
 
             List<Future> usersCreated = new ArrayList<>();
 
-            Optional<KafkaListenerAuthentication> internalClientAuth =
-                    Optional.ofNullable(instance.getSpec())
-                        .map(EventStreamsSpec::getStrimziOverrides)
-                        .map(KafkaSpec::getKafka)
-                        .map(KafkaClusterSpec::getListeners)
-                        .map(KafkaListeners::getTls)
-                        .map(KafkaListenerTls::getAuth);
-
-            Optional<KafkaListenerAuthentication> externalClientAuth =
-                    Optional.ofNullable(instance.getSpec())
-                    .map(EventStreamsSpec::getStrimziOverrides)
-                    .map(KafkaSpec::getKafka)
-                    .map(KafkaClusterSpec::getListeners)
-                    .map(KafkaListeners::getExternal)
-                    .map(KafkaListenerExternal::getAuth);
-
             ReplicatorUsersModel replicatorUsersModel = new ReplicatorUsersModel(instance);
 
-            if (externalClientAuth.isPresent() && !(externalClientAuth.get() instanceof KafkaListenerAuthenticationOAuth)) {
+            usersCreated.add(kafkaUserOperator.reconcile(namespace,
+                    replicatorUsersModel.getConnectKafkaUserName(),
+                    replicatorUsersModel.getConnectKafkaUser()));
 
-                KafkaUser sourceConnectorUser = replicatorUsersModel.getReplicatorSourceConnectorUser();
-                if (sourceConnectorUser != null) {
-                    Future<KafkaUser> createdSourceConnectorKafkaUser = toFuture(() -> Crds
-                            .kafkaUserOperation(client)
-                            .inNamespace(namespace)
-                            .createOrReplace(sourceConnectorUser));
-                    usersCreated.add(createdSourceConnectorKafkaUser.map(v -> this));
-                } else {
-                    Crds.kafkaUserOperation(client)
-                        .inNamespace(namespace)
-                        .withName(ReplicatorModel.REPLICATOR_SOURCE_CLUSTER_CONNECTOR_USER_NAME)
-                        .delete();
-                }
-            } else if (externalClientAuth.isPresent() && externalClientAuth.get() instanceof KafkaListenerAuthenticationOAuth) {
+            usersCreated.add(kafkaUserOperator.reconcile(namespace,
+                    replicatorUsersModel.getSourceConnectorKafkaUserName(),
+                    replicatorUsersModel.getSourceConnectorKafkaUser()));
 
-                Condition authConfigNotSupportedForReplication = buildErrorCondition(OAUTH_REPLICATOR_ERROR);
-                EventStreamsStatus informativeStatus = status
-                        .withConditions(authConfigNotSupportedForReplication)
-                        .build();
-                instance.setStatus(informativeStatus);
-                resourceOperator.createOrUpdate(instance);
-                usersCreated.add(Future.failedFuture(OAUTH_REPLICATOR_ERROR));
-            }
+            usersCreated.add(kafkaUserOperator.reconcile(namespace,
+                    replicatorUsersModel.getTargetConnectorKafkaUserName(),
+                    replicatorUsersModel.getTargetConnectorKafkaUser()));
 
-            if (internalClientAuth.isPresent()
-                    && !(internalClientAuth.get() instanceof KafkaListenerAuthenticationOAuth)) {
-
-                KafkaUser connectUser = replicatorUsersModel.getReplicatorConnectUser();
-                if (connectUser != null) {
-                    Future<KafkaUser> createKafkaConnectUser = toFuture(() -> Crds
-                            .kafkaUserOperation(client)
-                            .inNamespace(namespace)
-                            .createOrReplace(connectUser));
-                    usersCreated.add(createKafkaConnectUser.map(v -> this));
-                } else {
-                    Crds.kafkaUserOperation(client)
-                        .inNamespace(namespace)
-                        .withName(ReplicatorModel.REPLICATOR_CONNECT_USER_NAME)
-                        .delete();
-                }
-
-                KafkaUser targetConnectorUser = replicatorUsersModel.getReplicatorTargetConnectorUser();
-
-                if (targetConnectorUser != null) {
-                    Future<KafkaUser> createdDestinationConnectorKafkaUser = toFuture(() -> Crds
-                        .kafkaUserOperation(client)
-                        .inNamespace(namespace)
-                        .createOrReplace(targetConnectorUser));
-                    usersCreated.add(createdDestinationConnectorKafkaUser.map(v -> this));
-                } else {
-                    Crds.kafkaUserOperation(client)
-                        .inNamespace(namespace)
-                        .withName(ReplicatorModel.REPLICATOR_TARGET_CLUSTER_CONNNECTOR_USER_NAME)
-                        .delete();
-                }
-
-            } else if (internalClientAuth.isPresent() && internalClientAuth.get() instanceof KafkaListenerAuthenticationOAuth) {
-
-                String oauthReplicatorError = "Listener Oauth client authentication unsupported for Geo Replication";
-                Condition authConfigNotSupportedForReplication = buildErrorCondition(oauthReplicatorError);
-                EventStreamsStatus informativeStatus = status
-                        .withConditions(authConfigNotSupportedForReplication)
-                        .build();
-                instance.setStatus(informativeStatus);
-                resourceOperator.createOrUpdate(instance);
-                usersCreated.add(Future.failedFuture(oauthReplicatorError));
-            }
             return CompositeFuture.join(usersCreated)
                     .map(v -> this);
         }
@@ -484,45 +416,34 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             return setTrustStoreForReplicator(replicatorCredentials)
                 .compose(v -> setClientAuthForReplicator(replicatorCredentials))
                 
-                //Can't make the replicatorModel until after setTrustStoreForReplicator and setClientAuthForReplicator have completed
+                //Can't make the ReplicatorModel until after setTrustStoreForReplicator and setClientAuthForReplicator have completed
                 .compose(v -> { 
                     ReplicatorModel replicatorModel = new ReplicatorModel(instance, replicatorCredentials);
                     String secretName = replicatorModel.getSecretName();
                     
                     List<Future> replicatorFutures = new ArrayList<>();
 
-                    replicatorFutures.add(secretOperator.getAsync(namespace, secretName).compose(secret -> {
-                        if (secret == null) {
-                            log.debug("reconcilling replicator secret {} with value {}", secretName, secret);
-                            return secretOperator.reconcile(namespace, secretName, replicatorModel.getSecret()).map(res -> this);
-                        }
-                        return Future.succeededFuture(this);
-                    }));
+                    replicatorFutures.add(secretOperator.getAsync(namespace, secretName)
+                            .compose(secret -> {
+                                // Secret should only be created once
+                                if (secret == null) {
+                                    log.debug("Reconciling replicator secret {} with value {}", secretName, secret);
+                                    return secretOperator.reconcile(namespace, secretName, replicatorModel.getSecret());
+                                }
+                                return Future.succeededFuture(ReconcileResult.noop(secret));
+                            }));
                     replicatorFutures.add(networkPolicyOperator.reconcile(namespace, replicatorModel.getDefaultResourceName(), replicatorModel.getNetworkPolicy()));
-                    if (replicatorModel.getReplicator() != null) {
-                        replicatorFutures.add(toFuture(() -> Crds.kafkaMirrorMaker2Operation(client)
-                            .inNamespace(namespace)
-                            .createOrReplace(replicatorModel.getReplicator())));
-                    } else {
-                        Crds.kafkaMirrorMaker2Operation(client)
-                            .inNamespace(namespace)
-                            .withName(replicatorModel.getDefaultResourceName())
-                            .delete(); 
-                    }
-                    return CompositeFuture.join(replicatorFutures)
-                        .map(res -> this);
-                }).map(v -> this);
+
+                    replicatorFutures.add(kafkaMirrorMaker2Operator.reconcile(namespace, replicatorModel.getReplicatorName(), replicatorModel.getReplicator()));
+                    return CompositeFuture.join(replicatorFutures);
+                })
+                .map(cf -> this);
         }
 
         Future<ReconciliationState> createInternalKafkaUser() {
-            InternalKafkaUserModel internalUserModel = new InternalKafkaUserModel(instance);
-            KafkaUser kafkaUser = internalUserModel
-                    .getKafkaUser();
-            Future<KafkaUser> createdKafkaUser = toFuture(() -> Crds
-                .kafkaUserOperation(client)
-                .inNamespace(namespace)
-                .createOrReplace(kafkaUser));
-            return createdKafkaUser.map(v -> this);
+            InternalKafkaUserModel internalKafkaUserModel = new InternalKafkaUserModel(instance);
+            return kafkaUserOperator.reconcile(namespace, internalKafkaUserModel.getInternalKafkaUserName(), internalKafkaUserModel.getKafkaUser())
+                    .map(this);
         }
 
         Future<ReconciliationState> createRestProducer(Supplier<Date> dateSupplier) {
@@ -819,8 +740,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
 
             Promise<Void> setAuthSet = Promise.promise();
 
-
-            String resourceName = instance.getMetadata().getName() + "-" + AbstractModel.APP_NAME + "-" + ReplicatorModel.REPLICATOR_CONNECT_USER_NAME;
+            String connectKafkaUserName = ReplicatorUsersModel.getConnectKafkaUserName(instance.getMetadata().getName());
 
             Optional<KafkaListenerAuthentication> internalClientAuth =
                 Optional.ofNullable(instance.getSpec())
@@ -834,34 +754,24 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             if (internalClientAuth.isPresent()) {
 
                 // get the secret created by the KafkaUser
-                secretOperator.getAsync(namespace, resourceName).setHandler(getRes -> {
+                secretOperator.getAsync(namespace, connectKafkaUserName).setHandler(getRes -> {
                     if (getRes.succeeded()) {
                         if (getRes.result() != null) {
                             replicatorCredentials.setReplicatorClientAuth(getRes.result());
                             setAuthSet.complete();
                         } else {
-                            log.info("Replicator Connect User secret " + resourceName + " doesn't exist");
-                            setAuthSet.fail("Replicator Connect User secret " + resourceName + " doesn't exist");
+                            log.info("Replicator Connect User secret " + connectKafkaUserName + " doesn't exist");
+                            setAuthSet.fail("Replicator Connect User secret " + connectKafkaUserName + " doesn't exist");
                         }
                     } else {
-                        log.error("Failed to query for the Replicator Connect User Secret" + resourceName + " " + getRes.cause().toString());
-                        setAuthSet.fail("Failed to query for the Replicator Connect User Secret" + resourceName + " " + getRes.cause().toString());
+                        log.error("Failed to query for the Replicator Connect User Secret" + connectKafkaUserName + " " + getRes.cause().toString());
+                        setAuthSet.fail("Failed to query for the Replicator Connect User Secret" + connectKafkaUserName + " " + getRes.cause().toString());
                     }
                 });
             } else {
                 setAuthSet.complete();
             }
             return setAuthSet.future();
-        }
-
-        private Condition buildErrorCondition(String message) {
-            return new ConditionBuilder()
-                .withLastTransitionTime(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ").format(new Date()))
-                .withType("NotReady")
-                .withStatus("True")
-                .withReason("Errored")
-                .withMessage(message)
-                .build();
         }
 
         protected Future<Map<String, String>> reconcileRoutes(AbstractSecureEndpointModel model, Map<String, Route> routes) {
@@ -906,6 +816,16 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             // replace any existing endpoint with the same name
             status.removeMatchingFromEndpoints(item -> newEndpoint.getName().equals(item.getName()));
             status.addToEndpoints(newEndpoint);
+        }
+
+        private Condition buildErrorCondition(String reason, String message) {
+            return new ConditionBuilder()
+                    .withLastTransitionTime(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ").format(new Date()))
+                    .withType("NotReady")
+                    .withStatus("True")
+                    .withReason(reason)
+                    .withMessage(message)
+                    .build();
         }
     }
 }

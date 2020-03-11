@@ -890,21 +890,21 @@ public class AdminApiModelTest {
         assertThat(volumeMounts.size(), is(10));
 
         VolumeMount sourceConnectorVolume = new VolumeMountBuilder()
-                .withMountPath(ReplicatorModel.REPLICATOR_CONNECT_SOURCE_SECRET_MOUNT_PATH)
+                .withMountPath(ReplicatorModel.SOURCE_CONNECTOR_SECRET_MOUNT_PATH)
                 .withReadOnly(true)
-                .withName(ReplicatorModel.REPLICATOR_SOURCE_CLUSTER_CONNECTOR_USER_NAME)
+                .withName(ReplicatorUsersModel.SOURCE_CONNECTOR_KAFKA_USER_NAME)
                 .build();
 
         VolumeMount connectVolume = new VolumeMountBuilder()
-                .withMountPath(ReplicatorModel.REPLICATOR_CONNECT_SECRET_MOUNT_PATH)
+                .withMountPath(ReplicatorModel.CONNECT_SECRET_MOUNT_PATH)
                 .withReadOnly(true)
-                .withName(ReplicatorModel.REPLICATOR_CONNECT_USER_NAME)
+                .withName(ReplicatorUsersModel.CONNECT_KAFKA_USER_NAME)
                 .build();
 
         VolumeMount targetConnectorVolume = new VolumeMountBuilder()
-                .withMountPath(ReplicatorModel.REPLICATOR_CONNECT_TARGET_SECRET_MOUNT_PATH)
+                .withMountPath(ReplicatorModel.TARGET_CONNECTOR_SECRET_MOUNT_PATH)
                 .withReadOnly(true)
-                .withName(ReplicatorModel.REPLICATOR_TARGET_CLUSTER_CONNNECTOR_USER_NAME)
+                .withName(ReplicatorUsersModel.TARGET_CONNECTOR_KAFKA_USER_NAME)
                 .build();
 
 

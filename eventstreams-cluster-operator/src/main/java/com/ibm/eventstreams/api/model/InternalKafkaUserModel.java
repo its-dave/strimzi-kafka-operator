@@ -45,9 +45,8 @@ public class InternalKafkaUserModel extends AbstractModel {
             .build();
 
         aclList.add(rule1);
-
         
-        kafkaUser = createKafkaUser(COMPONENT_NAME,
+        kafkaUser = createKafkaUser(getInternalKafkaUserName(getInstanceName()),
                 new KafkaUserSpecBuilder()
                         .withNewKafkaUserTlsClientAuthentication()
                         .endKafkaUserTlsClientAuthentication()
@@ -57,11 +56,19 @@ public class InternalKafkaUserModel extends AbstractModel {
                         .build());
     }
 
-    public KafkaUser getKafkaUser() {
-        return this.kafkaUser;
+    public String getInternalKafkaUserName() {
+        return getInternalKafkaUserName(getInstanceName());
     }
 
-    public static String getKafkaUserName(String instanceName) {
-        return getDefaultResourceName(instanceName, COMPONENT_NAME);
+    public static String getInternalKafkaUserName(String instanceName) {
+        return getKafkaUserName(instanceName, COMPONENT_NAME);
+    }
+
+    protected static String getInternalKafkaUserSecretName(String instanceName) {
+        return getInternalKafkaUserName(instanceName);
+    }
+
+    public KafkaUser getKafkaUser() {
+        return this.kafkaUser;
     }
 }

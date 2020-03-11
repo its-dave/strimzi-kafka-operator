@@ -330,10 +330,6 @@ public abstract class AbstractModel {
         return getDefaultResourceNameWithSuffix(suffix);
     }
 
-    protected String getInternalKafkaUserSecretName() {
-        return getDefaultResourceName(instanceName, InternalKafkaUserModel.COMPONENT_NAME);
-    }
-
     protected Map<String, String> getEventStreamsMeteringAnnotations() {
         return getEventStreamsMeteringAnnotations("");
     }
@@ -657,6 +653,14 @@ public abstract class AbstractModel {
             .build();
     }
 
+    protected String getKafkaUserName(String kafkaUserSuffix) {
+        return getKafkaUserName(getInstanceName(), kafkaUserSuffix);
+    }
+
+    public static String getKafkaUserName(String instanceName, String kafkaUserName) {
+        return getDefaultResourceName(instanceName, kafkaUserName);
+    }
+
     protected KafkaUser createKafkaUser(String kafkaUserName, KafkaUserSpec spec) {
         Map<String, String> labels = getComponentLabelsWithoutResourceGroup();
         labels.put(io.strimzi.operator.common.model.Labels.STRIMZI_CLUSTER_LABEL, EventStreamsKafkaModel.getKafkaInstanceName(getInstanceName()));
@@ -664,7 +668,7 @@ public abstract class AbstractModel {
         return new KafkaUserBuilder()
             .withApiVersion(KafkaUser.RESOURCE_GROUP + "/" + KafkaUser.V1BETA1)
             .withNewMetadata()
-                .withName(getDefaultResourceName(getInstanceName(), kafkaUserName))
+                .withName(kafkaUserName)
                 .withOwnerReferences(getEventStreamsOwnerReference())
                 .withNamespace(getNamespace())
                 .withLabels(labels)
@@ -715,7 +719,7 @@ public abstract class AbstractModel {
         return new VolumeBuilder()
             .withNewName(KAFKA_USER_SECRET_VOLUME_NAME)
             .withNewSecret()
-                .withNewSecretName(getInternalKafkaUserSecretName())
+                .withNewSecretName(InternalKafkaUserModel.getInternalKafkaUserSecretName(getInstanceName()))
                 .addNewItem().withNewKey(USER_CERT).withNewPath("podtls.crt").endItem()
                 .addNewItem().withNewKey(USER_KEY).withNewPath("podtls.key").endItem()
                 .addNewItem().withNewKey(USER_P12).withNewPath("podtls.p12").endItem()
