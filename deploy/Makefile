@@ -60,8 +60,9 @@ clean: clean_crds
 build_scorecard:
 	if [ -d "${CRD_DIR}" ]; then \
 		rm -rf ${CRD_DIR}; \
-		mkdir ${CRD_DIR}; \
 	fi
+
+	mkdir ${CRD_DIR}
 
 	# populate the crds fodler with the contents of the install folder
 	$(CP) ${INSTALL_DIR}/010-ServiceAccount-strimzi-cluster-operator.yaml ${CRD_DIR}
