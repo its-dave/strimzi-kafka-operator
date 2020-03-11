@@ -143,47 +143,27 @@ spec:
           path: adminRoute
           x-descriptors:
             - 'urn:alm:descriptor:org.w3:link'
-    - description: Represents an instance of IBM Event Streams
-      version: v1beta1
-      displayName: Kafka
-      kind: Kafka
-      name: kafkas.eventstreams.ibm.com
-    - description: Represents an instance of IBM Event Streams
+    - description: A framework provided by IBM Event Streams for connecting Kafka to external systems, providing a standard way of writing and running connectors.
       version: v1beta1
       displayName: Kafka Connect
       kind: KafkaConnect
       name: kafkaconnects.eventstreams.ibm.com
-    - description: Represents an instance of IBM Event Streams
-      version: v1beta1
-      displayName: Kafka Connect S2I
-      kind: KafkaConnectS2I
-      name: kafkaconnects2is.eventstreams.ibm.com
-    - description: Represents an instance of IBM Event Streams
+    - description: Represents a topic which is a named stream of messages.
       version: v1beta1
       displayName: Kafka Topic
       kind: KafkaTopic
       name: kafkatopics.eventstreams.ibm.com
-    - description: Represents an instance of IBM Event Streams
+    - description: Represents a user who's permissions are defined via Access Control Lists (ACLs).
       version: v1beta1
       displayName: Kafka User
       kind: KafkaUser
       name: kafkausers.eventstreams.ibm.com
-    - description: Represents an instance of IBM Event Streams
-      version: v1beta1
-      displayName: Kafka Mirror Maker
-      kind: KafkaMirrorMaker
-      name: kafkamirrormakers.eventstreams.ibm.com
-    - description: Represents an instance of IBM Event Streams
-      version: v1alpha1
-      displayName: Kafka Bridge
-      kind: KafkaBridge
-      name: kafkabridges.eventstreams.ibm.com
-    - description: Represents an instance of IBM Event Streams
+    - description: Used by Kafka Connect, Source and Sink Connectors are used to retrieve data from and deliver data to secondary databases.
       version: v1alpha1
       displayName: Kafka Connector
       kind: KafkaConnector
       name: kafkaconnectors.eventstreams.ibm.com
-    - description: Represents an instance of IBM Event Streams
+    - description: Used to enable IBM Event Stream's Geo-replication feature to synchronize data between clusters and aid in disaster recovery.
       version: v1alpha1
       displayName: Kafka Mirror Maker 2
       kind: KafkaMirrorMaker2
