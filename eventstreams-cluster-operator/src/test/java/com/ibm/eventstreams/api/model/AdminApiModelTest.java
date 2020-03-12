@@ -13,7 +13,6 @@
 package com.ibm.eventstreams.api.model;
 
 import com.ibm.eventstreams.Main;
-import com.ibm.eventstreams.api.Labels;
 import com.ibm.eventstreams.api.Listener;
 import com.ibm.eventstreams.api.model.utils.ModelUtils;
 import com.ibm.eventstreams.api.spec.EventStreams;
@@ -69,7 +68,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.emptyIterableOf;
-import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasItem;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -212,117 +210,6 @@ public class AdminApiModelTest {
             assertThat(ingress.getPorts().size(), is(1));
             assertThat(listenerPorts, hasItem(ingress.getPorts().get(0).getPort().getIntVal()));
         });
-
-        assertThat(networkPolicy.getSpec().getEgress().size(), is(7));
-
-        checkNetworkPolicy(networkPolicy, 0, 1, 1, 1, EventStreamsKafkaModel.KAFKA_PORT, EventStreamsKafkaModel.KAFKA_COMPONENT_NAME);
-        checkNetworkPolicy(networkPolicy, 1, 1, 1, 1, EventStreamsKafkaModel.KAFKA_RUNAS_PORT, EventStreamsKafkaModel.KAFKA_COMPONENT_NAME);
-        checkNetworkPolicy(networkPolicy, 2, 1, 1, 1, Listener.podToPodListener(false).getPort(), SchemaRegistryModel.COMPONENT_NAME);
-        checkNetworkPolicy(networkPolicy, 3, 1, 1, 1, EventStreamsKafkaModel.ZOOKEEPER_PORT, EventStreamsKafkaModel.ZOOKEEPER_COMPONENT_NAME);
-        checkNetworkPolicy(networkPolicy, 4, 1, 1, 1, ReplicatorModel.REPLICATOR_PORT, ReplicatorModel.COMPONENT_NAME);
-
-        assertThat(networkPolicy
-            .getSpec()
-            .getEgress()
-            .get(5)
-            .getPorts()
-            .size(), is(2));
-        assertThat(networkPolicy
-            .getSpec()
-            .getEgress()
-            .get(5)
-            .getPorts()
-            .get(0)
-            .getPort()
-            .getIntVal(), is(8443));
-        assertThat(networkPolicy
-            .getSpec()
-            .getEgress()
-            .get(5)
-            .getPorts()
-            .get(1)
-            .getPort()
-            .getIntVal(), is(443));
-        assertThat(networkPolicy
-            .getSpec()
-            .getEgress()
-            .get(5)
-            .getTo()
-            .size(), is(0));
-
-        assertThat(networkPolicy
-            .getSpec()
-            .getEgress()
-            .get(6)
-            .getPorts()
-            .size(), is(1));
-        assertThat(networkPolicy
-            .getSpec()
-            .getEgress()
-            .get(6)
-            .getPorts()
-            .get(0)
-            .getPort()
-            .getIntVal(), is(53));
-        assertThat(networkPolicy
-            .getSpec()
-            .getEgress()
-            .get(6)
-            .getPorts()
-            .get(0)
-            .getProtocol(), is("UDP"));
-        assertThat(networkPolicy
-            .getSpec()
-            .getEgress()
-            .get(6)
-            .getTo()
-            .size(), is(0));
-
-        assertThat(networkPolicy
-            .getSpec()
-            .getPodSelector()
-            .getMatchLabels(), hasEntry(is(Labels.COMPONENT_LABEL), is(AdminApiModel.COMPONENT_NAME)));
-    }
-
-    private void checkNetworkPolicy(NetworkPolicy networkPolicy, int egressIndex, int expectedNumberOfPorts, int expectedGetTo, int expectedMatchLabels, int expectedPort, String expectedComponentName) {
-        assertThat(networkPolicy
-            .getSpec()
-            .getEgress()
-            .get(egressIndex)
-            .getPorts()
-            .size(), is(expectedNumberOfPorts));
-        assertThat(networkPolicy
-            .getSpec()
-            .getEgress()
-            .get(egressIndex)
-            .getPorts()
-            .get(0)
-            .getPort()
-            .getIntVal(), is(expectedPort));
-        assertThat(networkPolicy
-            .getSpec()
-            .getEgress()
-            .get(egressIndex)
-            .getTo()
-            .size(), is(expectedGetTo));
-        assertThat(networkPolicy
-            .getSpec()
-            .getEgress()
-            .get(egressIndex)
-            .getTo()
-            .get(0)
-            .getPodSelector()
-            .getMatchLabels()
-            .size(), is(expectedMatchLabels));
-        assertThat(networkPolicy
-            .getSpec()
-            .getEgress()
-            .get(egressIndex)
-            .getTo()
-            .get(0)
-            .getPodSelector()
-            .getMatchLabels()
-            .get(Labels.COMPONENT_LABEL), is(expectedComponentName));
     }
 
     @Test

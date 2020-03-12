@@ -297,12 +297,12 @@ public abstract class AbstractModel {
         return name.isEmpty() ? getComponentName() : getComponentName() + "-" + name;
     }
 
-    public String getDefaultResourceNameWithSuffix(String name) {
-        return getDefaultResourceNameWithSuffix(name, getInstanceName(), getComponentName());
+    public String getDefaultResourceNameWithSuffix(String suffix) {
+        return getDefaultResourceNameWithSuffix(suffix, getInstanceName(), getComponentName());
     }
 
-    public static String getDefaultResourceNameWithSuffix(String name, String instanceName, String componentName) {
-        return name.isEmpty() ? getDefaultResourceName(instanceName, componentName) : getDefaultResourceName(instanceName, componentName) + "-" + name;
+    public static String getDefaultResourceNameWithSuffix(String suffix, String instanceName, String componentName) {
+        return suffix.isEmpty() ? getDefaultResourceName(instanceName, componentName) : getDefaultResourceName(instanceName, componentName) + "-" + suffix;
     }
 
     public static String getDefaultResourceName(String instanceName, String componentName) {
@@ -399,6 +399,12 @@ public abstract class AbstractModel {
         return labels;
     }
 
+    /**
+     * 
+     * @param supplied
+     * @param defaults
+     * @return the default resource requirements overridden by any user supplied requirements 
+     */
     protected ResourceRequirements getResourceRequirements(ResourceRequirements supplied, ResourceRequirements defaults) {
         Map<String, Quantity> requests = Optional.ofNullable(supplied.getRequests()).orElseGet(HashMap::new);
         defaults.getRequests().forEach(requests::putIfAbsent);
@@ -410,8 +416,12 @@ public abstract class AbstractModel {
                 .build();
     }
 
-    protected ResourceRequirements getResourceRequirements(ResourceRequirements defaultResources) {
-        return getResourceRequirements(resourceRequirements, defaultResources);
+    /**
+     * @param defaults
+     * @return the default resource requirements overridden by any user supplied requirements 
+     */
+    protected ResourceRequirements getResourceRequirements(ResourceRequirements defaults) {
+        return getResourceRequirements(resourceRequirements, defaults);
     }
 
     protected SecurityContext getSecurityContext(boolean readOnlyRootFileSystem) {

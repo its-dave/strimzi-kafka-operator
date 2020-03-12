@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
+import com.ibm.eventstreams.api.DefaultResourceRequirements;
 import com.ibm.eventstreams.api.Labels;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
@@ -31,9 +32,7 @@ import io.fabric8.kubernetes.api.model.Affinity;
 import io.fabric8.kubernetes.api.model.AffinityBuilder;
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.EnvVarBuilder;
-import io.fabric8.kubernetes.api.model.Quantity;
 import io.fabric8.kubernetes.api.model.ResourceRequirements;
-import io.fabric8.kubernetes.api.model.ResourceRequirementsBuilder;
 import io.fabric8.kubernetes.api.model.WeightedPodAffinityTerm;
 import io.fabric8.kubernetes.api.model.WeightedPodAffinityTermBuilder;
 import io.strimzi.api.kafka.model.ContainerEnvVar;
@@ -69,15 +68,19 @@ public class EventStreamsKafkaModel extends AbstractModel {
     public static final int KAFKA_PORT_TLS = 9093;
     public static final int ZOOKEEPER_PORT = 2181;
 
+    private final KafkaClusterSpec kafkaClusterSpec;
+    private final ZookeeperClusterSpec zookeeperClusterSpec;
+    private final EntityOperatorSpec entityOperatorSpec;
+
     private final Kafka kafka;
 
-    // Suppress until we refactor if appropriate
+    /**
+     * This class is used to model the kafka custom resource used by the strimzi cluster operator
+     * @param instance
+     */
     @SuppressWarnings({"checkstyle:MethodLength"})
     public EventStreamsKafkaModel(EventStreams instance) {
         super(instance.getMetadata().getName(), instance.getMetadata().getNamespace(), STRIMZI_COMPONENT_NAME);
-
-        // check what has been requested before any defaults get mapped on top
-        boolean shouldDeployTopicOperator = isTopicOperatorRequested(instance);
 
         setOwnerReference(instance);
         setEncryption(Optional.ofNullable(instance.getSpec())
@@ -85,66 +88,39 @@ public class EventStreamsKafkaModel extends AbstractModel {
                             .map(SecuritySpec::getEncryption)
                             .orElse(DEFAULT_ENCRYPTION));
 
+        // These fields are required in the CRD but kept
+        // as optional now to handle any potential null pointers
         Optional<KafkaSpec> strimziOverrides = Optional
             .ofNullable(instance)
             .map(EventStreams::getSpec)
             .map(EventStreamsSpec::getStrimziOverrides);
 
-        KafkaClusterSpec kafkaClusterSpec = strimziOverrides.map(KafkaSpec::getKafka)
+        kafkaClusterSpec = strimziOverrides.map(KafkaSpec::getKafka)
                 .orElseGet(KafkaClusterSpec::new);
 
-        ZookeeperClusterSpec zookeeperClusterSpec = strimziOverrides.map(KafkaSpec::getZookeeper)
+        zookeeperClusterSpec = strimziOverrides.map(KafkaSpec::getZookeeper)
                 .orElseGet(ZookeeperClusterSpec::new);
 
-        EntityOperatorSpec entityOperatorSpec = strimziOverrides.map(KafkaSpec::getEntityOperator)
+        entityOperatorSpec = strimziOverrides.map(KafkaSpec::getEntityOperator)
                 .orElseGet(EntityOperatorSpec::new);
+        
+        
+        kafka = createKafka(strimziOverrides.orElseGet(KafkaSpec::new));
+    }
 
 
-        // must give the metrics maps a value if they have been defined
-        // otherwise they will not be present in the kafka cr created
-        Map<String, Object> kafkaMetrics = new HashMap<>();
-        if (kafkaClusterSpec.getMetrics() != null) {
-            kafkaMetrics.putAll(kafkaClusterSpec.getMetrics());
-            kafkaMetrics.putIfAbsent("lowercaseOutputName", true);
-            List<KafkaMetricsJMXRule> rules = new ArrayList<>(); 
-            if (kafkaMetrics.get("rules") != null) {
-                rules.addAll((List<KafkaMetricsJMXRule>) kafkaMetrics.get("rules"));
-            }
-            rules.addAll(getDefaultKafkaJMXMetricRules());
-            kafkaMetrics.put("rules", rules);
-        }
-
-        Map<String, Object> zookeeperMetrics = new HashMap<>();
-        if (zookeeperClusterSpec.getMetrics() != null) {
-            zookeeperMetrics.putAll(zookeeperClusterSpec.getMetrics());
-            zookeeperMetrics.putIfAbsent("lowercaseOutputName", true);
-            List<KafkaMetricsJMXRule> rules = new ArrayList<>(); 
-            if (zookeeperMetrics.get("rules") != null) {
-                rules.addAll((List<KafkaMetricsJMXRule>) zookeeperMetrics.get("rules"));
-            }
-            zookeeperMetrics.put("rules", rules);
-        }
-
-        Affinity kafkaAffinity = Optional.ofNullable(kafkaClusterSpec.getTemplate())
-                .map(KafkaClusterTemplate::getPod)
-                .map(PodTemplate::getAffinity)
-                .orElseGet(Affinity::new);
-
-        Affinity zookeeperAffinity = Optional.ofNullable(zookeeperClusterSpec.getTemplate())
-                .map(ZookeeperClusterTemplate::getPod)
-                .map(PodTemplate::getAffinity)
-                .orElseGet(Affinity::new);
-
-        Affinity entityOperatorAffinity = Optional.ofNullable(entityOperatorSpec.getTemplate())
-                .map(EntityOperatorTemplate::getPod)
-                .map(PodTemplate::getAffinity)
-                .orElseGet(Affinity::new);
+    /**
+     * 
+     * @param strimziOverrides the kafka spec provided in the Eventstreams CR
+     * @return the Kafka CR to be created
+     */
+    private Kafka createKafka(KafkaSpec strimziOverrides) {
 
         List<EnvVar> kafkaEnvVars = Arrays.asList(
-                new EnvVarBuilder().withName("COLLECTOR_PORT").withValue(Integer.toString(CollectorModel.API_PORT)).build(),
-                new EnvVarBuilder().withName("COLLECTOR_HOST").withValue(getResourcePrefix() + "-" + CollectorModel.COMPONENT_NAME).build(),
-                new EnvVarBuilder().withName("COLLECTOR_TLS_ENABLED").withValue(String.valueOf(tlsEnabled())).build(),
-                new EnvVarBuilder().withName("COLLECTOR_HOSTNAME_VERIFICATION").withValue("false").build()
+            new EnvVarBuilder().withName("COLLECTOR_PORT").withValue(Integer.toString(CollectorModel.API_PORT)).build(),
+            new EnvVarBuilder().withName("COLLECTOR_HOST").withValue(getResourcePrefix() + "-" + CollectorModel.COMPONENT_NAME).build(),
+            new EnvVarBuilder().withName("COLLECTOR_TLS_ENABLED").withValue(String.valueOf(tlsEnabled())).build(),
+            new EnvVarBuilder().withName("COLLECTOR_HOSTNAME_VERIFICATION").withValue("false").build()
         );
 
         kafkaEnvVars = combineEnvVarListsNoDuplicateKeys(
@@ -152,20 +128,12 @@ public class EventStreamsKafkaModel extends AbstractModel {
                 Optional.ofNullable(kafkaClusterSpec.getTemplate())
                         .map(KafkaClusterTemplate::getKafkaContainer)
                         .map(ContainerTemplate::getEnv)
-                        .orElse(new ArrayList<>()));
-
-        ResourceRequirements kafkaResourceRequirements = getKafkaResources(kafkaClusterSpec);
-        ResourceRequirements kafkaTlsSidecarResources = getKafkaTlsSidecarResources(kafkaClusterSpec);
-        ResourceRequirements zookeeperResources = getZookeeperResources(zookeeperClusterSpec);
-        ResourceRequirements zookeeperTlsResources = getZookeeperTlsResources(zookeeperClusterSpec);
-        ResourceRequirements topicOperatorResources = getTopicOperatorResources(entityOperatorSpec);
-        ResourceRequirements userOperatorResources = getUserTopicResources(entityOperatorSpec);
-        ResourceRequirements entityOperatorTlsResources = getEntityOperatorTlsResources(entityOperatorSpec);
+                        .orElseGet(ArrayList::new));
 
         Map<String, String> strimziComponentLabels = getComponentLabels();
         // Remove as forbidden by Strimzi.
         strimziComponentLabels.remove(Labels.NAME_LABEL);
-        
+
         KafkaBuilder builder = new KafkaBuilder()
             .withApiVersion(Kafka.RESOURCE_GROUP + "/" + Kafka.V1BETA1)
             .editOrNewMetadata()
@@ -174,12 +142,12 @@ public class EventStreamsKafkaModel extends AbstractModel {
                 .withOwnerReferences(getEventStreamsOwnerReference())
                 .addToLabels(strimziComponentLabels)
             .endMetadata()
-            .withNewSpecLike(strimziOverrides.orElseGet(KafkaSpec::new))
+            .withNewSpecLike(strimziOverrides)
                 .editOrNewKafka()
-                    .addToMetrics(kafkaMetrics.isEmpty() ? null : kafkaMetrics)
-                    .withResources(kafkaResourceRequirements)
+                    .addToMetrics(getKafkaMetricsConfig().isEmpty() ? null : getKafkaMetricsConfig())
+                    .withResources(getKafkaResources())
                     .editOrNewTlsSidecar()
-                        .withResources(kafkaTlsSidecarResources)
+                        .withResources(getKafkaTlsSidecarResources())
                     .endTlsSidecar()
                     .editOrNewTemplate()
                         .editOrNewKafkaContainer()
@@ -195,7 +163,7 @@ public class EventStreamsKafkaModel extends AbstractModel {
                             .endMetadata()
                             .withSecurityContext(getPodSecurityContext())
                             // Equivalent to editOrNew
-                            .withAffinity(new AffinityBuilder(kafkaAffinity)
+                            .withAffinity(new AffinityBuilder(getKafkaAffinity())
                                 .editOrNewPodAntiAffinity()
                                     .addToPreferredDuringSchedulingIgnoredDuringExecution(preferredWeightedPodAntiAffinityTermForSelector(KAFKA_SERVICE_SELECTOR, 10))
                                     .addToPreferredDuringSchedulingIgnoredDuringExecution(preferredWeightedPodAntiAffinityTermForSelector(ZOOKEEPER_SERVICE_SELECTOR, 5))
@@ -205,10 +173,10 @@ public class EventStreamsKafkaModel extends AbstractModel {
                     .endTemplate()
                 .endKafka()
                 .editOrNewZookeeper()
-                    .addToMetrics(zookeeperMetrics.isEmpty() ? null : zookeeperMetrics)
-                    .withResources(zookeeperResources)
+                    .addToMetrics(getZookeeperMetricsConfig().isEmpty() ? null : getZookeeperMetricsConfig())
+                    .withResources(getZookeeperResources())
                     .editOrNewTlsSidecar()
-                        .withResources(zookeeperTlsResources)
+                        .withResources(getZookeeperTlsResources())
                     .endTlsSidecar()
                     .editOrNewTemplate()
                         .editOrNewPod()
@@ -219,7 +187,7 @@ public class EventStreamsKafkaModel extends AbstractModel {
                                 .addToLabels(getServiceSelectorLabel(ZOOKEEPER_SERVICE_SELECTOR))
                             .endMetadata()
                             .withSecurityContext(getPodSecurityContext())
-                            .withAffinity(new AffinityBuilder(zookeeperAffinity)
+                            .withAffinity(new AffinityBuilder(getZookeeperAffinity())
                                 .editOrNewPodAntiAffinity()
                                     .addToPreferredDuringSchedulingIgnoredDuringExecution(preferredWeightedPodAntiAffinityTermForSelector(ZOOKEEPER_SERVICE_SELECTOR, 10))
                                     .addToPreferredDuringSchedulingIgnoredDuringExecution(preferredWeightedPodAntiAffinityTermForSelector(KAFKA_SERVICE_SELECTOR, 5))
@@ -232,10 +200,10 @@ public class EventStreamsKafkaModel extends AbstractModel {
                     // topic operator is optional, so this is added
                     //  to the builder if needed below
                     .editOrNewUserOperator()
-                        .withResources(userOperatorResources)
+                        .withResources(getEntityUserOperatorResources())
                     .endUserOperator()
                     .editOrNewTlsSidecar()
-                        .withResources(entityOperatorTlsResources)
+                        .withResources(getEntityOperatorTlsResources())
                     .endTlsSidecar()
                     .editOrNewTemplate()
                         .editOrNewPod()
@@ -245,7 +213,7 @@ public class EventStreamsKafkaModel extends AbstractModel {
                                 .addToLabels(Labels.COMPONENT_LABEL, ENTITY_OPERATOR_COMPONENT_NAME)
                                 .addToLabels(getServiceSelectorLabel(ENTITY_OPERATOR_SERVICE_SELECTOR))
                             .endMetadata()
-                        .withAffinity(new AffinityBuilder(entityOperatorAffinity)
+                        .withAffinity(new AffinityBuilder(getEntityOperatorAffinity())
                                 .build())
                         .endPod()
                     .endTemplate()
@@ -255,26 +223,61 @@ public class EventStreamsKafkaModel extends AbstractModel {
         //
         // add optional elements to the spec before building
 
-        if (shouldDeployTopicOperator) {
+        if (Optional.ofNullable(entityOperatorSpec).map(EntityOperatorSpec::getTopicOperator).isPresent()) {
             builder.editSpec()
                     .editEntityOperator()
                         .editOrNewTopicOperator()
-                            .withResources(topicOperatorResources)
+                            .withResources(getEntityTopicOperatorResources())
                         .endTopicOperator()
                     .endEntityOperator()
                 .endSpec();
         }
-
-        this.kafka = builder.build();
+        return builder.build();
     }
 
     /**
      * getKafkaInstanceName returns the name of the Kafka instance for the given EventStreams instance name
      * Do not use this method when not referencing Kafka resources
+     * @param instanceName
+     * @return the name of the kafka instance
      */
     public static String getKafkaInstanceName(String instanceName) {
         return instanceName;
     }
+
+    /**
+     * 
+     * @return The kafka affinity from the Eventstreams CR or a new affinity
+     */
+    private Affinity getKafkaAffinity() {
+        return Optional.ofNullable(kafkaClusterSpec.getTemplate())
+            .map(KafkaClusterTemplate::getPod)
+            .map(PodTemplate::getAffinity)
+            .orElseGet(Affinity::new);
+    }
+
+    /**
+     * 
+     * @return The zookeeper affinity from the Eventstreams CR or a new affinity
+     */
+    private Affinity getZookeeperAffinity() {
+        return Optional.ofNullable(zookeeperClusterSpec.getTemplate())
+            .map(ZookeeperClusterTemplate::getPod)
+            .map(PodTemplate::getAffinity)
+            .orElseGet(Affinity::new);
+    }
+
+    /**
+     * 
+     * @return The entity operator affinity from the Eventstreams CR or a new affinity
+     */
+    private Affinity getEntityOperatorAffinity() {
+        return Optional.ofNullable(entityOperatorSpec.getTemplate())
+            .map(EntityOperatorTemplate::getPod)
+            .map(PodTemplate::getAffinity)
+            .orElseGet(Affinity::new);
+    }
+
 
     private WeightedPodAffinityTerm preferredWeightedPodAntiAffinityTermForSelector(String serviceSelector, Integer affinityWeight) {
 
@@ -314,111 +317,80 @@ public class EventStreamsKafkaModel extends AbstractModel {
         return getKafkaInstanceName(instanceName) + "-kafka-config";
     }
 
-    private ResourceRequirements getKafkaResources(KafkaClusterSpec kafkaClusterSpec) {
-        ResourceRequirements initialKafkaResources = Optional.ofNullable(kafkaClusterSpec.getResources())
+    /**
+     * 
+     * @return The kafka resource requirements
+     */
+    private ResourceRequirements getKafkaResources() {
+        ResourceRequirements kafkaResources = Optional.ofNullable(kafkaClusterSpec.getResources())
                 .orElseGet(ResourceRequirements::new);
-        Map<String, Quantity> requests = new HashMap<>();
-        requests.put("cpu", new Quantity("100m"));
-        requests.put("memory", new Quantity("100Mi"));
-
-        Map<String, Quantity> limits = new HashMap<>();
-        limits.put("cpu", new Quantity("1000m"));
-        limits.put("memory", new Quantity("2Gi"));
-
-        ResourceRequirements defaultKafkaResources = buildNewResourceRequirements(requests, limits);
-        ResourceRequirements kafkaResourceRequirements = getResourceRequirements(initialKafkaResources, defaultKafkaResources);
-        return kafkaResourceRequirements;
+        return getResourceRequirements(kafkaResources, DefaultResourceRequirements.KAFKA);
     }
 
-    private ResourceRequirements defaultTlsSidecarResources() {
-        Map<String, Quantity> requests = new HashMap<>();
-        requests.put("cpu", new Quantity("10m"));
-        requests.put("memory", new Quantity("10Mi"));
-
-        Map<String, Quantity> limits = new HashMap<>();
-        limits.put("cpu", new Quantity("100m"));
-        limits.put("memory", new Quantity("100Mi"));
-
-        return buildNewResourceRequirements(requests, limits);
-    }
-
-    private ResourceRequirements getKafkaTlsSidecarResources(KafkaClusterSpec kafkaClusterSpec) {
-        ResourceRequirements initialKafkaTlsSidecarResources = Optional.ofNullable(kafkaClusterSpec.getTlsSidecar())
+    /**
+     * 
+     * @return The kafka tls sidecar resource requirements
+     */
+    private ResourceRequirements getKafkaTlsSidecarResources() {
+        ResourceRequirements tlsSidecarResources = Optional.ofNullable(kafkaClusterSpec.getTlsSidecar())
                 .map(TlsSidecar::getResources)
                 .orElseGet(ResourceRequirements::new);
-        return getResourceRequirements(initialKafkaTlsSidecarResources, defaultTlsSidecarResources());
+        return getResourceRequirements(tlsSidecarResources, DefaultResourceRequirements.TLS_SIDECAR);
     }
 
-    private ResourceRequirements getZookeeperTlsResources(ZookeeperClusterSpec zookeeperClusterSpec) {
-        ResourceRequirements initialZookeeperTlsResources = Optional.ofNullable(zookeeperClusterSpec.getTlsSidecar())
+    /**
+     * 
+     * @return The zookeeper resource requirements
+     */
+    private ResourceRequirements getZookeeperResources() {
+        ResourceRequirements zookeeperResources = Optional.ofNullable(zookeeperClusterSpec.getResources())
+                .orElseGet(ResourceRequirements::new);
+        return getResourceRequirements(zookeeperResources, DefaultResourceRequirements.ZOOKEEPER);
+    }
+
+    /**
+     * 
+     * @return The zookeeper tls sidecar resource requirements
+     */
+    private ResourceRequirements getZookeeperTlsResources() {
+        ResourceRequirements zkTlsSidecarResources = Optional.ofNullable(zookeeperClusterSpec.getTlsSidecar())
                 .map(TlsSidecar::getResources)
                 .orElseGet(ResourceRequirements::new);
-        return getResourceRequirements(initialZookeeperTlsResources, defaultTlsSidecarResources());
+        return getResourceRequirements(zkTlsSidecarResources, DefaultResourceRequirements.TLS_SIDECAR);
     }
 
-    private ResourceRequirements getZookeeperResources(ZookeeperClusterSpec zookeeperClusterSpec) {
-        ResourceRequirements initialZookeeperResources = Optional.ofNullable(zookeeperClusterSpec.getResources())
-                .orElseGet(ResourceRequirements::new);
-        Map<String, Quantity> requests = new HashMap<>();
-        requests.put("cpu", new Quantity("100m"));
-        requests.put("memory", new Quantity("100Mi"));
 
-        Map<String, Quantity> limits = new HashMap<>();
-        limits.put("cpu", new Quantity("1000m"));
-        limits.put("memory", new Quantity("1Gi"));
-
-        ResourceRequirements defaultZookeeperResources = buildNewResourceRequirements(requests, limits);
-        return getResourceRequirements(initialZookeeperResources, defaultZookeeperResources);
-    }
-
-    private ResourceRequirements defaultOperatorResources() {
-        Map<String, Quantity> requests = new HashMap<>();
-        requests.put("cpu", new Quantity("10m"));
-        requests.put("memory", new Quantity("50Mi"));
-
-        Map<String, Quantity> limits = new HashMap<>();
-        limits.put("cpu", new Quantity("1000m"));
-        limits.put("memory", new Quantity("500Mi"));
-
-        return buildNewResourceRequirements(requests, limits);
-    }
-
-    private boolean isTopicOperatorRequested(EventStreams instance) {
-        return Optional.ofNullable(instance)
-                .map(EventStreams::getSpec)
-                .map(EventStreamsSpec::getStrimziOverrides)
-                .map(KafkaSpec::getEntityOperator)
-                .map(EntityOperatorSpec::getTopicOperator)
-                .isPresent();
-    }
-
-    private ResourceRequirements getTopicOperatorResources(EntityOperatorSpec entityOperatorSpec) {
-        ResourceRequirements initialTopicOperatorResources = Optional.ofNullable(entityOperatorSpec.getTopicOperator())
+    /**
+     * 
+     * @return The entity topic operator resource requirements
+     */
+    private ResourceRequirements getEntityTopicOperatorResources() {
+        ResourceRequirements topicOperatorResources = Optional.ofNullable(entityOperatorSpec.getTopicOperator())
                 .map(EntityTopicOperatorSpec::getResources)
                 .orElseGet(ResourceRequirements::new);
-        return getResourceRequirements(initialTopicOperatorResources, defaultOperatorResources());
+        return getResourceRequirements(topicOperatorResources, DefaultResourceRequirements.ENTITY_OPERATOR);
     }
 
-    private ResourceRequirements getUserTopicResources(EntityOperatorSpec entityOperatorSpec) {
-        ResourceRequirements initialUserOperatorResources = Optional.ofNullable(entityOperatorSpec.getUserOperator())
+    /**
+     * 
+     * @return The entity user operator resource requirements
+     */
+    private ResourceRequirements getEntityUserOperatorResources() {
+        ResourceRequirements userOperatorResources = Optional.ofNullable(entityOperatorSpec.getUserOperator())
                 .map(EntityUserOperatorSpec::getResources)
                 .orElseGet(ResourceRequirements::new);
-        return getResourceRequirements(initialUserOperatorResources, defaultOperatorResources());
+        return getResourceRequirements(userOperatorResources, DefaultResourceRequirements.ENTITY_OPERATOR);
     }
 
-    private ResourceRequirements getEntityOperatorTlsResources(EntityOperatorSpec entityOperatorSpec) {
-        ResourceRequirements initialEntityOperatorTlsResources = Optional.ofNullable(entityOperatorSpec.getTlsSidecar())
+    /**
+     * 
+     * @return The entity operator tls sidecar resources
+     */
+    private ResourceRequirements getEntityOperatorTlsResources() {
+        ResourceRequirements entityOperatorTlsResources = Optional.ofNullable(entityOperatorSpec.getTlsSidecar())
                 .map(TlsSidecar::getResources)
                 .orElseGet(ResourceRequirements::new);
-        return getResourceRequirements(initialEntityOperatorTlsResources, defaultTlsSidecarResources());
-    }
-
-    private ResourceRequirements buildNewResourceRequirements(Map<String, Quantity> requests, Map<String, Quantity> limits) {
-        ResourceRequirements resources = new ResourceRequirementsBuilder()
-                .withRequests(requests)
-                .withLimits(limits)
-                .build();
-        return resources;
+        return getResourceRequirements(entityOperatorTlsResources, DefaultResourceRequirements.TLS_SIDECAR);
     }
 
     private List<ContainerEnvVar> createContainerEnvVarList(List<EnvVar> envVars) {
@@ -432,10 +404,57 @@ public class EventStreamsKafkaModel extends AbstractModel {
         return containerEnvVarsList;
     }
 
+    /**
+     * 
+     * @return The kafka custom resource
+     */
     public Kafka getKafka() {
         return this.kafka;
     }
 
+    /**
+     * 
+     * @return The kafka metrics map of config options
+     */
+    private Map<String, Object> getKafkaMetricsConfig() {
+        // must give the metrics maps a value if they have been defined
+        // otherwise they will not be present in the kafka cr created
+        Map<String, Object> kafkaMetrics = new HashMap<>();
+        if (kafkaClusterSpec.getMetrics() != null) {
+            kafkaMetrics.putAll(kafkaClusterSpec.getMetrics());
+            kafkaMetrics.putIfAbsent("lowercaseOutputName", true);
+            List<KafkaMetricsJMXRule> rules = new ArrayList<>(); 
+            if (kafkaMetrics.get("rules") != null) {
+                rules.addAll((List<KafkaMetricsJMXRule>) kafkaMetrics.get("rules"));
+            }
+            rules.addAll(getDefaultKafkaJMXMetricRules());
+            kafkaMetrics.put("rules", rules);
+        }
+        return kafkaMetrics;
+    }
+
+    /**
+     * 
+     * @return The zookeeper Metrics map of config options
+     */
+    private Map<String, Object> getZookeeperMetricsConfig() {
+        Map<String, Object> zookeeperMetrics = new HashMap<>();
+        if (zookeeperClusterSpec.getMetrics() != null) {
+            zookeeperMetrics.putAll(zookeeperClusterSpec.getMetrics());
+            zookeeperMetrics.putIfAbsent("lowercaseOutputName", true);
+            List<KafkaMetricsJMXRule> rules = new ArrayList<>(); 
+            if (zookeeperMetrics.get("rules") != null) {
+                rules.addAll((List<KafkaMetricsJMXRule>) zookeeperMetrics.get("rules"));
+            }
+            zookeeperMetrics.put("rules", rules);
+        }
+        return zookeeperMetrics;
+    }
+
+    /**
+     * 
+     * @return A list of the default kafka JMX metric rules that are necessary to provide supported metrics data to the Admin UI
+     */
     public static List<KafkaMetricsJMXRule> getDefaultKafkaJMXMetricRules() {
         List<KafkaMetricsJMXRule> rules = new ArrayList<>();
         rules.add(new KafkaMetricsJMXRuleBuilder()

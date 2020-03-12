@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import com.ibm.eventstreams.Main;
+import com.ibm.eventstreams.api.DefaultResourceRequirements;
 import com.ibm.eventstreams.api.Listener;
 import com.ibm.eventstreams.api.spec.ComponentSpec;
 import com.ibm.eventstreams.api.spec.ComponentTemplate;
@@ -44,13 +45,11 @@ import io.fabric8.kubernetes.api.model.Probe;
 import io.fabric8.kubernetes.api.model.ProbeBuilder;
 import io.fabric8.kubernetes.api.model.Quantity;
 import io.fabric8.kubernetes.api.model.ResourceRequirements;
-import io.fabric8.kubernetes.api.model.ResourceRequirementsBuilder;
 import io.fabric8.kubernetes.api.model.ServiceAccount;
 import io.fabric8.kubernetes.api.model.Volume;
 import io.fabric8.kubernetes.api.model.VolumeBuilder;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicy;
-import io.fabric8.kubernetes.api.model.networking.NetworkPolicyEgressRule;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicyIngressRule;
 import io.strimzi.api.kafka.model.ContainerEnvVar;
 import io.strimzi.api.kafka.model.InlineLogging;
@@ -95,6 +94,11 @@ public class SchemaRegistryModel extends AbstractSecureEndpointModel {
 
     private Storage storage;
 
+    /**
+     * This class is used to model the kube resources required for the correct deployment of the schema registry
+     * @param instance
+     * @param imageConfig
+     */
     public SchemaRegistryModel(EventStreams instance,
                                EventStreamsOperatorConfig.ImageLookup imageConfig) {
         super(instance, instance.getMetadata().getNamespace(), COMPONENT_NAME);
@@ -187,6 +191,10 @@ public class SchemaRegistryModel extends AbstractSecureEndpointModel {
     }
 
 
+    /**
+     * 
+     * @return A list of volumes to put in the schema registry pod
+     */
     private List<Volume> getVolumes() {
         List<Volume> volumes = new ArrayList<>();
 
@@ -226,10 +234,18 @@ public class SchemaRegistryModel extends AbstractSecureEndpointModel {
         return volumes;
     }
 
+    /**
+     * 
+     * @return A list of containers to put in the schema registry pod
+     */
     private List<Container> getContainers() {
         return Arrays.asList(getSchemaRegistryContainer(), getAvroServiceContainer());
     }
 
+    /**
+     * 
+     * @return The schema registry container
+     */
     private Container getSchemaRegistryContainer() {
         List<Listener> listeners = getListeners();
         listeners.add(Listener.podToPodListener(tlsEnabled()));
@@ -251,21 +267,12 @@ public class SchemaRegistryModel extends AbstractSecureEndpointModel {
 
         List<EnvVar> envVars = combineEnvVarListsNoDuplicateKeys(envVarDefaults);
 
-        ResourceRequirements resourceRequirements = getResourceRequirements(
-                new ResourceRequirementsBuilder()
-                    .addToRequests("cpu", new Quantity("500m"))
-                    .addToRequests("memory", new Quantity("256Mi"))
-                    .addToLimits("cpu", new Quantity("500m"))
-                    .addToLimits("memory", new Quantity("256Mi"))
-                    .build()
-        );
-
         return new ContainerBuilder()
             .withName(COMPONENT_NAME)
             .withImage(getImage())
             .withEnv(envVars)
             .withSecurityContext(getSecurityContext(false))
-            .withResources(resourceRequirements)
+            .withResources(getResourceRequirements(DefaultResourceRequirements.SCHEMA_REGISTRY))
             .addNewVolumeMount()
                 .withName(TEMP_DIR_NAME)
                 .withMountPath("/var/lib/tmp")
@@ -289,6 +296,10 @@ public class SchemaRegistryModel extends AbstractSecureEndpointModel {
             .build();
     }
 
+    /**
+     * 
+     * @return The liveness probe for the schema registry container
+     */
     protected Probe createLivenessProbe() {
         Probe defaultLivenessProbe = new ProbeBuilder()
                 .withNewHttpGet()
@@ -309,6 +320,10 @@ public class SchemaRegistryModel extends AbstractSecureEndpointModel {
         return combineProbeDefinitions(defaultLivenessProbe, super.getLivenessProbe());
     }
 
+    /**
+     * 
+     * @return The liveness probe for the schema registry container
+     */
     protected Probe createReadinessProbe() {
         Probe defaultReadinessProbe = new ProbeBuilder()
                 .withNewHttpGet()
@@ -329,6 +344,10 @@ public class SchemaRegistryModel extends AbstractSecureEndpointModel {
         return combineProbeDefinitions(defaultReadinessProbe, super.getReadinessProbe());
     }
 
+    /**
+     * 
+     * @return The avro service container
+     */
     private Container getAvroServiceContainer() {
 
         List<EnvVar> envVarDefaults = Arrays.asList(
@@ -349,21 +368,12 @@ public class SchemaRegistryModel extends AbstractSecureEndpointModel {
 
         List<EnvVar> envVars = combineEnvVarListsNoDuplicateKeys(envVarDefaults, avroEnvVars);
 
-        ResourceRequirements resourceRequirements = getResourceRequirements(avroResourceRequirements,
-                new ResourceRequirementsBuilder()
-                        .addToRequests("cpu", new Quantity("500m"))
-                        .addToRequests("memory", new Quantity("256Mi"))
-                        .addToLimits("cpu", new Quantity("500m"))
-                        .addToLimits("memory", new Quantity("256Mi"))
-                        .build()
-        );
-
         return new ContainerBuilder()
             .withName(AVRO_SERVICE_CONTAINER_NAME)
             .withImage(avroImage)
             .withEnv(envVars)
             .withSecurityContext(getSecurityContext(false))
-            .withResources(resourceRequirements)
+            .withResources(getResourceRequirements(avroResourceRequirements, DefaultResourceRequirements.AVRO_SERVICE))
             .addNewVolumeMount()
                 .withName(TEMP_DIR_NAME)
                 .withMountPath("/var/lib/tmp")
@@ -377,6 +387,10 @@ public class SchemaRegistryModel extends AbstractSecureEndpointModel {
             .build();
     }
 
+    /**
+     * 
+     * @return The liveness probe for the avro service
+     */
     protected Probe createAvroLivenessProbe() {
         Probe defaultLivenessProbe = new ProbeBuilder()
                 .withNewTcpSocket()
@@ -391,6 +405,10 @@ public class SchemaRegistryModel extends AbstractSecureEndpointModel {
         return combineProbeDefinitions(defaultLivenessProbe, avroLivenessProbe);
     }
 
+    /**
+     * 
+     * @return The readiness probe for the avro service container
+     */
     protected Probe createAvroReadinessProbe() {
         Probe defaultReadinessProbe = new ProbeBuilder()
                 .withNewTcpSocket()
@@ -405,6 +423,13 @@ public class SchemaRegistryModel extends AbstractSecureEndpointModel {
         return combineProbeDefinitions(defaultReadinessProbe, avroReadinessProbe);
     }
 
+    /**
+     * 
+     * @param namespace
+     * @param replicas
+     * @param storage
+     * @return The PersistentVolumeClaim for the schema registry pod
+     */
     private PersistentVolumeClaim createSchemaRegistryPersistentVolumeClaim(String namespace, int replicas, PersistentClaimStorage storage) {
         Map<String, Quantity> requests = new HashMap<>();
         requests.put("storage", new Quantity(Optional.ofNullable(storage.getSize()).orElse("1Gi"), null));
@@ -486,9 +511,7 @@ public class SchemaRegistryModel extends AbstractSecureEndpointModel {
             ingressRules.add(createIngressRule(listener.getPort(), new HashMap<>()));
         });
 
-        List<NetworkPolicyEgressRule> egressRules = new ArrayList<>(0);
-
-        return createNetworkPolicy(createLabelSelector(COMPONENT_NAME), ingressRules, egressRules);
+        return createNetworkPolicy(createLabelSelector(COMPONENT_NAME), ingressRules, null);
     }
 
     /**

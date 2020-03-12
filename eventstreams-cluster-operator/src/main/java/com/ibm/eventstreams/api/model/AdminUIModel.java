@@ -12,14 +12,18 @@
  */
 package com.ibm.eventstreams.api.model;
 
+import static com.ibm.eventstreams.api.model.AbstractSecureEndpointModel.getInternalServiceName;
+
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import com.ibm.eventstreams.Main;
+import com.ibm.eventstreams.api.DefaultResourceRequirements;
 import com.ibm.eventstreams.api.Listener;
 import com.ibm.eventstreams.api.spec.AdminUISpec;
 import com.ibm.eventstreams.api.spec.ComponentSpec;
@@ -41,16 +45,13 @@ import io.fabric8.kubernetes.api.model.EnvVarBuilder;
 import io.fabric8.kubernetes.api.model.HTTPHeaderBuilder;
 import io.fabric8.kubernetes.api.model.Probe;
 import io.fabric8.kubernetes.api.model.ProbeBuilder;
-import io.fabric8.kubernetes.api.model.Quantity;
 import io.fabric8.kubernetes.api.model.ResourceRequirements;
-import io.fabric8.kubernetes.api.model.ResourceRequirementsBuilder;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.ServiceAccount;
 import io.fabric8.kubernetes.api.model.Volume;
 import io.fabric8.kubernetes.api.model.VolumeBuilder;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicy;
-import io.fabric8.kubernetes.api.model.networking.NetworkPolicyEgressRule;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicyIngressRule;
 import io.fabric8.kubernetes.api.model.rbac.RoleBinding;
 import io.fabric8.kubernetes.api.model.rbac.RoleRefBuilder;
@@ -65,10 +66,6 @@ import io.strimzi.api.kafka.model.KafkaSpec;
 import io.strimzi.api.kafka.model.Logging;
 import io.strimzi.api.kafka.model.template.PodTemplate;
 
-import java.util.Collections;
-
-import static com.ibm.eventstreams.api.model.AbstractSecureEndpointModel.getInternalServiceName;
-
 public class AdminUIModel extends AbstractModel {
 
     // static variables
@@ -82,6 +79,7 @@ public class AdminUIModel extends AbstractModel {
     public static final String ICP_CM_CLUSTER_ADDRESS_KEY = "cluster_address";
     public static final String ICP_CM_CLUSTER_ROUTER_PORT_KEY = "cluster_router_https_port";
     public static final String ICP_CM_CLUSTER_NAME_KEY = "cluster_name";
+
 
     // deployable objects
     private Deployment deployment;
@@ -103,6 +101,13 @@ public class AdminUIModel extends AbstractModel {
     private String enableProducerMetricsPanels;
     private String enableMetricsPanels;
 
+    /**
+     * This class is used to model all the kube resources required for correct deployment of the Admin UI
+     * @param instance
+     * @param imageConfig
+     * @param hasRoutes
+     * @param icpClusterData
+     */
     public AdminUIModel(EventStreams instance,
                         EventStreamsOperatorConfig.ImageLookup imageConfig,
                         Boolean hasRoutes,
@@ -153,6 +158,7 @@ public class AdminUIModel extends AbstractModel {
                 .map(KafkaSpec::getKafka)
                 .map(KafkaClusterSpec::getMetrics)
                 .isPresent() ? "true" : "false";
+                
             Optional<ContainerSpec> redisSpec = userInterfaceSpec.map(AdminUISpec::getRedis);
 
             redisEnvVars = redisSpec.map(ContainerSpec::getEnvVars).orElseGet(ArrayList::new);
@@ -167,26 +173,15 @@ public class AdminUIModel extends AbstractModel {
 
             setCustomImages(imageConfig.getAdminUIImage(), imageConfig.getAdminUIRedisImage());
 
-            deployment = createDeployment(getContainers(), getVolumes());
-            serviceAccount = createServiceAccount();
-            // create required role ref, subject and cluster role binding so the UI can get a list of pods
-            roleBinding = createRoleBinding(
-                    new SubjectBuilder()
-                            .withKind("ServiceAccount")
-                            .withName(getDefaultResourceName())
-                            .withNamespace(getNamespace())
-                            .build(),
-                    new RoleRefBuilder()
-                            .withKind("ClusterRole")
-                            .withName("eventstreams-ui-clusterrole")
-                            .withApiGroup("rbac.authorization.k8s.io")
-                            .build());
-
             ExternalAccess defaultExternalAccess = new ExternalAccessBuilder()
                     .withNewType(hasRoutes ? ExternalAccess.TYPE_ROUTE : ExternalAccess.TYPE_DEFAULT)
                     .build();
             setExternalAccess(userInterfaceSpec.map(ComponentSpec::getExternalAccess)
                     .orElse(defaultExternalAccess));
+
+            deployment = createDeployment(getContainers(), getVolumes());
+            serviceAccount = createServiceAccount();
+            roleBinding = createAdminUIRoleBinding();
 
             service = createService();
             networkPolicy = createNetworkPolicy();
@@ -200,25 +195,10 @@ public class AdminUIModel extends AbstractModel {
         }
     }
 
-    public AdminUIModel(EventStreams instance,
-                        EventStreamsOperatorConfig.ImageLookup imageConfig,
-                        Boolean hasRoutes) {
-        this(instance, imageConfig, hasRoutes, null);
-    }
-
-    public AdminUIModel(EventStreams instance,
-                        EventStreamsOperatorConfig.ImageLookup imageConfig) {
-        this(instance, imageConfig, false, null);
-    }
-
-    public static String getRouteName(EventStreams instance) {
-        return AbstractModel.getDefaultResourceName(instance.getMetadata().getName(), COMPONENT_NAME);
-    }
-
-    public String getServiceCeritificateName() {
-        return getDefaultResourceName() + "-service-cert";
-    }
-
+    /**
+     * 
+     * @return A list of volumes to put in the Admin UI pod
+     */
     private List<Volume> getVolumes() {
         Volume redis = new VolumeBuilder()
             .withName("redis-storage")
@@ -230,9 +210,13 @@ public class AdminUIModel extends AbstractModel {
 
     }
 
+    /**
+     * 
+     * @return The service associated with the Admin UI pod
+     */
     private Service createService() {
         Service service = createService(UI_SERVICE_PORT);
-        service.getMetadata().setAnnotations(Collections.singletonMap("service.beta.openshift.io/serving-cert-secret-name", getServiceCeritificateName()));
+        service.getMetadata().setAnnotations(Collections.singletonMap("service.beta.openshift.io/serving-cert-secret-name", getServiceCertificateName()));
         return service;
     }
 
@@ -256,10 +240,18 @@ public class AdminUIModel extends AbstractModel {
         this.customImage = uiCustomImage || redisCustomImage;
     }
 
+    /**
+     * 
+     * @return A list of containers to put in the Admin UI pod
+     */
     private List<Container> getContainers() {
         return Arrays.asList(getUIContainer(), getRedisContainer());
     }
 
+    /**
+     * 
+     * @return The Admin UI container
+     */
     private Container getUIContainer() {
         String adminApiService = getUrlProtocol(crEncryptionValue) + getInternalServiceName(getInstanceName(), AdminApiModel.COMPONENT_NAME) + "." +  getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + Listener.podToPodListener(tlsEnabled()).getPort();
         String schemaRegistryService = getUrlProtocol(crEncryptionValue) + getInternalServiceName(getInstanceName(), SchemaRegistryModel.COMPONENT_NAME) + "." +  getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + Listener.podToPodListener(tlsEnabled()).getPort();
@@ -272,7 +264,7 @@ public class AdminUIModel extends AbstractModel {
                 .withName("TLS_CERT")
                 .withNewValueFrom()
                     .withNewSecretKeyRef()
-                        .withName(getServiceCeritificateName())
+                        .withName(getServiceCertificateName())
                         .withKey("tls.crt")
                     .endSecretKeyRef()
                 .endValueFrom()
@@ -282,7 +274,7 @@ public class AdminUIModel extends AbstractModel {
                 .withName("TLS_KEY")
                 .withNewValueFrom()
                     .withNewSecretKeyRef()
-                        .withName(getServiceCeritificateName())
+                        .withName(getServiceCertificateName())
                         .withKey("tls.key")
                     .endSecretKeyRef()
                 .endValueFrom()
@@ -354,21 +346,12 @@ public class AdminUIModel extends AbstractModel {
 
         List<EnvVar> envVars = combineEnvVarListsNoDuplicateKeys(envVarDefaults);
 
-        ResourceRequirements resourceRequirements = getResourceRequirements(
-                new ResourceRequirementsBuilder()
-                        .addToRequests("cpu", new Quantity("1000m"))
-                        .addToRequests("memory", new Quantity("1Gi"))
-                        .addToLimits("cpu", new Quantity("1000m"))
-                        .addToLimits("memory", new Quantity("1Gi"))
-                        .build()
-        );
-
         return new ContainerBuilder()
             .withName(COMPONENT_NAME)
             .withImage(getImage())
             .withEnv(envVars)
             .withSecurityContext(getSecurityContext(false))
-            .withResources(resourceRequirements)
+            .withResources(getResourceRequirements(DefaultResourceRequirements.ADMIN_UI))
             .addNewPort()
                 .withName("uiendpoint")
                 .withContainerPort(UI_SERVICE_PORT)
@@ -378,6 +361,10 @@ public class AdminUIModel extends AbstractModel {
             .build();
     }
 
+    /**
+     * 
+     * @return The liveness probe for the Admin UI container
+     */
     protected Probe createLivenessProbe() {
         Probe defaultLivenessProbe = new ProbeBuilder()
                 .withNewHttpGet()
@@ -398,6 +385,10 @@ public class AdminUIModel extends AbstractModel {
         return combineProbeDefinitions(defaultLivenessProbe, super.getLivenessProbe());
     }
 
+    /**
+     * 
+     * @return The readiness probe for the Admin UI container
+     */
     protected Probe createReadinessProbe() {
         Probe defaultReadinessProbe = new ProbeBuilder()
                 .withNewHttpGet()
@@ -417,23 +408,21 @@ public class AdminUIModel extends AbstractModel {
         return combineProbeDefinitions(defaultReadinessProbe, super.getReadinessProbe());
     }
 
+    /**
+     * 
+     * @return The Redis container
+     */
     private Container getRedisContainer() {
 
+        // TODO what do we do with License env vars
         List<EnvVar> envVarDefaults = Arrays.asList(
             new EnvVarBuilder().withName("LICENSE").withValue("accept").build()
         );
 
         List<EnvVar> envVars = combineEnvVarListsNoDuplicateKeys(envVarDefaults, redisEnvVars);
 
-        ResourceRequirements defaultResourceRequirements = new ResourceRequirementsBuilder()
-                .addToRequests("cpu", new Quantity("100m"))
-                .addToRequests("memory", new Quantity("100Mi"))
-                .addToLimits("cpu", new Quantity("100m"))
-                .addToLimits("memory", new Quantity("100Mi"))
-                .build();
-
         ResourceRequirements resourceRequirements = getResourceRequirements(redisResourceRequirements,
-                                                                            defaultResourceRequirements);
+                                                                            DefaultResourceRequirements.ADMIN_UI_REDIS);
 
         return new ContainerBuilder()
             .withName(REDIS_CONTAINER_NAME)
@@ -450,6 +439,10 @@ public class AdminUIModel extends AbstractModel {
             .build();
     }
 
+    /**
+     * 
+     * @return The liveness probe for the redis container
+     */
     protected Probe createRedisLivenessProbe() {
         Probe defaultLivenessProbe = new ProbeBuilder()
                 .withNewExec()
@@ -464,6 +457,10 @@ public class AdminUIModel extends AbstractModel {
         return combineProbeDefinitions(defaultLivenessProbe, redisLivenessProbe);
     }
 
+    /**
+     * 
+     * @return The readiness probe for the redis container
+     */
     protected Probe createRedisReadinessProbe() {
         Probe defaultReadinessProbe = new ProbeBuilder()
                 .withNewExec()
@@ -476,6 +473,24 @@ public class AdminUIModel extends AbstractModel {
                 .withTimeoutSeconds(10)
                 .build();
         return combineProbeDefinitions(defaultReadinessProbe, redisReadinessProbe);
+    }
+
+    /**
+     * 
+     * @return The rolebinding for the Admin UI
+     */
+    private RoleBinding createAdminUIRoleBinding() {
+        return createRoleBinding(
+            new SubjectBuilder()
+                .withKind("ServiceAccount")
+                .withName(getDefaultResourceName())
+                .withNamespace(getNamespace())
+                .build(),
+            new RoleRefBuilder()
+                .withKind("ClusterRole")
+                .withName("eventstreams-ui-clusterrole")
+                .withApiGroup("rbac.authorization.k8s.io")
+                .build());
     }
 
     /**
@@ -513,18 +528,29 @@ public class AdminUIModel extends AbstractModel {
         return this.networkPolicy;
     }
 
+    /**
+     * 
+     * @return The network policy for the Admin UI
+     */
     private NetworkPolicy createNetworkPolicy() {
         List<NetworkPolicyIngressRule> ingressRules = new ArrayList<>(1);
         ingressRules.add(createIngressRule(UI_SERVICE_PORT, new HashMap<>()));
 
-        List<NetworkPolicyEgressRule> egressRules = new ArrayList<>(1);
-        egressRules.add(createEgressRule(Listener.podToPodListener(tlsEnabled()).getPort(), AdminApiModel.COMPONENT_NAME));
-        egressRules.add(createEgressRule(Listener.podToPodListener(tlsEnabled()).getPort(), SchemaRegistryModel.COMPONENT_NAME));
-
-        return createNetworkPolicy(createLabelSelector(COMPONENT_NAME), ingressRules, egressRules);
+        return createNetworkPolicy(createLabelSelector(COMPONENT_NAME), ingressRules, null);
     }
 
+    /**
+     * The default resource name with a suffix "service-cert"
+     * @return Then service certificate name
+     */
+    private String getServiceCertificateName() {
+        return getDefaultResourceNameWithSuffix("service-cert");
+    }
 
+    /**
+     * 
+     * @return The Admin UI rolebinding
+     */
     public RoleBinding getRoleBinding() {
         return this.roleBinding;
     }

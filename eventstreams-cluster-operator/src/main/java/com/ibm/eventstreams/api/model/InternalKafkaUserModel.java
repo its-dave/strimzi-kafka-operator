@@ -27,7 +27,10 @@ public class InternalKafkaUserModel extends AbstractModel {
     public static final String COMPONENT_NAME = "kafka-user";
     public KafkaUser kafkaUser;
 
-
+    /**
+     * This class is used to model a KafkaUser custom resource, to be used for encrypted internal pod to pod communication
+     * @param instance
+     */
     public InternalKafkaUserModel(EventStreams instance) {
         super(instance.getMetadata().getName(), instance.getMetadata().getNamespace(), COMPONENT_NAME);
 

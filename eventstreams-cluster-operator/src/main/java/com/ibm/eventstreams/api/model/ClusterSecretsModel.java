@@ -24,8 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class ClusterSecretsModel extends AbstractModel {
-    public static final String EVENTSTREAMS_IBMCLOUD_CA_CERT_SECRET_SUFFIX = "ibmcloud-ca-cert";
-    public static final String COMPONENT_NAME = "cluster-secrets";
+    public static final String COMPONENT_NAME = "ibmcloud-ca-cert";
     private SecretOperator secretOperator;
     private EventStreams instance;
     private static final Logger log = LogManager.getLogger(ClusterSecretsModel.class.getName());
@@ -42,41 +41,46 @@ public class ClusterSecretsModel extends AbstractModel {
         this.instance = instance;
     }
 
-
-    public static String getIBMCloudSecretName(EventStreams instance) {
-        return getDefaultResourceName(instance.getMetadata().getName(), EVENTSTREAMS_IBMCLOUD_CA_CERT_SECRET_SUFFIX);
-    }
-
-    /*
-        This method is used to generate the secret containing the ICP Cluster CA Cert.
-        We use this secret to volume mount the ca cert for use as the Admin API truststore during
-        IAM calls.
-     */
+     /**
+      * This method is used to generate the secret containing the ICP Cluster CA Cert.
+      * We use this secret to volume mount the ca cert for use as the Admin API truststore during
+      * IAM calls.
+      * @param clusterCert 
+      * @return A succeeded future if the secret is present or sucessfully created
+      */
     public Future<Void> createIBMCloudCASecret(String clusterCert) {
 
         Promise<Void> generateICPClusterCASecretPromise = Promise.promise();
 
-        secretOperator.getAsync(instance.getMetadata().getNamespace(), getIBMCloudSecretName(instance)).setHandler(getRes -> {
+        secretOperator.getAsync(instance.getMetadata().getNamespace(), getIBMCloudSecretName()).setHandler(getRes -> {
             if (getRes.result() == null) {
                 Map<String, String> data = new HashMap<>();
                 data.put(CA_CERT, clusterCert);
 
-                Secret esICPCASecret = this.createSecret(ClusterSecretsModel.getIBMCloudSecretName(this.instance), data);
+                Secret esICPCASecret = createSecret(getIBMCloudSecretName(), data);
                 secretOperator.createOrUpdate(esICPCASecret).setHandler(createSecretRes -> {
                     if (createSecretRes.succeeded()) {
                         log.debug("Secret {} successfully generated", createSecretRes.result().resource().getMetadata().getName());
                         generateICPClusterCASecretPromise.complete();
                     } else {
-                        log.error("Failed to generate Secret {}: {}", getIBMCloudSecretName(instance), createSecretRes.cause());
+                        log.error("Failed to generate Secret {}: {}", getIBMCloudSecretName(), createSecretRes.cause());
                         generateICPClusterCASecretPromise.fail(createSecretRes.cause());
                     }
                 });
             } else {
-                log.debug("Secret {} already exists", getIBMCloudSecretName(instance));
+                log.debug("Secret {} already exists", getIBMCloudSecretName(getInstanceName()));
                 generateICPClusterCASecretPromise.complete();
             }
         });
 
         return generateICPClusterCASecretPromise.future();
+    }
+
+    public static String getIBMCloudSecretName(String instanceName) {
+        return getDefaultResourceName(instanceName, COMPONENT_NAME);
+    }
+    
+    private String getIBMCloudSecretName() {
+        return getDefaultResourceName();
     }
 }

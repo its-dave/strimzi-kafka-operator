@@ -73,7 +73,7 @@ public class ClusterSecretsModelTest {
         Map<String, String> secretData = new HashMap();
         secretData.put("ca.crt", TEST_DUMMY_CERT);
 
-        mockESSecret = ModelUtils.generateSecret(NAMESPACE, ClusterSecretsModel.getIBMCloudSecretName(eventStreamsResource), secretData);
+        mockESSecret = ModelUtils.generateSecret(NAMESPACE, ClusterSecretsModel.getIBMCloudSecretName(eventStreamsResource.getMetadata().getName()), secretData);
 
         mockSecretOperator = mock(SecretOperator.class);
     }

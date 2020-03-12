@@ -46,6 +46,10 @@ public class ReplicatorUsersModel extends AbstractModel {
 
     private static final Logger log = LogManager.getLogger(ReplicatorModel.class.getName());
 
+    /**
+     * This class is used to create the KafkaUser custom resources required to deploy the replicator
+     * @param instance
+     */
     public ReplicatorUsersModel(EventStreams instance) {
         super(instance.getMetadata().getName(), instance.getMetadata().getNamespace(), ReplicatorModel.COMPONENT_NAME);
 

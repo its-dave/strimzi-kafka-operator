@@ -13,7 +13,16 @@
 package com.ibm.eventstreams.api.model;
 
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
 import com.ibm.eventstreams.Main;
+import com.ibm.eventstreams.api.DefaultResourceRequirements;
 import com.ibm.eventstreams.api.Listener;
 import com.ibm.eventstreams.api.spec.ComponentSpec;
 import com.ibm.eventstreams.api.spec.ComponentTemplate;
@@ -23,6 +32,10 @@ import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.spec.ImagesSpec;
 import com.ibm.eventstreams.api.spec.SecuritySpec;
 import com.ibm.eventstreams.controller.EventStreamsOperatorConfig;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.ContainerBuilder;
 import io.fabric8.kubernetes.api.model.EnvVar;
@@ -30,16 +43,12 @@ import io.fabric8.kubernetes.api.model.EnvVarBuilder;
 import io.fabric8.kubernetes.api.model.HTTPHeaderBuilder;
 import io.fabric8.kubernetes.api.model.Probe;
 import io.fabric8.kubernetes.api.model.ProbeBuilder;
-import io.fabric8.kubernetes.api.model.Quantity;
 import io.fabric8.kubernetes.api.model.ResourceRequirements;
-import io.fabric8.kubernetes.api.model.ResourceRequirementsBuilder;
 import io.fabric8.kubernetes.api.model.ServiceAccount;
 import io.fabric8.kubernetes.api.model.Volume;
 import io.fabric8.kubernetes.api.model.VolumeBuilder;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicy;
-import io.fabric8.kubernetes.api.model.networking.NetworkPolicyEgressRule;
-import io.fabric8.kubernetes.api.model.networking.NetworkPolicyEgressRuleBuilder;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicyIngressRule;
 import io.fabric8.kubernetes.api.model.rbac.RoleBinding;
 import io.fabric8.kubernetes.api.model.rbac.RoleRefBuilder;
@@ -48,16 +57,6 @@ import io.strimzi.api.kafka.model.InlineLogging;
 import io.strimzi.api.kafka.model.Logging;
 import io.strimzi.api.kafka.model.status.ListenerStatus;
 import io.strimzi.api.kafka.model.template.PodTemplate;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 public class AdminApiModel extends AbstractSecureEndpointModel {
 
@@ -99,6 +98,13 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
     private static final Logger log = LogManager.getLogger(AdminApiModel.class.getName());
     private List<ListenerStatus> kafkaListeners;
 
+    /**
+     * This class is used to model all the kube resources required for correct deployment of the Admin Api
+     * @param instance
+     * @param imageConfig
+     * @param kafkaListeners
+     * @param icpClusterData
+     */
     public AdminApiModel(EventStreams instance,
                          EventStreamsOperatorConfig.ImageLookup imageConfig,
                          List<ListenerStatus> kafkaListeners,
@@ -112,7 +118,7 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
         this.icpClusterName = icpClusterData.getOrDefault("cluster_name", "null");
         this.iamServerURL = icpClusterData.getOrDefault("cluster_endpoint", "null");
 
-        ibmcloudCASecretName = ClusterSecretsModel.getIBMCloudSecretName(instance);
+        ibmcloudCASecretName = ClusterSecretsModel.getIBMCloudSecretName(getInstanceName());
 
         Optional<ComponentSpec> adminApiSpec = Optional.ofNullable(instance.getSpec())
                 .map(EventStreamsSpec::getAdminApi);
@@ -145,17 +151,7 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
         deployment = createDeployment(getContainers(instance), getVolumes(instance));
         serviceAccount = createServiceAccount();
 
-        roleBinding = createRoleBinding(
-            new SubjectBuilder()
-            .withKind("ServiceAccount")
-            .withName(getDefaultResourceName())
-            .withNamespace(getNamespace())
-            .build(),
-            new RoleRefBuilder()
-            .withKind("ClusterRole")
-            .withName(ADMIN_CLUSTERROLE_NAME)
-            .withApiGroup("rbac.authorization.k8s.io")
-            .build());
+        roleBinding = createAdminApiRoleBinding();
 
         createInternalService();
         createExternalService();
@@ -164,6 +160,11 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
         networkPolicy = createNetworkPolicy();
     }
 
+    /**
+     * 
+     * @param instance
+     * @return A list of volumes to be put into the deployment
+     */
     private List<Volume> getVolumes(EventStreams instance) {
 
         List<Volume> volumes = new ArrayList<>();
@@ -236,47 +237,35 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
 
         // Add The IAM Specific Volumes.  If we need to build without IAM Support we can put a variable check
         // here.
-        configureIAMSpecificVolumes(volumes);
-
-        return volumes;
-    }
-
-    private void configureIAMSpecificVolumes(List<Volume> volumes) {
         volumes.add(new VolumeBuilder()
             .withNewName(IBMCLOUD_CA_VOLUME_MOUNT_NAME)
             .withNewSecret()
             .withNewSecretName(ibmcloudCASecretName)
-            .addNewItem().withNewKey(CA_CERT).withNewPath(CA_CERT).endItem()
+                .addNewItem().withNewKey(CA_CERT).withNewPath(CA_CERT).endItem()
             .endSecret()
             .build());
+
+        return volumes;
     }
 
+    /**
+     * 
+     * @param instance
+     * @return The list of containers in the Admin Api pod
+     */
     private List<Container> getContainers(EventStreams instance) {
         return Arrays.asList(getAdminApiContainer(instance));
     }
 
+    /**
+     * 
+     * @param instance
+     * @return The Admin Api Container
+     */
     private Container getAdminApiContainer(EventStreams instance) {
-        String internalBootstrap = getInternalKafkaBootstrap(kafkaListeners);
-        String runasBootstrap = getRunAsKafkaBootstrap(kafkaListeners);
-        String kafkaBootstrapInternalPlainUrl = getInternalPlainKafkaBootstrap(kafkaListeners);
-        String kafkaBootstrapInternalTlsUrl = getInternalTlsKafkaBootstrap(kafkaListeners);
-        String kafkaBootstrapExternalUrl = getExternalKafkaBootstrap(kafkaListeners);
-        String schemaRegistryEndpoint =  getInternalServiceName(getInstanceName(), SchemaRegistryModel.COMPONENT_NAME) + "." +  getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + Listener.podToPodListener(tlsEnabled()).getPort();
-        String zookeeperEndpoint = EventStreamsKafkaModel.getKafkaInstanceName(getInstanceName()) + "-" + EventStreamsKafkaModel.ZOOKEEPER_COMPONENT_NAME + "-client." + getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.ZOOKEEPER_PORT;
-        String kafkaConnectRestEndpoint = "http://" + getResourcePrefix() + "-" + ReplicatorModel.COMPONENT_NAME + "-mirrormaker2-api." + getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + ReplicatorModel.REPLICATOR_PORT;
 
-        List<EnvVar> adminApiEnvVars = getAdminApiEnvVars(getEncryption() == SecuritySpec.Encryption.NONE ? internalBootstrap : runasBootstrap, kafkaBootstrapInternalPlainUrl, kafkaBootstrapInternalTlsUrl, kafkaBootstrapExternalUrl, schemaRegistryEndpoint, zookeeperEndpoint, kafkaConnectRestEndpoint, instance);
-
-        List<EnvVar> envVars = combineEnvVarListsNoDuplicateKeys(adminApiEnvVars);
-
-        ResourceRequirements resourceRequirements = getResourceRequirements(
-            new ResourceRequirementsBuilder()
-                    .addToRequests("cpu", new Quantity("500m"))
-                    .addToRequests("memory", new Quantity("1Gi"))
-                    .addToLimits("cpu", new Quantity("4000m"))
-                    .addToLimits("memory", new Quantity("1Gi"))
-                    .build()
-        );
+        List<EnvVar> adminApiDefaultEnvVars = getAdminApiEnvVars(instance);
+        List<EnvVar> envVars = combineEnvVarListsNoDuplicateKeys(adminApiDefaultEnvVars);
 
         ContainerBuilder containerBuilder = new ContainerBuilder()
             .withName(ADMIN_API_CONTAINER_NAME)
@@ -314,9 +303,9 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
                 .withNewReadOnly(true)
             .endVolumeMount()
 
-            .withResources(resourceRequirements)
-            .withLivenessProbe(createLivenessProbe(Listener.podToPodListener(tlsEnabled()).getPort()))
-            .withReadinessProbe(createReadinessProbe(Listener.podToPodListener(tlsEnabled()).getPort()));
+            .withResources(getResourceRequirements(DefaultResourceRequirements.ADMIN_API))
+            .withLivenessProbe(createLivenessProbe())
+            .withReadinessProbe(createReadinessProbe());
 
         //only add the replicator secret volume mounts if client auth enabled
         if (isReplicatorExternalClientAuthForConnectEnabled(instance)) {
@@ -341,27 +330,32 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
 
         // Add The IAM Specific Volume mount. If we need to build without IAM Support we can put a variable check
         // here.
-        configureIAMSpecificVolumeMount(containerBuilder);
-
-        return containerBuilder.build();
-    }
-
-    private void configureIAMSpecificVolumeMount(ContainerBuilder builder) {
-        builder.addNewVolumeMount()
+        containerBuilder.addNewVolumeMount()
             .withNewName(IBMCLOUD_CA_VOLUME_MOUNT_NAME)
             .withMountPath(IBMCLOUD_CA_CERTIFICATE_PATH)
             .withNewReadOnly(true)
             .endVolumeMount();
+
+        return containerBuilder.build();
     }
 
-    private List<EnvVar> getAdminApiEnvVars(final String kafkaBootstrap,
-                                            final String kafkaBootstrapInternalPlainUrl,
-                                            final String kafkaBootstrapInternalTlsUrl,
-                                            final String kafkaBootstrapExternalUrl,
-                                            final String schemaRegistryEndpoint,
-                                            final String zookeeperEndpoint,
-                                            final String kafkaConnectRestEndpoint,
-                                            EventStreams instance) {
+    /**
+     * 
+     * @param instance
+     * @return A list of default EnvVars for the Admin Api container
+     */
+    private List<EnvVar> getAdminApiEnvVars(EventStreams instance) {
+
+        String internalBootstrap = getInternalKafkaBootstrap(kafkaListeners);
+        String runasBootstrap = getRunAsKafkaBootstrap(kafkaListeners);
+        String kafkaBootstrap = getEncryption() == SecuritySpec.Encryption.NONE ? internalBootstrap : runasBootstrap;
+        String kafkaBootstrapInternalPlainUrl = getInternalPlainKafkaBootstrap(kafkaListeners);
+        String kafkaBootstrapInternalTlsUrl = getInternalTlsKafkaBootstrap(kafkaListeners);
+        String kafkaBootstrapExternalUrl = getExternalKafkaBootstrap(kafkaListeners);
+        String schemaRegistryEndpoint =  getInternalServiceName(getInstanceName(), SchemaRegistryModel.COMPONENT_NAME) + "." +  getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + Listener.podToPodListener(tlsEnabled()).getPort();
+        String zookeeperEndpoint = EventStreamsKafkaModel.getKafkaInstanceName(getInstanceName()) + "-" + EventStreamsKafkaModel.ZOOKEEPER_COMPONENT_NAME + "-client." + getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.ZOOKEEPER_PORT;
+        String kafkaConnectRestEndpoint = "http://" + getResourcePrefix() + "-" + ReplicatorModel.COMPONENT_NAME + "-mirrormaker2-api." + getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + ReplicatorModel.REPLICATOR_PORT;
+
         List<Listener> listeners = getListeners();
         listeners.add(Listener.podToPodListener(tlsEnabled()));
         List<EnvVar> envVars = new ArrayList<>();
@@ -423,20 +417,44 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
                 .withKey(CA_P12_PASS)
                 .endSecretKeyRef()
                 .endValueFrom()
-                .build()));
-
+                .build(),
         // Add The IAM Specific Envars.  If we need to build without IAM Support we can put a variable check
         // here.
-        configureIAMSpecificEnvVars(envVars);
+            new EnvVarBuilder().withName("IAM_CLUSTER_NAME").withValue(icpClusterName).build(),
+            new EnvVarBuilder().withName("IAM_SERVER_URL").withValue(iamServerURL).build(),
+            new EnvVarBuilder().withName("IAM_SERVER_CA_CERT").withValue(IBMCLOUD_CA_CERTIFICATE_PATH + File.separator + CA_CERT).build(),
+            new EnvVarBuilder()
+                .withName("CLIENT_ID")
+                .withNewValueFrom()
+                .withNewSecretKeyRef()
+                .withName(getResourcePrefix() + "-oidc-secret")
+                .withKey(CLIENT_ID_KEY)
+                .endSecretKeyRef()
+                .endValueFrom()
+                .build(),
+            new EnvVarBuilder()
+                .withName("CLIENT_SECRET")
+                .withNewValueFrom()
+                .withNewSecretKeyRef()
+                .withName(getResourcePrefix() + "-oidc-secret")
+                .withKey(CLIENT_SECRET_KEY)
+                .endSecretKeyRef()
+                .endValueFrom()
+                .build()  
+            ));
 
         return envVars;
     }
 
-    protected Probe createLivenessProbe(int port) {
+    /**
+     * 
+     * @return The liveness probe
+     */
+    protected Probe createLivenessProbe() {
         Probe defaultLivenessProbe = new ProbeBuilder()
                 .withNewHttpGet()
                 .withPath("/liveness")
-                .withNewPort(port)
+                .withNewPort(Listener.podToPodListener(tlsEnabled()).getPort())
                 .withScheme(getHealthCheckProtocol())
                 .withHttpHeaders(new HTTPHeaderBuilder()
                         .withName("Accept")
@@ -452,11 +470,15 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
         return combineProbeDefinitions(defaultLivenessProbe, super.getLivenessProbe());
     }
 
-    protected Probe createReadinessProbe(int port) {
+    /**
+     * 
+     * @return The readiness probe
+     */
+    protected Probe createReadinessProbe() {
         Probe defaultReadinessProbe = new ProbeBuilder()
                 .withNewHttpGet()
                 .withPath("/liveness")
-                .withNewPort(port)
+                .withNewPort(Listener.podToPodListener(tlsEnabled()).getPort())
                 .withScheme(getHealthCheckProtocol())
                 .withHttpHeaders(new HTTPHeaderBuilder()
                         .withName("Accept")
@@ -472,6 +494,24 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
         return combineProbeDefinitions(defaultReadinessProbe, super.getReadinessProbe());
     }
 
+    /**
+     * 
+     * @return The rolebinding for the Admin Api
+     */
+    private RoleBinding createAdminApiRoleBinding() {
+        return createRoleBinding(
+            new SubjectBuilder()
+                .withKind("ServiceAccount")
+                .withName(getDefaultResourceName())
+                .withNamespace(getNamespace())
+                .build(),
+            new RoleRefBuilder()
+                .withKind("ClusterRole")
+                .withName(ADMIN_CLUSTERROLE_NAME)
+                .withApiGroup("rbac.authorization.k8s.io")
+                .build());
+    }
+    
     /**
      * @return Deployment return the deployment with the specified generation id this is used
      * to control rolling updates, for example when the cert secret changes.
@@ -510,32 +550,6 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
         return this.roleBinding;
     }
 
-    private void configureIAMSpecificEnvVars(List<EnvVar> envVars) {
-        envVars.addAll(Arrays.asList(
-            new EnvVarBuilder().withName("IAM_CLUSTER_NAME").withValue(icpClusterName).build(),
-            new EnvVarBuilder().withName("IAM_SERVER_URL").withValue(iamServerURL).build(),
-            new EnvVarBuilder().withName("IAM_SERVER_CA_CERT").withValue(IBMCLOUD_CA_CERTIFICATE_PATH + File.separator + CA_CERT).build(),
-            new EnvVarBuilder()
-                .withName("CLIENT_ID")
-                .withNewValueFrom()
-                .withNewSecretKeyRef()
-                .withName(getResourcePrefix() + "-oidc-secret")
-                .withKey(CLIENT_ID_KEY)
-                .endSecretKeyRef()
-                .endValueFrom()
-                .build(),
-            new EnvVarBuilder()
-                .withName("CLIENT_SECRET")
-                .withNewValueFrom()
-                .withNewSecretKeyRef()
-                .withName(getResourcePrefix() + "-oidc-secret")
-                .withKey(CLIENT_SECRET_KEY)
-                .endSecretKeyRef()
-                .endValueFrom()
-                .build()));
-    }
-
-
     private NetworkPolicy createNetworkPolicy() {
         List<NetworkPolicyIngressRule> ingressRules = new ArrayList<>(1);
         List<Listener> listeners = getListeners();
@@ -544,27 +558,7 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
             ingressRules.add(createIngressRule(listener.getPort(), new HashMap<>()));
         });
 
-        List<NetworkPolicyEgressRule> egressRules = new ArrayList<>(5);  // TODO up this if add index
-        egressRules.add(createEgressRule(EventStreamsKafkaModel.KAFKA_PORT, EventStreamsKafkaModel.KAFKA_COMPONENT_NAME));
-        egressRules.add(createEgressRule(EventStreamsKafkaModel.KAFKA_RUNAS_PORT, EventStreamsKafkaModel.KAFKA_COMPONENT_NAME));
-        egressRules.add(createEgressRule(Listener.podToPodListener(tlsEnabled()).getPort(), SchemaRegistryModel.COMPONENT_NAME));
-        egressRules.add(createEgressRule(EventStreamsKafkaModel.ZOOKEEPER_PORT, EventStreamsKafkaModel.ZOOKEEPER_COMPONENT_NAME));
-        egressRules.add(createEgressRule(ReplicatorModel.REPLICATOR_PORT, ReplicatorModel.COMPONENT_NAME));
-
-        // TODO Egress rule -> index manager
-
-        // Egress rule -> 8443 and 443
-        egressRules.add(new NetworkPolicyEgressRuleBuilder()
-            .addNewPort().withNewPort(8443).endPort()
-            .addNewPort().withNewPort(443).endPort()
-            .build());
-
-        // Egress rule -> 53 UDP
-        egressRules.add(new NetworkPolicyEgressRuleBuilder()
-            .addNewPort().withNewPort(53).withProtocol("UDP").endPort()
-            .build());
-
-        return createNetworkPolicy(createLabelSelector(COMPONENT_NAME), ingressRules, egressRules);
+        return createNetworkPolicy(createLabelSelector(COMPONENT_NAME), ingressRules, null);
     }
 
     private void setTraceString(Logging logging) {

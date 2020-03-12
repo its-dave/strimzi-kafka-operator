@@ -85,6 +85,12 @@ public class ReplicatorModel extends AbstractModel {
 
     private static final Logger log = LogManager.getLogger(ReplicatorModel.class.getName());
 
+    /**
+     * This class is used to model a KafkaMirrorMaker2 custom resource used by the strimzi cluster operator,
+     * it is also used to create the kube resources required to correctly deploy the replicator
+     * @param instance
+     * @param replicatorCredentials
+     */
     public ReplicatorModel(EventStreams instance, ReplicatorCredentials replicatorCredentials) {
         super(instance.getMetadata().getName(), instance.getMetadata().getNamespace(), COMPONENT_NAME);
                 

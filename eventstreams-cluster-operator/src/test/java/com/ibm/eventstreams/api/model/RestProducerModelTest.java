@@ -163,65 +163,6 @@ public class RestProducerModelTest {
             assertThat(listenerPorts, hasItem(ingress.getPorts().get(0).getPort().getIntVal()));
         });
 
-        assertThat(restProducerNetworkPolicy.getSpec().getEgress().size(), is(2));
-        assertThat(restProducerNetworkPolicy.getSpec().getEgress().get(0).getPorts().size(), is(1));
-        assertThat(restProducerNetworkPolicy
-            .getSpec()
-            .getEgress()
-            .get(0)
-            .getPorts()
-            .get(0)
-            .getPort()
-            .getIntVal(), is(EventStreamsKafkaModel.KAFKA_PORT));
-        assertThat(restProducerNetworkPolicy.getSpec().getEgress().get(0).getTo().size(), is(1));
-        assertThat(restProducerNetworkPolicy
-            .getSpec()
-            .getEgress()
-            .get(0)
-            .getTo()
-            .get(0)
-            .getPodSelector()
-            .getMatchLabels()
-            .size(), is(1));
-        assertThat(restProducerNetworkPolicy
-            .getSpec()
-            .getEgress()
-            .get(0)
-            .getTo()
-            .get(0)
-            .getPodSelector()
-            .getMatchLabels()
-            .get(Labels.COMPONENT_LABEL), is(EventStreamsKafkaModel.KAFKA_COMPONENT_NAME));
-
-        assertThat(restProducerNetworkPolicy.getSpec().getEgress().get(1).getTo().size(), is(1));
-        assertThat(restProducerNetworkPolicy.getSpec().getEgress().get(1).getPorts().size(), is(1));
-        assertThat(restProducerNetworkPolicy
-            .getSpec()
-            .getEgress()
-            .get(1)
-            .getPorts()
-            .get(0)
-            .getPort()
-            .getIntVal(), is(Listener.podToPodListener(false).getPort()));
-        assertThat(restProducerNetworkPolicy
-            .getSpec()
-            .getEgress()
-            .get(1)
-            .getTo()
-            .get(0)
-            .getPodSelector()
-            .getMatchLabels()
-            .size(), is(1));
-        assertThat(restProducerNetworkPolicy
-            .getSpec()
-            .getEgress()
-            .get(1)
-            .getTo()
-            .get(0)
-            .getPodSelector()
-            .getMatchLabels()
-            .get(Labels.COMPONENT_LABEL), is(SchemaRegistryModel.COMPONENT_NAME));
-
         assertThat(restProducerNetworkPolicy.getSpec().getPodSelector().getMatchLabels().size(), is(1));
         assertThat(restProducerNetworkPolicy
             .getSpec()

@@ -1892,7 +1892,7 @@ public class EventStreamsOperatorTest {
         expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + RestProducerModel.COMPONENT_NAME + "-" + CertificateSecretModel.CERT_SECRET_NAME_POSTFIX);
         expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME + "-" + CertificateSecretModel.CERT_SECRET_NAME_POSTFIX);
         expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + AdminApiModel.COMPONENT_NAME + "-" + CertificateSecretModel.CERT_SECRET_NAME_POSTFIX);
-        expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + ClusterSecretsModel.EVENTSTREAMS_IBMCLOUD_CA_CERT_SECRET_SUFFIX);
+        expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + ClusterSecretsModel.COMPONENT_NAME);
         expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + ReplicatorUsersModel.CONNECT_KAFKA_USER_NAME);
         expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + ReplicatorUsersModel.SOURCE_CONNECTOR_KAFKA_USER_NAME);
         expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + ReplicatorUsersModel.TARGET_CONNECTOR_KAFKA_USER_NAME);

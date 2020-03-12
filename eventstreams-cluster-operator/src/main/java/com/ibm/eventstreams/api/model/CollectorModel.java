@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import com.ibm.eventstreams.api.DefaultResourceRequirements;
 import com.ibm.eventstreams.api.spec.ComponentSpec;
 import com.ibm.eventstreams.api.spec.ComponentTemplate;
 import com.ibm.eventstreams.api.spec.ContainerSpec;
@@ -35,9 +36,7 @@ import io.fabric8.kubernetes.api.model.EnvVarBuilder;
 import io.fabric8.kubernetes.api.model.HTTPHeaderBuilder;
 import io.fabric8.kubernetes.api.model.Probe;
 import io.fabric8.kubernetes.api.model.ProbeBuilder;
-import io.fabric8.kubernetes.api.model.Quantity;
 import io.fabric8.kubernetes.api.model.ResourceRequirements;
-import io.fabric8.kubernetes.api.model.ResourceRequirementsBuilder;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.ServiceAccount;
 import io.fabric8.kubernetes.api.model.ServicePort;
@@ -45,7 +44,6 @@ import io.fabric8.kubernetes.api.model.ServicePortBuilder;
 import io.fabric8.kubernetes.api.model.Volume;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicy;
-import io.fabric8.kubernetes.api.model.networking.NetworkPolicyEgressRule;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicyIngressRule;
 import io.strimzi.api.kafka.model.InlineLogging;
 import io.strimzi.api.kafka.model.KafkaClusterSpec;
@@ -67,6 +65,11 @@ public class CollectorModel extends AbstractModel {
     private Service service;
     private NetworkPolicy networkPolicy;
 
+    /**
+     * This class is used to model all the kube resources required for correct deployment of the Collector component
+     * @param instance
+     * @param imageConfig
+     */
     public CollectorModel(EventStreams instance,
                           EventStreamsOperatorConfig.ImageLookup imageConfig) {
         super(instance.getMetadata().getName(), instance.getMetadata().getNamespace(), COMPONENT_NAME);
@@ -114,14 +117,26 @@ public class CollectorModel extends AbstractModel {
     }
 
 
+    /**
+     * 
+     * @return The list of volumes to put into the Collector pod
+     */
     private List<Volume> getVolumes() {
         return Arrays.asList(createKafkaUserCertVolume());
     }
 
+    /**
+     * 
+     * @return The list of containers to put into the Collector pod
+     */
     private List<Container> getContainers() {
         return Arrays.asList(getCollectorContainer());
     }
 
+    /**
+     * 
+     * @return The Collector container
+     */
     private Container getCollectorContainer() {
         List<EnvVar> envVarDefaults = Arrays.asList(
             new EnvVarBuilder().withName("TRACE_LEVEL").withValue(traceLevel).build(),
@@ -138,21 +153,12 @@ public class CollectorModel extends AbstractModel {
 
         List<EnvVar> envVars = combineEnvVarListsNoDuplicateKeys(envVarDefaults);
 
-        ResourceRequirements resourceRequirements = getResourceRequirements(
-                new ResourceRequirementsBuilder()
-                        .addToRequests("cpu", new Quantity("100m"))
-                        .addToRequests("memory", new Quantity("50Mi"))
-                        .addToLimits("cpu", new Quantity("100m"))
-                        .addToLimits("memory", new Quantity("50Mi"))
-                        .build()
-        );
-
         return new ContainerBuilder()
             .withName(COMPONENT_NAME)
             .withImage(getImage())
             .withEnv(envVars)
             .withSecurityContext(getSecurityContext(false))
-            .withResources(resourceRequirements)
+            .withResources(getResourceRequirements(DefaultResourceRequirements.COLLECTOR))
             .addNewVolumeMount()
                 .withNewName(KAFKA_USER_SECRET_VOLUME_NAME)
                 .withMountPath("/etc/ssl/certs")
@@ -171,6 +177,10 @@ public class CollectorModel extends AbstractModel {
             .build();
     }
 
+    /**
+     * 
+     * @return The liveness probe for the Collector container
+     */
     protected Probe createLivenessProbe() {
         Probe defaultLivenessProbe = new ProbeBuilder()
                 .withNewHttpGet()
@@ -189,6 +199,10 @@ public class CollectorModel extends AbstractModel {
         return combineProbeDefinitions(defaultLivenessProbe, super.getLivenessProbe());
     }
 
+    /**
+     * 
+     * @return The readiness probe for the Collector container
+     */
     protected Probe createReadinessProbe() {
         Probe defaultReadinessProbe = new ProbeBuilder()
                 .withNewHttpGet()
@@ -209,15 +223,23 @@ public class CollectorModel extends AbstractModel {
         return combineProbeDefinitions(defaultReadinessProbe, super.getReadinessProbe());
     }
 
+    /**
+     * 
+     * @return The network policy for the Collector pod
+     */
     private NetworkPolicy createNetworkPolicy() {
         List<NetworkPolicyIngressRule> ingressRules = new ArrayList<>(1);
         ingressRules.add(new NetworkPolicyIngressRule());
 
-        List<NetworkPolicyEgressRule> egressRules = new ArrayList<>();
-
-        return createNetworkPolicy(createLabelSelector(COMPONENT_NAME), ingressRules, egressRules);
+        return createNetworkPolicy(createLabelSelector(COMPONENT_NAME), ingressRules, null);
     }
 
+    /**
+     * 
+     * @param enabledProducerMetrics if true the service will be created with a metrics port
+     * and annotated with the prometheus annotations
+     * @return the service associated with the Collector pod
+     */
     private Service createService(boolean enabledProducerMetrics) {
         List<ServicePort> svcPorts = new ArrayList<>();
         Map<String, String> annotations = new HashMap<>();

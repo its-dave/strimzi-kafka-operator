@@ -12,7 +12,15 @@
  */
 package com.ibm.eventstreams.api.model;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Optional;
+
 import com.ibm.eventstreams.Main;
+import com.ibm.eventstreams.api.DefaultResourceRequirements;
 import com.ibm.eventstreams.api.Listener;
 import com.ibm.eventstreams.api.spec.ComponentSpec;
 import com.ibm.eventstreams.api.spec.ComponentTemplate;
@@ -22,6 +30,7 @@ import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.spec.ImagesSpec;
 import com.ibm.eventstreams.api.spec.SecuritySpec;
 import com.ibm.eventstreams.controller.EventStreamsOperatorConfig;
+
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.ContainerBuilder;
 import io.fabric8.kubernetes.api.model.EnvVar;
@@ -29,25 +38,15 @@ import io.fabric8.kubernetes.api.model.EnvVarBuilder;
 import io.fabric8.kubernetes.api.model.HTTPHeaderBuilder;
 import io.fabric8.kubernetes.api.model.Probe;
 import io.fabric8.kubernetes.api.model.ProbeBuilder;
-import io.fabric8.kubernetes.api.model.Quantity;
 import io.fabric8.kubernetes.api.model.ResourceRequirements;
-import io.fabric8.kubernetes.api.model.ResourceRequirementsBuilder;
 import io.fabric8.kubernetes.api.model.ServiceAccount;
 import io.fabric8.kubernetes.api.model.Volume;
 import io.fabric8.kubernetes.api.model.VolumeBuilder;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicy;
-import io.fabric8.kubernetes.api.model.networking.NetworkPolicyEgressRule;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicyIngressRule;
 import io.strimzi.api.kafka.model.status.ListenerStatus;
 import io.strimzi.api.kafka.model.template.PodTemplate;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Optional;
 
 public class RestProducerModel extends AbstractSecureEndpointModel {
 
@@ -67,6 +66,12 @@ public class RestProducerModel extends AbstractSecureEndpointModel {
     private NetworkPolicy networkPolicy;
     private List<ListenerStatus> kafkaListeners;
 
+    /**
+     * This class is used to model the kube resources required for the deployment of the rest producer
+     * @param instance
+     * @param imageConfig
+     * @param kafkaListeners
+     */
     public RestProducerModel(EventStreams instance,
                              EventStreamsOperatorConfig.ImageLookup imageConfig,
                              List<ListenerStatus> kafkaListeners) {
@@ -109,6 +114,10 @@ public class RestProducerModel extends AbstractSecureEndpointModel {
         }
     }
 
+    /**
+     * 
+     * @return A list of volumes to put into the rest producer pod
+     */
     private List<Volume> getVolumes() {
         List<Volume> volumes = new ArrayList<>();
         volumes.add(new VolumeBuilder()
@@ -131,10 +140,18 @@ public class RestProducerModel extends AbstractSecureEndpointModel {
         return volumes;
     }
 
+    /**
+     * 
+     * @return A list of containers to put in the rest producer pod
+     */
     private List<Container> getContainers() {
         return Arrays.asList(getRestProducerContainer());
     }
 
+    /**
+     * 
+     * @return A list of default environment variables to go into the rest producer container
+     */
     private List<EnvVar> getDefaultEnvVars() {
         String kafkaBootstrap = getInternalKafkaBootstrap(kafkaListeners);
         String schemaRegistryEndpoint =  getInternalServiceName(getInstanceName(), SchemaRegistryModel.COMPONENT_NAME) + "." +  getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + Listener.podToPodListener(tlsEnabled()).getPort();
@@ -183,24 +200,19 @@ public class RestProducerModel extends AbstractSecureEndpointModel {
         );
     }
 
+    /**
+     * 
+     * @return The rest producer container
+     */
     private Container getRestProducerContainer() {
         List<EnvVar> envVars = combineEnvVarListsNoDuplicateKeys(getDefaultEnvVars());
-
-        ResourceRequirements resourceRequirements = getResourceRequirements(
-                new ResourceRequirementsBuilder()
-                        .addToRequests("cpu", new Quantity("500m"))
-                        .addToRequests("memory", new Quantity("1Gi"))
-                        .addToLimits("cpu", new Quantity("4000m"))
-                        .addToLimits("memory", new Quantity("2Gi"))
-                        .build()
-        );
 
         return new ContainerBuilder()
             .withName(COMPONENT_NAME)
             .withImage(getImage())
             .withEnv(envVars)
             .withSecurityContext(getSecurityContext(false))
-            .withResources(resourceRequirements)
+            .withResources(getResourceRequirements(DefaultResourceRequirements.REST_PRODUCER))
             .addNewVolumeMount()
                 .withNewName(KAFKA_USER_SECRET_VOLUME_NAME)
                 .withMountPath(KAFKA_USER_CERTIFICATE_PATH)
@@ -216,16 +228,20 @@ public class RestProducerModel extends AbstractSecureEndpointModel {
                 .withMountPath(CLUSTER_CERTIFICATE_PATH)
                 .withNewReadOnly(true)
             .endVolumeMount()
-            .withLivenessProbe(createLivenessProbe(Listener.podToPodListener(tlsEnabled()).getPort()))
-            .withReadinessProbe(createReadinessProbe(Listener.podToPodListener(tlsEnabled()).getPort()))
+            .withLivenessProbe(createLivenessProbe())
+            .withReadinessProbe(createReadinessProbe())
             .build();
     }
 
-    protected Probe createLivenessProbe(int port) {
+    /**
+     * 
+     * @return The liveness probe for the rest producer container
+     */
+    protected Probe createLivenessProbe() {
         Probe defaultLivenessProbe = new ProbeBuilder()
             .withNewHttpGet()
             .withPath("/liveness")
-            .withNewPort(port)
+            .withNewPort(Listener.podToPodListener(tlsEnabled()).getPort())
             .withScheme(getHealthCheckProtocol())
             .withHttpHeaders(new HTTPHeaderBuilder()
                 .withName("Accept")
@@ -241,11 +257,15 @@ public class RestProducerModel extends AbstractSecureEndpointModel {
         return combineProbeDefinitions(defaultLivenessProbe, super.getLivenessProbe());
     }
 
-    protected Probe createReadinessProbe(int port) {
+    /**
+     * 
+     * @return The readiness probe for the rest producer container
+     */
+    protected Probe createReadinessProbe() {
         Probe defaultReadinessProbe = new ProbeBuilder()
             .withNewHttpGet()
             .withPath("/liveness")
-            .withNewPort(port)
+            .withNewPort(Listener.podToPodListener(tlsEnabled()).getPort())
             .withScheme(getHealthCheckProtocol())
             .withHttpHeaders(new HTTPHeaderBuilder()
                 .withName("Accept")
@@ -301,12 +321,7 @@ public class RestProducerModel extends AbstractSecureEndpointModel {
         listeners.forEach(listener -> {
             ingressRules.add(createIngressRule(listener.getPort(), new HashMap<>()));
         });
-
-        List<NetworkPolicyEgressRule> egressRules = new ArrayList<>(2);
-        egressRules.add(createEgressRule(EventStreamsKafkaModel.KAFKA_PORT, EventStreamsKafkaModel.KAFKA_COMPONENT_NAME));
-        egressRules.add(createEgressRule(Listener.podToPodListener(tlsEnabled()).getPort(), SchemaRegistryModel.COMPONENT_NAME));
-
-        return createNetworkPolicy(createLabelSelector(COMPONENT_NAME), ingressRules, egressRules);
+        return createNetworkPolicy(createLabelSelector(COMPONENT_NAME), ingressRules, null);
     }
 
 }
