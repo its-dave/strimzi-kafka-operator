@@ -15,10 +15,16 @@ package com.ibm.eventstreams.api;
 import com.ibm.eventstreams.api.spec.EventStreams;
 
 import com.ibm.iam.api.spec.Client;
+import com.ibm.iam.api.spec.Cp4iServicesBinding;
+import com.ibm.iam.api.spec.Cp4iServicesBindingDoneable;
+import com.ibm.iam.api.spec.Cp4iServicesBindingList;
 import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition;
 import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinitionBuilder;
 import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceSubresourceStatus;
 import io.fabric8.kubernetes.client.CustomResource;
+import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.dsl.MixedOperation;
+import io.fabric8.kubernetes.client.dsl.Resource;
 
 public class Crds {
     public static final String CRD_KIND = "CustomResourceDefinition";
@@ -57,6 +63,17 @@ public class Crds {
             listKind = Client.RESOURCE_LIST_KIND;
             shortName = Client.SHORT_NAME;
             status = new CustomResourceSubresourceStatus();
+        } else if (cls.equals(Cp4iServicesBinding.class)) {
+            version = Cp4iServicesBinding.V1;
+            scope = Cp4iServicesBinding.SCOPE;
+            crdApiVersion = Cp4iServicesBinding.CRD_API_VERSION;
+            plural = Cp4iServicesBinding.RESOURCE_PLURAL;
+            singular = Cp4iServicesBinding.RESOURCE_SINGULAR;
+            group = Cp4iServicesBinding.RESOURCE_GROUP;
+            kind = Cp4iServicesBinding.RESOURCE_KIND;
+            listKind = Cp4iServicesBinding.RESOURCE_LIST_KIND;
+            shortName = Cp4iServicesBinding.SHORT_NAME;
+            status = new CustomResourceSubresourceStatus(); 
         } else {
             throw new RuntimeException();
         }
@@ -83,5 +100,9 @@ public class Crds {
                 .endSubresources()
             .endSpec()
             .build();
+    }
+
+    public static MixedOperation<Cp4iServicesBinding, Cp4iServicesBindingList, Cp4iServicesBindingDoneable, Resource<Cp4iServicesBinding, Cp4iServicesBindingDoneable>> cp4iServicesBindingOperation(KubernetesClient client) {
+        return client.customResources(com.ibm.eventstreams.api.Crds.getCrd(Cp4iServicesBinding.class), Cp4iServicesBinding.class, Cp4iServicesBindingList.class, Cp4iServicesBindingDoneable.class);
     }
 }

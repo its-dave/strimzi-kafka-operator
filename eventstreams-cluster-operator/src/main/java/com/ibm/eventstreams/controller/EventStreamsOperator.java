@@ -47,6 +47,7 @@ import com.ibm.eventstreams.controller.certificates.EventStreamsCertificateManag
 import com.ibm.eventstreams.replicator.ReplicatorCredentials;
 import com.ibm.eventstreams.rest.NameValidation;
 import com.ibm.eventstreams.rest.VersionValidation;
+import com.ibm.iam.api.controller.Cp4iServicesBindingResourceOperator;
 import com.ibm.iam.api.model.ClientModel;
 import com.ibm.iam.api.spec.Client;
 import com.ibm.iam.api.spec.ClientDoneable;
@@ -55,9 +56,12 @@ import com.ibm.iam.api.spec.ClientList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.ibm.iam.api.model.Cp4iServicesBindingModel;
+import com.ibm.iam.api.spec.Cp4iServicesBinding;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.Service;
+import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinitionList;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
@@ -98,7 +102,8 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
     private static final Logger log = LogManager.getLogger(EventStreamsOperator.class.getName());
 
     private final KubernetesClient client;
-    private final EventStreamsResourceOperator resourceOperator;
+    private final EventStreamsResourceOperator esResourceOperator;
+    private final Cp4iServicesBindingResourceOperator cp4iResourceOperator;
     private final KafkaUserOperator kafkaUserOperator;
     private final KafkaMirrorMaker2Operator kafkaMirrorMaker2Operator;
     private final DeploymentOperator deploymentOperator;
@@ -119,15 +124,18 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
     private int customImageCount = 0;
     private static final String ENCODED_IBMCLOUD_CA_CERT = "icp_public_cacert_encoded";
     private static final String CLUSTER_CA_CERT_SECRET_NAME = "cluster-ca-cert";
+    public static final String CP4I_SERVICES_BINDING_NAME = "cp4iservicesbinding.cp4i.ibm.com";
 
     public EventStreamsOperator(Vertx vertx, KubernetesClient client, String kind, PlatformFeaturesAvailability pfa,
-                                EventStreamsResourceOperator resourceOperator,
+                                EventStreamsResourceOperator esResourceOperator,
+                                Cp4iServicesBindingResourceOperator cp4iResourceOperator,
                                 EventStreamsOperatorConfig.ImageLookup imageConfig,
                                 RouteOperator routeOperator,
                                 long kafkaStatusReadyTimeoutMs) {
-        super(vertx, kind, resourceOperator);
+        super(vertx, kind, esResourceOperator);
         log.info("Creating EventStreamsOperator");
-        this.resourceOperator = resourceOperator;
+        this.esResourceOperator = esResourceOperator;
+        this.cp4iResourceOperator = cp4iResourceOperator;
         this.client = client;
         this.pfa = pfa;
         this.kafkaUserOperator = new KafkaUserOperator(vertx, client);
@@ -166,6 +174,8 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 .compose(state -> state.getCloudPakClusterData())
                 .compose(state -> state.getCloudPakClusterCert())
                 .compose(state -> state.createCloudPakClusterCertSecret())
+                .compose(state -> state.createCp4iServicesBinding())
+                .compose(state -> state.waitForCp4iServicesBindingStatus())
                 .compose(state -> state.createKafkaCustomResource())
                 .compose(state -> state.waitForKafkaStatus())
                 .compose(state -> state.createReplicatorUsers()) //needs to be before createReplicator and createAdminAPI
@@ -189,6 +199,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         return Future.succeededFuture(Boolean.FALSE);
     }
 
+    @SuppressWarnings("checkstyle:ClassDataAbstractionCoupling")
     class ReconciliationState {
         final Reconciliation reconciliation;
         final EventStreams instance;
@@ -248,7 +259,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                     .withConditions(conditions)
                     .build();
                 instance.setStatus(informativeStatus);
-                resourceOperator.createOrUpdate(instance);
+                esResourceOperator.createOrUpdate(instance);
                 return Future.failedFuture("Invalid Custom Resource: check status");
             }
             return Future.succeededFuture(this);
@@ -275,7 +286,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                     .build();
                 instance.setStatus(informativeStatus);
                 Promise<ReconciliationState> failReconcile = Promise.promise();
-                Future<ReconcileResult<EventStreams>> updateStatus = resourceOperator.createOrUpdate(instance);
+                Future<ReconcileResult<EventStreams>> updateStatus = esResourceOperator.createOrUpdate(instance);
                 updateStatus.onComplete(f -> {
                     log.info("IAM not present : " + f.succeeded());
                     failReconcile.fail("Exit Reconcile as IAM not present");
@@ -309,7 +320,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                         .withConditions(caCertNotPresent)
                         .build();
                     instance.setStatus(informativeStatus);
-                    Future<ReconcileResult<EventStreams>> updateStatus = resourceOperator.createOrUpdate(instance);
+                    Future<ReconcileResult<EventStreams>> updateStatus = esResourceOperator.createOrUpdate(instance);
                     updateStatus.onComplete(f -> {
                         log.info("'ibmcloud-cluster-ca-cert' not present : " + f.succeeded());
                         clusterCaSecretPromise.fail("could not get secret 'ibmcloud-cluster-ca-cert' in namespace 'kube-public'");
@@ -336,7 +347,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                             .withConditions(caCertSecretNotCreated)
                             .build();
                         instance.setStatus(informativeStatus);
-                        Future<ReconcileResult<EventStreams>> updateStatus = resourceOperator.createOrUpdate(instance);
+                        Future<ReconcileResult<EventStreams>> updateStatus = esResourceOperator.createOrUpdate(instance);
                         updateStatus.onComplete(f -> {
                             log.info("Failure to create ICP Cluster CA Cert secret " + f.succeeded());
                             clusterCaSecretPromise.fail(err);
@@ -348,7 +359,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                     .withConditions(caCertNotPresent)
                     .build();
                 instance.setStatus(informativeStatus);
-                Future<ReconcileResult<EventStreams>> updateStatus = resourceOperator.createOrUpdate(instance);
+                Future<ReconcileResult<EventStreams>> updateStatus = esResourceOperator.createOrUpdate(instance);
                 updateStatus.onComplete(f -> {
                     log.info("Encoded ICP CA Cert not in ICPClusterData: " + f.succeeded());
                     clusterCaSecretPromise.fail("Encoded ICP CA Cert not in ICPClusterData");
@@ -356,6 +367,46 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             }
 
             return clusterCaSecretPromise.future().map(v -> this);
+        }
+
+
+        Future<ReconciliationState> createCp4iServicesBinding() {
+            if (!isCrdPresent(CP4I_SERVICES_BINDING_NAME)) {
+                status.withCp4iPresent(false);
+                return Future.succeededFuture(this);
+            }
+            status.withCp4iPresent(true);
+
+            Cp4iServicesBindingModel cp4iServicesBindingModel = new Cp4iServicesBindingModel(instance);
+            Cp4iServicesBinding cp4iServicesBinding = cp4iServicesBindingModel.getCp4iServicesBinding();
+            String cp4iServicesBindingName = cp4iServicesBinding.getMetadata().getName();
+
+            // Create an operation that can be invoked to retrieve or create the required Custom Resource
+            cp4iResourceOperator.reconcile(namespace, cp4iServicesBindingName, cp4iServicesBinding);
+
+            return Future.succeededFuture(this);
+        }
+
+        Future<ReconciliationState> waitForCp4iServicesBindingStatus() {
+            if (!status.isCp4iPresent()) {
+                log.debug("CP4I is not present");
+                return Future.succeededFuture(this);
+            }
+
+            String cp4iInstanceName = Cp4iServicesBindingModel.getCp4iInstanceName(instance.getMetadata().getName());
+
+            return cp4iResourceOperator.waitForCp4iServicesBindingStatusAndMaybeGetUrl(namespace, cp4iInstanceName, defaultPollIntervalMs, 10000, reconciliation)
+                .setHandler(res -> {
+                    if (res.succeeded()) {
+                        log.debug("Putting the header URL " + res.result() + " into the Admin UI");
+                        icpClusterData.put(AdminUIModel.ICP_CM_CLUSTER_PLATFORM_SERVICES_URL, res.result());
+                    } else {
+                        log.debug("Putting the header URL (empty string) into the Admin UI");
+                        icpClusterData.put(AdminUIModel.ICP_CM_CLUSTER_PLATFORM_SERVICES_URL, "");
+                    }
+                }).compose(v -> {
+                    return Future.succeededFuture(this);
+                });
         }
 
         Future<ReconciliationState> createKafkaCustomResource() {
@@ -370,10 +421,10 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         Future<ReconciliationState> waitForKafkaStatus() {
             String kafkaInstanceName = EventStreamsKafkaModel.getKafkaInstanceName(instance.getMetadata().getName());
 
-            return resourceOperator.kafkaCRHasReadyStatus(namespace, kafkaInstanceName, defaultPollIntervalMs, kafkaStatusReadyTimeoutMs)
+            return esResourceOperator.kafkaCRHasReadyStatus(namespace, kafkaInstanceName, defaultPollIntervalMs, kafkaStatusReadyTimeoutMs)
                     .compose(v -> {
                         log.debug("Retrieve Kafka instances in namespace : " + namespace);
-                        Optional<Kafka> kafkaInstance = resourceOperator.getKafkaInstance(namespace, kafkaInstanceName);
+                        Optional<Kafka> kafkaInstance = esResourceOperator.getKafkaInstance(namespace, kafkaInstanceName);
                         if (kafkaInstance.isPresent()) {
                             log.debug("Found Kafka instance with name : " + kafkaInstance.get().getMetadata().getName());
                             KafkaStatus kafkaStatus = kafkaInstance.get().getStatus();
@@ -616,7 +667,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             if (instance.getStatus() != esStatus) {
                 log.info("Updating status");
                 instance.setStatus(esStatus);
-                return resourceOperator.createOrUpdate(instance)
+                return esResourceOperator.createOrUpdate(instance)
                     .map(res -> this);
             }
             return Future.succeededFuture(this);
@@ -827,5 +878,15 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                     .withMessage(message)
                     .build();
         }
+    }
+
+    Boolean isCrdPresent(String crdName) {
+        return Optional.ofNullable(client.customResourceDefinitions().list())
+            .map(CustomResourceDefinitionList::getItems)
+            .map(list -> list.stream()
+                .filter(crd -> crd.getMetadata().getName().equals(crdName))
+                .findAny()
+                .isPresent())
+            .orElse(false);
     }
 }

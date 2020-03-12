@@ -8853,6 +8853,10 @@ spec:
                     type: string
                     description: Human-readable message indicating details about the
                       condition's last transition.
+            cp4iPresent:
+              type: boolean
+              description: Identifies whether IBM Cloud Pak for Integration Services
+                Binding is present.
       required:
       - spec
   version: v1beta1

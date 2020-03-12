@@ -97,6 +97,20 @@
     - patch
     - delete
     - update
+- apiGroups:
+    - "cp4i.ibm.com"
+  resources:
+    - cp4iservicesbindings
+  verbs:
+    - get
+    - list
+    - create
+- apiGroups:
+  - apiextensions.k8s.io
+  resources:
+  - customresourcedefinitions
+  verbs:
+  - list
 {{- end -}}
 
 {{- define "eventstreams.clusterrole.global" }}
@@ -109,4 +123,10 @@
     - create
     - patch
     - delete
+- apiGroups:
+  - apiextensions.k8s.io
+  resources:
+  - customresourcedefinitions
+  verbs:
+  - list
 {{- end -}}

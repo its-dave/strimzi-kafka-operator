@@ -79,6 +79,7 @@ public class AdminUIModel extends AbstractModel {
     public static final String ICP_CM_CLUSTER_ADDRESS_KEY = "cluster_address";
     public static final String ICP_CM_CLUSTER_ROUTER_PORT_KEY = "cluster_router_https_port";
     public static final String ICP_CM_CLUSTER_NAME_KEY = "cluster_name";
+    public static final String ICP_CM_CLUSTER_PLATFORM_SERVICES_URL = "header_url";
 
 
     // deployable objects
@@ -313,9 +314,11 @@ public class AdminUIModel extends AbstractModel {
             String clusterIp = icpClusterData.get(ICP_CM_CLUSTER_ADDRESS_KEY);
             String secureClusterPort = icpClusterData.get(ICP_CM_CLUSTER_ROUTER_PORT_KEY);
             String iamClusterName = icpClusterData.get(ICP_CM_CLUSTER_NAME_KEY);
+            String platformServicesUrl = icpClusterData.get(ICP_CM_CLUSTER_PLATFORM_SERVICES_URL);
             envVarDefaults.add(new EnvVarBuilder().withName("CLUSTER_EXTERNAL_IP").withValue(clusterIp).build());
             envVarDefaults.add(new EnvVarBuilder().withName("CLUSTER_EXTERNAL_PORT").withValue(secureClusterPort).build());
             envVarDefaults.add(new EnvVarBuilder().withName("IAM_CLUSTER_NAME").withValue(iamClusterName).build());
+            envVarDefaults.add(new EnvVarBuilder().withName("ICP4I_PLATFORM_SERVICES_URL").withValue(platformServicesUrl).build());
 
             envVarDefaults.add(
                 new EnvVarBuilder()
