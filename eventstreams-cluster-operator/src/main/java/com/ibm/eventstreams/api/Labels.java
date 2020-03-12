@@ -24,6 +24,7 @@ public class Labels {
     public static final String KUBERNETES_NAME_LABEL = KUBERNETES_DOMAIN + "name";
     public static final String KUBERNETES_NAME = "eventstreams";
     public static final String KUBERNETES_INSTANCE_LABEL = KUBERNETES_DOMAIN + "instance";
+    public static final String KUBERNETES_PART_OF_LABEL = KUBERNETES_DOMAIN + "part-of";
     public static final String KUBERNETES_MANAGED_BY_LABEL = KUBERNETES_DOMAIN + "managed-by";
     public static final String KUBERNETES_MANAGED_BY = "eventstreams-operator";
 

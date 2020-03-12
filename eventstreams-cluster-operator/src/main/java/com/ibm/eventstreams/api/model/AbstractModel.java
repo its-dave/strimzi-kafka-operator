@@ -376,6 +376,7 @@ public abstract class AbstractModel {
         labels.put(Labels.COMPONENT_LABEL, this.componentName);
         labels.put(Labels.INSTANCE_LABEL, this.instanceName);
         labels.put(Labels.RELEASE_LABEL, this.instanceName);
+        labels.put(Labels.KUBERNETES_PART_OF_LABEL, this.instanceName);
         labels.put(Labels.KUBERNETES_NAME_LABEL, Labels.KUBERNETES_NAME);
         labels.put(Labels.KUBERNETES_INSTANCE_LABEL, this.instanceName);
         labels.put(Labels.KUBERNETES_MANAGED_BY_LABEL, Labels.KUBERNETES_MANAGED_BY);

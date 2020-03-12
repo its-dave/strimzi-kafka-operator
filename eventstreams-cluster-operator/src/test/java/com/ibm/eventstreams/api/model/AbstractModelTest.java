@@ -92,6 +92,7 @@ public class AbstractModelTest {
         expectedLabels.put(Labels.RELEASE_LABEL, instanceName);
         expectedLabels.put(Labels.KUBERNETES_NAME_LABEL, Labels.KUBERNETES_NAME);
         expectedLabels.put(Labels.KUBERNETES_INSTANCE_LABEL, instanceName);
+        expectedLabels.put(Labels.KUBERNETES_PART_OF_LABEL, instanceName);
         expectedLabels.put(Labels.KUBERNETES_MANAGED_BY_LABEL, Labels.KUBERNETES_MANAGED_BY);
         expectedLabels.put(Labels.NAME_LABEL, instanceName + "-" + AbstractModel.APP_NAME + "-" + ComponentModel.COMPONENT_NAME);
         expectedLabels.put(Labels.SERVICE_SELECTOR_LABEL, ComponentModel.COMPONENT_NAME);
