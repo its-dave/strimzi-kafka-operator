@@ -28,7 +28,7 @@ import java.io.Serializable;
 @JsonDeserialize(using = JsonDeserializer.None.class)
 @Buildable(editableEnabled = false, generateBuilderPackage = false, builderPackage = "io.fabric8.kubernetes.api.builder")
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({"images", "adminApiComponent", "restProducerComponent", "adminUIComponent", "schemaRegistryComponent", "collectorComponent", "monitoring", "security", "replicator", "strimziOverrides"})
+@JsonPropertyOrder({"images", "appVersion", "adminApi", "adminUI", "collector", "restProducer", "replicator", "schemaRegistry", "monitoring", "security", "strimziOverrides"})
 @EqualsAndHashCode
 public class EventStreamsSpec implements Serializable {
 
@@ -126,7 +126,7 @@ public class EventStreamsSpec implements Serializable {
     public void setReplicator(ReplicatorSpec replicator) {
         this.replicator = replicator;
     }
-    
+
     @JsonProperty(required = true)
     @Description("The specification of the Kafka and ZooKeeper clusters.")
     public KafkaSpec getStrimziOverrides() {

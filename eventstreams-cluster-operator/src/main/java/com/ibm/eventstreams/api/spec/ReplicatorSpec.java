@@ -49,7 +49,6 @@ public class ReplicatorSpec  implements Serializable  {
 
     @Description("The number of connect replicas to start for Event Streams replication")
     @DefaultValue("0")
-    @JsonProperty(required = true)
     public Integer getReplicas() {
         return replicas;
     }
