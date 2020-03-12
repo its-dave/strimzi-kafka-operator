@@ -27,7 +27,7 @@ import lombok.EqualsAndHashCode;
 @JsonInclude(JsonInclude.Include.NON_DEFAULT)
 @JsonPropertyOrder({"replicas"})
 @EqualsAndHashCode
-public class AdminApiSpec extends ComponentSpec {
+public class AdminApiSpec extends SecurityComponentSpec {
 
     private static final long serialVersionUID = 1L;
 

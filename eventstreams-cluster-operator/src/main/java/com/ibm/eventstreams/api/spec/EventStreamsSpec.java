@@ -36,7 +36,7 @@ public class EventStreamsSpec implements Serializable {
 
     private String appVersion;
     private AdminApiSpec adminApi;
-    private ComponentSpec restProducer;
+    private SecurityComponentSpec restProducer;
     private AdminUISpec adminUI;
     private SchemaRegistrySpec schemaRegistry;
     private ComponentSpec collector;
@@ -84,11 +84,11 @@ public class EventStreamsSpec implements Serializable {
     }
 
     @Description("The specification of the REST producer")
-    public ComponentSpec getRestProducer() {
+    public SecurityComponentSpec getRestProducer() {
         return restProducer;
     }
 
-    public void setRestProducer(ComponentSpec spec) {
+    public void setRestProducer(SecurityComponentSpec spec) {
         this.restProducer = spec;
     }
 
