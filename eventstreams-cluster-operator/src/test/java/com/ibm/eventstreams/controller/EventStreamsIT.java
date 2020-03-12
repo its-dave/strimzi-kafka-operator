@@ -43,7 +43,6 @@ class EventStreamsIT {
     private static final String EVENTSTREAMS_CUSTOM_RESOURCE_DEFINITION = System.getProperty("installDirectory") + "/ibm-eventstreams-operator/140-Crd-eventstreams.yaml";
     private static final String API_VERSION = "eventstreams.ibm.com/v1beta1";
     private static final String NAME = "my-es";
-    private static final String ARCHITECTURE = "amd64";
     private static final String VERSION = "2020.1.1";
 
     private KafkaSpec validKafkaSpec;
@@ -109,7 +108,6 @@ class EventStreamsIT {
             .withMetadata(new ObjectMetaBuilder().withName(NAME).build())
             .withNewSpec()
                 .withAppVersion(VERSION)
-                .withArchitecture(ARCHITECTURE)
                 .withNewAdminApi()
                     .withReplicas(1)
                 .endAdminApi()
@@ -127,7 +125,6 @@ class EventStreamsIT {
             .withMetadata(new ObjectMetaBuilder().withName(NAME).build())
             .withNewSpec()
                 .withAppVersion(VERSION)
-                .withArchitecture(ARCHITECTURE)
                 .withNewAdminApi()
                     .withReplicas(1)
                 .endAdminApi()
@@ -165,7 +162,6 @@ class EventStreamsIT {
             .withMetadata(new ObjectMetaBuilder().withName(NAME).build())
             .withNewSpec()
                 .withAppVersion(VERSION)
-                .withArchitecture(ARCHITECTURE)
                 .withStrimziOverrides(invalidKafkaReplicasKafkaSpec)
             .endSpec()
             .build();
@@ -187,7 +183,6 @@ class EventStreamsIT {
             .withMetadata(new ObjectMetaBuilder().withName(NAME).build())
             .withNewSpec()
                 .withAppVersion(VERSION)
-                .withArchitecture(ARCHITECTURE)
                 .withStrimziOverrides(invalidZookeeperReplicasKafkaSpec)
             .endSpec()
             .build();
@@ -202,7 +197,6 @@ class EventStreamsIT {
             .withMetadata(new ObjectMetaBuilder().withName(NAME).build())
             .withNewSpec()
                 .withAppVersion(VERSION)
-                .withArchitecture(ARCHITECTURE)
                 .withNewAdminApi()
                     .withReplicas(0)
                 .endAdminApi()
@@ -219,7 +213,6 @@ class EventStreamsIT {
             .withMetadata(new ObjectMetaBuilder().withName(NAME).build())
             .withNewSpec()
                 .withAppVersion(VERSION)
-                .withArchitecture(ARCHITECTURE)
                 .withNewRestProducer()
                     .withReplicas(0)
                 .endRestProducer()
@@ -236,7 +229,6 @@ class EventStreamsIT {
             .withMetadata(new ObjectMetaBuilder().withName(NAME).build())
             .withNewSpec()
                 .withAppVersion(VERSION)
-                .withArchitecture(ARCHITECTURE)
                 .withNewAdminUI()
                     .withReplicas(0)
                 .endAdminUI()
@@ -253,7 +245,6 @@ class EventStreamsIT {
             .withMetadata(new ObjectMetaBuilder().withName(NAME).build())
             .withNewSpec()
                 .withAppVersion(VERSION)
-                .withArchitecture(ARCHITECTURE)
                 .withNewSchemaRegistry()
                     .withReplicas(0)
                 .endSchemaRegistry()
@@ -270,7 +261,6 @@ class EventStreamsIT {
             .withMetadata(new ObjectMetaBuilder().withName(NAME).build())
             .withNewSpec()
                 .withAppVersion(VERSION)
-                .withArchitecture(ARCHITECTURE)
                 .withNewCollector()
                     .withReplicas(0)
                 .endCollector()

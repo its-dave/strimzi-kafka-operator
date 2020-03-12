@@ -39,8 +39,6 @@ import io.fabric8.kubernetes.api.model.EnvVarBuilder;
 import io.fabric8.kubernetes.api.model.LabelSelector;
 import io.fabric8.kubernetes.api.model.LabelSelectorBuilder;
 import io.fabric8.kubernetes.api.model.LocalObjectReference;
-import io.fabric8.kubernetes.api.model.NodeSelectorTerm;
-import io.fabric8.kubernetes.api.model.NodeSelectorTermBuilder;
 import io.fabric8.kubernetes.api.model.OwnerReference;
 import io.fabric8.kubernetes.api.model.OwnerReferenceBuilder;
 import io.fabric8.kubernetes.api.model.PodSecurityContext;
@@ -100,8 +98,6 @@ public abstract class AbstractModel {
 
     public static final String CONFIG_MAP_SUFFIX = "-config";
 
-    private static final String KUBERNETES_ARCHITECTURE_LABEL_NAME = "beta.kubernetes.io/arch";
-    private static final String DEFAULT_ARCHITECTURE = "amd64";
     protected static final Encryption DEFAULT_ENCRYPTION = Encryption.NONE;
 
     private static final String PRODUCT_ID = "ID";
@@ -134,7 +130,6 @@ public abstract class AbstractModel {
     private String namespace;
     private int replicas;
     private ExternalAccess externalAccess;
-    private String architecture;
     private ResourceRequirements resourceRequirements;
     private PodTemplate podTemplate;
     private Encryption encryption;
@@ -189,14 +184,6 @@ public abstract class AbstractModel {
 
     protected void setExternalAccess(ExternalAccess externalAccess) {
         this.externalAccess = externalAccess;
-    }
-
-    protected void setArchitecture(String architecture) {
-        this.architecture = architecture;
-    }
-
-    public String getArchitecture() {
-        return Optional.ofNullable(architecture).orElse(DEFAULT_ARCHITECTURE);
     }
 
     protected void setResourceRequirements(ResourceRequirements resourceRequirements) {
@@ -484,13 +471,6 @@ public abstract class AbstractModel {
                         .withVolumes(volumes)
                         .withSecurityContext(getPodSecurityContext())
                         .withNewServiceAccount(getDefaultResourceName())
-                        .withNewAffinity()
-                            .editOrNewNodeAffinity()
-                                .editOrNewRequiredDuringSchedulingIgnoredDuringExecution()
-                                    .addToNodeSelectorTerms(getNodeSelectorTermForArchitecture())
-                                .endRequiredDuringSchedulingIgnoredDuringExecution()
-                            .endNodeAffinity()
-                        .endAffinity()
                     .endSpec()
                 .endTemplate()
             .endSpec()
@@ -725,17 +705,6 @@ public abstract class AbstractModel {
                 .addNewItem().withNewKey(USER_P12).withNewPath("podtls.p12").endItem()
             .endSecret()
             .build();
-    }
-
-    protected NodeSelectorTerm getNodeSelectorTermForArchitecture() {
-
-        return new NodeSelectorTermBuilder()
-                .addNewMatchExpression()
-                    .withNewKey(KUBERNETES_ARCHITECTURE_LABEL_NAME)
-                    .withNewOperator("In")
-                    .withValues(getArchitecture())
-                .endMatchExpression()
-                .build();
     }
 
     protected NetworkPolicyIngressRule createIngressRule(int port, Map<String, String> componentNames) {

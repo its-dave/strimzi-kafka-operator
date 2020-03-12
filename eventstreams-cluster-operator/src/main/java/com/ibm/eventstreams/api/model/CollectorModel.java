@@ -76,7 +76,6 @@ public class CollectorModel extends AbstractModel {
         if (collectorSpec.isPresent()) {
 
             setOwnerReference(instance);
-            setArchitecture(instance.getSpec().getArchitecture());
             setReplicas(collectorSpec.map(ComponentSpec::getReplicas).orElse(DEFAULT_REPLICAS));
             setResourceRequirements(collectorSpec.map(ComponentSpec::getResources).orElseGet(ResourceRequirements::new));
             setEnvVars(collectorSpec.map(ContainerSpec::getEnvVars).orElseGet(ArrayList::new));

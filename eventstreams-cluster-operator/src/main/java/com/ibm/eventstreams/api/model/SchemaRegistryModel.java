@@ -103,7 +103,6 @@ public class SchemaRegistryModel extends AbstractSecureEndpointModel {
 
         if (schemaRegistrySpec.isPresent()) {
             setOwnerReference(instance);
-            setArchitecture(instance.getSpec().getArchitecture());
             int replicas = schemaRegistrySpec.map(ComponentSpec::getReplicas).orElse(DEFAULT_REPLICAS);
             setReplicas(replicas);
             setEnvVars(schemaRegistrySpec.map(ContainerSpec::getEnvVars).orElseGet(ArrayList::new));

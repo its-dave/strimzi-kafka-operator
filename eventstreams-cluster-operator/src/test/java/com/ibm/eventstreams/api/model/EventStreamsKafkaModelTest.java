@@ -33,7 +33,6 @@ import com.ibm.eventstreams.api.spec.KafkaMetricsJMXRuleBuilder;
 import org.junit.jupiter.api.Test;
 
 import io.fabric8.kubernetes.api.model.AffinityBuilder;
-import io.fabric8.kubernetes.api.model.NodeAffinity;
 import io.fabric8.kubernetes.api.model.NodeSelectorTerm;
 import io.fabric8.kubernetes.api.model.NodeSelectorTermBuilder;
 import io.fabric8.kubernetes.api.model.PodAntiAffinity;
@@ -187,33 +186,6 @@ public class EventStreamsKafkaModelTest {
         assertThat(zookeeperPodAnnotations.get("productChargedContainers"),  is(""));
     }
 
-    @Test
-    public void testDefaultKafkaHasRequiredNodeAffinity() {
-        Kafka kafkaInstance = createDefaultKafkaModel().getKafka();
-
-        NodeAffinity actualNodeAffinity = kafkaInstance.getSpec()
-                .getKafka()
-                .getTemplate()
-                .getPod()
-                .getAffinity()
-                .getNodeAffinity();
-        assertThat(actualNodeAffinity
-                .getRequiredDuringSchedulingIgnoredDuringExecution()
-                .getNodeSelectorTerms().size(),  is(1));
-        assertThat(actualNodeAffinity
-                .getRequiredDuringSchedulingIgnoredDuringExecution()
-                .getNodeSelectorTerms().get(0)
-                .getMatchExpressions().get(0)
-                .getValues(),  hasItem("amd64"));
-        assertThat(actualNodeAffinity
-                .getRequiredDuringSchedulingIgnoredDuringExecution()
-                .getNodeSelectorTerms().size(),  is(1));
-        assertThat(actualNodeAffinity
-                .getRequiredDuringSchedulingIgnoredDuringExecution()
-                .getNodeSelectorTerms().get(0)
-                .getMatchExpressions().get(0)
-                .getValues(),  hasItem("amd64"));
-    }
 
     @Test
     public void testDefaultKafkaHasRequiredPodAntiAffinity() {

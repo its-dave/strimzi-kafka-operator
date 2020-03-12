@@ -50,7 +50,6 @@ public class ReplicatorUsersModel extends AbstractModel {
         super(instance.getMetadata().getName(), instance.getMetadata().getNamespace(), ReplicatorModel.COMPONENT_NAME);
 
         setOwnerReference(instance);
-        setArchitecture(instance.getSpec().getArchitecture());
 
         KafkaListenerAuthentication internalClientAuth = ReplicatorModel.getInternalTlsKafkaListenerAuthentication(instance);
         KafkaListenerAuthentication externalClientAuth = ReplicatorModel.getExternalKafkaListenerAuthentication(instance);

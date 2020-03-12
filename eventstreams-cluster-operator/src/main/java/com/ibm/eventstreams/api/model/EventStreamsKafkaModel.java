@@ -80,7 +80,6 @@ public class EventStreamsKafkaModel extends AbstractModel {
         boolean shouldDeployTopicOperator = isTopicOperatorRequested(instance);
 
         setOwnerReference(instance);
-        setArchitecture(instance.getSpec().getArchitecture());
         setEncryption(Optional.ofNullable(instance.getSpec())
                             .map(EventStreamsSpec::getSecurity)
                             .map(SecuritySpec::getEncryption)
@@ -197,11 +196,6 @@ public class EventStreamsKafkaModel extends AbstractModel {
                             .withSecurityContext(getPodSecurityContext())
                             // Equivalent to editOrNew
                             .withAffinity(new AffinityBuilder(kafkaAffinity)
-                                .editOrNewNodeAffinity()
-                                    .editOrNewRequiredDuringSchedulingIgnoredDuringExecution()
-                                        .addToNodeSelectorTerms(getNodeSelectorTermForArchitecture())
-                                    .endRequiredDuringSchedulingIgnoredDuringExecution()
-                                .endNodeAffinity()
                                 .editOrNewPodAntiAffinity()
                                     .addToPreferredDuringSchedulingIgnoredDuringExecution(preferredWeightedPodAntiAffinityTermForSelector(KAFKA_SERVICE_SELECTOR, 10))
                                     .addToPreferredDuringSchedulingIgnoredDuringExecution(preferredWeightedPodAntiAffinityTermForSelector(ZOOKEEPER_SERVICE_SELECTOR, 5))
@@ -226,11 +220,6 @@ public class EventStreamsKafkaModel extends AbstractModel {
                             .endMetadata()
                             .withSecurityContext(getPodSecurityContext())
                             .withAffinity(new AffinityBuilder(zookeeperAffinity)
-                                .editOrNewNodeAffinity()
-                                    .editOrNewRequiredDuringSchedulingIgnoredDuringExecution()
-                                        .addToNodeSelectorTerms(getNodeSelectorTermForArchitecture())
-                                    .endRequiredDuringSchedulingIgnoredDuringExecution()
-                                .endNodeAffinity()
                                 .editOrNewPodAntiAffinity()
                                     .addToPreferredDuringSchedulingIgnoredDuringExecution(preferredWeightedPodAntiAffinityTermForSelector(ZOOKEEPER_SERVICE_SELECTOR, 10))
                                     .addToPreferredDuringSchedulingIgnoredDuringExecution(preferredWeightedPodAntiAffinityTermForSelector(KAFKA_SERVICE_SELECTOR, 5))
@@ -257,11 +246,6 @@ public class EventStreamsKafkaModel extends AbstractModel {
                                 .addToLabels(getServiceSelectorLabel(ENTITY_OPERATOR_SERVICE_SELECTOR))
                             .endMetadata()
                         .withAffinity(new AffinityBuilder(entityOperatorAffinity)
-                                .editOrNewNodeAffinity()
-                                    .editOrNewRequiredDuringSchedulingIgnoredDuringExecution()
-                                        .addToNodeSelectorTerms(getNodeSelectorTermForArchitecture())
-                                    .endRequiredDuringSchedulingIgnoredDuringExecution()
-                                .endNodeAffinity()
                                 .build())
                         .endPod()
                     .endTemplate()

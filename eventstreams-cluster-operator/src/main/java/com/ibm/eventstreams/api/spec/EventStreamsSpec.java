@@ -28,13 +28,12 @@ import java.io.Serializable;
 @JsonDeserialize(using = JsonDeserializer.None.class)
 @Buildable(editableEnabled = false, generateBuilderPackage = false, builderPackage = "io.fabric8.kubernetes.api.builder")
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({"architecture", "images", "adminApiComponent", "restProducerComponent", "adminUIComponent", "schemaRegistryComponent", "collectorComponent", "monitoring", "security", "replicator", "strimziOverrides"})
+@JsonPropertyOrder({"images", "adminApiComponent", "restProducerComponent", "adminUIComponent", "schemaRegistryComponent", "collectorComponent", "monitoring", "security", "replicator", "strimziOverrides"})
 @EqualsAndHashCode
 public class EventStreamsSpec implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private String architecture;
     private String appVersion;
     private AdminApiSpec adminApi;
     private ComponentSpec restProducer;
@@ -63,16 +62,6 @@ public class EventStreamsSpec implements Serializable {
 
     public void setMonitoring(MonitoringSpec monitoring) {
         this.monitoring = monitoring;
-    }
-
-    @Description("The architecture of the worker nodes on which to install")
-    public String getArchitecture() {
-        return architecture;
-    }
-
-    @JsonProperty(required = true)
-    public void setArchitecture(String architecture) {
-        this.architecture = architecture;
     }
 
     @JsonProperty(required = true)

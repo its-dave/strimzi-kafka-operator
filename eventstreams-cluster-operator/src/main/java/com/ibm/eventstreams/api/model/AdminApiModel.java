@@ -118,7 +118,6 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
                 .map(EventStreamsSpec::getAdminApi);
 
         setOwnerReference(instance);
-        setArchitecture(instance.getSpec().getArchitecture());
         setReplicas(adminApiSpec.map(ComponentSpec::getReplicas).orElse(DEFAULT_REPLICAS));
         setResourceRequirements(adminApiSpec.map(ContainerSpec::getResources).orElseGet(ResourceRequirements::new));
         setEnvVars(adminApiSpec.map(ContainerSpec::getEnvVars).orElseGet(ArrayList::new));

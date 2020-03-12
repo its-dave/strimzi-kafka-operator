@@ -89,7 +89,6 @@ public class ReplicatorModel extends AbstractModel {
         super(instance.getMetadata().getName(), instance.getMetadata().getNamespace(), COMPONENT_NAME);
                 
         setOwnerReference(instance);
-        setArchitecture(instance.getSpec().getArchitecture());
         
         if (isReplicatorEnabled(instance)) {
             kafkaMirrorMaker2 = createMirrorMaker2(instance, replicatorCredentials);

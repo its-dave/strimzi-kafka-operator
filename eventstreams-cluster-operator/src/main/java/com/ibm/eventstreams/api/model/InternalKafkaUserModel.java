@@ -32,7 +32,6 @@ public class InternalKafkaUserModel extends AbstractModel {
         super(instance.getMetadata().getName(), instance.getMetadata().getNamespace(), COMPONENT_NAME);
 
         setOwnerReference(instance);
-        setArchitecture(instance.getSpec().getArchitecture());
 
         List<AclRule> aclList = new ArrayList<>();
         AclRule rule1 = new AclRuleBuilder()

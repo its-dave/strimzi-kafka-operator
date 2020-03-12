@@ -25,9 +25,6 @@ spec:
         spec:
           type: object
           properties:
-            architecture:
-              type: string
-              description: The architecture of the worker nodes on which to install.
             images:
               type: object
               properties:

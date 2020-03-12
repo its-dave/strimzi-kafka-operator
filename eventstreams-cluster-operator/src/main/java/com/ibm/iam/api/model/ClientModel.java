@@ -29,7 +29,6 @@ public class ClientModel extends AbstractModel {
         super(instance.getMetadata().getName(), instance.getMetadata().getNamespace(), COMPONENT_NAME);
 
         setOwnerReference(instance);
-        setArchitecture(instance.getSpec().getArchitecture());
         
         Map<String, String> labels = getComponentLabels();
 

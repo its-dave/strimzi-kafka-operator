@@ -53,29 +53,8 @@ public class AbstractModelTest {
 
         public ComponentModel(EventStreams instance) {
             super(instance.getMetadata().getName(), instance.getMetadata().getNamespace(), COMPONENT_NAME);
-            setArchitecture(instance.getSpec().getArchitecture());
             setOwnerReference(instance);
         }
-    }
-
-    @Test
-    public void testDefaultGetArchitecture() {
-        EventStreams instance = ModelUtils.createDefaultEventStreams(instanceName).build();
-        ComponentModel model = new ComponentModel(instance);
-        assertThat(model.getArchitecture(), is("amd64"));
-    }
-
-    @Test
-    public void testCustomGetArchitecture() {
-        String customArchitecture = "Z80";
-        EventStreams instance = ModelUtils.createDefaultEventStreams(instanceName)
-                .editSpec()
-                    .withArchitecture(customArchitecture)
-                .endSpec()
-                .build();
-        ComponentModel model = new ComponentModel(instance);
-
-        assertThat(model.getArchitecture(), is(customArchitecture));
     }
 
     @Test

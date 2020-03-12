@@ -48,7 +48,6 @@ public class AbstractSecureEndpointModelTest {
         public ComponentModel(EventStreams instance, List<Listener> listeners) {
             super(instance, instance.getMetadata().getNamespace(), COMPONENT_NAME, listeners);
             setEncryption(SecuritySpec.Encryption.TLS);
-            setArchitecture(instance.getSpec().getArchitecture());
             setOwnerReference(instance);
             createInternalService();
             createExternalService();

@@ -119,7 +119,6 @@ public class AdminUIModel extends AbstractModel {
 
         if (userInterfaceSpec.isPresent()) {
             setReplicas(userInterfaceSpec.map(ComponentSpec::getReplicas).orElse(DEFAULT_REPLICAS));
-            setArchitecture(instance.getSpec().getArchitecture());
             setOwnerReference(instance);
             setEnvVars(userInterfaceSpec.map(ContainerSpec::getEnvVars).orElseGet(ArrayList::new));
             setResourceRequirements(userInterfaceSpec.map(ContainerSpec::getResources).orElseGet(ResourceRequirements::new));
