@@ -110,18 +110,12 @@ spec:
           x-descriptors:
             - 'urn:alm:descriptor:com.tectonic.ui:resourceRequirements'
             - 'urn:alm:descriptor:com.tectonic.ui:advanced'
+
         - description: The resource limits for ZooKeeper nodes.
           displayName: ZooKeeper resource limits
           path: strimziOverrides.zookeeper.resources
           x-descriptors:
             - 'urn:alm:descriptor:com.tectonic.ui:resourceRequirements'
-            - 'urn:alm:descriptor:com.tectonic.ui:advanced'
-
-        - description: Target architecture
-          displayName: Architecture
-          path: architecture
-          x-descriptors:
-            - 'urn:alm:descriptor:com.tectonic.ui:select:amd64'
             - 'urn:alm:descriptor:com.tectonic.ui:advanced'
 
         - description: Whether to enable TLS for connections between pods in the cluster

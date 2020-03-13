@@ -274,7 +274,7 @@ metadata:
     categories: Streaming & Messaging
     certified: 'false'
     containerImage: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-operator-icp-linux-amd64:latest
-    createdAt: 2020-03-12T22:07:25Z
+    createdAt: 2020-03-13T11:15:53Z
     description: Kafka-based messaging platform for handling real-time data feeds.
     repository: https://github.ibm.com/mhub/qp-eventstreams-operator
     support: IBM
@@ -393,12 +393,6 @@ spec:
         path: strimziOverrides.zookeeper.resources
         x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:resourceRequirements'
-        - 'urn:alm:descriptor:com.tectonic.ui:advanced'
-      - description: Target architecture
-        displayName: Architecture
-        path: architecture
-        x-descriptors:
-        - 'urn:alm:descriptor:com.tectonic.ui:select:amd64'
         - 'urn:alm:descriptor:com.tectonic.ui:advanced'
       - description: Whether to enable TLS for connections between pods in the cluster
         displayName: Internal security
@@ -892,6 +886,10 @@ spec:
                   valueFrom:
                     fieldRef:
                       fieldPath: metadata.annotations['olm.targetNamespaces']
+                - name: STRIMZI_IMAGE_PULL_POLICY
+                  value: Always
+                - name: EVENTSTREAMS_IMAGE_PULL_POLICY
+                  value: Always
                 - name: STRIMZI_FULL_RECONCILIATION_INTERVAL_MS
                   value: "120000"
                 - name: STRIMZI_OPERATION_TIMEOUT_MS
