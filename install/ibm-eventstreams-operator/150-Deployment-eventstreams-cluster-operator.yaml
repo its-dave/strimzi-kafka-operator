@@ -34,7 +34,7 @@ spec:
       serviceAccountName: eventstreams-cluster-operator
       initContainers:
       - name: install-validating-webhook
-        image: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator-init:latest
+        image: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator-init-amd64:latest
         securityContext:
           privileged: false
           readOnlyRootFilesystem: false

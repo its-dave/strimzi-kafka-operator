@@ -38,7 +38,7 @@ operator:
 operatorInit:
     image:
       repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
-      name: strimzi/operator-init
+      name: strimzi/operator-init-amd64
       tag: latest
 
 

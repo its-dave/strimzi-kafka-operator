@@ -995,7 +995,7 @@ spec:
                   valueFrom:
                     fieldRef:
                       fieldPath: metadata.uid
-                image: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator-init:latest
+                image: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator-init-amd64:latest
                 name: install-validating-webhook
                 resources: {}
                 securityContext:

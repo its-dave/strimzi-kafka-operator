@@ -36,6 +36,9 @@ KAFKA_IMAGE_LATEST="${destination_registry}/strimzi/kafka-${B_ARCH}:latest-kafka
 OPERATOR_IMAGE="${destination_registry}/strimzi/operator-${B_ARCH}:${TAG}"
 OPERATOR_IMAGE_LATEST="${destination_registry}/strimzi/operator-${B_ARCH}:latest"
 
+OPERATOR_INIT_IMAGE="${destination_registry}/strimzi/operator-init-${B_ARCH}:${TAG}"
+OPERATOR_INIT_IMAGE_LATEST="${destination_registry}/strimzi/operator-init-${B_ARCH}:latest"
+
 echo "Retagging strimzi/kafka:latest to ${KAFKA_IMAGE}..."
 docker tag "strimzi/kafka:latest" "${KAFKA_IMAGE}"
 echo "Retagging strimzi/kafka:latest to ${KAFKA_IMAGE_LATEST}..."
@@ -46,13 +49,20 @@ docker tag "strimzi/operator:latest" "${OPERATOR_IMAGE}"
 echo "Retagging strimzi/operator:latest to ${OPERATOR_IMAGE_LATEST}..."
 docker tag "strimzi/operator:latest" "${OPERATOR_IMAGE_LATEST}"
 
+echo "Retagging strimzi/operator-init:latest to ${OPERATOR_INIT_IMAGE}..."
+docker tag "strimzi/operator-init:latest" "${OPERATOR_INIT_IMAGE}"
+echo "Retagging strimzi/operator-init:latest to ${OPERATOR_INIT_IMAGE_LATEST}..."
+docker tag "strimzi/operator-init:latest" "${OPERATOR_INIT_IMAGE_LATEST}"
+
 echo "Pushing images to ${destination_registry}..."
 docker push "${KAFKA_IMAGE}"
 docker push "${OPERATOR_IMAGE}"
+docker push "${OPERATOR_INIT_IMAGE}"
 if [[ $TAG == *exp ]]; then
   echo 'Docker tag ends with "exp" so not pushing latest images'
 else
   echo 'Docker tag does not end with "exp" so pushing latest images'
-  docker push "${OPERATOR_IMAGE_LATEST}"
   docker push "${KAFKA_IMAGE_LATEST}"
+  docker push "${OPERATOR_IMAGE_LATEST}"
+  docker push "${OPERATOR_INIT_IMAGE_LATEST}"
 fi
