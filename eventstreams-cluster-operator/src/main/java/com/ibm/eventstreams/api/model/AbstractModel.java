@@ -215,11 +215,16 @@ public abstract class AbstractModel {
     }
 
     protected Boolean tlsEnabled() {
-        switch (getEncryption()) {
+        return tlsEnabled(getEncryption());
+    }
+
+    protected static Boolean tlsEnabled(Encryption encryption) {
+        switch (encryption) {
             case TLS: return true;
             default: return false;
         }
     }
+
     protected String getUrlProtocol() {
         return tlsEnabled() ? "https://" : "http://";
     }

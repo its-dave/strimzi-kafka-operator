@@ -254,8 +254,8 @@ public class AdminUIModel extends AbstractModel {
      * @return The Admin UI container
      */
     private Container getUIContainer() {
-        String adminApiService = getUrlProtocol(crEncryptionValue) + getInternalServiceName(getInstanceName(), AdminApiModel.COMPONENT_NAME) + "." +  getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + Listener.podToPodListener(tlsEnabled()).getPort();
-        String schemaRegistryService = getUrlProtocol(crEncryptionValue) + getInternalServiceName(getInstanceName(), SchemaRegistryModel.COMPONENT_NAME) + "." +  getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + Listener.podToPodListener(tlsEnabled()).getPort();
+        String adminApiService = getUrlProtocol(crEncryptionValue) + getInternalServiceName(getInstanceName(), AdminApiModel.COMPONENT_NAME) + "." +  getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + Listener.podToPodListener(tlsEnabled(crEncryptionValue)).getPort();
+        String schemaRegistryService = getUrlProtocol(crEncryptionValue) + getInternalServiceName(getInstanceName(), SchemaRegistryModel.COMPONENT_NAME) + "." +  getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + Listener.podToPodListener(tlsEnabled(crEncryptionValue)).getPort();
 
         List<EnvVar> envVarDefaults = new ArrayList<>();
 
