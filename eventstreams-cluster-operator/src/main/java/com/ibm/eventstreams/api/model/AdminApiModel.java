@@ -440,7 +440,17 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
                 .withKey(CLIENT_SECRET_KEY)
                 .endSecretKeyRef()
                 .endValueFrom()
-                .build()  
+                .build(),
+            new EnvVarBuilder()
+                .withName("ES_CACERT")
+                .withNewValueFrom()
+                .withNewSecretKeyRef()
+                .withName(EventStreamsKafkaModel.getKafkaClusterCaCertName(getInstanceName()))
+                .withKey("ca.crt")
+                .withOptional(true)
+                .endSecretKeyRef()
+                .endValueFrom()
+                .build()
             ));
 
         return envVars;
