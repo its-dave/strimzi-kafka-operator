@@ -31,10 +31,10 @@ public class VersionValidation extends AbstractValidation {
     public static final List<String> VALID_APP_VERSIONS = unmodifiableList(asList(EventStreamsVersions.OPERAND_VERSION, EventStreamsVersions.AUTO_UPGRADE_VERSION));
 
     public static boolean shouldReject(EventStreams customResourceSpec) {
-        return !(VALID_APP_VERSIONS.contains(customResourceSpec.getSpec().getAppVersion()));
+        return !(VALID_APP_VERSIONS.contains(customResourceSpec.getSpec().getVersion()));
     }
 
-    public static void rejectInvalidAppVersions(RoutingContext routingContext) {
+    public static void rejectInvalidVersions(RoutingContext routingContext) {
         log.traceEntry();
 
         EventStreams customResourceSpec = getSpecFromRequest(routingContext);
@@ -43,8 +43,8 @@ public class VersionValidation extends AbstractValidation {
 
         if (shouldReject(customResourceSpec)) {
             outcome = ValidationResponsePayload.createFailureResponse(
-                    "Supported appVersion values are: 2020.1, 2020.1.1",
-                    "Unsupported appVersion");
+                    "Supported version values are: 2020.1, 2020.1.1",
+                    "Unsupported version");
         } else {
             outcome = ValidationResponsePayload.createSuccessResponse();
         }

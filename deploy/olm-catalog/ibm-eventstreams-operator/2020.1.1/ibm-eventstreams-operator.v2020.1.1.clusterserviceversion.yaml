@@ -13,7 +13,6 @@ metadata:
           "spec": {
             "adminApi": {},
             "adminUI": {},
-            "appVersion": "2020.1.1",
             "collector": {},
             "licenseAccept": false,
             "replicator": {},
@@ -51,7 +50,8 @@ metadata:
                   "type": "ephemeral"
                 }
               }
-            }
+            },
+            "version": "2020.1.1"
           }
         },
         {
@@ -63,7 +63,6 @@ metadata:
           "spec": {
             "adminApi": {},
             "adminUI": {},
-            "appVersion": "2020.1.1",
             "collector": {},
             "licenseAccept": false,
             "replicator": {},
@@ -124,7 +123,8 @@ metadata:
                   "type": "ephemeral"
                 }
               }
-            }
+            },
+            "version": "2020.1.1"
           }
         },
         {
@@ -136,7 +136,6 @@ metadata:
           "spec": {
             "adminApi": {},
             "adminUI": {},
-            "appVersion": "2020.1.1",
             "collector": {},
             "licenseAccept": false,
             "replicator": {},
@@ -197,7 +196,8 @@ metadata:
                   "type": "ephemeral"
                 }
               }
-            }
+            },
+            "version": "2020.1.1"
           }
         },
         {
@@ -209,7 +209,6 @@ metadata:
           "spec": {
             "adminApi": {},
             "adminUI": {},
-            "appVersion": "2020.1.1",
             "collector": {},
             "licenseAccept": false,
             "replicator": {},
@@ -270,7 +269,8 @@ metadata:
                   "type": "ephemeral"
                 }
               }
-            }
+            },
+            "version": "2020.1.1"
           }
         }
       ]
@@ -278,7 +278,7 @@ metadata:
     categories: Streaming & Messaging
     certified: 'false'
     containerImage: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-operator-icp-linux-amd64:latest
-    createdAt: 2020-03-17T21:15:07Z
+    createdAt: 2020-03-17T23:01:23Z
     description: Kafka-based messaging platform for handling real-time data feeds.
     repository: https://github.ibm.com/mhub/qp-eventstreams-operator
     support: IBM

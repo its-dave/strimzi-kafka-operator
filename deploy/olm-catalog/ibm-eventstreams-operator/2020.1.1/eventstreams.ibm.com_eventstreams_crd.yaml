@@ -28,6 +28,8 @@ spec:
             licenseAccept:
               type: boolean
               description: Accept the product license after reading it at <TBC>.
+            version:
+              type: string
             images:
               type: object
               properties:
@@ -41,8 +43,6 @@ spec:
                       name:
                         type: string
               description: The specification of global image properties.
-            appVersion:
-              type: string
             adminApi:
               type: object
               properties:
@@ -111,8 +111,10 @@ spec:
                     required:
                     - name
                     - accessPort
-                  description: Defines the user endpoints that will be created for
-                    the user to communicate with the component.
+                  description: 'Defines endpoints that will be created to communicate
+                    with the component. If nothing is specified, a default endpoint
+                    is created that is externally accessible via a Route with Bearer
+                    Authentication. '
                 envVars:
                   type: array
                   items:
@@ -1533,8 +1535,10 @@ spec:
                     required:
                     - name
                     - accessPort
-                  description: Defines the user endpoints that will be created for
-                    the user to communicate with the component.
+                  description: 'Defines endpoints that will be created to communicate
+                    with the component. If nothing is specified, a default endpoint
+                    is created that is externally accessible via a Route with Bearer
+                    Authentication. '
                 envVars:
                   type: array
                   items:
@@ -3426,8 +3430,10 @@ spec:
                     required:
                     - name
                     - accessPort
-                  description: Defines the user endpoints that will be created for
-                    the user to communicate with the component.
+                  description: 'Defines endpoints that will be created to communicate
+                    with the component. If nothing is specified, a default endpoint
+                    is created that is externally accessible via a Route with Bearer
+                    Authentication. '
                 envVars:
                   type: array
                   items:
@@ -8941,7 +8947,7 @@ spec:
               description: The specification of the Kafka and ZooKeeper clusters.
           required:
           - licenseAccept
-          - appVersion
+          - version
           - adminApi
           - strimziOverrides
         status:
@@ -9006,19 +9012,19 @@ spec:
                 available:
                   type: object
                   properties:
-                    looseVersions:
+                    channels:
                       type: array
                       items:
                         type: string
                       description: A list of versions that the Operator is able to
                         automatically upgrade from.
-                    strictVersions:
+                    versions:
                       type: array
                       items:
                         type: string
                       description: A list of versions that the Operator is able to
                         upgrade this instance of Event Streams to.
-                reconciledVersion:
+                installed:
                   type: string
             conditions:
               type: array

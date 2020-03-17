@@ -34,12 +34,12 @@ public class EventStreamsVersions implements Serializable {
     public static final String AUTO_UPGRADE_VERSION = "2020.1";
     private static final EventStreamsAvailableVersions AVAILABLE_VERSIONS = new EventStreamsAvailableVersions();
 
-    public String getReconciledVersion() {
+    public String getInstalled() {
         return OPERAND_VERSION;
     }
 
     // This method is needed to enable deserialising by Jackson
-    public void setReconciledVersion(String version) {
+    public void setInstalled(String version) {
     }
 
     public EventStreamsAvailableVersions getAvailable() {

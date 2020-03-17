@@ -362,9 +362,9 @@ public class EventStreamsOperatorTest {
             .onComplete(context.succeeding(v -> context.verify(() -> {
                 ArgumentCaptor<EventStreams> argument = ArgumentCaptor.forClass(EventStreams.class);
                 verify(esResourceOperator).createOrUpdate(argument.capture());
-                assertThat(argument.getValue().getStatus().getVersions().getReconciledVersion(), is(DEFAULT_VERSION));
-                assertThat(argument.getValue().getStatus().getVersions().getAvailable().getStrictVersions(), contains(DEFAULT_VERSION));
-                assertThat(argument.getValue().getStatus().getVersions().getAvailable().getLooseVersions(), contains("2020.1"));
+                assertThat(argument.getValue().getStatus().getVersions().getInstalled(), is(DEFAULT_VERSION));
+                assertThat(argument.getValue().getStatus().getVersions().getAvailable().getVersions(), contains(DEFAULT_VERSION));
+                assertThat(argument.getValue().getStatus().getVersions().getAvailable().getChannels(), contains("2020.1"));
                 async.flag();
             })));
     }
@@ -525,7 +525,7 @@ public class EventStreamsOperatorTest {
 
         String clusterName = "instancename";
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, clusterName);
-        esCluster.getSpec().setAppVersion("2018.1.1");
+        esCluster.getSpec().setVersion("2018.1.1");
         ArgumentCaptor<EventStreams> updatedEventStreams = ArgumentCaptor.forClass(EventStreams.class);
         Checkpoint async = context.checkpoint();
 
@@ -757,9 +757,9 @@ public class EventStreamsOperatorTest {
                 ArgumentCaptor<EventStreams> argument = ArgumentCaptor.forClass(EventStreams.class);
                 verify(esResourceOperator).createOrUpdate(argument.capture());
                 assertThat(argument.getValue().getStatus().isCustomImages(), is(false));
-                assertThat(esCluster.getStatus().getVersions().getReconciledVersion(), is(EventStreamsVersions.OPERAND_VERSION));
-                assertThat(esCluster.getStatus().getVersions().getAvailable().getLooseVersions(), is(EventStreamsAvailableVersions.LOOSE_VERSIONS));
-                assertThat(esCluster.getStatus().getVersions().getAvailable().getStrictVersions(), is(EventStreamsAvailableVersions.STRICT_VERSIONS));
+                assertThat(esCluster.getStatus().getVersions().getInstalled(), is(EventStreamsVersions.OPERAND_VERSION));
+                assertThat(esCluster.getStatus().getVersions().getAvailable().getChannels(), is(EventStreamsAvailableVersions.CHANNELS));
+                assertThat(esCluster.getStatus().getVersions().getAvailable().getVersions(), is(EventStreamsAvailableVersions.VERSIONS));
                 assertThat(new HashSet<String>(esCluster.getStatus().getRoutes().values()), is(expectedRouteHosts));
                 assertThat(esCluster.getStatus().getAdminUiUrl(), is("https://" + formatRouteHost(UI_ROUTE_NAME)));
                 context.completeNow();
@@ -1201,7 +1201,7 @@ public class EventStreamsOperatorTest {
                         .build())
                 .withNewSpec()
                 .withLicenseAccept(true)
-                    .withNewAppVersion(DEFAULT_VERSION)
+                    .withNewVersion(DEFAULT_VERSION)
                     .withNewAdminApi()
                     .endAdminApi()
                     .withStrimziOverrides(new KafkaSpecBuilder()
@@ -1258,7 +1258,7 @@ public class EventStreamsOperatorTest {
                         .build())
                 .withNewSpec()
                     .withLicenseAccept(true)
-                    .withNewAppVersion(DEFAULT_VERSION)
+                    .withNewVersion(DEFAULT_VERSION)
                     .withNewAdminApi()
                     .endAdminApi()
                     .withStrimziOverrides(new KafkaSpecBuilder()
@@ -1327,7 +1327,7 @@ public class EventStreamsOperatorTest {
                         .build())
                 .withNewSpec()
                     .withLicenseAccept(true)
-                    .withNewAppVersion(DEFAULT_VERSION)
+                    .withNewVersion(DEFAULT_VERSION)
                     .withStrimziOverrides(new KafkaSpecBuilder()
                             .withNewKafka()
                                 .withReplicas(1)
@@ -1412,7 +1412,7 @@ public class EventStreamsOperatorTest {
                         .build())
                 .withNewSpec()
                 .withLicenseAccept(true)
-                .withNewAppVersion(DEFAULT_VERSION)
+                .withNewVersion(DEFAULT_VERSION)
                 .withStrimziOverrides(new KafkaSpecBuilder()
                         .withNewKafka()
                             .withReplicas(1)
@@ -1489,7 +1489,7 @@ public class EventStreamsOperatorTest {
                         .build())
                 .withNewSpec()
                 .withLicenseAccept(true)
-                .withNewAppVersion(DEFAULT_VERSION)
+                .withNewVersion(DEFAULT_VERSION)
                 .withStrimziOverrides(new KafkaSpecBuilder()
                         .withNewKafka()
                         .withReplicas(1)
@@ -1562,7 +1562,7 @@ public class EventStreamsOperatorTest {
                         .build())
                 .withNewSpec()
                 .withLicenseAccept(true)
-                .withNewAppVersion(DEFAULT_VERSION)
+                .withNewVersion(DEFAULT_VERSION)
                 .withStrimziOverrides(new KafkaSpecBuilder()
                         .withNewKafka()
                             .withReplicas(1)
@@ -1649,7 +1649,7 @@ public class EventStreamsOperatorTest {
                         .build())
                 .withNewSpec()
                 .withLicenseAccept(true)
-                .withNewAppVersion(DEFAULT_VERSION)
+                .withNewVersion(DEFAULT_VERSION)
                 .withStrimziOverrides(new KafkaSpecBuilder()
                         .withNewKafka()
                             .withReplicas(1)
@@ -2172,7 +2172,7 @@ public class EventStreamsOperatorTest {
                         .withReplicas(1)
                     .endReplicator()
                     .withStrimziOverrides(kafka)
-                    .withAppVersion(DEFAULT_VERSION)
+                    .withVersion(DEFAULT_VERSION)
                 .endSpec()
                 .build();
     }

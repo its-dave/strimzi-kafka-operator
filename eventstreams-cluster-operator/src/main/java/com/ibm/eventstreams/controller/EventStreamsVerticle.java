@@ -147,7 +147,7 @@ public class EventStreamsVerticle extends AbstractVerticle {
 
         router.route(HttpMethod.POST, "/admissionwebhook/rejectlicensenotaccepted").handler(LicenseValidation::rejectLicenseIfNotAccepted);
         router.route(HttpMethod.POST, "/admissionwebhook/rejectlongnames").handler(NameValidation::rejectLongNames);
-        router.route(HttpMethod.POST, "/admissionwebhook/rejectinvalidversions").handler(VersionValidation::rejectInvalidAppVersions);
+        router.route(HttpMethod.POST, "/admissionwebhook/rejectinvalidversions").handler(VersionValidation::rejectInvalidVersions);
         router.route(HttpMethod.POST, "/admissionwebhook/rejectmissingtopiclabels").handler(EntityLabelValidation::rejectInvalidKafkaTopics);
         router.route(HttpMethod.POST, "/admissionwebhook/rejectmissinguserlabels").handler(EntityLabelValidation::rejectInvalidKafkaUsers);
 

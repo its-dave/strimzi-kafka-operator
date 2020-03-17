@@ -34,9 +34,9 @@ import static org.junit.jupiter.api.Assertions.fail;
 @ExtendWith(VertxExtension.class)
 public class VersionValidationTest extends RestApiTest {
 
-    private void tryValidVersion(String appVersion, VertxTestContext context) {
+    private void tryValidVersion(String version, VertxTestContext context) {
         EventStreams test = ModelUtils.createDefaultEventStreams("my-es").build();
-        test.getSpec().setAppVersion(appVersion);
+        test.getSpec().setVersion(version);
 
         Map<String, Object> request = new HashMap<String, Object>();
         request.put("object", test);
@@ -72,7 +72,7 @@ public class VersionValidationTest extends RestApiTest {
     @Test
     public void testInvalidVersion(VertxTestContext context) {
         EventStreams test = ModelUtils.createDefaultEventStreams("my-es").build();
-        test.getSpec().setAppVersion("2019.4.1");
+        test.getSpec().setVersion("2019.4.1");
 
         Map<String, Object> request = new HashMap<String, Object>();
         request.put("object", test);
@@ -85,10 +85,10 @@ public class VersionValidationTest extends RestApiTest {
                 JsonObject responseObj = resp.result().bodyAsJsonObject();
                 assertThat(responseObj.getJsonObject("response").getBoolean("allowed"), is(false));
                 assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("status"), is("Failure"));
-                assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is("Unsupported appVersion"));
+                assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is("Unsupported version"));
                 assertThat(responseObj.getJsonObject("response").getJsonObject("status").getInteger("code"), is(400));
                 assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("message"),
-                        is("Supported appVersion values are: 2020.1, 2020.1.1"));
+                        is("Supported version values are: 2020.1, 2020.1.1"));
             } else {
                 fail("Failed to post webhook request");
             }

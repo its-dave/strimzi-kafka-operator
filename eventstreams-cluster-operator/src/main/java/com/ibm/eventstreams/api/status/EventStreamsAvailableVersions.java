@@ -35,24 +35,24 @@ public class EventStreamsAvailableVersions implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    public static final List<String> STRICT_VERSIONS = unmodifiableList(singletonList(EventStreamsVersions.OPERAND_VERSION));
-    public static final List<String> LOOSE_VERSIONS = unmodifiableList(singletonList(EventStreamsVersions.AUTO_UPGRADE_VERSION));
+    public static final List<String> VERSIONS = unmodifiableList(singletonList(EventStreamsVersions.OPERAND_VERSION));
+    public static final List<String> CHANNELS = unmodifiableList(singletonList(EventStreamsVersions.AUTO_UPGRADE_VERSION));
 
     @Description("A list of versions that the Operator is able to upgrade this instance of Event Streams to.")
-    public List<String> getStrictVersions() {
-        return STRICT_VERSIONS;
+    public List<String> getVersions() {
+        return VERSIONS;
     }
 
     // This method is needed to enable deserialising by Jackson
-    public void setStrictVersions(List<String> versions) {
+    public void setVersions(List<String> versions) {
     }
 
     @Description("A list of versions that the Operator is able to automatically upgrade from.")
-    public List<String> getLooseVersions() {
-        return LOOSE_VERSIONS;
+    public List<String> getChannels() {
+        return CHANNELS;
     }
 
     // This method is needed to enable deserialising by Jackson
-    public void setLooseVersions(List<String> versions) {
+    public void setChannels(List<String> versions) {
     }
 }

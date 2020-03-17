@@ -28,14 +28,14 @@ import java.io.Serializable;
 @JsonDeserialize(using = JsonDeserializer.None.class)
 @Buildable(editableEnabled = false, generateBuilderPackage = false, builderPackage = "io.fabric8.kubernetes.api.builder")
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({"licenseAccept", "images", "appVersion", "adminApi", "adminUI", "collector", "restProducer", "replicator", "schemaRegistry", "monitoring", "security", "strimziOverrides"})
+@JsonPropertyOrder({"licenseAccept", "version", "images", "adminApi", "adminUI", "collector", "restProducer", "replicator", "schemaRegistry", "monitoring", "security", "strimziOverrides"})
 @EqualsAndHashCode
 public class EventStreamsSpec implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
     private boolean licenseAccept;
-    private String appVersion;
+    private String version;
     private AdminApiSpec adminApi;
     private SecurityComponentSpec restProducer;
     private AdminUISpec adminUI;
@@ -76,12 +76,12 @@ public class EventStreamsSpec implements Serializable {
     }
 
     @JsonProperty(required = true)
-    public String getAppVersion() {
-        return appVersion;
+    public String getVersion() {
+        return version;
     }
 
-    public void setAppVersion(String appVersion) {
-        this.appVersion = appVersion;
+    public void setVersion(String version) {
+        this.version = version;
     }
 
     @JsonProperty(required = true)

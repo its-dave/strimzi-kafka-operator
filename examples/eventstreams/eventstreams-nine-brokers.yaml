@@ -4,7 +4,7 @@ metadata:
     name: sample-nine
 spec:
     licenseAccept: false
-    appVersion: 2020.1.1
+    version: 2020.1.1
     adminApi: {}
     adminUI: {}
     collector: {}
