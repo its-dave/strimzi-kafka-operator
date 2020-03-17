@@ -15,24 +15,23 @@ spec:
       kind: EventStreams
       name: eventstreams.eventstreams.ibm.com
       resources:
-      - kind: Route
-        version: route.openshift.io/v1
-      - kind: Service
-        version: v1
+      - kind: Kafka
+        name: kafkas.eventstreams.ibm.com
+        version: v1beta1
       - kind: StatefulSet
         version: v1
       - kind: Deployment
         version: v1
-      - kind: ReplicaSet
-        version: v1
       - kind: Pod
         version: v1
-      - kind: Secret
+      - kind: Route
+        version: route.openshift.io/v1
+      - kind: Service
         version: v1
       - kind: ConfigMap
         version: v1
-      - kind: Kafka
-        version: eventstreams.ibm.com/v1beta1    
+      - kind: Secret
+        version: v1
       specDescriptors:
         - displayName: License accept
           description: I accept the product license after reading it at <TBC>
