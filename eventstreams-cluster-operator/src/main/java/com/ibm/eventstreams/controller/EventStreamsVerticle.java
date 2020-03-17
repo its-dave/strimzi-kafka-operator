@@ -15,6 +15,7 @@ package com.ibm.eventstreams.controller;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.rest.EntityLabelValidation;
 import com.ibm.eventstreams.rest.KubernetesProbe;
+import com.ibm.eventstreams.rest.LicenseValidation;
 import com.ibm.eventstreams.rest.NameValidation;
 import com.ibm.eventstreams.rest.VersionValidation;
 import com.ibm.iam.api.controller.Cp4iServicesBindingResourceOperator;
@@ -144,6 +145,7 @@ public class EventStreamsVerticle extends AbstractVerticle {
         bodyHandler.setHandleFileUploads(false);
         router.route().handler(bodyHandler);
 
+        router.route(HttpMethod.POST, "/admissionwebhook/rejectlicensenotaccepted").handler(LicenseValidation::rejectLicenseIfNotAccepted);
         router.route(HttpMethod.POST, "/admissionwebhook/rejectlongnames").handler(NameValidation::rejectLongNames);
         router.route(HttpMethod.POST, "/admissionwebhook/rejectinvalidversions").handler(VersionValidation::rejectInvalidAppVersions);
         router.route(HttpMethod.POST, "/admissionwebhook/rejectmissingtopiclabels").handler(EntityLabelValidation::rejectInvalidKafkaTopics);

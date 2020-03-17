@@ -3,6 +3,7 @@ kind: EventStreams
 metadata:
     name: sample-three
 spec:
+    licenseAccept: false
     appVersion: 2020.1.1
     adminApi: {}
     adminUI: {}

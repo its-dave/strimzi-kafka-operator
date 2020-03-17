@@ -28,12 +28,13 @@ import java.io.Serializable;
 @JsonDeserialize(using = JsonDeserializer.None.class)
 @Buildable(editableEnabled = false, generateBuilderPackage = false, builderPackage = "io.fabric8.kubernetes.api.builder")
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({"images", "appVersion", "adminApi", "adminUI", "collector", "restProducer", "replicator", "schemaRegistry", "monitoring", "security", "strimziOverrides"})
+@JsonPropertyOrder({"licenseAccept", "images", "appVersion", "adminApi", "adminUI", "collector", "restProducer", "replicator", "schemaRegistry", "monitoring", "security", "strimziOverrides"})
 @EqualsAndHashCode
 public class EventStreamsSpec implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
+    private boolean licenseAccept;
     private String appVersion;
     private AdminApiSpec adminApi;
     private SecurityComponentSpec restProducer;
@@ -45,6 +46,16 @@ public class EventStreamsSpec implements Serializable {
     private ReplicatorSpec replicator;
     private SecuritySpec security;
     private ImagesSpec images;
+
+    @JsonProperty(required = true)
+    @Description("Accept the product license after reading it at <TBC>")
+    public boolean isLicenseAccept() {
+        return licenseAccept;
+    }
+    
+    public void setLicenseAccept(boolean licenseAccept) {
+        this.licenseAccept = licenseAccept;
+    }
 
     @Description("The specification of global image properties")
     public ImagesSpec getImages() {

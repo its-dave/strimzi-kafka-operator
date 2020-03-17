@@ -139,6 +139,19 @@ metadata:
     name: eventstreams-cluster-operator
     uid: $EVENTSTREAMS_UID
 webhooks:
+  - name: eventstreams.ibm.com.rejectlicensenotaccepted
+    rules:
+      - apiGroups: ["eventstreams.ibm.com"]
+        apiVersions: ["v1beta1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["eventstreams"]
+    failurePolicy: Ignore
+    clientConfig:
+      service:
+        namespace: $EVENTSTREAMS_OPERATOR_NAMESPACE
+        name: eventstreams-cluster-operator
+        path: /admissionwebhook/rejectlicensenotaccepted
+      caBundle: "$cabundle"
   - name: eventstreams.ibm.com.rejectlongnames
     rules:
       - apiGroups: ["eventstreams.ibm.com"]

@@ -34,6 +34,11 @@ spec:
       - kind: Kafka
         version: eventstreams.ibm.com/v1beta1    
       specDescriptors:
+        - displayName: License accept
+          description: I accept the product license after reading it at <TBC>
+          path: licenseAccept
+          x-descriptors:
+            - 'urn:alm:descriptor:com.tectonic.ui:booleanSwitch'
         - displayName: Kafka storage
           description: The type of storage used by Kafka brokers
           path: strimziOverrides.kafka.storage.type

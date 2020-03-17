@@ -15,6 +15,7 @@ metadata:
             "adminUI": {},
             "appVersion": "2020.1.1",
             "collector": {},
+            "licenseAccept": false,
             "replicator": {},
             "restProducer": {},
             "schemaRegistry": {
@@ -64,6 +65,7 @@ metadata:
             "adminUI": {},
             "appVersion": "2020.1.1",
             "collector": {},
+            "licenseAccept": false,
             "replicator": {},
             "restProducer": {},
             "schemaRegistry": {
@@ -136,6 +138,7 @@ metadata:
             "adminUI": {},
             "appVersion": "2020.1.1",
             "collector": {},
+            "licenseAccept": false,
             "replicator": {},
             "restProducer": {},
             "schemaRegistry": {
@@ -208,6 +211,7 @@ metadata:
             "adminUI": {},
             "appVersion": "2020.1.1",
             "collector": {},
+            "licenseAccept": false,
             "replicator": {},
             "restProducer": {},
             "schemaRegistry": {
@@ -274,7 +278,7 @@ metadata:
     categories: Streaming & Messaging
     certified: 'false'
     containerImage: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-operator-icp-linux-amd64:latest
-    createdAt: 2020-03-13T11:15:53Z
+    createdAt: 2020-03-17T09:09:06Z
     description: Kafka-based messaging platform for handling real-time data feeds.
     repository: https://github.ibm.com/mhub/qp-eventstreams-operator
     support: IBM
@@ -318,6 +322,11 @@ spec:
         name: ""
         version: eventstreams.ibm.com/v1beta1
       specDescriptors:
+      - description: I accept the product license after reading it at <TBC>
+        displayName: License accept
+        path: licenseAccept
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:booleanSwitch'
       - description: The type of storage used by Kafka brokers
         displayName: Kafka storage
         path: strimziOverrides.kafka.storage.type

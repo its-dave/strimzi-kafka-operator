@@ -45,6 +45,7 @@ import com.ibm.eventstreams.api.status.EventStreamsStatusBuilder;
 import com.ibm.eventstreams.controller.certificates.EventStreamsCertificateException;
 import com.ibm.eventstreams.controller.certificates.EventStreamsCertificateManager;
 import com.ibm.eventstreams.replicator.ReplicatorCredentials;
+import com.ibm.eventstreams.rest.LicenseValidation;
 import com.ibm.eventstreams.rest.NameValidation;
 import com.ibm.eventstreams.rest.VersionValidation;
 import com.ibm.iam.api.controller.Cp4iServicesBindingResourceOperator;
@@ -236,6 +237,11 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             }
             List<Condition> conditions = new ArrayList<>();
 
+            if (LicenseValidation.shouldReject(instance)) {
+                Condition licenseNotAcceptedCondition = buildErrorCondition("LicenseNotAccepted", "Invalid custom resource: EventStreams License not accepted");
+                conditions.add(licenseNotAcceptedCondition);
+                isValidCR = false;
+            }
             if (NameValidation.shouldReject(instance)) {
                 Condition nameTooLongCondition = buildErrorCondition("NameTooLong", "Invalid custom resource: EventStreams metadata name too long. Maximum length is " + NameValidation.MAX_NAME_LENGTH);
                 conditions.add(nameTooLongCondition);
