@@ -29,7 +29,8 @@ import java.util.List;
 public class SecurityComponentSpec extends ComponentSpec {
     List<EndpointSpec> endpoints;
 
-    @Description("Defines the user endpoints that will be created for the user to communicate with the component.")
+    @Description("Defines endpoints that will be created to communicate with the component. If nothing is specified, a " +
+        "default endpoint is created that is externally accessible via a Route with Bearer Authentication. ")
     public List<EndpointSpec> getEndpoints() {
         return endpoints;
     }
