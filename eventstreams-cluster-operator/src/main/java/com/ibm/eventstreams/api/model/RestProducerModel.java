@@ -196,6 +196,15 @@ public class RestProducerModel extends AbstractSecureEndpointModel {
                 .withKey(USER_P12_PASS)
                 .endSecretKeyRef()
                 .endValueFrom()
+                .build(),
+            new EnvVarBuilder()
+                .withName("HMAC_SECRET")
+                .withNewValueFrom()
+                .withNewSecretKeyRef()
+                .withName(MessageAuthenticationModel.getSecretName(getInstanceName()))
+                .withKey(MessageAuthenticationModel.HMAC_SECRET)
+                .endSecretKeyRef()
+                .endValueFrom()
                 .build()
         );
     }

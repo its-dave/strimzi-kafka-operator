@@ -95,6 +95,7 @@ public abstract class AbstractModel {
 
     public static final String APP_NAME = "ibm-es";
     public static final String DEFAULT_PROMETHEUS_PORT = "8081";
+    public static final String DEFAULT_COMPONENT_NAME = "eventstreams";
 
     public static final String CONFIG_MAP_SUFFIX = "-config";
 

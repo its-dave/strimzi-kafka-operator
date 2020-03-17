@@ -32,6 +32,7 @@ import com.ibm.eventstreams.api.model.AdminUIModel;
 import com.ibm.eventstreams.api.model.ClusterSecretsModel;
 import com.ibm.eventstreams.api.model.CollectorModel;
 import com.ibm.eventstreams.api.model.EventStreamsKafkaModel;
+import com.ibm.eventstreams.api.model.MessageAuthenticationModel;
 import com.ibm.eventstreams.api.model.InternalKafkaUserModel;
 import com.ibm.eventstreams.api.model.ReplicatorModel;
 import com.ibm.eventstreams.api.model.ReplicatorUsersModel;
@@ -181,6 +182,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 .compose(state -> state.waitForKafkaStatus())
                 .compose(state -> state.createReplicatorUsers()) //needs to be before createReplicator and createAdminAPI
                 .compose(state -> state.createInternalKafkaUser())
+                .compose(state -> state.createMessageAuthenticationSecret())
                 .compose(state -> state.createRestProducer(this::dateSupplier))
                 .compose(state -> state.createReplicator())
                 .compose(state -> state.createAdminApi(this::dateSupplier))
@@ -582,6 +584,12 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                         }
                         return deploymentOperator.reconcile(namespace, schemaRegistry.getDefaultResourceName(), schemaRegistry.getDeployment(certGenerationID));
                     }).map(this);
+        }
+
+        Future<ReconciliationState> createMessageAuthenticationSecret() {
+            log.debug("Creating message authentication secret");
+            MessageAuthenticationModel messageAuthenticationModel = new MessageAuthenticationModel(instance);
+            return  secretOperator.reconcile(instance.getMetadata().getNamespace(), messageAuthenticationModel.getSecretName(instance.getMetadata().getName()), messageAuthenticationModel.getSecret()).map(v -> this);
         }
 
         Future<ReconciliationState> createAdminUI() {

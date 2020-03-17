@@ -62,6 +62,7 @@ import com.ibm.eventstreams.api.model.AdminUIModel;
 import com.ibm.eventstreams.api.model.CertificateSecretModel;
 import com.ibm.eventstreams.api.model.ClusterSecretsModel;
 import com.ibm.eventstreams.api.model.CollectorModel;
+import com.ibm.eventstreams.api.model.MessageAuthenticationModel;
 import com.ibm.eventstreams.api.model.InternalKafkaUserModel;
 import com.ibm.eventstreams.api.model.ReplicatorModel;
 import com.ibm.eventstreams.api.model.ReplicatorUsersModel;
@@ -1988,6 +1989,7 @@ public class EventStreamsOperatorTest {
 
     private Set<String> getExpectedSecretNames(String clusterName) {
         Set<String> expectedSecrets = new HashSet<>();
+        expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + MessageAuthenticationModel.SECRET_SUFFIX);
         expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + ReplicatorModel.REPLICATOR_SECRET_NAME);
         expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + RestProducerModel.COMPONENT_NAME + "-" + CertificateSecretModel.CERT_SECRET_NAME_POSTFIX);
         expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME + "-" + CertificateSecretModel.CERT_SECRET_NAME_POSTFIX);

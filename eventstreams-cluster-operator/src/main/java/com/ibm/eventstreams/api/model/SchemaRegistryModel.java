@@ -262,7 +262,16 @@ public class SchemaRegistryModel extends AbstractSecureEndpointModel {
             new EnvVarBuilder().withName("SCHEMA_DATA_DIRECTORY").withValue("/var/lib/schemas").build(),
             new EnvVarBuilder().withName("SCHEMA_TEMP_DIRECTORY").withValue("/var/lib/tmp").build(),
             new EnvVarBuilder().withName("ID").withValue("id").build(),
-            new EnvVarBuilder().withName("ESFF_SECURITY_AUTHZ").withValue("false").build()
+            new EnvVarBuilder().withName("ESFF_SECURITY_AUTHZ").withValue("false").build(),
+            new EnvVarBuilder()
+                .withName("HMAC_SECRET")
+                .withNewValueFrom()
+                .withNewSecretKeyRef()
+                .withName(MessageAuthenticationModel.getSecretName(getInstanceName()))
+                .withKey(MessageAuthenticationModel.HMAC_SECRET)
+                .endSecretKeyRef()
+                .endValueFrom()
+                .build()
         );
 
         List<EnvVar> envVars = combineEnvVarListsNoDuplicateKeys(envVarDefaults);
