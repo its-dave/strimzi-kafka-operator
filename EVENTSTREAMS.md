@@ -24,7 +24,7 @@ pip3 install operator-courier
 
 ### Install
 
-To build the project from scratch run: 
+To build the project from scratch run:
 ```
 ARTIFACTORY_PASSWORD=<API_KEY> make eventstreams_build
 ```
@@ -61,7 +61,7 @@ kubectl apply -f examples/evenstreams/eventstreams-ephemeral-single.yaml
 ```
 
 ### Watching multiple namespaces
-To watch multiple namespaces, make sure you create the appropriate role bindings for resource watching permissions for 
+To watch multiple namespaces, make sure you create the appropriate role bindings for resource watching permissions for
 the Cluster Operator and create a Security Context Constraint for EventStreams in each namespace.
 To create the role bindings for Cluster Operator, apply the following to each watched namespace:
 ```
@@ -77,7 +77,7 @@ Apply EventStreams SCC by replacing the namespace to the custom namespace.
 oc apply -f install/cluster-operator/100-SecurityContextConstraints-eventstreams.yaml
 ```
 
-In the operator deployment `install/cluster-operator/150-Deployment-eventstreams-cluster-operator.yaml` set the 
+In the operator deployment `install/cluster-operator/150-Deployment-eventstreams-cluster-operator.yaml` set the
 `eventstreams-operator` container env-var:
 ```
 env:
@@ -94,18 +94,18 @@ Logs for the operator should show that it is watching the custom resources on th
 ## Deploying OLM bundle to your openshift environment
 
 ### Log into your OpenShift cluster
-1. Click your username in the top right corner, and click **Copy Login Command** to access the API token. 
+1. Click your username in the top right corner, and click **Copy Login Command** to access the API token.
 2. Click **Display Token** and copy the command provided to your terminal.
 3. Run the command in your terminal to log in.
 
-### Create a new namespace 
-Use a new namespace, rather than a default one. 
+### Create a new namespace
+Use a new namespace, rather than a default one.
 To create a new namespace: `oc create ns <name_of_your_namespace>`
 
-<!-- TODO Remove with scc -->
-### Update the Security Context Constraints
-You need to have the `strimzi-kafka-operator` directory locally. 
-The repository can be found [here](https://github.ibm.com/mhub/strimzi-kafka-operator)
+### Apply a custom Security Context Constraint (optional)
+You **don't need a custom scc**, as the default `restricted` scc should work fine.
+
+However, if you want to apply a custom SCC, a sample is available to get you started. You need to have the `strimzi-kafka-operator` directory locally.  The repository can be found [here](https://github.ibm.com/mhub/strimzi-kafka-operator)
 
 Make the following updates to `install/cluster-operator/100-SecurityContextConstraints-eventstreams.yaml`:
 1. Replace the namespace you have created (by default, the `myproject` namespace is used)
@@ -113,7 +113,7 @@ Make the following updates to `install/cluster-operator/100-SecurityContextConst
 groups:
     - system:serviceaccounts:<your-namespace>
 ```
-2. Modify `ibm-es-scc` in the metadata section of the file. Update it with a different unique name. 
+2. Modify `ibm-es-scc` in the metadata section of the file. Update it with a different unique name.
 ```
 metadata:
   name: <your-scc>
@@ -128,37 +128,37 @@ oc create secret docker-registry ibm-entitlement-key --docker-server=hyc-qp-stab
 ### Update namespace fields
 In the `install/cluster-operator` directory
 
-Update the namespace fields to the namespace you have previously specified. 
+Update the namespace fields to the namespace you have previously specified.
 Update the following files:
 
 * `020-RoleBinding-strimzi-cluster-operator.yaml`
 * `021-ClusterRoleBinding-strimzi-cluster-operator.yaml`
-* `030-ClusterRoleBinding-strimzi-cluster-operator-kafka-broker-delegation.yaml` 
+* `030-ClusterRoleBinding-strimzi-cluster-operator-kafka-broker-delegation.yaml`
 * `031-RoleBinding-strimzi-cluster-operator-entity-operator-delegation.yaml`
 * `032-RoleBinding-strimzi-cluster-operator-topic-operator-delegation.yaml`
 
-By default, the namespace used in those files is `myproject`. 
+By default, the namespace used in those files is `myproject`.
 An easy way to replace the namespace fields is to do a search and replace of `myproject` in the `install/cluster-operator` directory with the name of your namespace.
 
-You can now install your operator. 
+You can now install your operator.
 Apply all the files within the `install/cluster-operator` directory:
 ```
 oc apply -f install/cluster-operator -n <name_of_your_namespace>
 ```
 
 ### Install Common Services
-Follow the [instructions](https://github.ibm.com/ICP-DevOps/tf_openshift_4_tools/tree/master/fyre/ceph_and_inception_install) to install Common Services in your OpenShift Cluster. 
+Follow the [instructions](https://github.ibm.com/ICP-DevOps/tf_openshift_4_tools/tree/master/fyre/ceph_and_inception_install) to install Common Services in your OpenShift Cluster.
 
 PreReqs:
 * Access to https://fyre.ibm.com
 * A running OpenShift cluster (with 3 or more workers)
 
 Summary of the instructions:
-1. Clone this repository: 
+1. Clone this repository:
 ```
 git clone git@github.ibm.com:ICP-DevOps/tf_openshift_4_tools.git
 ```
-2. Go into `ceph_and_inception_install` directory in the Cloned repository 
+2. Go into `ceph_and_inception_install` directory in the Cloned repository
 ```
 cd tf_openshift_4_tools/fyre/ceph_and_inception_install
 ```
@@ -171,20 +171,20 @@ cp terraform.tfvars.example terraform.tfvars
         * Go to https://fyre.ibm.com
         * Go to *Stacks*
         * Click on the cluster you want the Common Services to be installed on
-        * Click on *Change Stack Password* - one of the small icons once you click on your cluster - an icon of a lock; right below the cluster's name; 
+        * Click on *Change Stack Password* - one of the small icons once you click on your cluster - an icon of a lock; right below the cluster's name;
         * Enter the new password for your cluster - this is the `fyre_root_password`
     * `fyre_inf_vm_nine_dot_ip` - the IP address of your cluster that starts with 9 (IP 1 Column). Click on your cluster to see it.
     * `repo_token` - your Artifactory API token
     * `repo_user` - your Artifactory username (your w3 email)
 5. terraform init
-    * If you do not have terraform installed: 
+    * If you do not have terraform installed:
         * https://www.terraform.io/downloads.html
 6. terraform apply
     * When asked "Do you want to perform these actions?", enter `yes`.
 
-_Note_: If you're going to re-run to a different cluster without doing a new clone be sure to run `rm -rf terraform.tfstate*` when in `tf_openshift_4_tools/fyre/ceph_and_inception_install` before running your next `terraform apply`  
+_Note_: If you're going to re-run to a different cluster without doing a new clone be sure to run `rm -rf terraform.tfstate*` when in `tf_openshift_4_tools/fyre/ceph_and_inception_install` before running your next `terraform apply`
 
-### (PreReq) Expose docker registry 
+### (PreReq) Expose docker registry
 Expose your OpenShift Docker registry by running:
 ```
 oc patch configs.imageregistry.operator.openshift.io/cluster --patch '{"spec":{"defaultRoute":true}}' --type=merge
@@ -216,12 +216,12 @@ keytool -keystore client.truststore.jks -alias CARoot -import -file ca.crt
 ```
 
 ### Use a sample Java application for testing
-Download locally a [sample Java application](https://github.ibm.com/qp-samples/vertx-kafka): 
+Download locally a [sample Java application](https://github.ibm.com/qp-samples/vertx-kafka):
 ```
 git clone git@github.ibm.com:qp-samples/vertx-kafka.git
 ```
 
-1. To build the application, run 
+1. To build the application, run
 ```
 mvn install
 
@@ -230,14 +230,14 @@ mvn install
 ```
 java -jar target/demo-0.0.1-SNAPSHOT-fat.jar
 ```
-go to `localhost:8080` in your browser to see it running  
+go to `localhost:8080` in your browser to see it running
 3. To connect and configure your application to the EventStreams instance, do the following:
     In `src/main/resources/kafka.properties`, update the following properties:
     1. `bootstrap.servers` - the bootstrap server address
     2. `ssl.truststore.location` - a path to your Java KeyStore file
     3. `ssl.truststore.password` - a password you have chosen during generation of the certificate
 
-When the above steps have been completed, you will find an entry for Event Streams under "Operator Hub" in the OpenShift Console. 
+When the above steps have been completed, you will find an entry for Event Streams under "Operator Hub" in the OpenShift Console.
 This can be used to deploy an instance of the operator and create new Event Streams instances.
 
 
@@ -300,12 +300,12 @@ example:
 curl -XGET http://my-es-ibm-es-rest-admin-myproject.192.168.99.100.nip.io/admin/topics -H 'Authorization: Bearer 1234567890123456789012345678901234567890123456789012345678901234'
 ```
 
-## Writing Tests 
-Ensuring that the tests are written correctly, and that the underlying logic is leading to the intended outcome and no unintended side-effects, see below examples for guidance. 
+## Writing Tests
+Ensuring that the tests are written correctly, and that the underlying logic is leading to the intended outcome and no unintended side-effects, see below examples for guidance.
 
-When adding new tests, please try to use: `.onComplete(context.failing(e -> context.verify(() -> { ... }` rather than `setHandler(ar -> { ... }`. It simplies the logic of the test, by not having to use conditional statement to fail the context of the test. 
+When adding new tests, please try to use: `.onComplete(context.failing(e -> context.verify(() -> { ... }` rather than `setHandler(ar -> { ... }`. It simplies the logic of the test, by not having to use conditional statement to fail the context of the test.
 
-For good practice, see the two examples below. The _New_ example is easier to read and maintain, and correctly fails the context when the test fails. Therefore, it is recommended to use the _New_ way of writing tests. 
+For good practice, see the two examples below. The _New_ example is easier to read and maintain, and correctly fails the context when the test fails. Therefore, it is recommended to use the _New_ way of writing tests.
 
 _Old_:
 ```
@@ -338,8 +338,8 @@ public void testEventStreamsNameTooLong(VertxTestContext context) {
     });
 }
 ```
-_New_:  
-``` 
+_New_:
+```
 @Test
 public void testEventStreamsNameTooLongThrows(VertxTestContext context) {
     mockRoutes();
