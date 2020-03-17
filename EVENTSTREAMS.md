@@ -300,6 +300,72 @@ example:
 curl -XGET http://my-es-ibm-es-rest-admin-myproject.192.168.99.100.nip.io/admin/topics -H 'Authorization: Bearer 1234567890123456789012345678901234567890123456789012345678901234'
 ```
 
+## Writing Tests 
+Ensuring that the tests are written correctly, and that the underlying logic is leading to the intended outcome and no unintended side-effects, see below examples for guidance. 
+
+When adding new tests, please try to use: `.onComplete(context.failing(e -> context.verify(() -> { ... }` rather than `setHandler(ar -> { ... }`. It simplies the logic of the test, by not having to use conditional statement to fail the context of the test. 
+
+For good practice, see the two examples below. The _New_ example is easier to read and maintain, and correctly fails the context when the test fails. Therefore, it is recommended to use the _New_ way of writing tests. 
+
+_Old_:
+```
+@Test
+public void testEventStreamsNameTooLong(VertxTestContext context) {
+    mockRoutes();
+    PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
+
+    esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
+
+    // 17 Characters long
+    String clusterName = "long-instancename";
+
+    EventStreams esCluster = createDefaultEventStreams(NAMESPACE, clusterName);
+    ArgumentCaptor<EventStreams> updatedEventStreams = ArgumentCaptor.forClass(EventStreams.class);
+    Checkpoint async = context.checkpoint(1);
+
+    esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, clusterName), esCluster).setHandler(ar -> {
+        if (ar.failed()) {
+            assertThat(ar.cause().toString(), containsString("Invalid Custom Resource: check status"));
+            // check status
+            verify(esResourceOperator).createOrUpdate(updatedEventStreams.capture());
+            assertThat("Status is incorrect, found status : " + updatedEventStreams.getValue().getStatus(),
+                    updatedEventStreams.getValue().getStatus().getConditions().get(0).getMessage().equals("Invalid custom resource: EventStreams metadata name too long. Maximum length is 16"));
+            context.completeNow();
+        } else {
+            context.failNow(ar.cause());
+        }
+        async.flag();
+    });
+}
+```
+_New_:  
+``` 
+@Test
+public void testEventStreamsNameTooLongThrows(VertxTestContext context) {
+    mockRoutes();
+    PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
+
+    esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
+
+    // 17 Characters long
+    String clusterName = "long-instancename";
+
+    EventStreams esCluster = createDefaultEventStreams(NAMESPACE, clusterName);
+    ArgumentCaptor<EventStreams> updatedEventStreams = ArgumentCaptor.forClass(EventStreams.class);
+    Checkpoint async = context.checkpoint();
+
+    esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, clusterName), esCluster)
+            .onComplete(context.failing(e -> context.verify(() -> {
+                assertThat(e.getMessage(), is("Invalid Custom Resource: check status"));
+                // check status
+                verify(esResourceOperator).createOrUpdate(updatedEventStreams.capture());
+                assertThat("Status is incorrect, found status : " + updatedEventStreams.getValue().getStatus(),
+                        updatedEventStreams.getValue().getStatus().getConditions().get(0).getMessage().equals("Invalid custom resource: EventStreams metadata name too long. Maximum length is 16"));
+                async.flag();
+            })));
+}
+```
+
 ## Tools
 ### Spotbugs
 Spotbugs is a java static code analyser. It is run as part of `make all`, or can be run separately using the command `mvn compile spotbugs:spotbugs spotbugs:check`.
