@@ -56,7 +56,7 @@ public class LicenseValidationTest extends RestApiTest {
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is("License not accepted"));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getInteger("code"), is(400));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("message"),
-                        is("The IBM Event Streams must be accepted before installation"));
+                        is("The IBM Event Streams license must be accepted before installation"));
             async.flag();
         })));
     }
