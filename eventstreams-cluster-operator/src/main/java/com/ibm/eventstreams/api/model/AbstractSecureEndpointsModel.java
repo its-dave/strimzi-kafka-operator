@@ -86,7 +86,7 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
      * @param instance The spec of the Event Streams CR
      * @param spec The list of endpoints passed into the component. This needs to be passed in to determine which
      *             component's endpoint (schema registry, admin rest, or rest producer) to configure.
-     * @return
+     * @return list of secure endpoints
      */
     public List<Endpoint> createEndpoints(EventStreams instance, List<EndpointSpec> spec) {
         List<Endpoint> endpoints =  Optional.ofNullable(spec)

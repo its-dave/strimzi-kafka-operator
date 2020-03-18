@@ -67,7 +67,7 @@ public class Endpoint {
      * to talk externally to the endpoint through. Creates a plain/tls externally accessible endpoint based on
      * overall security of CR.
      * @param instance
-     * @return
+     * @return external endpoint
      */
     public static Endpoint createDefaultExternalEndpoint(EventStreams instance) {
         boolean isTls = isTls(instance);
