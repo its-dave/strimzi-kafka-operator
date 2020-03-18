@@ -774,7 +774,7 @@ public class EventStreamsOperatorTest {
         Checkpoint async = context.checkpoint(1);
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
-        EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always"));
+        EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
         reconciliationState.icpClusterData = Collections.emptyMap();
         Listener listener = Listener.externalTls();
         List<Listener> listeners = Collections.singletonList(listener);
@@ -802,7 +802,7 @@ public class EventStreamsOperatorTest {
 
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
-        EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always"));
+        EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
         reconciliationState.icpClusterData = Collections.emptyMap();
 
         Listener internalListener = Listener.internalPlain();
@@ -839,7 +839,7 @@ public class EventStreamsOperatorTest {
         Checkpoint async = context.checkpoint();
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
-        EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always"));
+        EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
         reconciliationState.icpClusterData = Collections.emptyMap();
         List<Listener> listeners = Arrays.asList(Listener.externalTls(), Listener.internalTls());
         ModelUtils.EndpointModel endpointModel = new ModelUtils.EndpointModel(esCluster, NAMESPACE, "endpoint-component", listeners);
@@ -866,7 +866,7 @@ public class EventStreamsOperatorTest {
         Checkpoint async = context.checkpoint();
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
-        EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always"));
+        EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
         reconciliationState.icpClusterData = Collections.emptyMap();
         List<Listener> listeners = Arrays.asList(Listener.externalTls(), Listener.internalTls());
         ModelUtils.EndpointModel endpointModel = new ModelUtils.EndpointModel(esCluster, NAMESPACE, "endpoint-component", listeners);
@@ -894,7 +894,7 @@ public class EventStreamsOperatorTest {
         Checkpoint async = context.checkpoint(1);
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
-        EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always"));
+        EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
         reconciliationState.icpClusterData = Collections.emptyMap();
         List<Listener> listeners = Arrays.asList(Listener.externalTls(), Listener.internalTls());
         ModelUtils.EndpointModel endpointModel = new ModelUtils.EndpointModel(esCluster, NAMESPACE, "endpoint-component", listeners);
@@ -926,7 +926,7 @@ public class EventStreamsOperatorTest {
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
 
-        EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always"));
+        EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
         reconciliationState.icpClusterData = Collections.emptyMap();
 
         Listener internalTlsListener = Listener.internalTls();
@@ -970,7 +970,7 @@ public class EventStreamsOperatorTest {
         EventStreams esCluster = createESClusterWithProvidedBrokerCerts(NAMESPACE, CLUSTER_NAME, secretName, secretKey, secretCertificate);
         Checkpoint async = context.checkpoint(1);
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
-        EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always"));
+        EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
         reconciliationState.icpClusterData = Collections.emptyMap();
         Listener internalTlsListener = Listener.internalTls();
         Listener externalTlsListener = Listener.externalTls();
@@ -1006,7 +1006,7 @@ public class EventStreamsOperatorTest {
         EventStreams esCluster = createESClusterWithProvidedExternalBrokerCerts(NAMESPACE, CLUSTER_NAME, secretName, secretKey, secretCertificate);
         Checkpoint async = context.checkpoint(1);
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
-        EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always"));
+        EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
         reconciliationState.icpClusterData = Collections.emptyMap();
         Listener internalTlsListener = Listener.internalTls();
         Listener externalTlsListener = Listener.externalTls();
@@ -1037,7 +1037,7 @@ public class EventStreamsOperatorTest {
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
         Checkpoint async = context.checkpoint(2);
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
-        EventStreamsOperator.ReconciliationState state = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always"));
+        EventStreamsOperator.ReconciliationState state = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
         state.icpClusterData = Collections.emptyMap();
         Listener listener = Listener.externalTls();
         Listener.setEnabledListeners(Collections.singletonList(listener));
@@ -1084,7 +1084,7 @@ public class EventStreamsOperatorTest {
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
         Checkpoint async = context.checkpoint(3);
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
-        EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always"));
+        EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
         reconciliationState.icpClusterData = Collections.emptyMap();
 
         CompositeFuture.join(reconciliationState.createRestProducer(Date::new),
@@ -1121,7 +1121,7 @@ public class EventStreamsOperatorTest {
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
         Checkpoint async = context.checkpoint(1);
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
-        EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always"));
+        EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
         reconciliationState.icpClusterData = Collections.emptyMap();
         Listener internalTlsListener = Listener.internalTls();
         Listener externalTlsListener = Listener.externalTls();
@@ -1142,7 +1142,7 @@ public class EventStreamsOperatorTest {
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
         Checkpoint async = context.checkpoint(1);
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
-        EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always"));
+        EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
         reconciliationState.icpClusterData = Collections.emptyMap();
         Listener internalTlsListener = Listener.internalTls();
         List<Listener> listeners = Collections.singletonList(internalTlsListener);
@@ -1164,7 +1164,7 @@ public class EventStreamsOperatorTest {
 
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
-        EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always"));
+        EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
         reconciliationState.icpClusterData = Collections.emptyMap();
 
         Listener internalTlsListener = Listener.internalTls();

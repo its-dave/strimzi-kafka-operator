@@ -33,6 +33,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -210,6 +211,17 @@ public class CollectorModelTest {
 
         assertThat(new CollectorModel(eventStreams, imageConfig).getServiceAccount()
                         .getImagePullSecrets(), contains(imagePullSecretOverride));
+    }
+
+    @Test
+    public void testOperatorImagePullSecretOverride() {
+        LocalObjectReference imagePullSecret = new LocalObjectReferenceBuilder()
+                .withName("operator-image-pull-secret")
+                .build();
+        when(imageConfig.getPullSecrets()).thenReturn(Collections.singletonList(imagePullSecret));
+
+        assertThat(createDefaultCollectorModel().getServiceAccount().getImagePullSecrets(),
+                   contains(imagePullSecret));
     }
 
     @Test

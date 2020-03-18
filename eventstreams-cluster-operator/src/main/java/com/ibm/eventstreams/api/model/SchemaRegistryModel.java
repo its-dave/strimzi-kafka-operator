@@ -14,7 +14,6 @@ package com.ibm.eventstreams.api.model;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -117,7 +116,7 @@ public class SchemaRegistryModel extends AbstractSecureEndpointModel {
             setGlobalPullSecrets(Optional.ofNullable(instance.getSpec())
                         .map(EventStreamsSpec::getImages)
                         .map(ImagesSpec::getPullSecrets)
-                        .orElseGet(Collections::emptyList));
+                        .orElseGet(imageConfig::getPullSecrets));
             setEncryption(Optional.ofNullable(instance.getSpec())
                         .map(EventStreamsSpec::getSecurity)
                         .map(SecuritySpec::getEncryption)

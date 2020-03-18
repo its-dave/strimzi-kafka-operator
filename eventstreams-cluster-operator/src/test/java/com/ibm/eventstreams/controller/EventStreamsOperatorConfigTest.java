@@ -13,15 +13,21 @@
 
 package com.ibm.eventstreams.controller;
 
+import io.strimzi.operator.cluster.ClusterOperatorConfig;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.hasProperty;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
 public class EventStreamsOperatorConfigTest {
@@ -75,5 +81,26 @@ public class EventStreamsOperatorConfigTest {
         assertThat(imageConfig.getRestProducerImage(), is(Optional.empty()));
         assertThat(imageConfig.getSchemaRegistryAvroImage(), is(Optional.empty()));
         assertThat(imageConfig.getSchemaRegistryImage(), is(Optional.empty()));
+    }
+
+    @Test
+    public void testEmptyPullSecretsIfNotProvided() {
+        EventStreamsOperatorConfig eventStreamsOperatorConfig = EventStreamsOperatorConfig.fromMap(Collections.emptyMap());
+        EventStreamsOperatorConfig.ImageLookup imageConfig = eventStreamsOperatorConfig.getImages();
+
+        assertThat(imageConfig.getPullSecrets(), is(empty()));
+    }
+
+    @Test
+    public void testPullSecretsIfProvided() {
+        Map<String, String> envMap = new HashMap<>();
+        envMap.put(ClusterOperatorConfig.STRIMZI_IMAGE_PULL_SECRETS, "first,second,third");
+        EventStreamsOperatorConfig eventStreamsOperatorConfig = EventStreamsOperatorConfig.fromMap(envMap);
+        EventStreamsOperatorConfig.ImageLookup imageConfig = eventStreamsOperatorConfig.getImages();
+
+        assertThat(imageConfig.getPullSecrets(), hasSize(3));
+        assertThat(imageConfig.getPullSecrets(), contains(hasProperty("name", is("first")),
+                                                          hasProperty("name", is("second")),
+                                                          hasProperty("name", is("third"))));
     }
 }

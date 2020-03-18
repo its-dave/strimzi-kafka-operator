@@ -134,8 +134,10 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
                             .map(EventStreamsSpec::getSecurity)
                             .map(SecuritySpec::getEncryption)
                             .orElse(DEFAULT_ENCRYPTION));
-        setGlobalPullSecrets(Optional.ofNullable(instance.getSpec()).map(EventStreamsSpec::getImages).map(
-            ImagesSpec::getPullSecrets).orElseGet(ArrayList::new));
+        setGlobalPullSecrets(Optional.ofNullable(instance.getSpec())
+                                .map(EventStreamsSpec::getImages)
+                                .map(ImagesSpec::getPullSecrets)
+                                .orElseGet(imageConfig::getPullSecrets));
         setImage(
             firstDefinedImage(
                     DEFAULT_IBMCOM_IMAGE,

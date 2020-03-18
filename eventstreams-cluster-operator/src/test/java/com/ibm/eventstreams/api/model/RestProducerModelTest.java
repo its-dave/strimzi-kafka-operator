@@ -44,6 +44,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -190,6 +191,17 @@ public class RestProducerModelTest {
                 .getSpec().getContainers();
 
         ModelUtils.assertCorrectImageOverridesOnContainers(containers, expectedImages);
+    }
+
+    @Test
+    public void testOperatorImagePullSecretOverride() {
+        LocalObjectReference imagePullSecret = new LocalObjectReferenceBuilder()
+                .withName("operator-image-pull-secret")
+                .build();
+        when(imageConfig.getPullSecrets()).thenReturn(Collections.singletonList(imagePullSecret));
+
+        assertThat(createDefaultRestProducerModel().getServiceAccount().getImagePullSecrets(),
+                   contains(imagePullSecret));
     }
 
     @Test

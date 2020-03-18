@@ -12,11 +12,17 @@
  */
 package com.ibm.eventstreams.controller;
 
+import io.fabric8.kubernetes.api.model.LocalObjectReference;
+import io.fabric8.kubernetes.api.model.LocalObjectReferenceBuilder;
+import io.strimzi.operator.cluster.ClusterOperatorConfig;
 import io.strimzi.operator.common.InvalidConfigurationException;
 import io.strimzi.operator.common.operator.resource.AbstractWatchableResourceOperator;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -68,11 +74,27 @@ public class EventStreamsOperatorConfig {
         return new EventStreamsOperatorConfig(namespaces, kafkaStatusTimeout, reconciliationInterval, images);
     }
 
+    private static List<LocalObjectReference> parseImagePullSecrets(String imagePullSecretList) {
+        List<LocalObjectReference> imagePullSecrets = new ArrayList<>();
+
+        if (imagePullSecretList != null && !imagePullSecretList.isEmpty()) {
+            if (imagePullSecretList.matches("(\\s*[a-z0-9.-]+\\s*,)*\\s*[a-z0-9.-]+\\s*")) {
+                imagePullSecrets = Arrays.stream(imagePullSecretList.trim().split("\\s*,+\\s*")).map(secret -> new LocalObjectReferenceBuilder().withName(secret).build()).collect(Collectors.toList());
+            } else {
+                throw new InvalidConfigurationException(ClusterOperatorConfig.STRIMZI_IMAGE_PULL_SECRETS
+                        + " is not a valid list of secret names");
+            }
+        }
+
+        return imagePullSecrets;
+    }
+
     private static ImageLookup parseImageList(Map<String, String> map) {
         Map<String, String> images = map.entrySet()
             .stream().filter(entry -> entry.getKey().matches("EVENTSTREAMS.*IMAGE"))
             .collect(Collectors.toMap(entry -> entry.getKey(), entry -> entry.getValue()));
-        return new ImageLookup(images, map.get(EVENTSTREAMS_IMAGE_PULL_POLICY));
+        List<LocalObjectReference> imagePullSecrets = parseImagePullSecrets(map.get(ClusterOperatorConfig.STRIMZI_IMAGE_PULL_SECRETS));
+        return new ImageLookup(images, map.get(EVENTSTREAMS_IMAGE_PULL_POLICY), imagePullSecrets);
     }
 
     private static Set<String> parseNamespaceList(String namespaces) {
@@ -119,15 +141,21 @@ public class EventStreamsOperatorConfig {
 
     public static class ImageLookup {
         private final String pullPolicy;
+        private final List<LocalObjectReference> pullSecrets;
         private final Map<String, String> images;
 
-        protected ImageLookup(Map<String, String> images, String pullPolicy) {
+        protected ImageLookup(Map<String, String> images, String pullPolicy, List<LocalObjectReference> pullSecrets) {
             this.images = images;
             this.pullPolicy = pullPolicy;
+            this.pullSecrets = pullSecrets;
         }
 
         public Optional<String> getPullPolicy() {
             return Optional.ofNullable(pullPolicy);
+        }
+
+        public List<LocalObjectReference> getPullSecrets() {
+            return pullSecrets;
         }
 
         public Optional<String> getAdminApiImage() {

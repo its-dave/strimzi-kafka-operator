@@ -56,6 +56,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -351,6 +352,17 @@ public class AdminApiModelTest {
 
         assertThat(new AdminApiModel(eventStreams, imageConfig, listeners, mockIcpClusterDataMap).getServiceAccount()
                         .getImagePullSecrets(), contains(imagePullSecretOverride));
+    }
+
+    @Test
+    public void testOperatorImagePullSecretOverride() {
+        LocalObjectReference imagePullSecret = new LocalObjectReferenceBuilder()
+                .withName("operator-image-pull-secret")
+                .build();
+        when(imageConfig.getPullSecrets()).thenReturn(Collections.singletonList(imagePullSecret));
+
+        assertThat(createDefaultAdminApiModel().getServiceAccount().getImagePullSecrets(),
+                   contains(imagePullSecret));
     }
 
     @Test

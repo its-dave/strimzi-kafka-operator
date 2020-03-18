@@ -317,6 +317,17 @@ public class SchemaRegistryModelTest {
     }
 
     @Test
+    public void testOperatorImagePullSecretOverride() {
+        LocalObjectReference imagePullSecret = new LocalObjectReferenceBuilder()
+                .withName("operator-image-pull-secret")
+                .build();
+        when(imageConfig.getPullSecrets()).thenReturn(Collections.singletonList(imagePullSecret));
+
+        assertThat(createDefaultSchemaRegistryModel().getServiceAccount().getImagePullSecrets(),
+                   contains(imagePullSecret));
+    }
+
+    @Test
     public void testPodServiceAccountContainsMergeOfPullSecrets() {
 
         EventStreamsBuilder defaultEs = createDefaultEventStreams();
