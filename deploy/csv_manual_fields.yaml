@@ -5,6 +5,34 @@ metadata:
     description: Kafka-based messaging platform for handling real-time data feeds.
     support: IBM
     containerImage: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-operator-icp-linux-amd64:latest
+  alm-examples-metadata:
+    quickstart:
+      name: quickstart
+      resources:
+        vpc: '1'
+        cpu: '4'
+        memory: '4 GB'
+    sample-three:
+      name: 3 brokers
+      description: Secure production cluster with three Kafka brokers
+      resources:
+        vpc: '13'
+        cpu: '16'
+        memory: '29 GB'
+    sample-six:
+      name: 6 brokers
+      description: Secure production cluster with six Kafka brokers
+      resources:
+        vpc: '25'
+        cpu: '28'
+        memory: '53 GB'
+    sample-nine:
+      name: 9 brokers
+      description: Secure production cluster with nine Kafka brokers
+      resources:
+        vpc: '37'
+        cpu: '40'
+        memory: '78 GB'
   version: 2020.1.1
 spec:
   customresourcedefinitions:
