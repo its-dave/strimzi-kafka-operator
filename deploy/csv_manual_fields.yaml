@@ -50,6 +50,8 @@ spec:
         version: v1
       - kind: Deployment
         version: v1
+      - kind: ReplicaSet
+        version: v1
       - kind: Pod
         version: v1
       - kind: Route
