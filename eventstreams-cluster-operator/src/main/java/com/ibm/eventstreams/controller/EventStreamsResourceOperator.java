@@ -20,7 +20,6 @@ import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
 import io.strimzi.api.kafka.model.Kafka;
-import io.strimzi.api.kafka.model.status.Condition;
 import io.strimzi.api.kafka.model.status.KafkaStatus;
 import io.strimzi.operator.common.operator.resource.AbstractWatchableResourceOperator;
 import io.vertx.core.Future;
@@ -28,6 +27,7 @@ import io.vertx.core.Vertx;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.Collections;
 import java.util.Optional;
 
 public class EventStreamsResourceOperator extends
@@ -70,25 +70,14 @@ public class EventStreamsResourceOperator extends
      * @param name The name of the Kafka instance.
      * @return Whether the Kafka Custom Resource is ready.
      */
-    public boolean isKafkaCRReady(String namespace, String name) {
-        Optional<Condition> statusCondition = io.strimzi.api.kafka.Crds.kafkaOperation(client)
-                .inNamespace(namespace)
-                .list()
-                .getItems()
-                .stream()
-                .filter(k -> k.getMetadata().getName().equals(name))
-                .findFirst()
+    boolean isKafkaCRReady(String namespace, String name) {
+        return getKafkaInstance(namespace, name)
                 .map(Kafka::getStatus)
                 .map(KafkaStatus::getConditions)
-                .map(condition -> condition.get(0));
-
-        if (statusCondition.isPresent()) {
-            if ("Ready".equals(statusCondition.get().getType()) && "True".equals(statusCondition.get().getStatus())) {
-                return true;
-            }
-        }
-
-        return false;
+                .orElse(Collections.emptyList())
+                .stream()
+                .anyMatch(condition -> "Ready".equals(condition.getType()) &&
+                                       "True".equals(condition.getStatus()));
     }
 
     /**
