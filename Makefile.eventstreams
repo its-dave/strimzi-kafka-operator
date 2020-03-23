@@ -1,6 +1,8 @@
 # Makefile.eventstreams contains the tasks for the Event Streams build pipeline
 EVENTSTREAMS_PROJECT_NAME=eventstreams-cluster-operator
 
+KAFKA_VERSION ?= 2.12-2.4.0
+KAFKA_TAG ?= 2020-02-05-17.15.32-78395e6
 JAVA_IMAGE_TAG_UBI7_OPENJDK8_JRE ?= latest
 B_REGISTRY ?= hyc-qp-stable-docker-local.artifactory.swg-devops.com
 B_PLATFORM ?= icp
@@ -13,16 +15,45 @@ export DOCKER_BUILD_ARGS := ${DOCKER_BUILD_ARGS}\
     --build-arg B_OS=${B_OS} --build-arg B_ARCH=${B_ARCH}
 export ALTERNATE_BASE ?= ubi
 
-eventstreams_build:
+check_artifactory_prereq:
 	@[ "${ARTIFACTORY_PASSWORD}" ] || ( echo "ARTIFACTORY_PASSWORD is not set - Please set to Artifactory API Key"; exit 1 )
-	./eventstreams-local-build.sh
 
-eventstreams_operator_build:
+get_eventstreams_kafkas:
+	# Pull kafka version from artifactory
+	curl -v -H "X-JFrog-Art-Api:${ARTIFACTORY_PASSWORD}" -o /tmp/kafka_${KAFKA_VERSION}.tgz "https://hyc-qp-stable-docker-local.artifactory.swg-devops.com:443/artifactory/hyc-qp-artifacts-generic-local/kafka-vnext/${KAFKA_TAG}/kafka_${KAFKA_VERSION}.tgz"
+
+set_eventstreams_kafka_versions:
+	# Create a backup of kafka-versions.yaml
+	cp eventstreams-kafka-versions.yaml kafka-versions.yaml
+
+
+get_stunnel:
+	cd docker-images/kafka ; \
+	curl -u "${ARTIFACTORY_USERNAME}:${ARTIFACTORY_PASSWORD}" -o "stunnel-5.56.sh" "https://eu.artifactory.swg-devops.com/artifactory/hyc-qp-artifacts-generic-local/scripts/stunnel/stunnel-5.56.sh" ; \
+	chmod +x stunnel-5.56.sh ; \
+	./stunnel-5.56.sh
+
+eventstreams_build: check_artifactory_prereq get_eventstreams_kafkas set_eventstreams_kafka_versions get_stunnel
+	MVN_ARGS=-DskipTests $(MAKE) docker_build
+	$(MAKE) cleanup_eventstreams_unwanted_files
+
+eventstreams_operator_build: check_artifactory_prereq set_eventstreams_kafka_versions
 	$(MAKE) -C ${EVENTSTREAMS_PROJECT_NAME} docker_build
 	$(MAKE) -C eventstreams-helm-charts docker_build
 	$(MAKE) -C deploy docker_build
 	DOCKER_BUILD_ARGS="${DOCKER_BUILD_ARGS} -f ${ALTERNATE_BASE}/Dockerfile" $(MAKE) -C docker-images/operator docker_build
+	$(MAKE) cleanup_eventstreams_unwanted_files
+
 
 eventstreams_java_build:
 	$(MAKE) -C ${EVENTSTREAMS_PROJECT_NAME} java_build
 
+cleanup_eventstreams_unwanted_files: 
+	# cleanup unwanted files
+	git checkout -- cluster-operator/src/main/resources
+	git checkout -- helm-charts/strimzi-kafka-operator/templates/_kafka_image_map.tpl
+	git checkout -- kafka-versions.yaml
+
+
+
+.PHONY: check_artifactory_prereq get_eventstreams_kafkas set_eventstreams_kafka_versions get_stunnel eventstreams_build eventstreams_operator_build eventstreams_java_build cleanup_eventstreams_unwanted_files

@@ -25,7 +25,7 @@ helm init -c
 
 docker login -u="${ARTIFACTORY_USERNAME}" -p="${ARTIFACTORY_PASSWORD}" "${destination_registry}"
 
-./eventstreams-local-build.sh
+make eventstreams_build
 
 echo "Transfer Strimzi artifact to Artifactory..."
 mvn deploy -s ./eventstreams-settings.xml -DskipTests

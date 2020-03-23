@@ -21,9 +21,6 @@ helm_lint:
 	helm lint --debug $(CHART_RENDERED_TEMPLATES_TMP)
 
 helm_merge: helm_clean
-	# edit script to point to eventstreams-kafka-versions
-	$(SED) -E -i 's+(VERSIONS_FILE=")(.*)(kafka-versions.yaml")+\1\2eventstreams-\3+g' ../tools/kafka-versions-tools.sh
-
 	mkdir -p $(CHART_RENDERED_TEMPLATES_TMP)
 
 	# copy over charts
@@ -40,9 +37,6 @@ helm_merge: helm_clean
 
 	# run kafka-version-tpl.sh in strimzi helm charts repo to generate kafka versions template
 	$(STRIMZI_CHART_PATH)/../kafka-version-tpl.sh $(CHART_RENDERED_TEMPLATES_TMP)/templates/_kafka_image_map.tpl
-
-	# clean up edit to kafka-versions-tools.sh script
-	$(SED) -E -i 's+(VERSIONS_FILE=")(.*)(eventstreams-)(kafka-versions.yaml")+\1\2\4+g' ../tools/kafka-versions-tools.sh
 
 	# delete strimzi deployment and minor edits to files
 	$(FIND) $(CHART_RENDERED_TEMPLATES_TMP)/templates -type f -name '050-Deployment-strimzi-cluster-operator.yaml' -exec rm {} \;

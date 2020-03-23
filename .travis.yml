@@ -74,7 +74,10 @@ matrix:
         - export PATH=$PATH:/tmp/bin
 
       script:
+        # must set the kafka versions for chart generation to happen correctly, cleanup files after generation
+        - make set_eventstreams_kafka_versions
         - make -C eventstreams-helm-charts helm_install
+        - make cleanup_eventstreams_unwanted_files
         - |
           #!/bin/bash
           echo "Checking generated files in install directory"
