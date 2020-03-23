@@ -42,7 +42,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 @ExtendWith(VertxExtension.class)
-public class EventStreamsResourceOperatorTest {
+public class KafkaResourceOperatorTest {
 
     private static final String NAMESPACE = "test-namespace";
     private static final String CLUSTER_NAME = "my-es";
@@ -67,7 +67,7 @@ public class EventStreamsResourceOperatorTest {
     public void testNoStatusIsNotReady() {
         KubernetesClient mockedKafkaClient = prepareKubeClient(null);
 
-        EventStreamsResourceOperator operator = new EventStreamsResourceOperator(vertx, mockedKafkaClient);
+        KafkaResourceOperator operator = new KafkaResourceOperator(vertx, mockedKafkaClient);
         assertThat(operator.isKafkaCRReady(NAMESPACE, CLUSTER_NAME), is(false));
 
         mockedKafkaClient.close();
@@ -77,7 +77,7 @@ public class EventStreamsResourceOperatorTest {
     public void testNoStatusConditionsIsNotReady() {
         KubernetesClient mockedKafkaClient = prepareKubeClient(new KafkaStatusBuilder().build());
 
-        EventStreamsResourceOperator operator = new EventStreamsResourceOperator(vertx, mockedKafkaClient);
+        KafkaResourceOperator operator = new KafkaResourceOperator(vertx, mockedKafkaClient);
         assertThat(operator.isKafkaCRReady(NAMESPACE, CLUSTER_NAME), is(false));
 
         mockedKafkaClient.close();
@@ -87,7 +87,7 @@ public class EventStreamsResourceOperatorTest {
     public void testEmptyConditionsIsNotReady() {
         KubernetesClient mockedKafkaClient = prepareKubeClient(new KafkaStatusBuilder().withConditions(getEmptyConditions()).build());
 
-        EventStreamsResourceOperator operator = new EventStreamsResourceOperator(vertx, mockedKafkaClient);
+        KafkaResourceOperator operator = new KafkaResourceOperator(vertx, mockedKafkaClient);
         assertThat(operator.isKafkaCRReady(NAMESPACE, CLUSTER_NAME), is(false));
 
         mockedKafkaClient.close();
@@ -97,7 +97,7 @@ public class EventStreamsResourceOperatorTest {
     public void testInitialConditionsIsNotReady() {
         KubernetesClient mockedKafkaClient = prepareKubeClient(new KafkaStatusBuilder().withConditions(getInitialConditions()).build());
 
-        EventStreamsResourceOperator operator = new EventStreamsResourceOperator(vertx, mockedKafkaClient);
+        KafkaResourceOperator operator = new KafkaResourceOperator(vertx, mockedKafkaClient);
         assertThat(operator.isKafkaCRReady(NAMESPACE, CLUSTER_NAME), is(false));
 
         mockedKafkaClient.close();
@@ -107,7 +107,7 @@ public class EventStreamsResourceOperatorTest {
     public void testInitialConditionsWithWarningsIsNotReady() {
         KubernetesClient mockedKafkaClient = prepareKubeClient(new KafkaStatusBuilder().withConditions(getInitialConditionsWithWarnings()).build());
 
-        EventStreamsResourceOperator operator = new EventStreamsResourceOperator(vertx, mockedKafkaClient);
+        KafkaResourceOperator operator = new KafkaResourceOperator(vertx, mockedKafkaClient);
         assertThat(operator.isKafkaCRReady(NAMESPACE, CLUSTER_NAME), is(false));
 
         mockedKafkaClient.close();
@@ -117,7 +117,7 @@ public class EventStreamsResourceOperatorTest {
     public void testNotReadyIsNotReady() {
         KubernetesClient mockedKafkaClient = prepareKubeClient(new KafkaStatusBuilder().withConditions(getNotReadyCondition()).build());
 
-        EventStreamsResourceOperator operator = new EventStreamsResourceOperator(vertx, mockedKafkaClient);
+        KafkaResourceOperator operator = new KafkaResourceOperator(vertx, mockedKafkaClient);
         assertThat(operator.isKafkaCRReady(NAMESPACE, CLUSTER_NAME), is(false));
 
         mockedKafkaClient.close();
@@ -127,7 +127,7 @@ public class EventStreamsResourceOperatorTest {
     public void testNotReadyWithWarningsIsNotReady() {
         KubernetesClient mockedKafkaClient = prepareKubeClient(new KafkaStatusBuilder().withConditions(getNotReadyConditionsWithWarnings()).build());
 
-        EventStreamsResourceOperator operator = new EventStreamsResourceOperator(vertx, mockedKafkaClient);
+        KafkaResourceOperator operator = new KafkaResourceOperator(vertx, mockedKafkaClient);
         assertThat(operator.isKafkaCRReady(NAMESPACE, CLUSTER_NAME), is(false));
 
         mockedKafkaClient.close();
@@ -137,7 +137,7 @@ public class EventStreamsResourceOperatorTest {
     public void testReadyWithWarningsIsReady() {
         KubernetesClient mockedKafkaClient = prepareKubeClient(new KafkaStatusBuilder().withConditions(getReadyConditionsWithWarnings()).build());
 
-        EventStreamsResourceOperator operator = new EventStreamsResourceOperator(vertx, mockedKafkaClient);
+        KafkaResourceOperator operator = new KafkaResourceOperator(vertx, mockedKafkaClient);
         assertThat(operator.isKafkaCRReady(NAMESPACE, CLUSTER_NAME), is(true));
 
         mockedKafkaClient.close();
@@ -147,7 +147,7 @@ public class EventStreamsResourceOperatorTest {
     public void testReadyIsReady() {
         KubernetesClient mockedKafkaClient = prepareKubeClient(new KafkaStatusBuilder().withConditions(getReadyCondition()).build());
 
-        EventStreamsResourceOperator operator = new EventStreamsResourceOperator(vertx, mockedKafkaClient);
+        KafkaResourceOperator operator = new KafkaResourceOperator(vertx, mockedKafkaClient);
         assertThat(operator.isKafkaCRReady(NAMESPACE, CLUSTER_NAME), is(true));
 
         mockedKafkaClient.close();
