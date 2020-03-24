@@ -205,7 +205,7 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
                     .build());
         }
 
-        if (isReplicatorInternalClientAuthForConnectEnabled(instance)) {
+        if (isReplicatorInternalClientAuthForConnectEnabled(instance) && ReplicatorModel.isReplicatorEnabled(instance)) {
             volumes.add(new VolumeBuilder()
                     .withNewName(ReplicatorUsersModel.CONNECT_KAFKA_USER_NAME)
                     .withNewSecret()
@@ -318,7 +318,7 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
                     .withNewReadOnly(true)
                 .endVolumeMount();
         }
-        if (isReplicatorInternalClientAuthForConnectEnabled(instance)) {
+        if (isReplicatorInternalClientAuthForConnectEnabled(instance) && ReplicatorModel.isReplicatorEnabled(instance)) {
             containerBuilder.addNewVolumeMount()
                 .withNewName(ReplicatorUsersModel.CONNECT_KAFKA_USER_NAME)
                 .withMountPath(ReplicatorModel.CONNECT_SECRET_MOUNT_PATH)

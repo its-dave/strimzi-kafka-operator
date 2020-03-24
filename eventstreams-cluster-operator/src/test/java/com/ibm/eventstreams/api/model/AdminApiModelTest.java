@@ -106,6 +106,18 @@ public class AdminApiModelTest {
                 .endSpec();
     }
 
+    private EventStreamsBuilder createEventStreamsWithReplicator(EventStreamsSpec eventStreamsSpec) {
+        return ModelUtils.createEventStreams(instanceName, eventStreamsSpec)
+            .editSpec()
+            .withNewAdminApi()
+            .withReplicas(defaultReplicas)
+            .endAdminApi()
+            .withNewReplicator()
+                .withReplicas(defaultReplicas)
+            .endReplicator()
+            .endSpec();
+    }
+
     private AdminApiModel createDefaultAdminApiModel() {
         EventStreams eventStreamsResource = createDefaultEventStreams().build();
         return new AdminApiModel(eventStreamsResource, imageConfig, listeners, mockIcpClusterDataMap);
@@ -762,33 +774,31 @@ public class AdminApiModelTest {
     }
 
     @Test
-    public void testVolumeMountsWhenClientAuthEnabled() {
-        EventStreamsSpec spec = new EventStreamsSpecBuilder()
-                .withStrimziOverrides(new KafkaSpecBuilder()
-                        .withNewKafka()
-                        .withReplicas(1)
-                        .withNewListeners()
-                        .withNewKafkaListenerExternalRoute()
-                        .withNewKafkaListenerAuthenticationTlsAuth()
-                        .endKafkaListenerAuthenticationTlsAuth()
-                        .endKafkaListenerExternalRoute()
-                        .withNewTls()
-                        .withNewKafkaListenerAuthenticationTlsAuth()
-                        .endKafkaListenerAuthenticationTlsAuth()
-                        .endTls()
-                        .endListeners()
-                        .withNewTemplate()
-                        .withNewPod()
-                        .withNewMetadata()
-                        .endMetadata()
-                        .endPod()
-                        .endTemplate()
-                        .endKafka()
-                        .build()
-                )
-                .build();
+    public void testVolumeMountsWhenClientAuthEnabledWithoutReplication() {
+        EventStreamsSpec spec = createStrimziOverrides();
 
         EventStreams eventStreams = createEventStreams(spec).build();
+        AdminApiModel adminApiModel = new AdminApiModel(eventStreams, imageConfig, null, mockIcpClusterDataMap);
+
+        List<VolumeMount> volumeMounts = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getVolumeMounts();
+
+        assertThat(volumeMounts.size(), is(8));
+
+        VolumeMount sourceConnectorVolume = new VolumeMountBuilder()
+                .withMountPath(ReplicatorModel.SOURCE_CONNECTOR_SECRET_MOUNT_PATH)
+                .withReadOnly(true)
+                .withName(ReplicatorUsersModel.SOURCE_CONNECTOR_KAFKA_USER_NAME)
+                .build();
+
+        assertThat(volumeMounts, Matchers.hasItem(sourceConnectorVolume));
+
+    }
+
+    @Test
+    public void testVolumeMountsWhenClientAuthEnabledWithReplication() {
+        EventStreamsSpec spec = createStrimziOverrides();
+
+        EventStreams eventStreams = createEventStreamsWithReplicator(spec).build();
         AdminApiModel adminApiModel = new AdminApiModel(eventStreams, imageConfig, null, mockIcpClusterDataMap);
 
         List<VolumeMount> volumeMounts = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getVolumeMounts();
@@ -796,10 +806,10 @@ public class AdminApiModelTest {
         assertThat(volumeMounts.size(), is(10));
 
         VolumeMount sourceConnectorVolume = new VolumeMountBuilder()
-                .withMountPath(ReplicatorModel.SOURCE_CONNECTOR_SECRET_MOUNT_PATH)
-                .withReadOnly(true)
-                .withName(ReplicatorUsersModel.SOURCE_CONNECTOR_KAFKA_USER_NAME)
-                .build();
+            .withMountPath(ReplicatorModel.SOURCE_CONNECTOR_SECRET_MOUNT_PATH)
+            .withReadOnly(true)
+            .withName(ReplicatorUsersModel.SOURCE_CONNECTOR_KAFKA_USER_NAME)
+            .build();
 
         VolumeMount connectVolume = new VolumeMountBuilder()
                 .withMountPath(ReplicatorModel.CONNECT_SECRET_MOUNT_PATH)
@@ -818,5 +828,32 @@ public class AdminApiModelTest {
         assertThat(volumeMounts, Matchers.hasItem(connectVolume));
         assertThat(volumeMounts, Matchers.hasItem(targetConnectorVolume));
 
+    }
+
+    private EventStreamsSpec createStrimziOverrides() {
+        return new EventStreamsSpecBuilder()
+            .withStrimziOverrides(new KafkaSpecBuilder()
+                .withNewKafka()
+                .withReplicas(1)
+                .withNewListeners()
+                .withNewKafkaListenerExternalRoute()
+                .withNewKafkaListenerAuthenticationTlsAuth()
+                .endKafkaListenerAuthenticationTlsAuth()
+                .endKafkaListenerExternalRoute()
+                .withNewTls()
+                .withNewKafkaListenerAuthenticationTlsAuth()
+                .endKafkaListenerAuthenticationTlsAuth()
+                .endTls()
+                .endListeners()
+                .withNewTemplate()
+                .withNewPod()
+                .withNewMetadata()
+                .endMetadata()
+                .endPod()
+                .endTemplate()
+                .endKafka()
+                .build()
+            )
+            .build();
     }
 }

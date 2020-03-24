@@ -816,7 +816,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                     .map(KafkaListenerTls::getAuth);
 
             //need to null check on getTls first
-            if (internalClientAuth.isPresent()) {
+            if (internalClientAuth.isPresent() && ReplicatorModel.isReplicatorEnabled(instance)) {
 
                 // get the secret created by the KafkaUser
                 secretOperator.getAsync(namespace, connectKafkaUserName).setHandler(getRes -> {
