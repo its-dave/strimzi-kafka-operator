@@ -50,44 +50,30 @@ public class EventStreamsStatus implements Serializable {
     private List<Condition> conditions;
     private boolean cp4iPresent;
 
-    /**
-     * @return List<ListenerStatus> return the kafkaListeners
-     */
+
+    @Description("Addresses of the internal and external listeners")
     public List<ListenerStatus> getKafkaListeners() {
         return kafkaListeners;
     }
 
-    /**
-     * @param kafkaListeners the kafkaListeners to set
-     */
     public void setKafkaListeners(List<ListenerStatus> kafkaListeners) {
         this.kafkaListeners = kafkaListeners;
     }
 
-    /**
-     * @return Map<String, String> return the routes
-     */
+    @Description("OpenShift Routes created as part of the Event Streams cluster")
     public Map<String, String> getRoutes() {
         return routes;
     }
 
-    /**
-     * @param routes the routes to set
-     */
     public void setRoutes(Map<String, String> routes) {
         this.routes = routes;
     }
 
-    /**
-     * @return return the URIs
-     */
+    @Description("Addresses of the interfaces provided by the Event Streams cluster")
     public List<EventStreamsEndpoint> getEndpoints() {
         return endpoints;
     }
 
-    /**
-     * @param endpoints the URIs to set
-     */
     public void setEndpoints(List<EventStreamsEndpoint> endpoints) {
         this.endpoints = endpoints;
     }
@@ -97,37 +83,24 @@ public class EventStreamsStatus implements Serializable {
         return customImages;
     }
 
-    /**
-     * @param customImages the customImages to set
-     */
     public void setCustomImages(boolean customImages) {
         this.customImages = customImages;
     }
 
-    /**
-     * @return EventStreamsVersions return the versions
-     */
+    @Description("Information about the version of this instance and it's upgradable versions")
     public EventStreamsVersions getVersions() {
         return versions;
     }
 
-    /**
-     * @param versions the versions to set
-     */
     public void setVersions(EventStreamsVersions versions) {
         this.versions = versions;
     }
 
-    /**
-     * @return List<Condition> return the conditions
-     */
+    @Description("Current state of the Event Streams cluster")
     public List<Condition> getConditions() {
         return conditions;
     }
 
-    /**
-     * @param conditions the conditions to set
-     */
     public void setConditions(List<Condition> conditions) {
         this.conditions = conditions;
     }
@@ -141,16 +114,11 @@ public class EventStreamsStatus implements Serializable {
         this.phase = phase;
     }
 
-    /**
-     * @return String return the adminUiUrl
-     */
+    @Description("Web address for the Event Streams administration UI")
     public String getAdminUiUrl() {
         return adminUiUrl;
     }
 
-    /**
-     * @param adminUiUrl the adminUiUrl to set
-     */
     public void setAdminUiUrl(String adminUiUrl) {
         this.adminUiUrl = adminUiUrl;
     }
@@ -160,9 +128,6 @@ public class EventStreamsStatus implements Serializable {
         return cp4iPresent;
     }
 
-    /**
-     * @param cp4iPresent the cp4iPresent status to set
-     */
     public void setCp4iPresent(boolean cp4iPresent) {
         this.cp4iPresent = cp4iPresent;
     }
@@ -176,5 +141,4 @@ public class EventStreamsStatus implements Serializable {
             throw new RuntimeException(e);
         }
     }
-
 }

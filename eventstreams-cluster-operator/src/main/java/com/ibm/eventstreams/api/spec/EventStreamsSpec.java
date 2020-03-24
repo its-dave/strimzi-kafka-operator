@@ -57,7 +57,7 @@ public class EventStreamsSpec implements Serializable {
         this.licenseAccept = licenseAccept;
     }
 
-    @Description("The specification of global image properties")
+    @Description("Configuration for accessing Event Streams Docker images")
     public ImagesSpec getImages() {
         return images;
     }
@@ -66,16 +66,8 @@ public class EventStreamsSpec implements Serializable {
         this.images = images;
     }
 
-    @Description("The specification of monitoring configuration")
-    public MonitoringSpec getMonitoring() {
-        return monitoring;
-    }
-
-    public void setMonitoring(MonitoringSpec monitoring) {
-        this.monitoring = monitoring;
-    }
-
     @JsonProperty(required = true)
+    @Description("Version of the Event Streams instance")
     public String getVersion() {
         return version;
     }
@@ -85,7 +77,7 @@ public class EventStreamsSpec implements Serializable {
     }
 
     @JsonProperty(required = true)
-    @Description("The specification of the admin API server")
+    @Description("Configuration of the Event Streams administration API server")
     public AdminApiSpec getAdminApi() {
         return adminApi;
     }
@@ -94,7 +86,7 @@ public class EventStreamsSpec implements Serializable {
         this.adminApi = adminApi;
     }
 
-    @Description("The specification of the REST producer")
+    @Description("Configuration of the REST Producer server that allows messages to be produced to Kafka topics from REST clients")
     public SecurityComponentSpec getRestProducer() {
         return restProducer;
     }
@@ -103,7 +95,7 @@ public class EventStreamsSpec implements Serializable {
         this.restProducer = spec;
     }
 
-    @Description("The specification of the admin user interface")
+    @Description("Configuration of the web server that hosts the administration user interface")
     public AdminUISpec getAdminUI() {
         return adminUI;
     }
@@ -112,7 +104,7 @@ public class EventStreamsSpec implements Serializable {
         this.adminUI = adminUI;
     }
 
-    @Description("The specification of the Schema Registry")
+    @Description("Configuration of the Schema Registry server")
     public SchemaRegistrySpec getSchemaRegistry() {
         return schemaRegistry;
     }
@@ -121,7 +113,7 @@ public class EventStreamsSpec implements Serializable {
         this.schemaRegistry = schemaRegistry;
     }
 
-    @Description("The specification of the collector pod responsible for aggregating metrics.")
+    @Description("Configuration of the collector server responsible for aggregating metrics from Kafka brokers")
     public ComponentSpec getCollector() {
         return collector;
     }
@@ -130,6 +122,7 @@ public class EventStreamsSpec implements Serializable {
         this.collector = collector;
     }
 
+    @Description("Configuration of the geo-replicator service")
     public ReplicatorSpec getReplicator() {
         return replicator;
     }
@@ -139,7 +132,7 @@ public class EventStreamsSpec implements Serializable {
     }
 
     @JsonProperty(required = true)
-    @Description("The specification of the Kafka and ZooKeeper clusters.")
+    @Description("Configuration of the Kafka and ZooKeeper clusters")
     public KafkaSpec getStrimziOverrides() {
         return strimziOverrides;
     }
@@ -148,7 +141,7 @@ public class EventStreamsSpec implements Serializable {
         this.strimziOverrides = spec;
     }
 
-    @Description("The specification of the security properties")
+    @Description("Security configuration for the Event Streams components")
     public SecuritySpec getSecurity() {
         return security;
     }

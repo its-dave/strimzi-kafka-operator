@@ -40,6 +40,7 @@ spec:
               description: Accept the product license after reading it at <TBC>.
             version:
               type: string
+              description: Version of the Event Streams instance.
             images:
               type: object
               properties:
@@ -52,7 +53,7 @@ spec:
                     properties:
                       name:
                         type: string
-              description: The specification of global image properties.
+              description: Configuration for accessing Event Streams Docker images.
             adminApi:
               type: object
               properties:
@@ -540,7 +541,7 @@ spec:
                               value:
                                 type: string
                           description: The pod's tolerations.
-              description: The specification of the admin API server.
+              description: Configuration of the Event Streams administration API server.
             adminUI:
               type: object
               properties:
@@ -1057,7 +1058,8 @@ spec:
                               value:
                                 type: string
                           description: The pod's tolerations.
-              description: The specification of the admin user interface.
+              description: Configuration of the web server that hosts the administration
+                user interface.
             collector:
               type: object
               properties:
@@ -1479,8 +1481,8 @@ spec:
                       type: object
                     requests:
                       type: object
-              description: The specification of the collector pod responsible for
-                aggregating metrics.
+              description: Configuration of the collector server responsible for aggregating
+                metrics from Kafka brokers.
             restProducer:
               type: object
               properties:
@@ -1967,7 +1969,8 @@ spec:
                               value:
                                 type: string
                           description: The pod's tolerations.
-              description: The specification of the REST producer.
+              description: Configuration of the REST Producer server that allows messages
+                to be produced to Kafka topics from REST clients.
             replicator:
               type: object
               properties:
@@ -3167,6 +3170,7 @@ spec:
                         Connect pods and use them to configure connectors.
                   required:
                   - connectCluster
+              description: Configuration of the geo-replicator service.
             schemaRegistry:
               type: object
               properties:
@@ -3862,14 +3866,7 @@ spec:
                               value:
                                 type: string
                           description: The pod's tolerations.
-              description: The specification of the Schema Registry.
-            monitoring:
-              type: object
-              properties:
-                exportDashboards:
-                  type: object
-                  properties: {}
-              description: The specification of monitoring configuration.
+              description: Configuration of the Schema Registry server.
             security:
               type: object
               properties:
@@ -3878,7 +3875,7 @@ spec:
                   enum:
                   - TLS
                   - NONE
-              description: The specification of the security properties.
+              description: Security configuration for the Event Streams components.
             strimziOverrides:
               type: object
               properties:
@@ -8954,7 +8951,7 @@ spec:
               required:
               - kafka
               - zookeeper
-              description: The specification of the Kafka and ZooKeeper clusters.
+              description: Configuration of the Kafka and ZooKeeper clusters.
           required:
           - licenseAccept
           - version
@@ -8992,10 +8989,13 @@ spec:
                     description: A list of TLS certificates which can be used to verify
                       the identity of the server when connecting to the given listener.
                       Set only for `tls` and `external` listeners.
+              description: Addresses of the internal and external listeners.
             adminUiUrl:
               type: string
+              description: Web address for the Event Streams administration UI.
             routes:
               type: object
+              description: OpenShift Routes created as part of the Event Streams cluster.
             customImages:
               type: boolean
               description: Identifies whether any of the Docker images have been modified
@@ -9016,6 +9016,8 @@ spec:
                       ''api'' for an API endpoint.'
                   uri:
                     type: string
+              description: Addresses of the interfaces provided by the Event Streams
+                cluster.
             versions:
               type: object
               properties:
@@ -9036,6 +9038,8 @@ spec:
                         upgrade this instance of Event Streams to.
                 installed:
                   type: string
+              description: Information about the version of this instance and it's
+                upgradable versions.
             conditions:
               type: array
               items:
@@ -9062,6 +9066,7 @@ spec:
                     type: string
                     description: Human-readable message indicating details about the
                       condition's last transition.
+              description: Current state of the Event Streams cluster.
             cp4iPresent:
               type: boolean
               description: Identifies whether IBM Cloud Pak for Integration Services
