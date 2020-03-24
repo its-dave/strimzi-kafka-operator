@@ -13,7 +13,6 @@
 package com.ibm.eventstreams.controller;
 
 import java.io.UnsupportedEncodingException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
@@ -55,6 +54,7 @@ import com.ibm.iam.api.spec.Client;
 import com.ibm.iam.api.spec.ClientDoneable;
 import com.ibm.iam.api.spec.ClientList;
 
+import io.strimzi.operator.cluster.model.ModelUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -190,6 +190,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 .compose(state -> state.createAdminUI())
                 .compose(state -> state.createCollector())
                 .compose(state -> state.createOAuthClient())
+                .compose(state -> state.checkEventStreamsSpec(this::dateSupplier))
                 .compose(state -> state.updateStatus())
                 .onSuccess(state -> chainPromise.complete())
                 .onFailure(t -> chainPromise.fail(t));
@@ -208,6 +209,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         final EventStreams instance;
         final String namespace;
         final EventStreamsStatusBuilder status;
+        final List<Condition> previousConditions;
         final EventStreamsOperatorConfig.ImageLookup imageConfig;
         final EventStreamsCertificateManager certificateManager;
         Map<String, String> icpClusterData = null;
@@ -216,61 +218,82 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             this.reconciliation = reconciliation;
             this.instance = instance;
             this.namespace = instance.getMetadata().getNamespace();
+            // keep any existing conditions so that the timestamps on them can be preserved
+            this.previousConditions = Optional.ofNullable(instance.getStatus()).map(EventStreamsStatus::getConditions).orElse(new ArrayList<>());
             this.status = instance.getStatus() == null ? new EventStreamsStatusBuilder()
                 .withRoutes(new HashMap<>())
-                .withConditions()
+                .withConditions(new ArrayList<>())
                 .withNewVersions()
                 .endVersions()
-                : new EventStreamsStatusBuilder(instance.getStatus());
+                // clear previous conditions now that a copy is saved
+                : new EventStreamsStatusBuilder(instance.getStatus()).withConditions(new ArrayList<>());
             this.imageConfig = imageConfig;
             this.certificateManager = new EventStreamsCertificateManager(secretOperator, reconciliation.namespace(), EventStreamsKafkaModel.getKafkaInstanceName(instance.getMetadata().getName()));
         }
 
         Future<ReconciliationState> validateCustomResource() {
-            // read conditions in status valid CR if no conditions in errored state
-            Boolean isValidCR = Optional.ofNullable(status.getConditions())
-                .map(list -> list.stream().filter(con -> Optional.ofNullable(con.getReason()).orElse("").equals("Errored")).collect(Collectors.toList()))
-                .map(List::isEmpty)
-                .orElse(true);
+            String phase = Optional.ofNullable(status.getPhase()).orElse("Pending");
+            List<Condition> conditions = Optional.ofNullable(status.getConditions()).orElse(new ArrayList<>());
 
-            // fail straight away if cr has errored conditions
-            if (!isValidCR) {
-                return Future.failedFuture("Invalid Custom Resource");
+            // fail straight away if the CR previously had errored conditions
+            if (previousConditions.stream().anyMatch(c -> "Errored".equals(c.getReason()))) {
+                return Future.failedFuture("Error");
             }
-            List<Condition> conditions = new ArrayList<>();
+
+            boolean isValidCR = true;
 
             if (LicenseValidation.shouldReject(instance)) {
-                Condition licenseNotAcceptedCondition = buildErrorCondition("LicenseNotAccepted", "Invalid custom resource: EventStreams License not accepted");
-                conditions.add(licenseNotAcceptedCondition);
+                addNotReadyCondition("LicenseNotAccepted", "Invalid custom resource: EventStreams License not accepted");
                 isValidCR = false;
             }
             if (NameValidation.shouldReject(instance)) {
-                Condition nameTooLongCondition = buildErrorCondition("NameTooLong", "Invalid custom resource: EventStreams metadata name too long. Maximum length is " + NameValidation.MAX_NAME_LENGTH);
-                conditions.add(nameTooLongCondition);
+                addNotReadyCondition("NameTooLong", "Invalid custom resource: EventStreams metadata name too long. Maximum length is " + NameValidation.MAX_NAME_LENGTH);
                 isValidCR = false;
             }
             if (VersionValidation.shouldReject(instance)) {
-                Condition invalidVersionCondition = buildErrorCondition("InvalidVersion", "Invalid custom resource: Unsupported version. Supported versions are " + VersionValidation.VALID_APP_VERSIONS.toString());
-                conditions.add(invalidVersionCondition);
+                addNotReadyCondition("InvalidVersion", "Invalid custom resource: Unsupported version. Supported versions are " + VersionValidation.VALID_APP_VERSIONS.toString());
                 isValidCR = false;
             }
-
             if (!ReplicatorUsersModel.isValidInstance(instance)) {
-                Condition invalidAuthorizationCondition = buildErrorCondition("UnsupportedAuthorization", "Listener client authentication unsupported for Geo Replication. Supported versions are TLS and SCRAM");
-                conditions.add(invalidAuthorizationCondition);
+                addNotReadyCondition("UnsupportedAuthorization", "Listener client authentication unsupported for Geo Replication. Supported versions are TLS and SCRAM");
                 isValidCR = false;
             }
 
-            // can add additional validation here
-            if (!isValidCR) {
-                EventStreamsStatus informativeStatus = status
-                    .withConditions(conditions)
-                    .build();
-                instance.setStatus(informativeStatus);
-                esResourceOperator.createOrUpdate(instance);
-                return Future.failedFuture("Invalid Custom Resource: check status");
+            if (isValidCR) {
+                status.addToConditions(
+                    previousConditions
+                            .stream()
+                            // restore any previous readiness condition if this was set, so
+                            // that timestamps remain consistent
+                            .filter(c -> "Ready".equals(c.getType()) || "Creating".equals(c.getType()))
+                            .findFirst()
+                            // otherwise set a new condition saying that the reconcile loop is running
+                            .orElse(new ConditionBuilder()
+                                        .withLastTransitionTime(ModelUtils.formatTimestamp(dateSupplier()))
+                                        .withType("NotReady")
+                                        .withStatus("True")
+                                        .withReason("Creating")
+                                        .withMessage("Event Streams is being deployed")
+                                        .build()));
+            } else {
+                phase = "Failed";
             }
-            return Future.succeededFuture(this);
+
+            instance.setStatus(status.withPhase(phase).build());
+
+            // Update if we need to notify the user of an error, otherwise
+            //  on the first run only, otherwise the user will see status
+            //  warning conditions flicker in and out of the list
+            if (!isValidCR || previousConditions.isEmpty()) {
+                esResourceOperator.createOrUpdate(instance);
+            }
+
+            if (isValidCR) {
+                return Future.succeededFuture(this);
+            } else {
+                // we don't want the reconcile loop to continue any further if the CR is not valid
+                return Future.failedFuture("Invalid Event Streams specification: further details in the status conditions");
+            }
         }
 
         Future<ReconciliationState> getCloudPakClusterData() {
@@ -288,11 +311,8 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             log.info("{}: IAM status: {}", reconciliation, iamPresent);
 
             if (!iamPresent) {
-                Condition iamNotPresent = buildErrorCondition("DependencyMissing", "Could not retrieve cloud pak resources");
-                EventStreamsStatus informativeStatus = status
-                    .withConditions(iamNotPresent)
-                    .build();
-                instance.setStatus(informativeStatus);
+                addNotReadyCondition("DependencyMissing", "Could not retrieve cloud pak resources");
+                instance.setStatus(status.withPhase("Failed").build());
                 Promise<ReconciliationState> failReconcile = Promise.promise();
                 Future<ReconcileResult<EventStreams>> updateStatus = esResourceOperator.createOrUpdate(instance);
                 updateStatus.onComplete(f -> {
@@ -322,12 +342,8 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                         clusterCaSecretPromise.fail(e);
                     }
                 } else {
-                    Condition caCertNotPresent = buildErrorCondition("DependencyMissing", "could not get secret 'ibmcloud-cluster-ca-cert' in namespace 'kube-public'");
-
-                    EventStreamsStatus informativeStatus = status
-                        .withConditions(caCertNotPresent)
-                        .build();
-                    instance.setStatus(informativeStatus);
+                    addNotReadyCondition("DependencyMissing", "could not get secret 'ibmcloud-cluster-ca-cert' in namespace 'kube-public'");
+                    instance.setStatus(status.withPhase("Failed").build());
                     Future<ReconcileResult<EventStreams>> updateStatus = esResourceOperator.createOrUpdate(instance);
                     updateStatus.onComplete(f -> {
                         log.info("'ibmcloud-cluster-ca-cert' not present : " + f.succeeded());
@@ -350,11 +366,8 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                         clusterCaSecretPromise.complete();
                     })
                     .onFailure(err -> {
-                        Condition caCertSecretNotCreated = buildErrorCondition("FailedCreate", err.getMessage());
-                        EventStreamsStatus informativeStatus = status
-                            .withConditions(caCertSecretNotCreated)
-                            .build();
-                        instance.setStatus(informativeStatus);
+                        addNotReadyCondition("FailedCreate", err.getMessage());
+                        instance.setStatus(status.withPhase("Failed").build());
                         Future<ReconcileResult<EventStreams>> updateStatus = esResourceOperator.createOrUpdate(instance);
                         updateStatus.onComplete(f -> {
                             log.info("Failure to create ICP Cluster CA Cert secret " + f.succeeded());
@@ -362,11 +375,8 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                         });
                     });
             } else {
-                Condition caCertNotPresent = buildErrorCondition("DependencyMissing", "Encoded ICP CA Cert not in ICPClusterData");
-                EventStreamsStatus informativeStatus = status
-                    .withConditions(caCertNotPresent)
-                    .build();
-                instance.setStatus(informativeStatus);
+                addNotReadyCondition("DependencyMissing", "Encoded ICP CA Cert not in ICPClusterData");
+                instance.setStatus(status.withPhase("Failed").build());
                 Future<ReconcileResult<EventStreams>> updateStatus = esResourceOperator.createOrUpdate(instance);
                 updateStatus.onComplete(f -> {
                     log.info("Encoded ICP CA Cert not in ICPClusterData: " + f.succeeded());
@@ -437,6 +447,15 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                             log.debug("Found Kafka instance with name : " + kafkaInstance.get().getMetadata().getName());
                             KafkaStatus kafkaStatus = kafkaInstance.get().getStatus();
                             log.debug("{}: kafkaStatus: {}", reconciliation, kafkaStatus);
+
+                            Optional.ofNullable(kafkaStatus.getConditions())
+                                    .orElse(new ArrayList<>())
+                                    .stream()
+                                    // ignore Kafka readiness conditions as we want to set our own
+                                    .filter(c -> !"Ready".equals(c.getType()))
+                                    // copy any warnings or messages from the Kafka CR into the ES CR
+                                    .forEach(this::addToConditions);
+
                             status.withKafkaListeners(kafkaStatus.getListeners());
                         } else {
                             return Future.failedFuture("Failed to retrieve kafkaInstance");
@@ -471,15 +490,15 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         Future<ReconciliationState> createReplicator() {
 
             ReplicatorCredentials replicatorCredentials = new ReplicatorCredentials(instance);
-            
+
             return setTrustStoreForReplicator(replicatorCredentials)
                 .compose(v -> setClientAuthForReplicator(replicatorCredentials))
-                
+
                 //Can't make the ReplicatorModel until after setTrustStoreForReplicator and setClientAuthForReplicator have completed
-                .compose(v -> { 
+                .compose(v -> {
                     ReplicatorModel replicatorModel = new ReplicatorModel(instance, replicatorCredentials);
                     String secretName = replicatorModel.getSecretName();
-                    
+
                     List<Future> replicatorFutures = new ArrayList<>();
 
                     replicatorFutures.add(secretOperator.getAsync(namespace, secretName)
@@ -589,7 +608,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         Future<ReconciliationState> createMessageAuthenticationSecret() {
             log.debug("Creating message authentication secret");
             MessageAuthenticationModel messageAuthenticationModel = new MessageAuthenticationModel(instance);
-            return  secretOperator.reconcile(instance.getMetadata().getNamespace(), messageAuthenticationModel.getSecretName(instance.getMetadata().getName()), messageAuthenticationModel.getSecret()).map(v -> this);
+            return secretOperator.reconcile(instance.getMetadata().getNamespace(), messageAuthenticationModel.getSecretName(instance.getMetadata().getName()), messageAuthenticationModel.getSecret()).map(v -> this);
         }
 
         Future<ReconciliationState> createAdminUI() {
@@ -612,7 +631,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
 
                         status.addToRoutes(AdminUIModel.COMPONENT_NAME, uiRouteHost);
                         status.withNewAdminUiUrl(uiRouteUri);
-                        
+
                         updateEndpoints(new EventStreamsEndpoint("ui", EventStreamsEndpoint.EndpointType.ui, uiRouteUri));
                     }
                     return Future.succeededFuture();
@@ -674,9 +693,21 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             return Future.succeededFuture(this);
         }
 
+        Future<ReconciliationState> checkEventStreamsSpec(Supplier<Date> dateSupplier) {
+            EventStreamsSpecChecker checker = new EventStreamsSpecChecker(dateSupplier, instance.getSpec());
+            List<Condition> warnings = checker.run();
+            for (Condition warning : warnings) {
+                addToConditions(warning);
+            }
+            return Future.succeededFuture(this);
+        }
+
 
         Future<ReconciliationState> updateStatus() {
             status.withCustomImages(customImageCount > 0);
+            status.withPhase("Running");
+            addReadyCondition();
+
             EventStreamsStatus esStatus = status.build();
             if (instance.getStatus() != esStatus) {
                 log.info("Updating status");
@@ -883,14 +914,59 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             status.addToEndpoints(newEndpoint);
         }
 
-        private Condition buildErrorCondition(String reason, String message) {
-            return new ConditionBuilder()
-                    .withLastTransitionTime(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ").format(new Date()))
-                    .withType("NotReady")
-                    .withStatus("True")
-                    .withReason(reason)
-                    .withMessage(message)
-                    .build();
+        /**
+         * Adds the provided condition to the current status.
+         *
+         * This will check to see if a matching condition was previously seen, and if so
+         * that will be reused (allowing for timestamps to remain consistent). If not,
+         * the provided condition will be added as-is.
+         *
+         * @param condition Condition to add to the status conditions list.
+         */
+        private void addToConditions(Condition condition) {
+            // restore the equivalent previous condition if found, otherwise
+            //  add the new condition to the status
+            status.addToConditions(
+                    this.previousConditions
+                            .stream()
+                            .filter(c -> condition.getReason().equals(c.getReason()))
+                            .findFirst()
+                            .orElse(condition));
+        }
+
+        /**
+         * Adds a "Ready" condition to the status if there is not already one.
+         *  This does nothing if there is already an existing ready condition from
+         *  a previous reconcile.
+         */
+        private void addReadyCondition() {
+            boolean needsReadyCondition = status.getMatchingCondition(cond -> "Ready".equals(cond.getType())) == null;
+            if (needsReadyCondition) {
+                status.addToConditions(
+                        new ConditionBuilder()
+                                .withLastTransitionTime(ModelUtils.formatTimestamp(dateSupplier()))
+                                .withType("Ready")
+                                .withStatus("True")
+                                .build());
+            }
+        }
+
+        /**
+         * Adds a "NotReady" condition to the status that documents a reason why the
+         *  Event Streams operand is not ready yet.
+         *
+         * @param reason A unique, one-word, CamelCase reason for why the operand is not ready.
+         * @param message A human-readable message indicating why the operand is not ready.
+         */
+        private void addNotReadyCondition(String reason, String message) {
+            addToConditions(
+                    new ConditionBuilder()
+                        .withLastTransitionTime(ModelUtils.formatTimestamp(dateSupplier()))
+                        .withType("NotReady")
+                        .withStatus("True")
+                        .withReason(reason)
+                        .withMessage(message)
+                        .build());
         }
     }
 

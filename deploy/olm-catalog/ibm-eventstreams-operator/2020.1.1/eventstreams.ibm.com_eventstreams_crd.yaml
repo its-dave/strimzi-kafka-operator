@@ -18,6 +18,16 @@ spec:
     plural: eventstreams
     shortNames:
     - es
+  additionalPrinterColumns:
+  - name: Ready
+    description: The status of the Event Streams cluster
+    JSONPath: .status.conditions[?(@.type=="Ready")].status
+    type: string
+  - name: Desired Kafka replicas
+    description: The desired number of Kafka replicas in the cluster
+    JSONPath: .spec.strimziOverrides.kafka.replicas
+    type: integer
+    priority: 1
   validation:
     openAPIV3Schema:
       type: object
@@ -9056,6 +9066,10 @@ spec:
               type: boolean
               description: Identifies whether IBM Cloud Pak for Integration Services
                 Binding is present.
+            phase:
+              type: string
+              description: Identifies the current status of the Event Streams instance.
+                This will be 'Pending', 'Running', or 'Failed'.
       required:
       - spec
   version: v1beta1

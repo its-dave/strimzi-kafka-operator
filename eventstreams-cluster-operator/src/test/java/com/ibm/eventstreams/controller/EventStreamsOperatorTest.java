@@ -22,6 +22,7 @@ import static org.hamcrest.Matchers.aMapWithSize;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasKey;
+import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.IsNull.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -32,6 +33,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -361,7 +363,7 @@ public class EventStreamsOperatorTest {
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster)
             .onComplete(context.succeeding(v -> context.verify(() -> {
                 ArgumentCaptor<EventStreams> argument = ArgumentCaptor.forClass(EventStreams.class);
-                verify(esResourceOperator).createOrUpdate(argument.capture());
+                verify(esResourceOperator, times(2)).createOrUpdate(argument.capture());
                 assertThat(argument.getValue().getStatus().getVersions().getInstalled(), is(DEFAULT_VERSION));
                 assertThat(argument.getValue().getStatus().getVersions().getAvailable().getVersions(), contains(DEFAULT_VERSION));
                 assertThat(argument.getValue().getStatus().getVersions().getAvailable().getChannels(), contains("2020.1"));
@@ -379,7 +381,7 @@ public class EventStreamsOperatorTest {
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster)
             .onComplete(context.succeeding(v -> context.verify(() -> {
                 ArgumentCaptor<EventStreams> argument = ArgumentCaptor.forClass(EventStreams.class);
-                verify(esResourceOperator).createOrUpdate(argument.capture());
+                verify(esResourceOperator, times(2)).createOrUpdate(argument.capture());
 
                 List<EventStreamsEndpoint> endpoints = argument.getValue().getStatus().getEndpoints();
                 // check that there aren't duplicates in the list
@@ -425,8 +427,9 @@ public class EventStreamsOperatorTest {
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster)
             .onComplete(context.failing(e -> context.verify(() -> {
                 ArgumentCaptor<EventStreams> argument = ArgumentCaptor.forClass(EventStreams.class);
-                verify(esResourceOperator).createOrUpdate(argument.capture());
-                assertThat(argument.getValue().getStatus().getConditions().get(0).getMessage(), is("Could not retrieve cloud pak resources"));
+                verify(esResourceOperator, times(2)).createOrUpdate(argument.capture());
+                assertThat(argument.getValue().getStatus().getConditions(),
+                        hasItem(hasProperty("message", is("Could not retrieve cloud pak resources"))));
                 async.flag();
             })));
     }
@@ -448,8 +451,9 @@ public class EventStreamsOperatorTest {
                 assertThat(e.getMessage(), is("Exit Reconcile as IAM not present"));
 
                 ArgumentCaptor<EventStreams> argument = ArgumentCaptor.forClass(EventStreams.class);
-                verify(esResourceOperator).createOrUpdate(argument.capture());
-                assertThat(argument.getValue().getStatus().getConditions().get(0).getMessage(), is("Could not retrieve cloud pak resources"));
+                verify(esResourceOperator, times(2)).createOrUpdate(argument.capture());
+                assertThat(argument.getValue().getStatus().getConditions(),
+                        hasItem(hasProperty("message", is("Could not retrieve cloud pak resources"))));
                 async.flag();
             })));
     }
@@ -467,7 +471,7 @@ public class EventStreamsOperatorTest {
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster)
             .onComplete(context.succeeding(v -> context.verify(() -> {
                 ArgumentCaptor<EventStreams> argument = ArgumentCaptor.forClass(EventStreams.class);
-                verify(esResourceOperator).createOrUpdate(argument.capture());
+                verify(esResourceOperator, times(2)).createOrUpdate(argument.capture());
                 assertThat(argument.getValue().getStatus().isCustomImages(), is(true));
                 async.flag();
             })));
@@ -486,7 +490,7 @@ public class EventStreamsOperatorTest {
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster)
             .onComplete(context.succeeding(v -> context.verify(() -> {
                 ArgumentCaptor<EventStreams> argument = ArgumentCaptor.forClass(EventStreams.class);
-                verify(esResourceOperator).createOrUpdate(argument.capture());
+                verify(esResourceOperator, times(2)).createOrUpdate(argument.capture());
                 assertThat(argument.getValue().getStatus().isCustomImages(), is(false));
                 async.flag();
             })));
@@ -508,7 +512,7 @@ public class EventStreamsOperatorTest {
 
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, clusterName), esCluster)
                 .onComplete(context.failing(e -> context.verify(() -> {
-                    assertThat(e.getMessage(), is("Invalid Custom Resource: check status"));
+                    assertThat(e.getMessage(), is("Invalid Event Streams specification: further details in the status conditions"));
                     // check status
                     verify(esResourceOperator).createOrUpdate(updatedEventStreams.capture());
                     assertThat("Status is incorrect, found status : " + updatedEventStreams.getValue().getStatus(), updatedEventStreams.getValue().getStatus().getConditions().get(0).getMessage(), is("Invalid custom resource: EventStreams metadata name too long. Maximum length is 16"));
@@ -532,7 +536,7 @@ public class EventStreamsOperatorTest {
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, clusterName), esCluster)
             .onComplete(context.failing(e -> context.verify(() -> {
 
-                assertThat(e.getMessage(), is("Invalid Custom Resource: check status"));
+                assertThat(e.getMessage(), is("Invalid Event Streams specification: further details in the status conditions"));
                 // check status
                 verify(esResourceOperator).createOrUpdate(updatedEventStreams.capture());
                 assertThat("Status is incorrect, found status : " + updatedEventStreams.getValue().getStatus(),
@@ -574,7 +578,7 @@ public class EventStreamsOperatorTest {
         Checkpoint async = context.checkpoint();
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), eventStreams)
             .onComplete(context.failing(e -> context.verify(() -> {
-                assertThat(e.getMessage(), is("Invalid Custom Resource: check status"));
+                assertThat(e.getMessage(), is("Invalid Event Streams specification: further details in the status conditions"));
                 // check status
                 verify(esResourceOperator).createOrUpdate(updatedEventStreams.capture());
                 assertThat("Status is incorrect, found status : " + updatedEventStreams.getValue().getStatus(),
@@ -755,7 +759,7 @@ public class EventStreamsOperatorTest {
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster)
             .onComplete(context.succeeding(v -> context.verify(() -> {
                 ArgumentCaptor<EventStreams> argument = ArgumentCaptor.forClass(EventStreams.class);
-                verify(esResourceOperator).createOrUpdate(argument.capture());
+                verify(esResourceOperator, times(2)).createOrUpdate(argument.capture());
                 assertThat(argument.getValue().getStatus().isCustomImages(), is(false));
                 assertThat(esCluster.getStatus().getVersions().getInstalled(), is(EventStreamsVersions.OPERAND_VERSION));
                 assertThat(esCluster.getStatus().getVersions().getAvailable().getChannels(), is(EventStreamsAvailableVersions.CHANNELS));

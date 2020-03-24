@@ -45,6 +45,22 @@ import lombok.EqualsAndHashCode;
         scope = EventStreams.SCOPE,
         versions = {
             @Crd.Spec.Version(name = EventStreams.V1BETA1, served = true, storage = true)
+        },
+        additionalPrinterColumns = {
+            @Crd.Spec.AdditionalPrinterColumn(
+                    name = "Ready",
+                    description = "The status of the Event Streams cluster",
+                    jsonPath = ".status.conditions[?(@.type==\"Ready\")].status",
+                    type = "string",
+                    priority = 0
+            ),
+            @Crd.Spec.AdditionalPrinterColumn(
+                    name = "Desired Kafka replicas",
+                    description = "The desired number of Kafka replicas in the cluster",
+                    jsonPath = ".spec.strimziOverrides.kafka.replicas",
+                    type = "integer",
+                    priority = 1
+            )
         }
     ))
 @Buildable(
