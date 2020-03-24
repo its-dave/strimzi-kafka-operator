@@ -85,9 +85,8 @@ public class EventStreamsVerticle extends AbstractVerticle {
             KubernetesDeserializer.registerCustomKind(EventStreams.RESOURCE_GROUP + "/" + EventStreams.V1BETA1, EventStreams.RESOURCE_KIND, EventStreams.class);
 
             EventStreamsResourceOperator esResourceOperator = new EventStreamsResourceOperator(vertx, client);
-            KafkaResourceOperator kafkaResourceOperator = new KafkaResourceOperator(vertx, client);
             Cp4iServicesBindingResourceOperator cp4iResourceOperator = new Cp4iServicesBindingResourceOperator(vertx, client, Cp4iServicesBinding.RESOURCE_KIND);
-            EventStreamsOperator eventStreamsOperator = new EventStreamsOperator(vertx, client, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, kafkaResourceOperator, cp4iResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMilliSecs);
+            EventStreamsOperator eventStreamsOperator = new EventStreamsOperator(vertx, client, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMilliSecs);
             eventStreamsOperator.createWatch(namespace, eventStreamsOperator.recreateWatch(namespace))
                     .compose(w -> {
                         log.info("Started operator for EventStreams kind.");

@@ -105,7 +105,6 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
 
     private final KubernetesClient client;
     private final EventStreamsResourceOperator esResourceOperator;
-    private final KafkaResourceOperator kafkaResourceOperator;
     private final Cp4iServicesBindingResourceOperator cp4iResourceOperator;
     private final KafkaUserOperator kafkaUserOperator;
     private final KafkaMirrorMaker2Operator kafkaMirrorMaker2Operator;
@@ -131,7 +130,6 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
 
     public EventStreamsOperator(Vertx vertx, KubernetesClient client, String kind, PlatformFeaturesAvailability pfa,
                                 EventStreamsResourceOperator esResourceOperator,
-                                KafkaResourceOperator kafkaResourceOperator,
                                 Cp4iServicesBindingResourceOperator cp4iResourceOperator,
                                 EventStreamsOperatorConfig.ImageLookup imageConfig,
                                 RouteOperator routeOperator,
@@ -139,7 +137,6 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         super(vertx, kind, esResourceOperator);
         log.info("Creating EventStreamsOperator");
         this.esResourceOperator = esResourceOperator;
-        this.kafkaResourceOperator = kafkaResourceOperator;
         this.cp4iResourceOperator = cp4iResourceOperator;
         this.client = client;
         this.pfa = pfa;
@@ -432,17 +429,17 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         Future<ReconciliationState> waitForKafkaStatus() {
             String kafkaInstanceName = EventStreamsKafkaModel.getKafkaInstanceName(instance.getMetadata().getName());
 
-            return kafkaResourceOperator.kafkaCRHasReadyStatus(namespace, kafkaInstanceName, defaultPollIntervalMs, kafkaStatusReadyTimeoutMs)
+            return esResourceOperator.kafkaCRHasReadyStatus(namespace, kafkaInstanceName, defaultPollIntervalMs, kafkaStatusReadyTimeoutMs)
                     .compose(v -> {
                         log.debug("Retrieve Kafka instances in namespace : " + namespace);
-                        Kafka kafka = kafkaResourceOperator.get(namespace, kafkaInstanceName);
-                        if (kafka != null) {
-                            log.debug("Found Kafka instance with name : " + kafka.getMetadata().getName());
-                            KafkaStatus kafkaStatus = kafka.getStatus();
+                        Optional<Kafka> kafkaInstance = esResourceOperator.getKafkaInstance(namespace, kafkaInstanceName);
+                        if (kafkaInstance.isPresent()) {
+                            log.debug("Found Kafka instance with name : " + kafkaInstance.get().getMetadata().getName());
+                            KafkaStatus kafkaStatus = kafkaInstance.get().getStatus();
                             log.debug("{}: kafkaStatus: {}", reconciliation, kafkaStatus);
                             status.withKafkaListeners(kafkaStatus.getListeners());
                         } else {
-                            return Future.failedFuture("Failed to retrieve kafka");
+                            return Future.failedFuture("Failed to retrieve kafkaInstance");
                         }
                         return Future.succeededFuture(this);
                     });
