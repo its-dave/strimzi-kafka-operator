@@ -232,6 +232,7 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
             .withNewSecret()
             .withNewSecretName(EventStreamsKafkaModel.getKafkaClientCaCertName(getInstanceName()))
                 .addNewItem().withNewKey(CA_P12).withNewPath("ca.p12").endItem()
+                .addNewItem().withNewKey(CA_CERT).withNewPath(CA_CERT).endItem()
             .endSecret()
             .build());
 
@@ -350,7 +351,6 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
 
         String internalBootstrap = getInternalKafkaBootstrap(kafkaListeners);
         String runasBootstrap = getRunAsKafkaBootstrap(kafkaListeners);
-        String kafkaBootstrap = getEncryption() == SecuritySpec.Encryption.NONE ? internalBootstrap : runasBootstrap;
         String kafkaBootstrapInternalPlainUrl = getInternalPlainKafkaBootstrap(kafkaListeners);
         String kafkaBootstrapInternalTlsUrl = getInternalTlsKafkaBootstrap(kafkaListeners);
         String kafkaBootstrapExternalUrl = getExternalKafkaBootstrap(kafkaListeners);
@@ -363,17 +363,18 @@ public class AdminApiModel extends AbstractSecureEndpointModel {
         List<EnvVar> envVars = new ArrayList<>();
         envVars.addAll(Arrays.asList(
             new EnvVarBuilder().withName("ENDPOINTS").withValue(Listener.createEndpointsString(listeners)).build(),
-            new EnvVarBuilder().withName("AUTHENTICATION").withValue(Listener.createAuthorizationString(listeners)).build(),
+            new EnvVarBuilder().withName("AUTHENTICATION").withValue(Listener.createAuthenticationString(listeners)).build(),
             new EnvVarBuilder().withName("RELEASE").withValue(getInstanceName()).build(),
             new EnvVarBuilder().withName("LICENSE").withValue("accept").build(),
             new EnvVarBuilder().withName("NAMESPACE").withValue(getNamespace()).build(),
-            new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_SERVERS").withValue(kafkaBootstrap).build(),
+            new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_SERVERS").withValue(internalBootstrap).build(),
+            new EnvVarBuilder().withName("RUNAS_KAFKA_BOOTSTRAP_SERVERS").withValue(runasBootstrap).build(),
+            new EnvVarBuilder().withName("SSL_ENABLED").withValue(tlsEnabled().toString()).build(),
             new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_INTERNAL_PLAIN_URL").withValue(kafkaBootstrapInternalPlainUrl).build(),
             new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_INTERNAL_TLS_URL").withValue(kafkaBootstrapInternalTlsUrl).build(),
             new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_EXTERNAL_URL").withValue(kafkaBootstrapExternalUrl).build(),
-            new EnvVarBuilder().withName("IAM_CLUSTER_NAME").withValue(icpClusterName).build(),
             new EnvVarBuilder().withName("SSL_TRUSTSTORE_PATH").withValue(CLUSTER_CERTIFICATE_PATH + File.separator + "podtls.p12").build(),
-            new EnvVarBuilder().withName("CLIENT_CA_PATH").withValue(CLIENT_CA_CERTIFICATE_PATH + File.separator + "ca.p12").build(),
+            new EnvVarBuilder().withName("CLIENT_CA_PATH").withValue(CLIENT_CA_CERTIFICATE_PATH + File.separator + CA_CERT).build(),
             new EnvVarBuilder().withName("AUTHENTICATION_ENABLED").withValue(getEncryption() == SecuritySpec.Encryption.NONE ? "false" : "true").build(),
             new EnvVarBuilder().withName("SCHEMA_REGISTRY_URL").withValue(schemaRegistryEndpoint).build(),
             new EnvVarBuilder().withName("ZOOKEEPER_CONNECT").withValue(zookeeperEndpoint).build(),

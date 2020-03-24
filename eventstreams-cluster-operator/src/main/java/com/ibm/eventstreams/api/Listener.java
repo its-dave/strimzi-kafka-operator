@@ -167,7 +167,7 @@ public class Listener {
             .collect(Collectors.joining(","));
     }
 
-    public static String createAuthorizationString(List<Listener> listeners) {
+    public static String createAuthenticationString(List<Listener> listeners) {
         return listeners.stream()
             .map(listener -> {
                 return String.format("%d", listener.getPort());
