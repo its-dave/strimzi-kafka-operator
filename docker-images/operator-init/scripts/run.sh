@@ -19,6 +19,7 @@ set -e
 # 1. Service
 # 2. ConfigMap
 # 3. ValidatingWebhookConfiguration
+# 4. ConsoleYAMLSample
 #
 # All of these manually-created resources have the owner reference set to
 # point to the Event Streams Cluster Operator, so that they will be automatically
@@ -208,6 +209,293 @@ EOF
 echo "Webhook config:"
 kubectl get ValidatingWebhookConfiguration validate-eventstreams-$EVENTSTREAMS_OPERATOR_NAMESPACE -o yaml
 
+
+
+echo "---------------------------------------------------------------"
+
+#
+# 4.  Console YAML samples
+#
+#  Provide examples in the OpenShift UI for creating Event Streams instances.
+#
+#  Support for this was introduced in OpenShift 4.3, so to ignore errors if
+#   running on OpenShift versions prior to this, all commands in this section
+#   are prefixed with !
+#
+
+echo "Updating console YAML samples"
+! cat <<EOF | kubectl apply -f -
+apiVersion: console.openshift.io/v1
+kind: ConsoleYAMLSample
+metadata:
+  name: eventstreams-quickstart-$EVENTSTREAMS_OPERATOR_NAMESPACE
+  ownerReferences:
+  - apiVersion: apps/v1
+    kind: Deployment
+    name: eventstreams-cluster-operator
+    uid: $EVENTSTREAMS_UID
+spec:
+  description: Small cluster for development use
+  snippet: false
+  targetResource:
+    apiVersion: eventstreams.ibm.com/v1beta1
+    kind: EventStreams
+  title: quickstart
+  yaml: |
+    apiVersion: eventstreams.ibm.com/v1beta1
+    kind: EventStreams
+    metadata:
+        name: quickstart
+        namespace: placeholder
+    spec:
+        licenseAccept: false
+        version: 2020.1.1
+        adminApi: {}
+        adminUI: {}
+        collector: {}
+        restProducer: {}
+        replicator: {}
+        schemaRegistry:
+            storage:
+                type: ephemeral
+        strimziOverrides:
+            kafka:
+                replicas: 1
+                config:
+                    interceptor.class.names: com.ibm.eventstreams.interceptors.metrics.ProducerMetricsInterceptor
+                    offsets.topic.replication.factor: 1
+                    transaction.state.log.min.isr: 1
+                    transaction.state.log.replication.factor: 1
+                listeners:
+                    external:
+                        type: route
+                    plain: {}
+                    tls: {}
+                storage:
+                    type: ephemeral
+                metrics: {}
+            zookeeper:
+                replicas: 1
+                storage:
+                    type: ephemeral
+                metrics: {}
+---
+apiVersion: console.openshift.io/v1
+kind: ConsoleYAMLSample
+metadata:
+  name: eventstreams-sample-3-$EVENTSTREAMS_OPERATOR_NAMESPACE
+  ownerReferences:
+  - apiVersion: apps/v1
+    kind: Deployment
+    name: eventstreams-cluster-operator
+    uid: $EVENTSTREAMS_UID
+spec:
+  description: Secure production cluster with three brokers
+  snippet: false
+  targetResource:
+    apiVersion: eventstreams.ibm.com/v1beta1
+    kind: EventStreams
+  title: 3 brokers
+  yaml: |
+    apiVersion: eventstreams.ibm.com/v1beta1
+    kind: EventStreams
+    metadata:
+        name: sample-three
+        namespace: placeholder
+    spec:
+        licenseAccept: false
+        version: 2020.1.1
+        adminApi: {}
+        adminUI: {}
+        collector: {}
+        restProducer: {}
+        replicator: {}
+        schemaRegistry:
+            storage:
+                type: ephemeral
+        security:
+            encryption: TLS
+        strimziOverrides:
+            kafka:
+                replicas: 3
+                config:
+                    interceptor.class.names: com.ibm.eventstreams.interceptors.metrics.ProducerMetricsInterceptor
+                    num.replica.fetchers: 3
+                    num.io.threads: 24
+                    num.network.threads: 9
+                    log.cleaner.threads: 6
+                listeners:
+                    external:
+                        type: route
+                        authentication:
+                            type: scram-sha-512
+                    tls:
+                        authentication:
+                            type: tls
+                authorization:
+                    type: runas
+                storage:
+                    type: ephemeral
+                metrics: {}
+                resources:
+                    requests:
+                        memory: 8096Mi
+                        cpu: 4000m
+                    limits:
+                        memory: 8096Mi
+                        cpu: 4000m
+            zookeeper:
+                replicas: 3
+                storage:
+                    type: ephemeral
+                metrics: {}
+---
+apiVersion: console.openshift.io/v1
+kind: ConsoleYAMLSample
+metadata:
+  name: eventstreams-sample-6-$EVENTSTREAMS_OPERATOR_NAMESPACE
+  ownerReferences:
+  - apiVersion: apps/v1
+    kind: Deployment
+    name: eventstreams-cluster-operator
+    uid: $EVENTSTREAMS_UID
+spec:
+  description: Secure production cluster with six brokers
+  snippet: false
+  targetResource:
+    apiVersion: eventstreams.ibm.com/v1beta1
+    kind: EventStreams
+  title: 6 brokers
+  yaml: |
+    apiVersion: eventstreams.ibm.com/v1beta1
+    kind: EventStreams
+    metadata:
+        name: sample-six
+        namespace: placeholder
+    spec:
+        licenseAccept: false
+        version: 2020.1.1
+        adminApi: {}
+        adminUI: {}
+        collector: {}
+        restProducer: {}
+        replicator: {}
+        schemaRegistry:
+            storage:
+                type: ephemeral
+        security:
+            encryption: TLS
+        strimziOverrides:
+            kafka:
+                replicas: 6
+                config:
+                    interceptor.class.names: com.ibm.eventstreams.interceptors.metrics.ProducerMetricsInterceptor
+                    num.replica.fetchers: 6
+                    num.io.threads: 24
+                    num.network.threads: 9
+                    log.cleaner.threads: 6
+                listeners:
+                    external:
+                        type: route
+                        authentication:
+                            type: scram-sha-512
+                    tls:
+                        authentication:
+                            type: tls
+                authorization:
+                    type: runas
+                storage:
+                    type: ephemeral
+                metrics: {}
+                resources:
+                    requests:
+                        memory: 8096Mi
+                        cpu: 4000m
+                    limits:
+                        memory: 8096Mi
+                        cpu: 4000m
+            zookeeper:
+                replicas: 3
+                storage:
+                    type: ephemeral
+                metrics: {}
+---
+apiVersion: console.openshift.io/v1
+kind: ConsoleYAMLSample
+metadata:
+  name: eventstreams-sample-9-$EVENTSTREAMS_OPERATOR_NAMESPACE
+  ownerReferences:
+  - apiVersion: apps/v1
+    kind: Deployment
+    name: eventstreams-cluster-operator
+    uid: $EVENTSTREAMS_UID
+spec:
+  description: Secure production cluster with nine brokers
+  snippet: false
+  targetResource:
+    apiVersion: eventstreams.ibm.com/v1beta1
+    kind: EventStreams
+  title: 9 brokers
+  yaml: |
+    apiVersion: eventstreams.ibm.com/v1beta1
+    kind: EventStreams
+    metadata:
+        name: sample-nine
+        namespace: placeholder
+    spec:
+        licenseAccept: false
+        version: 2020.1.1
+        adminApi: {}
+        adminUI: {}
+        collector: {}
+        restProducer: {}
+        replicator: {}
+        schemaRegistry:
+            storage:
+                type: ephemeral
+        security:
+            encryption: TLS
+        strimziOverrides:
+            kafka:
+                replicas: 9
+                config:
+                    interceptor.class.names: com.ibm.eventstreams.interceptors.metrics.ProducerMetricsInterceptor
+                    num.replica.fetchers: 9
+                    num.io.threads: 24
+                    num.network.threads: 9
+                    log.cleaner.threads: 6
+                listeners:
+                    external:
+                        type: route
+                        authentication:
+                            type: scram-sha-512
+                    tls:
+                        authentication:
+                            type: tls
+                authorization:
+                    type: runas
+                storage:
+                    type: ephemeral
+                metrics: {}
+                resources:
+                    requests:
+                        memory: 8096Mi
+                        cpu: 4000m
+                    limits:
+                        memory: 8096Mi
+                        cpu: 4000m
+            zookeeper:
+                replicas: 3
+                storage:
+                    type: ephemeral
+                metrics: {}
+EOF
+
+echo "Console YAML samples:"
+! kubectl get ConsoleYAMLSample eventstreams-quickstart-$EVENTSTREAMS_OPERATOR_NAMESPACE -o yaml
+! kubectl get ConsoleYAMLSample eventstreams-sample-3-$EVENTSTREAMS_OPERATOR_NAMESPACE -o yaml
+! kubectl get ConsoleYAMLSample eventstreams-sample-6-$EVENTSTREAMS_OPERATOR_NAMESPACE -o yaml
+! kubectl get ConsoleYAMLSample eventstreams-sample-9-$EVENTSTREAMS_OPERATOR_NAMESPACE -o yaml
 
 
 echo "---------------------------------------------------------------"

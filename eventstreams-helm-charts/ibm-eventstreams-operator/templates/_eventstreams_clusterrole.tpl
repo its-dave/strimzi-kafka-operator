@@ -60,6 +60,15 @@
     - patch
     - delete
 - apiGroups:
+    - console.openshift.io
+  resources:
+    - consoleyamlsamples
+  verbs:
+    - get
+    - create
+    - patch
+    - delete
+- apiGroups:
     - monitoring.coreos.com
   resources:
     - servicemonitors
@@ -118,6 +127,15 @@
     - admissionregistration.k8s.io
   resources:
     - validatingwebhookconfigurations
+  verbs:
+    - get
+    - create
+    - patch
+    - delete
+- apiGroups:
+    - console.openshift.io
+  resources:
+    - consoleyamlsamples
   verbs:
     - get
     - create
