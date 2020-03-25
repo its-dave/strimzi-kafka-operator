@@ -30,7 +30,6 @@ echo "---------------------------------------------------------------"
 echo "Creating Kubernetes resources for"
 echo "   Event Streams Operator  : $EVENTSTREAMS_UID"
 echo "   running in              : $EVENTSTREAMS_OPERATOR_NAMESPACE"
-echo "   responsible for watching: $EVENTSTREAMS_NAMESPACE"
 
 echo "---------------------------------------------------------------"
 
