@@ -28,6 +28,8 @@ public enum EndpointServiceType {
     private static final String LOAD_BALANCER_STRING = "LoadBalancer";
     private static final String INTERNAL_STRING = "Internal";
 
+    private static final String CLUSTER_IP_STRING = "ClusterIP";
+
     @JsonCreator
     public static EndpointServiceType forValue(String value) {
         switch (value) {
@@ -63,4 +65,23 @@ public enum EndpointServiceType {
                 return null;
         }
     }
+
+    public String toServiceValue() {
+        switch (this) {
+            case ROUTE:
+            case INTERNAL:
+                // Routes and Internal services use ClusterIPs
+                return CLUSTER_IP_STRING;
+            case NODE_PORT:
+                return NODE_PORT_STRING;
+            case INGRESS:
+                return INGRESS_STRING;
+            case LOAD_BALANCER:
+                return LOAD_BALANCER_STRING;
+            default:
+                return null;
+        }
+    }
+
+
 }

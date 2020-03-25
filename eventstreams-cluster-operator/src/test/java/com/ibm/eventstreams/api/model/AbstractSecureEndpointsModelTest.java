@@ -28,12 +28,14 @@ import io.fabric8.kubernetes.api.model.ContainerBuilder;
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.Volume;
+import io.fabric8.openshift.api.model.Route;
 import io.strimzi.api.kafka.model.CertAndKeySecretSourceBuilder;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import static com.ibm.eventstreams.api.model.AbstractModel.KAFKA_USER_SECRET_VOLUME_NAME;
 import static org.hamcrest.CoreMatchers.is;
@@ -90,7 +92,9 @@ public class AbstractSecureEndpointsModelTest {
 
         ComponentModel model = new ComponentModel(instance, Collections.singletonList(basicEndpointSpec));
 
-        model.createSecurityServices();
+        model.createService(EndpointServiceType.INTERNAL);
+        model.createService(EndpointServiceType.ROUTE);
+        model.createService(EndpointServiceType.NODE_PORT);
         List<Service> services = model.getSecurityServices();
 
         assertThat(services, hasSize(3));
@@ -114,6 +118,38 @@ public class AbstractSecureEndpointsModelTest {
     }
 
     @Test
+    public void testCreationOfEndpointFromMinimalConfigurationOfEndpoint() {
+        EventStreamsSpec spec = new EventStreamsSpecBuilder()
+            .withSecurity(new SecuritySpecBuilder()
+                .withEncryption(SecuritySpec.Encryption.TLS).build())
+            .build();
+
+        EventStreams instance = ModelUtils.createEventStreams(instanceName, spec).build();
+
+        EndpointSpec minimalSpec = new EndpointSpecBuilder()
+            .withName("minimal")
+            .withAccessPort(9999)
+            .build();
+
+        ComponentModel model = new ComponentModel(instance, Collections.singletonList(minimalSpec));
+
+        List<Endpoint> endpoint = model.getEndpoints();
+
+        assertThat(endpoint, hasSize(2));
+
+        assertThat(endpoint.get(0).getName(), is(minimalSpec.getName()));
+        assertThat(endpoint.get(0).getPort(), is(minimalSpec.getAccessPort()));
+        assertThat(endpoint.get(0).isTls(), is(true));
+        assertThat(endpoint.get(0).getType(), is(EndpointServiceType.ROUTE));
+
+        assertThat(endpoint.get(1).getName(), is("p2ptls"));
+        assertThat(endpoint.get(1).getPort(), is(7443));
+        assertThat(endpoint.get(1).isTls(), is(true));
+        assertThat(endpoint.get(1).getType(), is(EndpointServiceType.INTERNAL));
+
+    }
+
+    @Test
     public void testCreationOfServicesFromDefaultNonTlsEventStreams() {
         EventStreamsSpec spec = new EventStreamsSpecBuilder()
             .withSecurity(new SecuritySpecBuilder()
@@ -123,7 +159,10 @@ public class AbstractSecureEndpointsModelTest {
         EventStreams instance = ModelUtils.createEventStreams(instanceName, spec).build();
         ComponentModel model = new ComponentModel(instance, Collections.singletonList(basicEndpointSpec));
 
-        model.createSecurityServices();
+        model.createService(EndpointServiceType.INTERNAL);
+        model.createService(EndpointServiceType.ROUTE);
+        model.createService(EndpointServiceType.NODE_PORT);
+
         List<Service> services = model.getSecurityServices();
 
         assertThat(services, hasSize(3));
@@ -156,7 +195,9 @@ public class AbstractSecureEndpointsModelTest {
 
         ComponentModel model = new ComponentModel(instance, Collections.singletonList(configuredEndpointsSpec));
 
-        model.createSecurityServices();
+        model.createService(EndpointServiceType.INTERNAL);
+        model.createService(EndpointServiceType.ROUTE);
+        model.createService(EndpointServiceType.NODE_PORT);
         List<Service> services = model.getSecurityServices();
 
         assertThat(services, hasSize(3));
@@ -192,7 +233,9 @@ public class AbstractSecureEndpointsModelTest {
 
         ComponentModel model = new ComponentModel(instance, endpointSpecs);
 
-        model.createSecurityServices();
+        model.createService(EndpointServiceType.INTERNAL);
+        model.createService(EndpointServiceType.ROUTE);
+        model.createService(EndpointServiceType.NODE_PORT);
         List<Service> services = model.getSecurityServices();
 
         assertThat(services, hasSize(3));
@@ -249,9 +292,11 @@ public class AbstractSecureEndpointsModelTest {
 
         assertThat(volumes.get(2).getName(), is("client-ca"));
         assertThat(volumes.get(2).getSecret().getSecretName(), is(EventStreamsKafkaModel.getKafkaClientCaCertName(instanceName)));
-        assertThat(volumes.get(2).getSecret().getItems(), hasSize(1));
+        assertThat(volumes.get(2).getSecret().getItems(), hasSize(2));
         assertThat(volumes.get(2).getSecret().getItems().get(0).getKey(), is("ca.p12"));
         assertThat(volumes.get(2).getSecret().getItems().get(0).getPath(), is("ca.p12"));
+        assertThat(volumes.get(2).getSecret().getItems().get(1).getKey(), is("ca.crt"));
+        assertThat(volumes.get(2).getSecret().getItems().get(1).getPath(), is("ca.crt"));
 
         assertThat(volumes.get(3).getName(), is(KAFKA_USER_SECRET_VOLUME_NAME));
         assertThat(volumes.get(3).getSecret().getSecretName(), is(String.format("%s-ibm-es-kafka-user", instanceName)));
@@ -295,7 +340,7 @@ public class AbstractSecureEndpointsModelTest {
 
         assertThat(volumes.get(2).getName(), is("client-ca"));
         assertThat(volumes.get(2).getSecret().getSecretName(), is(EventStreamsKafkaModel.getKafkaClientCaCertName(instanceName)));
-        assertThat(volumes.get(2).getSecret().getItems(), hasSize(1));
+        assertThat(volumes.get(2).getSecret().getItems(), hasSize(2));
         assertThat(volumes.get(2).getSecret().getItems().get(0).getKey(), is("ca.p12"));
         assertThat(volumes.get(2).getSecret().getItems().get(0).getPath(), is("ca.p12"));
 
@@ -351,7 +396,6 @@ public class AbstractSecureEndpointsModelTest {
     public void testCreationOfEnvVarsWithNoOverides() {
         EventStreams instance = ModelUtils.createDefaultEventStreams(instanceName).build();
 
-
         ComponentModel model = new ComponentModel(instance, null);
 
         List<EnvVar> envVars = new ArrayList<>();
@@ -360,9 +404,9 @@ public class AbstractSecureEndpointsModelTest {
         assertThat(envVars, hasSize(2));
 
         assertThat(envVars.get(0).getName(), is("AUTHENTICATION"));
-        assertThat(envVars.get(0).getValue(), is("9443:BEARER,7443"));
+        assertThat(envVars.get(0).getValue(), is("9443:BEARER,7080"));
         assertThat(envVars.get(1).getName(), is("ENDPOINTS"));
-        assertThat(envVars.get(1).getValue(), is("9443:external,7443:p2p/podtls"));
+        assertThat(envVars.get(1).getValue(), is("9443:external,7080"));
     }
 
 
@@ -381,9 +425,9 @@ public class AbstractSecureEndpointsModelTest {
         assertThat(envVars, hasSize(2));
 
         assertThat(envVars.get(0).getName(), is("AUTHENTICATION"));
-        assertThat(envVars.get(0).getValue(), is("9443,7443"));
+        assertThat(envVars.get(0).getValue(), is("9443,7080"));
         assertThat(envVars.get(1).getName(), is("ENDPOINTS"));
-        assertThat(envVars.get(1).getValue(), is("9443:required-field,7443:p2p/podtls"));
+        assertThat(envVars.get(1).getValue(), is("9443:required-field,7080"));
     }
 
     @Test
@@ -401,9 +445,9 @@ public class AbstractSecureEndpointsModelTest {
         assertThat(envVars, hasSize(2));
 
         assertThat(envVars.get(0).getName(), is("AUTHENTICATION"));
-        assertThat(envVars.get(0).getValue(), is("9080,8080:MUTUAL_TLS,7443"));
+        assertThat(envVars.get(0).getValue(), is("9080,8080:MUTUAL_TLS,7080"));
         assertThat(envVars.get(1).getName(), is("ENDPOINTS"));
-        assertThat(envVars.get(1).getValue(), is("9080,8080:fully-configured,7443:p2p/podtls"));
+        assertThat(envVars.get(1).getValue(), is("9080,8080:fully-configured,7080"));
     }
 
     @Test
@@ -411,11 +455,11 @@ public class AbstractSecureEndpointsModelTest {
         EventStreams instance = ModelUtils.createDefaultEventStreams(instanceName).build();
         ComponentModel model = new ComponentModel(instance, null);
 
-        model.createRoutesFromEndpoints();
+        Map<String, Route> routes = model.createRoutesFromEndpoints();
 
-        assertThat(model.getRoutes().size(), is(1));
+        assertThat(routes.size(), is(1));
 
-        assertThat(model.getRoutes().get(String.format("%s-ibm-es-%s-%s", instanceName, ComponentModel.COMPONENT_NAME, Endpoint.DEFAULT_EXTERNAL_NAME)), is(notNullValue()));
+        assertThat(routes.get(String.format("%s-ibm-es-%s-%s", instanceName, ComponentModel.COMPONENT_NAME, Endpoint.DEFAULT_EXTERNAL_NAME)), is(notNullValue()));
     }
 
     @Test
@@ -435,15 +479,14 @@ public class AbstractSecureEndpointsModelTest {
         endpointSpecs.add(longNameRouteSpec);
         ComponentModel model = new ComponentModel(instance, endpointSpecs);
 
-        model.createRoutesFromEndpoints();
+        Map<String, Route> routes = model.createRoutesFromEndpoints();
 
-        assertThat(model.getRoutes().size(), is(3));
+        assertThat(routes.size(), is(3));
 
-        assertThat(model.getRoutes().get(String.format("%s-ibm-es-%s-%s", instanceName, ComponentModel.COMPONENT_NAME, basicEndpointSpec.getName())), is(notNullValue()));
-        assertThat(model.getRoutes().get(String.format("%s-ibm-es-%s-%s", instanceName, ComponentModel.COMPONENT_NAME, longNameRouteSpec.getName())), is(notNullValue()));
-        assertThat(model.getRoutes().get(String.format("%s-ibm-es-%s-%s", instanceName, ComponentModel.COMPONENT_NAME, basicPlainEndpointSpec.getName())), is(notNullValue()));
-        assertThat(model.getRoutes().get(String.format("%s-ibm-es-%s-%s", instanceName, ComponentModel.COMPONENT_NAME, configuredEndpointsSpec.getName())), is(nullValue()));
-
+        assertThat(routes.get(String.format("%s-ibm-es-%s-%s", instanceName, ComponentModel.COMPONENT_NAME, basicEndpointSpec.getName())), is(notNullValue()));
+        assertThat(routes.get(String.format("%s-ibm-es-%s-%s", instanceName, ComponentModel.COMPONENT_NAME, longNameRouteSpec.getName())), is(notNullValue()));
+        assertThat(routes.get(String.format("%s-ibm-es-%s-%s", instanceName, ComponentModel.COMPONENT_NAME, basicPlainEndpointSpec.getName())), is(notNullValue()));
+        assertThat(routes.get(String.format("%s-ibm-es-%s-%s", instanceName, ComponentModel.COMPONENT_NAME, configuredEndpointsSpec.getName())), is(nullValue()));
     }
 
 }

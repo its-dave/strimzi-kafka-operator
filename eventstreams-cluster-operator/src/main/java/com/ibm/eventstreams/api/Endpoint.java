@@ -26,7 +26,8 @@ import java.util.function.Function;
 
 @Builder
 public class Endpoint {
-    private static final boolean DEFAULT_TLS_SETTING = true;
+    private static final boolean DEFAULT_TLS_SETTING = false;
+    private static final boolean DEFAULT_EXTERNAL_ENDPOINT_TLS_SETTING = true;
     private static final TlsVersion DEFAULT_TLS_VERSION = TlsVersion.TLS_V1_2;
 
     public static final String DEFAULT_EXTERNAL_NAME = "external";
@@ -35,8 +36,8 @@ public class Endpoint {
     private static final int DEFAULT_EXTERNAL_PLAIN_PORT = 9080;
     private static final List<String> DEFAULT_EXTERNAL_AUTHENTICATION_MECHANISM = Collections.singletonList("BEARER");
 
-    private static final String DEFAULT_P2P_TLS_NAME = "p2ptls";
-    private static final String DEFAULT_P2P_PLAIN_NAME = "pod2pod";
+    public static final String DEFAULT_P2P_TLS_NAME = "p2ptls";
+    public static final String DEFAULT_P2P_PLAIN_NAME = "pod2pod";
     private static final int DEFAULT_P2P_TLS_PORT = 7443;
     private static final String DEFAULT_P2P_TLS_MOUNT = "p2p";
     private static final int DEFAULT_P2P_PLAIN_PORT = 7080;
@@ -66,20 +67,17 @@ public class Endpoint {
      * Creates a default endpoint object which contains all the configurations needed for all Event Streams components
      * to talk externally to the endpoint through. Creates a plain/tls externally accessible endpoint based on
      * overall security of CR.
-     * @param instance
      * @return external endpoint
      */
-    public static Endpoint createDefaultExternalEndpoint(EventStreams instance) {
-        boolean isTls = isTls(instance);
-
+    public static Endpoint createDefaultExternalEndpoint() {
         return new Endpoint(DEFAULT_EXTERNAL_NAME,
-                            isTls ? DEFAULT_EXTERNAL_TLS_PORT : DEFAULT_EXTERNAL_PLAIN_PORT,
-                            isTls,
-                            isTls ? DEFAULT_TLS_VERSION : null,
+                            DEFAULT_EXTERNAL_TLS_PORT,
+                            DEFAULT_EXTERNAL_ENDPOINT_TLS_SETTING,
+                            DEFAULT_TLS_VERSION,
                             DEFAULT_EXTERNAL_SERVICE_TYPE,
-                            isTls ? DEFAULT_EXTERNAL_NAME : null,
+                            DEFAULT_EXTERNAL_NAME,
                             null,
-                            isTls ? DEFAULT_EXTERNAL_AUTHENTICATION_MECHANISM : Collections.emptyList());
+                            DEFAULT_EXTERNAL_AUTHENTICATION_MECHANISM);
     }
 
     /**
@@ -112,7 +110,7 @@ public class Endpoint {
                                     getTlsOrDefault(spec),
                                     getTlsVersionOrDefault(spec),
                                     getTypeOrDefault(spec),
-                                    spec.getName(),
+                                    getPathOrDefault(spec),
                                     spec.getCertOverrides(),
                                     getAuthenticationMechanismsOrDefault(spec));
 
@@ -154,7 +152,17 @@ public class Endpoint {
      * @return the service type of the endpoint
      */
     private static boolean getTlsOrDefault(EndpointSpec spec) {
-        return Optional.ofNullable(spec.getTls()).orElse(DEFAULT_TLS_SETTING);
+        return Optional.ofNullable(spec.getTls()).orElse(DEFAULT_EXTERNAL_ENDPOINT_TLS_SETTING);
+    }
+
+    /**
+     * Gets the path to where the certificate is mounted or null if no certificate is mounted.
+     * @param spec the user configured endpoint CR
+     * @return the path to the cert for the endpoint.
+     */
+    private static String getPathOrDefault(EndpointSpec spec) {
+        boolean isTls = getTlsOrDefault(spec);
+        return isTls ? spec.getName() : null;
     }
 
     /**

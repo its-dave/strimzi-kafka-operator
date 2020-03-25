@@ -12,27 +12,18 @@
  */
 package com.ibm.eventstreams.controller;
 
-import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-
+import com.ibm.eventstreams.api.Endpoint;
+import com.ibm.eventstreams.api.EndpointServiceType;
 import com.ibm.eventstreams.api.Listener;
 import com.ibm.eventstreams.api.model.AbstractSecureEndpointModel;
+import com.ibm.eventstreams.api.model.AbstractSecureEndpointsModel;
 import com.ibm.eventstreams.api.model.AdminApiModel;
 import com.ibm.eventstreams.api.model.AdminUIModel;
 import com.ibm.eventstreams.api.model.ClusterSecretsModel;
 import com.ibm.eventstreams.api.model.CollectorModel;
 import com.ibm.eventstreams.api.model.EventStreamsKafkaModel;
-import com.ibm.eventstreams.api.model.MessageAuthenticationModel;
 import com.ibm.eventstreams.api.model.InternalKafkaUserModel;
+import com.ibm.eventstreams.api.model.MessageAuthenticationModel;
 import com.ibm.eventstreams.api.model.ReplicatorModel;
 import com.ibm.eventstreams.api.model.ReplicatorUsersModel;
 import com.ibm.eventstreams.api.model.RestProducerModel;
@@ -50,17 +41,13 @@ import com.ibm.eventstreams.rest.NameValidation;
 import com.ibm.eventstreams.rest.VersionValidation;
 import com.ibm.iam.api.controller.Cp4iServicesBindingResourceOperator;
 import com.ibm.iam.api.model.ClientModel;
+import com.ibm.iam.api.model.Cp4iServicesBindingModel;
 import com.ibm.iam.api.spec.Client;
 import com.ibm.iam.api.spec.ClientDoneable;
 import com.ibm.iam.api.spec.ClientList;
-
-import io.strimzi.operator.cluster.model.ModelUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import com.ibm.iam.api.model.Cp4iServicesBindingModel;
 import com.ibm.iam.api.spec.Cp4iServicesBinding;
 import io.fabric8.kubernetes.api.model.ConfigMap;
+import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinitionList;
@@ -69,6 +56,7 @@ import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
 import io.fabric8.openshift.api.model.Route;
+import io.fabric8.openshift.api.model.RouteSpec;
 import io.strimzi.api.kafka.Crds;
 import io.strimzi.api.kafka.model.CertAndKeySecretSource;
 import io.strimzi.api.kafka.model.Kafka;
@@ -82,6 +70,7 @@ import io.strimzi.api.kafka.model.status.ConditionBuilder;
 import io.strimzi.api.kafka.model.status.KafkaStatus;
 import io.strimzi.certs.CertAndKey;
 import io.strimzi.operator.PlatformFeaturesAvailability;
+import io.strimzi.operator.cluster.model.ModelUtils;
 import io.strimzi.operator.common.AbstractOperator;
 import io.strimzi.operator.common.Reconciliation;
 import io.strimzi.operator.common.operator.resource.ConfigMapOperator;
@@ -98,7 +87,24 @@ import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
+import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+
+@SuppressWarnings("checkstyle:ClassFanOutComplexity")
 public class EventStreamsOperator extends AbstractOperator<EventStreams, EventStreamsResourceOperator> {
 
     private static final Logger log = LogManager.getLogger(EventStreamsOperator.class.getName());
@@ -554,21 +560,31 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             if (adminApi.getCustomImage()) {
                 customImageCount++;
             }
-            adminApiFutures.add(serviceAccountOperator.createOrUpdate(adminApi.getServiceAccount()));
-            adminApiFutures.add(serviceOperator.createOrUpdate(adminApi.getExternalService()));
-            adminApiFutures.add(serviceOperator.createOrUpdate(adminApi.getInternalService()));
+            adminApiFutures.add(serviceAccountOperator.reconcile(namespace, adminApi.getDefaultResourceName(), adminApi.getServiceAccount()));
+
+            for (EndpointServiceType type : EndpointServiceType.values()) {
+                adminApiFutures.add(serviceOperator.reconcile(namespace, adminApi.getServiceName(type), adminApi.getSecurityService(type)));
+            }
+
             adminApiFutures.add(networkPolicyOperator.createOrUpdate(adminApi.getNetworkPolicy()));
             adminApiFutures.add(roleBindingOperator.createOrUpdate(adminApi.getRoleBinding()));
             return CompositeFuture.join(adminApiFutures)
                     .compose(res -> reconcileRoutes(adminApi, adminApi.getRoutes()))
                     .compose(routesHostMap -> {
-                        String adminRouteHost = routesHostMap.get(adminApi.getRouteName(Listener.EXTERNAL_TLS_NAME));
-                        String adminRouteUri = "https://" + adminRouteHost;
-                        updateEndpoints(new EventStreamsEndpoint(EventStreamsEndpoint.ADMIN_KEY, EventStreamsEndpoint.EndpointType.api, adminRouteUri));
+                        for (String adminRouteHost : routesHostMap.values()) {
+                            String adminRouteUri = "https://" + adminRouteHost;
+                            updateEndpoints(new EventStreamsEndpoint(EventStreamsEndpoint.ADMIN_KEY, EventStreamsEndpoint.EndpointType.api, adminRouteUri));
+                        }
                         return Future.succeededFuture(routesHostMap);
                     })
                     .compose(routesHostMap -> reconcileCerts(adminApi, routesHostMap, dateSupplier))
-                    .compose(secretResult -> deploymentOperator.createOrUpdate(adminApi.getDeployment(secretResult.resource().getMetadata().getResourceVersion())))
+                    .compose(secretResult -> {
+                        String certGenerationID = secretResult.resourceOpt()
+                            .map(Secret::getMetadata)
+                            .map(ObjectMeta::getResourceVersion)
+                            .orElse(null);
+                        return deploymentOperator.reconcile(namespace, adminApi.getDefaultResourceName(), adminApi.getDeployment(certGenerationID));
+                    })
                     .map(this);
         }
 
@@ -797,6 +813,81 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             }
         }
 
+        /**
+         *
+         *
+         * @param model
+         * @param additionalHosts is a map of route names and their corresponding hosts generated by openshift
+         * @param dateSupplier
+         * @return
+         */
+        Future<ReconcileResult<Secret>> reconcileCerts(AbstractSecureEndpointsModel model, Map<String, String> additionalHosts, Supplier<Date> dateSupplier) {
+            log.info("Starting certificate reconciliation for: " + model.getComponentName());
+            try {
+                boolean regenSecret = false;
+                Optional<Secret> certSecret = certificateManager.getSecret(model.getCertificateSecretName());
+                for (Endpoint endpoint : model.getTlsNonP2PEndpoints()) {
+                    regenSecret = updateCertAndKeyInModel(certSecret, model, endpoint, additionalHosts, dateSupplier) || regenSecret;
+                }
+                // Create secret if any services are not null
+                List<Service> securityServices = Arrays.stream(EndpointServiceType.values())
+                    .map(model::getSecurityService)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+
+                if (securityServices.size() > 0) {
+                    model.createCertificateSecretModelSecret();
+                }
+
+                return secretOperator.reconcile(namespace, model.getCertificateSecretName(), model.getCertificateSecretModelSecret());
+
+            } catch (EventStreamsCertificateException e) {
+                log.error(e);
+                return Future.failedFuture(e);
+            }
+        }
+
+        /**
+         * Helper method which updates the cert and key in the model for a given endpoint. Will always set the key and
+         * cert in case a future endpoint requires a regeneration of the secret.
+         * @param certSecret Existing secret that a previous reconcile has created
+         * @param model the current model to update
+         * @param endpoint the current endpoint to configure the cert and key for
+         * @param additionalHosts a map of route names to additional hosts
+         * @param dateSupplier the date supplier
+         * @return a boolean of whether or not we need to regenerate the secret
+         * @throws EventStreamsCertificateException
+         */
+        private boolean updateCertAndKeyInModel(Optional<Secret> certSecret, AbstractSecureEndpointsModel model, Endpoint endpoint, Map<String, String> additionalHosts, Supplier<Date> dateSupplier) throws EventStreamsCertificateException {
+            String host = endpoint.isRoute() ? additionalHosts.getOrDefault(model.getRouteName(endpoint.getName()), "") : "";
+            List<String> hosts = host.isEmpty() ? Collections.emptyList() : Collections.singletonList(host);
+            Service service = endpoint.isRoute() ? null : model.getSecurityService(endpoint.getType());
+
+            if (endpoint.getCertificateAndKeyOverride() != null) {
+                Optional<CertAndKey> providedCertAndKey = certificateManager.certificateAndKey(endpoint.getCertificateAndKeyOverride());
+                if (!providedCertAndKey.isPresent()) {
+                    throw new EventStreamsCertificateException("Provided broker cert secret: " + endpoint.getCertificateAndKeyOverride().getSecretName() + " could not be found");
+                }
+                if (certSecret.isPresent()) {
+                    CertAndKey currentCertAndKey = certificateManager.certificateAndKey(certSecret.get(), model.getCertSecretCertID(endpoint.getName()), model.getCertSecretKeyID(endpoint.getName()));
+                    boolean hasCertOverridesChanged = certificateManager.sameCertAndKey(currentCertAndKey, providedCertAndKey.get());
+                    model.setCertAndKey(endpoint.getName(), hasCertOverridesChanged ? providedCertAndKey.get() : currentCertAndKey);
+                    return hasCertOverridesChanged;
+                }
+                // The secret hasn't been generated yet so create a new entry with the provided cert and key
+                model.setCertAndKey(endpoint.getName(), providedCertAndKey.get());
+                return true;
+            } else if (!certSecret.isPresent() || certificateManager.shouldGenerateOrRenewCertificate(certSecret.get(), endpoint.getName(), dateSupplier, service, hosts)) {
+                CertAndKey certAndKey = certificateManager.generateCertificateAndKey(service, hosts);
+                model.setCertAndKey(endpoint.getName(), certAndKey);
+                return true;
+            }
+            // even if we don't need to regenerate the secret, we need to set the key and cert in case of future reconciliation
+            CertAndKey currentCertAndKey = certificateManager.certificateAndKey(certSecret.get(), model.getCertSecretCertID(endpoint.getName()), model.getCertSecretKeyID(endpoint.getName()));
+            model.setCertAndKey(endpoint.getName(), currentCertAndKey);
+            return false;
+        }
+
         private Future<Void> setTrustStoreForReplicator(ReplicatorCredentials replicatorCredentials) {
 
             Promise<Void> setAuthSet = Promise.promise();
@@ -876,23 +967,59 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             }
 
             List<Future> routeFutures = routes.entrySet()
-                    .stream()
-                    .map(entry ->
-                        routeOperator.reconcile(namespace, entry.getKey(), entry.getValue())
-                            .compose(routeResult -> {
-                                Map<String, String> map = new HashMap<>(1);
-                                // Do not add to Route to status if Route has been deleted
-                                if (routeResult.resourceOpt().isPresent()) {
-                                    String routeHost = routeResult.resource().getSpec().getHost();
-                                    // Do not add to Route to status if Route has no hostname
-                                    if (routeHost != null && !routeHost.isEmpty()) {
-                                        status.addToRoutes(entry.getKey().replaceFirst(model.getResourcePrefix() + "-", ""), routeHost);
-                                        map.put(entry.getKey(), routeHost);
-                                    }
-                                }
-                                return Future.succeededFuture(map);
-                            }))
-                    .collect(Collectors.toList());
+                .stream()
+                .map(entry -> routeOperator.reconcile(namespace, entry.getKey(), entry.getValue())
+                    .compose(routeResult -> {
+                        Map<String, String> map = new HashMap<>(1);
+                        String routeHost = routeResult.resourceOpt()
+                            .map(Route::getSpec)
+                            .map(RouteSpec::getHost)
+                            .orElse("");
+
+                        if (!routeHost.isEmpty()) {
+                            status.addToRoutes(entry.getKey().replaceFirst(model.getResourcePrefix() + "-", ""), routeHost);
+                            map.put(entry.getKey(), routeHost);
+                        }
+                        return Future.succeededFuture(map);
+                    }))
+                .collect(Collectors.toList());
+
+            return CompositeFuture.join(routeFutures)
+                .compose(ar -> {
+                    List<Map<String, String>> allRoutesMaps = ar.list();
+                    Map<String, String> routesMap = allRoutesMaps
+                        .stream()
+                        .reduce((map1, map2) -> {
+                            map1.putAll(map2);
+                            return map1;
+                        })
+                        .orElse(Collections.emptyMap());
+                    return Future.succeededFuture(routesMap);
+                });
+        }
+
+        protected Future<Map<String, String>> reconcileRoutes(AbstractSecureEndpointsModel model, Map<String, Route> routes) {
+            if (!pfa.hasRoutes() || routeOperator == null) {
+                return Future.succeededFuture(Collections.emptyMap());
+            }
+
+            List<Future> routeFutures = routes.entrySet()
+                .stream()
+                .map(entry -> routeOperator.reconcile(namespace, entry.getKey(), entry.getValue())
+                    .compose(routeResult -> {
+                        Map<String, String> map = new HashMap<>(1);
+                        String routeHost = routeResult.resourceOpt()
+                            .map(Route::getSpec)
+                            .map(RouteSpec::getHost)
+                            .orElse("");
+
+                        if (!routeHost.isEmpty()) {
+                            status.addToRoutes(entry.getKey().replaceFirst(model.getResourcePrefix() + "-", ""), routeHost);
+                            map.put(entry.getKey(), routeHost);
+                        }
+                        return Future.succeededFuture(map);
+                    }))
+                .collect(Collectors.toList());
 
             return CompositeFuture.join(routeFutures)
                 .compose(ar -> {

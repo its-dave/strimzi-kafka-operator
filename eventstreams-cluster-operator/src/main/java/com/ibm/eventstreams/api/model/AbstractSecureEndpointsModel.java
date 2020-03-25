@@ -32,6 +32,7 @@ import io.strimzi.certs.CertAndKey;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -41,6 +42,9 @@ import java.util.stream.Collectors;
 public abstract class AbstractSecureEndpointsModel extends AbstractModel {
     public static final String NODE_PORT_SERVICE_SUFFIX = "node-port";
     public static final String ROUTE_SERVICE_SUFFIX = "external";
+    public static final String LOAD_BALANCER_SERVICE_SUFFIX = "load-balancer";
+    public static final String INGRESS_SERVICE_SUFFIX = "ingress";
+
     public static final String INTERNAL_SERVICE_SUFFIX = "internal";
 
     public static final String CERT_GENERATION_KEY = "certificateGenerationID";
@@ -60,10 +64,9 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
     public static final String CLUSTER_CERTIFICATE_PATH = CERTIFICATE_PATH + "/cluster";
     public static final String CLIENT_CA_CERTIFICATE_PATH = CERTIFICATE_PATH + "/client";
 
-
     private final CertificateSecretModel certificateSecretModel;
 
-    private List<Endpoint> endpoints;
+    protected List<Endpoint> endpoints;
     protected Map<String, Route> routes;
 
     private Service internalService;
@@ -75,7 +78,7 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
         super(instance.getMetadata().getName(), namespace, componentName);
         this.certificateSecretModel = new CertificateSecretModel(instance, namespace, componentName);
         this.endpoints = createEndpoints(instance, endpointSpecs);
-        this.routes = createRoutesFromEndpoints();
+        this.routes = new HashMap<>();
     }
 
     /**
@@ -91,7 +94,7 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
     public List<Endpoint> createEndpoints(EventStreams instance, List<EndpointSpec> spec) {
         List<Endpoint> endpoints =  Optional.ofNullable(spec)
             .map(endpointSpec -> endpointSpec.stream().map(Endpoint.createEndpointFromSpec()).collect(Collectors.toList()))
-            .orElse(new ArrayList<>(Collections.singletonList(Endpoint.createDefaultExternalEndpoint(instance))));
+            .orElse(new ArrayList<>(Collections.singletonList(Endpoint.createDefaultExternalEndpoint())));
 
         endpoints.add(Endpoint.createP2PEndpoint(instance));
 
@@ -99,21 +102,10 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
     }
 
     /**
-     * Creates one service per type of service (NodePort, Route, Internal, Load Balancer, or Ingress) from endpoints.
-     */
-    public void createSecurityServices() {
-        createServiceTypeFromEndpoints(EndpointServiceType.NODE_PORT);
-        createServiceTypeFromEndpoints(EndpointServiceType.ROUTE);
-        // TODO: Create Services for Loadbalancer and Ingress
-
-        createServiceTypeFromEndpoints(EndpointServiceType.INTERNAL);
-    }
-
-    /**
      * Creates a single service per type of Service with all access ports of the same Service type configured
      * @param type the specified EndpointServiceType service.
      */
-    private void createServiceTypeFromEndpoints(EndpointServiceType type) {
+    protected void createService(EndpointServiceType type) {
         List<ServicePort> ports = endpoints.stream()
             .filter(endpoint -> endpoint.getType() == type)
             .map(endpoint -> new ServicePortBuilder()
@@ -123,7 +115,7 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
                 .build())
             .collect(Collectors.toList());
 
-        updateServiceValueFromType(type, createService(type.toValue(), getServiceName(type), ports, Collections.emptyMap()));
+        updateServiceValueFromType(type, createService(type.toServiceValue(), getServiceName(type), ports, Collections.emptyMap()));
     }
 
     /**
@@ -131,7 +123,7 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
      * @param type the specified type of EndpointServiceType wanted
      * @return the name of the service
      */
-    private String getServiceName(EndpointServiceType type) {
+    public String getServiceName(EndpointServiceType type) {
         return getDefaultResourceNameWithSuffix(getServiceSuffix(type));
     }
 
@@ -199,7 +191,7 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
      */
     protected Map<String, Route> createRoutesFromEndpoints() {
         return endpoints.stream()
-            .filter(endpoint -> endpoint.getType() == EndpointServiceType.ROUTE)
+            .filter(endpoint -> EndpointServiceType.ROUTE.equals(endpoint.getType()))
             .collect(Collectors.toMap(endpoint ->
                     getRouteName(endpoint.getName()),
                 endpoint -> {
@@ -238,6 +230,7 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
             .withNewSecret()
             .withNewSecretName(EventStreamsKafkaModel.getKafkaClientCaCertName(getInstanceName()))
             .addNewItem().withNewKey(CA_P12).withNewPath("ca.p12").endItem()
+            .addNewItem().withNewKey(CA_CERT).withNewPath("ca.crt").endItem()
             .endSecret()
             .build());
 
@@ -318,6 +311,18 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
                 return Integer.toString(endpoint.getPort());
             }
         };
+    }
+
+    /**
+     * Returns a list of TLS endpoints that are not named the Pod to Pod Tls name.
+     * @return a filtered list of endpoints
+     */
+    public List<Endpoint> getTlsNonP2PEndpoints() {
+        return endpoints
+            .stream()
+            .filter(Endpoint::isTls)
+            .filter(endpoint -> !endpoint.getName().matches(Endpoint.DEFAULT_P2P_TLS_NAME))
+            .collect(Collectors.toList());
     }
 
     /**

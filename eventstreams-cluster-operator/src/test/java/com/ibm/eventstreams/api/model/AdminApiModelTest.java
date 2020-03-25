@@ -13,8 +13,13 @@
 package com.ibm.eventstreams.api.model;
 
 import com.ibm.eventstreams.Main;
+import com.ibm.eventstreams.api.Endpoint;
+import com.ibm.eventstreams.api.EndpointServiceType;
 import com.ibm.eventstreams.api.Listener;
 import com.ibm.eventstreams.api.model.utils.ModelUtils;
+import com.ibm.eventstreams.api.spec.AdminApiSpecBuilder;
+import com.ibm.eventstreams.api.spec.EndpointSpec;
+import com.ibm.eventstreams.api.spec.EndpointSpecBuilder;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
@@ -29,6 +34,8 @@ import io.fabric8.kubernetes.api.model.EnvVarSource;
 import io.fabric8.kubernetes.api.model.EnvVarSourceBuilder;
 import io.fabric8.kubernetes.api.model.LocalObjectReference;
 import io.fabric8.kubernetes.api.model.LocalObjectReferenceBuilder;
+import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
+import io.fabric8.kubernetes.api.model.OwnerReference;
 import io.fabric8.kubernetes.api.model.Quantity;
 import io.fabric8.kubernetes.api.model.ResourceRequirements;
 import io.fabric8.kubernetes.api.model.ResourceRequirementsBuilder;
@@ -66,13 +73,15 @@ import java.util.stream.Collectors;
 import static com.ibm.eventstreams.api.model.AbstractSecureEndpointModel.INTERNAL_SERVICE_SUFFIX;
 import static org.hamcrest.CoreMatchers.endsWith;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.emptyIterableOf;
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
@@ -130,13 +139,13 @@ public class AdminApiModelTest {
         assertThat(adminApiDeployment.getMetadata().getName(), startsWith(componentPrefix));
         assertThat(adminApiDeployment.getSpec().getReplicas(), is(defaultReplicas));
 
-        Service adminApiInternalService = adminApiModel.getInternalService();
+        Service adminApiInternalService = adminApiModel.getSecurityService(EndpointServiceType.INTERNAL);
         assertThat(adminApiInternalService.getMetadata().getName(), startsWith(componentPrefix));
-        assertThat(adminApiInternalService.getMetadata().getName(), endsWith(AbstractSecureEndpointModel.INTERNAL_SERVICE_SUFFIX));
+        assertThat(adminApiInternalService.getMetadata().getName(), endsWith(AbstractSecureEndpointsModel.INTERNAL_SERVICE_SUFFIX));
 
-        Service adminApiExternalService = adminApiModel.getExternalService();
+        Service adminApiExternalService = adminApiModel.getSecurityService(EndpointServiceType.ROUTE);
         assertThat(adminApiExternalService.getMetadata().getName(), startsWith(componentPrefix));
-        assertThat(adminApiExternalService.getMetadata().getName(), endsWith(AbstractSecureEndpointModel.EXTERNAL_SERVICE_SUFFIX));
+        assertThat(adminApiExternalService.getMetadata().getName(), endsWith(AbstractSecureEndpointsModel.ROUTE_SERVICE_SUFFIX));
 
         Map<String, Route> routes = adminApiModel.getRoutes();
         routes.forEach((routeName, route) -> {
@@ -161,6 +170,8 @@ public class AdminApiModelTest {
         EnvVar kafkaConnectRestApiEnv = new EnvVarBuilder().withName("KAFKA_CONNECT_REST_API_ADDRESS").withValue(kafkaConnectRestEndpoint).build();
         EnvVar geoRepSecretNameEnv = new EnvVarBuilder().withName("GEOREPLICATION_SECRET_NAME").withValue(instanceName  + "-" + AbstractModel.APP_NAME + "-" + ReplicatorModel.REPLICATOR_SECRET_NAME).build();
         EnvVar clientCaCertPath = new EnvVarBuilder().withName("CLIENT_CA_PATH").withValue("/certs/client/ca.crt").build();
+        EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:BEARER,7080").build();
+        EnvVar endpoints = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7080").build();
 
         EnvVarSource esCaCertEnvVarSource = new EnvVarSourceBuilder().withSecretKeyRef(new SecretKeySelector("ca.crt", instanceName + "-cluster-ca-cert", true)).build();
         EnvVar esCaCertEnv = new EnvVarBuilder().withName("ES_CACERT").withValueFrom(esCaCertEnvVarSource).build();
@@ -175,6 +186,8 @@ public class AdminApiModelTest {
         assertThat(defaultEnvVars, hasItem(kafkaConnectRestApiEnv));
         assertThat(defaultEnvVars, hasItem(geoRepSecretNameEnv));
         assertThat(defaultEnvVars, hasItem(clientCaCertPath));
+        assertThat(defaultEnvVars, hasItem(authentication));
+        assertThat(defaultEnvVars, hasItem(endpoints));
         assertThat(defaultEnvVars, hasItem(esCaCertEnv));
     }
 
@@ -219,16 +232,13 @@ public class AdminApiModelTest {
         assertThat(networkPolicy.getMetadata().getName(), is(componentPrefix));
         assertThat(networkPolicy.getKind(), is("NetworkPolicy"));
 
-        int numberOfPodToPodListeners = 1;
-        int expectNumberOfIngresses = Listener.enabledListeners().size() + numberOfPodToPodListeners;
-        assertThat(networkPolicy.getSpec().getIngress().size(), is(expectNumberOfIngresses));
-        List<Listener> listeners = Listener.enabledListeners();
-        listeners.add(Listener.podToPodListener(false));
-        List<Integer> listenerPorts = listeners.stream().map(Listener::getPort).collect(Collectors.toList());
+        assertThat(networkPolicy.getSpec().getIngress().size(), is(adminApiModel.getEndpoints().size()));
+        List<Integer> endpointPorts = adminApiModel.getEndpoints().stream().map(Endpoint::getPort).collect(Collectors.toList());
+
         networkPolicy.getSpec().getIngress().forEach(ingress -> {
             assertThat(ingress.getFrom(), is(emptyIterableOf(NetworkPolicyPeer.class)));
-            assertThat(ingress.getPorts().size(), is(1));
-            assertThat(listenerPorts, hasItem(ingress.getPorts().get(0).getPort().getIntVal()));
+            assertThat(ingress.getPorts(), hasSize(1));
+            assertThat(endpointPorts, hasItem(ingress.getPorts().get(0).getPort().getIntVal()));
         });
     }
 
@@ -237,6 +247,17 @@ public class AdminApiModelTest {
         EventStreams eventStreams = createDefaultEventStreams()
                 .editSpec()
                 .withSecurity(new SecuritySpecBuilder().withEncryption(SecuritySpec.Encryption.TLS).build())
+                .withAdminApi(new AdminApiSpecBuilder()
+                    .withEndpoints(
+                        new EndpointSpecBuilder()
+                            .withName("first-endpoint")
+                            .withAccessPort(9999)
+                            .build(),
+                        new EndpointSpecBuilder()
+                            .withName("second-endpoint")
+                            .withAccessPort(9999)
+                            .build())
+                    .build())
                 .endSpec()
                 .build();
         AdminApiModel adminApiModel = new AdminApiModel(eventStreams, imageConfig, listeners, mockIcpClusterDataMap);
@@ -245,16 +266,13 @@ public class AdminApiModelTest {
         assertThat(networkPolicy.getMetadata().getName(), is(componentPrefix));
         assertThat(networkPolicy.getKind(), is("NetworkPolicy"));
 
-        int numberOfPodToPodListeners = 1;
-        int expectNumberOfIngresses = Listener.enabledListeners().size() + numberOfPodToPodListeners;
-        assertThat(networkPolicy.getSpec().getIngress().size(), is(expectNumberOfIngresses));
-        List<Listener> listeners = Listener.enabledListeners();
-        listeners.add(Listener.podToPodListener(true));
-        List<Integer> listenerPorts = listeners.stream().map(Listener::getPort).collect(Collectors.toList());
+        assertThat(networkPolicy.getSpec().getIngress().size(), is(3));
+        List<Integer> endpointPorts = adminApiModel.getEndpoints().stream().map(Endpoint::getPort).collect(Collectors.toList());
+
         networkPolicy.getSpec().getIngress().forEach(ingress -> {
             assertThat(ingress.getFrom(), is(emptyIterableOf(NetworkPolicyPeer.class)));
             assertThat(ingress.getPorts().size(), is(1));
-            assertThat(listenerPorts, hasItem(ingress.getPorts().get(0).getPort().getIntVal()));
+            assertThat(endpointPorts, hasItem(ingress.getPorts().get(0).getPort().getIntVal()));
         });
     }
 
@@ -711,7 +729,7 @@ public class AdminApiModelTest {
                 .build();
 
         AdminApiModel adminApiModel = new AdminApiModel(eventStreams, imageConfig, null, mockIcpClusterDataMap);
-        assertThat(adminApiModel.getRoutes().get(adminApiModel.getRouteName(Listener.EXTERNAL_TLS_NAME)).getSpec().getTls().getTermination(), is("passthrough"));
+        assertThat(adminApiModel.getRoutes().get(adminApiModel.getRouteName("external")).getSpec().getTls().getTermination(), is("passthrough"));
     }
 
     @Test
@@ -719,7 +737,26 @@ public class AdminApiModelTest {
         EventStreams eventStreams = createDefaultEventStreams().build();
 
         AdminApiModel adminApiModel = new AdminApiModel(eventStreams, imageConfig, null, mockIcpClusterDataMap);
-        assertThat(adminApiModel.getRoutes().get(adminApiModel.getRouteName(Listener.EXTERNAL_PLAIN_NAME)).getSpec().getTls(), is(nullValue()));
+        assertThat(adminApiModel.getRoutes().size(), is(1));
+        assertThat(adminApiModel.getRoutes().get(adminApiModel.getRouteName(Endpoint.DEFAULT_EXTERNAL_NAME)).getSpec().getTls(), is(notNullValue()));
+    }
+
+    @Test
+    public void testCreateAdminApiRouteWithNonTlsOverridesHaveRoute() {
+        String routeName = "Non-tls-route";
+        EndpointSpec endpointSpec = new EndpointSpecBuilder()
+            .withName(routeName)
+            .withAccessPort(9999)
+            .withTls(false)
+            .build();
+
+        EventStreams eventStreams = createDefaultEventStreams().build();
+
+        eventStreams.getSpec().getAdminApi().setEndpoints(Collections.singletonList(endpointSpec));
+
+        AdminApiModel adminApiModel = new AdminApiModel(eventStreams, imageConfig, null, mockIcpClusterDataMap);
+        assertThat(adminApiModel.getRoutes().size(), is(1));
+        assertThat(adminApiModel.getRoutes().get(adminApiModel.getRouteName(routeName)).getSpec().getTls(), is(nullValue()));
     }
 
     @Test
@@ -742,35 +779,33 @@ public class AdminApiModelTest {
 
         assertThat(volumeMounts.size(), is(7));
 
-        assertThat(volumeMounts.get(0).getName(), is(AdminApiModel.KAFKA_USER_SECRET_VOLUME_NAME));
+        assertThat(volumeMounts.get(0).getName(), is(ReplicatorModel.REPLICATOR_SECRET_NAME));
         assertThat(volumeMounts.get(0).getReadOnly(), is(true));
-        assertThat(volumeMounts.get(0).getMountPath(), is(AdminApiModel.KAFKA_USER_CERTIFICATE_PATH));
+        assertThat(volumeMounts.get(0).getMountPath(), is(ReplicatorModel.REPLICATOR_SECRET_MOUNT_PATH));
 
-        assertThat(volumeMounts.get(1).getName(), is(AdminApiModel.CERTS_VOLUME_MOUNT_NAME));
+        assertThat(volumeMounts.get(1).getName(), is(AdminApiModel.KAFKA_CONFIGMAP_MOUNT_NAME));
         assertThat(volumeMounts.get(1).getReadOnly(), is(true));
-        assertThat(volumeMounts.get(1).getMountPath(), is(AdminApiModel.CERTIFICATE_PATH));
+        assertThat(volumeMounts.get(1).getMountPath(), is("/etc/kafka-cm"));
 
-        assertThat(volumeMounts.get(2).getName(), is(AdminApiModel.CLUSTER_CA_VOLUME_MOUNT_NAME));
+        assertThat(volumeMounts.get(2).getName(), is(AdminApiModel.IBMCLOUD_CA_VOLUME_MOUNT_NAME));
         assertThat(volumeMounts.get(2).getReadOnly(), is(true));
-        assertThat(volumeMounts.get(2).getMountPath(), is(AdminApiModel.CLUSTER_CERTIFICATE_PATH));
+        assertThat(volumeMounts.get(2).getMountPath(), is(AdminApiModel.IBMCLOUD_CA_CERTIFICATE_PATH));
 
-        assertThat(volumeMounts.get(3).getName(), is(AdminApiModel.CLIENT_CA_VOLUME_MOUNT_NAME));
+        assertThat(volumeMounts.get(3).getName(), is(AdminApiModel.CERTS_VOLUME_MOUNT_NAME));
         assertThat(volumeMounts.get(3).getReadOnly(), is(true));
-        assertThat(volumeMounts.get(3).getMountPath(), is(AdminApiModel.CLIENT_CA_CERTIFICATE_PATH));
+        assertThat(volumeMounts.get(3).getMountPath(), is(AdminApiModel.CERTIFICATE_PATH));
 
-        assertThat(volumeMounts.get(4).getName(), is(ReplicatorModel.REPLICATOR_SECRET_NAME));
+        assertThat(volumeMounts.get(4).getName(), is(AdminApiModel.CLUSTER_CA_VOLUME_MOUNT_NAME));
         assertThat(volumeMounts.get(4).getReadOnly(), is(true));
-        assertThat(volumeMounts.get(4).getMountPath(), is(ReplicatorModel.REPLICATOR_SECRET_MOUNT_PATH));
+        assertThat(volumeMounts.get(4).getMountPath(), is(AdminApiModel.CLUSTER_CERTIFICATE_PATH));
 
-        assertThat(volumeMounts.get(5).getName(), is(AdminApiModel.KAFKA_CONFIGMAP_MOUNT_NAME));
+        assertThat(volumeMounts.get(5).getName(), is(AdminApiModel.CLIENT_CA_VOLUME_MOUNT_NAME));
         assertThat(volumeMounts.get(5).getReadOnly(), is(true));
-        assertThat(volumeMounts.get(5).getMountPath(), is("/etc/kafka-cm"));
+        assertThat(volumeMounts.get(5).getMountPath(), is(AdminApiModel.CLIENT_CA_CERTIFICATE_PATH));
 
-        assertThat(volumeMounts.get(6).getName(), is(AdminApiModel.IBMCLOUD_CA_VOLUME_MOUNT_NAME));
+        assertThat(volumeMounts.get(6).getName(), is(AdminApiModel.KAFKA_USER_SECRET_VOLUME_NAME));
         assertThat(volumeMounts.get(6).getReadOnly(), is(true));
-        assertThat(volumeMounts.get(6).getMountPath(), is(AdminApiModel.IBMCLOUD_CA_CERTIFICATE_PATH));
-
-
+        assertThat(volumeMounts.get(6).getMountPath(), is(AdminApiModel.KAFKA_USER_CERTIFICATE_PATH));
     }
 
     @Test
@@ -830,6 +865,23 @@ public class AdminApiModelTest {
 
     }
 
+    @Test
+    public void testOwnerReferenceCorrectForRoutes() {
+        EventStreams eventStreams = createDefaultEventStreams()
+            .withApiVersion("test-api-version")
+            .withMetadata(new ObjectMetaBuilder()
+                .withName("test-name")
+                .withUid("test-uid")
+                .build())
+            .build();
+        AdminApiModel adminApiModel = new AdminApiModel(eventStreams, imageConfig, null, mockIcpClusterDataMap);
+
+        OwnerReference ownerReference = adminApiModel.getRoutes().get(adminApiModel.getRouteName(Endpoint.DEFAULT_EXTERNAL_NAME)).getMetadata().getOwnerReferences().get(0);
+        assertThat(ownerReference.getUid(), is("test-uid"));
+        assertThat(ownerReference.getName(), is("test-name"));
+        assertThat(ownerReference.getApiVersion(), is("test-api-version"));
+    }
+
     private EventStreamsSpec createStrimziOverrides() {
         return new EventStreamsSpecBuilder()
             .withStrimziOverrides(new KafkaSpecBuilder()
@@ -856,4 +908,5 @@ public class AdminApiModelTest {
             )
             .build();
     }
+
 }

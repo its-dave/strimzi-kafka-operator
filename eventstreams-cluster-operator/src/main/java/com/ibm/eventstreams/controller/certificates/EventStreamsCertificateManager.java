@@ -77,6 +77,7 @@ public class EventStreamsCertificateManager {
             File certFile = File.createTempFile("tls", "temp-cert");
             certManager.generateCsr(keyFile, csrFile, subject);
             certManager.generateCert(csrFile, getClusterCaKeyData(), getClusterCaData(), certFile, subject, CertificateAuthority.DEFAULT_CERTS_VALIDITY_DAYS);
+
             CertAndKey certAndKey = new CertAndKey(Files.readAllBytes(keyFile.toPath()), Files.readAllBytes(certFile.toPath()));
             delete(keyFile);
             delete(csrFile);
@@ -125,21 +126,48 @@ public class EventStreamsCertificateManager {
     public Subject createSubject(Service service, List<String> additionalHosts) {
         Subject subject = new Subject();
         Map<String, String> sbjAltNames = new HashMap<>();
-        if (service != null) {
-            String serviceName = service.getMetadata().getName();
-            String namespace = service.getMetadata().getNamespace();
+        String commonName = getCommonName(service, additionalHosts);
+        int dnsNumber = 1;
+
+        if (commonName != null) {
             subject.setOrganizationName(ORGANISATION_NAME);
-            subject.setCommonName(serviceName);
-            sbjAltNames.put("DNS.1", serviceName);
-            sbjAltNames.put("DNS.2", String.format("%s.%s", serviceName, namespace));
-            sbjAltNames.put("DNS.3", String.format("%s.%s.svc", serviceName, namespace));
-            sbjAltNames.put("DNS.4", String.format("%s.%s.svc.%s", serviceName, namespace, ModelUtils.KUBERNETES_SERVICE_DNS_DOMAIN));
+            subject.setCommonName(commonName);
+
+            for (String additionalHost : additionalHosts) {
+                dnsNumber = putSubjectAlternativeNameAndIncrementDnsNumber(sbjAltNames, dnsNumber, additionalHost);
+            }
+
+            if (service != null) {
+                String serviceName = service.getMetadata().getName();
+                String namespace = service.getMetadata().getNamespace();
+
+                dnsNumber = putSubjectAlternativeNameAndIncrementDnsNumber(sbjAltNames, dnsNumber, serviceName);
+                dnsNumber = putSubjectAlternativeNameAndIncrementDnsNumber(sbjAltNames, dnsNumber, String.format("%s.%s", serviceName, namespace));
+                dnsNumber = putSubjectAlternativeNameAndIncrementDnsNumber(sbjAltNames, dnsNumber, String.format("%s.%s.svc", serviceName, namespace));
+                putSubjectAlternativeNameAndIncrementDnsNumber(sbjAltNames, dnsNumber, String.format("%s.%s.svc.%s", serviceName, namespace, ModelUtils.KUBERNETES_SERVICE_DNS_DOMAIN));
+            }
         }
-        for (int i = 0; i < additionalHosts.size(); i++) {
-            sbjAltNames.put(String.format("DNS.%d", i + 5), additionalHosts.get(i));
-        }
+
         subject.setSubjectAltNames(sbjAltNames);
         return subject;
+    }
+
+    private int putSubjectAlternativeNameAndIncrementDnsNumber(Map<String, String> sbjAltNames, int dnsNumber, String subjectAlternativeName) {
+        sbjAltNames.put(String.format("DNS.%d", dnsNumber), subjectAlternativeName);
+        return dnsNumber + 1;
+    }
+
+    private String getCommonName(Service service, List<String> additionalHosts) {
+        if (additionalHosts.size() > 0) {
+            return getRouteCommonName(additionalHosts.get(0));
+        }
+
+        return service == null ? null : service.getMetadata().getName();
+    }
+
+    private String getRouteCommonName(String routeName) {
+        String[] routeNameParts = routeName.split("apps");
+        return routeNameParts.length > 1 ? "*.apps" + routeNameParts[1] : routeName;
     }
 
     public static PrivateKey loadKey(byte[] keyData) throws EventStreamsCertificateException {
@@ -171,6 +199,11 @@ public class EventStreamsCertificateManager {
     public boolean shouldGenerateOrRenewCertificate(Secret certSecret, String certName, Supplier<Date> dateSupplier, Service service, List<String> additionalHosts) {
         byte[] certData = getBase64DecodedSecretData(certSecret, CertificateSecretModel.formatCertID(certName));
         byte[] keyData = getBase64DecodedSecretData(certSecret, CertificateSecretModel.formatKeyID(certName));
+
+        if (certSecret.getData().get(CertificateSecretModel.formatCertID(certName)) == null) {
+            return true;
+        }
+
         CertAndKey certAndKey = new CertAndKey(keyData, certData);
         try {
             testCertAndKey(certAndKey, dateSupplier, service, additionalHosts);
