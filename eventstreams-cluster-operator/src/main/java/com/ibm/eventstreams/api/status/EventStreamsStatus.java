@@ -34,7 +34,7 @@ import lombok.EqualsAndHashCode;
 @JsonDeserialize(using = JsonDeserializer.None.class)
 @Buildable(editableEnabled = false, generateBuilderPackage = false, builderPackage = "io.fabric8.kubernetes.api.builder")
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({"kafkaListeners", "adminUiUrl", "routes", "customImages", "endpoints", "versions", "conditions", "cp4iPresent"})
+@JsonPropertyOrder({"phase", "conditions", "versions", "endpoints", "adminUiUrl", "kafkaListeners", "routes", "customImages", "cp4iPresent"})
 @EqualsAndHashCode
 public class EventStreamsStatus implements Serializable {
 

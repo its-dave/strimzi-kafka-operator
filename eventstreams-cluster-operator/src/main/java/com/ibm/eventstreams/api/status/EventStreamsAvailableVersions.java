@@ -22,6 +22,7 @@ import lombok.EqualsAndHashCode;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static java.util.Collections.singletonList;
 import static java.util.Collections.unmodifiableList;
@@ -38,21 +39,35 @@ public class EventStreamsAvailableVersions implements Serializable {
     public static final List<String> VERSIONS = unmodifiableList(singletonList(EventStreamsVersions.OPERAND_VERSION));
     public static final List<String> CHANNELS = unmodifiableList(singletonList(EventStreamsVersions.AUTO_UPGRADE_VERSION));
 
+    private final List<EventStreamsAvailableVersion> versions;
+    private final List<EventStreamsAvailableVersion> channels;
+
+    public EventStreamsAvailableVersions() {
+        versions = VERSIONS.stream().map(this::createVersionWithName).collect(Collectors.toList());
+        channels = CHANNELS.stream().map(this::createVersionWithName).collect(Collectors.toList());
+    }
+
     @Description("A list of versions that the Operator is able to upgrade this instance of Event Streams to.")
-    public List<String> getVersions() {
-        return VERSIONS;
+    public List<EventStreamsAvailableVersion> getVersions() {
+        return versions;
     }
 
     // This method is needed to enable deserialising by Jackson
-    public void setVersions(List<String> versions) {
+    public void setVersions(List<EventStreamsAvailableVersion> versions) {
     }
 
     @Description("A list of versions that the Operator is able to automatically upgrade from.")
-    public List<String> getChannels() {
-        return CHANNELS;
+    public List<EventStreamsAvailableVersion> getChannels() {
+        return channels;
     }
 
     // This method is needed to enable deserialising by Jackson
-    public void setChannels(List<String> versions) {
+    public void setChannels(List<EventStreamsAvailableVersion> versions) {
+    }
+
+    private EventStreamsAvailableVersion createVersionWithName(String name) {
+        EventStreamsAvailableVersion v = new EventStreamsAvailableVersion();
+        v.setName(name);
+        return v;
     }
 }

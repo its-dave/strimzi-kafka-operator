@@ -19,7 +19,6 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.aMapWithSize;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.hasProperty;
@@ -364,9 +363,11 @@ public class EventStreamsOperatorTest {
             .onComplete(context.succeeding(v -> context.verify(() -> {
                 ArgumentCaptor<EventStreams> argument = ArgumentCaptor.forClass(EventStreams.class);
                 verify(esResourceOperator, times(2)).createOrUpdate(argument.capture());
-                assertThat(argument.getValue().getStatus().getVersions().getInstalled(), is(DEFAULT_VERSION));
-                assertThat(argument.getValue().getStatus().getVersions().getAvailable().getVersions(), contains(DEFAULT_VERSION));
-                assertThat(argument.getValue().getStatus().getVersions().getAvailable().getChannels(), contains("2020.1"));
+                assertThat(argument.getValue().getStatus().getVersions().getReconciled(), is(DEFAULT_VERSION));
+                assertThat(argument.getValue().getStatus().getVersions().getAvailable().getVersions(),
+                        hasItem(hasProperty("name", is(DEFAULT_VERSION))));
+                assertThat(argument.getValue().getStatus().getVersions().getAvailable().getChannels(),
+                        hasItem(hasProperty("name", is("2020.1"))));
                 async.flag();
             })));
     }
@@ -761,9 +762,11 @@ public class EventStreamsOperatorTest {
                 ArgumentCaptor<EventStreams> argument = ArgumentCaptor.forClass(EventStreams.class);
                 verify(esResourceOperator, times(2)).createOrUpdate(argument.capture());
                 assertThat(argument.getValue().getStatus().isCustomImages(), is(false));
-                assertThat(esCluster.getStatus().getVersions().getInstalled(), is(EventStreamsVersions.OPERAND_VERSION));
-                assertThat(esCluster.getStatus().getVersions().getAvailable().getChannels(), is(EventStreamsAvailableVersions.CHANNELS));
-                assertThat(esCluster.getStatus().getVersions().getAvailable().getVersions(), is(EventStreamsAvailableVersions.VERSIONS));
+                assertThat(esCluster.getStatus().getVersions().getReconciled(), is(EventStreamsVersions.OPERAND_VERSION));
+                assertThat(esCluster.getStatus().getVersions().getAvailable().getChannels(),
+                        hasItem(hasProperty("name", is(EventStreamsAvailableVersions.CHANNELS.get(0)))));
+                assertThat(esCluster.getStatus().getVersions().getAvailable().getVersions(),
+                        hasItem(hasProperty("name", is(EventStreamsAvailableVersions.VERSIONS.get(0)))));
                 assertThat(new HashSet<String>(esCluster.getStatus().getRoutes().values()), is(expectedRouteHosts));
                 assertThat(esCluster.getStatus().getAdminUiUrl(), is("https://" + formatRouteHost(UI_ROUTE_NAME)));
                 context.completeNow();

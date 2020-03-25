@@ -111,26 +111,6 @@ spec:
             - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:schemaRegistryPersistence'
             - 'urn:alm:descriptor:io.kubernetes:StorageClass'
 
-        - displayName: Type
-          description: The type of external access for Kafka brokers
-          path: strimziOverrides.kafka.listeners.external.type
-          x-descriptors:
-            - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:externalAccess'
-            - 'urn:alm:descriptor:com.tectonic.ui:select:route'
-            - 'urn:alm:descriptor:com.tectonic.ui:select:nodeport'
-
-# If the user doesn't want authentication, they should omit the
-# strimziOverrides.kafka.listeners.external.authentication section
-# completely - it's not clear how to do this in alm.
-#
-#        - displayName: Authentication type
-#          description: Authentication method for external Kafka clients
-#          path: strimziOverrides.kafka.listeners.external.authentication.type
-#          x-descriptors:
-#            - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:externalAccess'
-#            - 'urn:alm:descriptor:com.tectonic.ui:select:tls'
-#            - 'urn:alm:descriptor:com.tectonic.ui:select:scram-sha-512'
-
         - description: The desired number of Kafka brokers.
           displayName: Kafka Brokers
           path: strimziOverrides.kafka.replicas
@@ -152,23 +132,10 @@ spec:
             - 'urn:alm:descriptor:com.tectonic.ui:resourceRequirements'
             - 'urn:alm:descriptor:com.tectonic.ui:advanced'
 
-        - description: Whether to enable TLS for connections between pods in the cluster
-          displayName: Internal security
-          path: security.encryption
-          x-descriptors:
-            - 'urn:alm:descriptor:com.tectonic.ui:select:TLS'
-            - 'urn:alm:descriptor:com.tectonic.ui:select:NONE'
-            - 'urn:alm:descriptor:com.tectonic.ui:advanced'
-
       statusDescriptors:
         - description: URL for the Event Streams UI
           displayName: Admin UI
           path: adminUiUrl
-          x-descriptors:
-            - 'urn:alm:descriptor:org.w3:link'
-        - description: URL for the Event Streams REST API
-          displayName: Admin API
-          path: adminRoute
           x-descriptors:
             - 'urn:alm:descriptor:org.w3:link'
     - description: A framework provided by IBM Event Streams for connecting Kafka to external systems, providing a standard way of writing and running connectors.

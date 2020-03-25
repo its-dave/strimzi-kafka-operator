@@ -15,15 +15,18 @@ package com.ibm.eventstreams.api.status;
 import java.io.Serializable;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
+import io.strimzi.crdgenerator.annotations.Description;
 import io.sundr.builder.annotations.Buildable;
 import lombok.EqualsAndHashCode;
 
 
 @JsonDeserialize(using = JsonDeserializer.None.class)
 @Buildable(editableEnabled = false, generateBuilderPackage = false, builderPackage = "io.fabric8.kubernetes.api.builder")
+@JsonPropertyOrder({"reconciled", "available"})
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @EqualsAndHashCode
 public class EventStreamsVersions implements Serializable {
@@ -34,14 +37,16 @@ public class EventStreamsVersions implements Serializable {
     public static final String AUTO_UPGRADE_VERSION = "2020.1";
     private static final EventStreamsAvailableVersions AVAILABLE_VERSIONS = new EventStreamsAvailableVersions();
 
-    public String getInstalled() {
+    @Description("The current running version of this Operator")
+    public String getReconciled() {
         return OPERAND_VERSION;
     }
 
     // This method is needed to enable deserialising by Jackson
-    public void setInstalled(String version) {
+    public void setReconciled(String version) {
     }
 
+    @Description("The versions that this instance of Event Streams can be upgraded to")
     public EventStreamsAvailableVersions getAvailable() {
         return AVAILABLE_VERSIONS;
     }

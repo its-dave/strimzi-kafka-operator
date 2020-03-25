@@ -8960,6 +8960,91 @@ spec:
         status:
           type: object
           properties:
+            phase:
+              type: string
+              description: Identifies the current status of the Event Streams instance.
+                This will be 'Pending', 'Running', or 'Failed'.
+            conditions:
+              type: array
+              items:
+                type: object
+                properties:
+                  type:
+                    type: string
+                    description: The unique identifier of a condition, used to distinguish
+                      between other conditions in the resource.
+                  status:
+                    type: string
+                    description: The status of the condition, either True, False or
+                      Unknown.
+                  lastTransitionTime:
+                    type: string
+                    description: Last time the condition of a type changed from one
+                      status to another. The required format is 'yyyy-MM-ddTHH:mm:ssZ',
+                      in the UTC time zone.
+                  reason:
+                    type: string
+                    description: The reason for the condition's last transition (a
+                      single word in CamelCase).
+                  message:
+                    type: string
+                    description: Human-readable message indicating details about the
+                      condition's last transition.
+              description: Current state of the Event Streams cluster.
+            versions:
+              type: object
+              properties:
+                reconciled:
+                  type: string
+                  description: The current running version of this Operator.
+                available:
+                  type: object
+                  properties:
+                    channels:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                            description: The name for this version of Event Streams.
+                      description: A list of versions that the Operator is able to
+                        automatically upgrade from.
+                    versions:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                            description: The name for this version of Event Streams.
+                      description: A list of versions that the Operator is able to
+                        upgrade this instance of Event Streams to.
+                  description: The versions that this instance of Event Streams can
+                    be upgraded to.
+              description: Information about the version of this instance and it's
+                upgradable versions.
+            endpoints:
+              type: array
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  type:
+                    type: string
+                    enum:
+                    - api
+                    - ui
+                    description: 'The type of the endpoint: ''ui'' for a UI endpoint,
+                      ''api'' for an API endpoint.'
+                  uri:
+                    type: string
+              description: Addresses of the interfaces provided by the Event Streams
+                cluster.
+            adminUiUrl:
+              type: string
+              description: Web address for the Event Streams administration UI.
             kafkaListeners:
               type: array
               items:
@@ -8990,9 +9075,6 @@ spec:
                       the identity of the server when connecting to the given listener.
                       Set only for `tls` and `external` listeners.
               description: Addresses of the internal and external listeners.
-            adminUiUrl:
-              type: string
-              description: Web address for the Event Streams administration UI.
             routes:
               type: object
               description: OpenShift Routes created as part of the Event Streams cluster.
@@ -9000,81 +9082,10 @@ spec:
               type: boolean
               description: Identifies whether any of the Docker images have been modified
                 from the defaults for this version of Event Streams.
-            endpoints:
-              type: array
-              items:
-                type: object
-                properties:
-                  name:
-                    type: string
-                  type:
-                    type: string
-                    enum:
-                    - api
-                    - ui
-                    description: 'The type of the endpoint: ''ui'' for a UI endpoint,
-                      ''api'' for an API endpoint.'
-                  uri:
-                    type: string
-              description: Addresses of the interfaces provided by the Event Streams
-                cluster.
-            versions:
-              type: object
-              properties:
-                available:
-                  type: object
-                  properties:
-                    channels:
-                      type: array
-                      items:
-                        type: string
-                      description: A list of versions that the Operator is able to
-                        automatically upgrade from.
-                    versions:
-                      type: array
-                      items:
-                        type: string
-                      description: A list of versions that the Operator is able to
-                        upgrade this instance of Event Streams to.
-                installed:
-                  type: string
-              description: Information about the version of this instance and it's
-                upgradable versions.
-            conditions:
-              type: array
-              items:
-                type: object
-                properties:
-                  type:
-                    type: string
-                    description: The unique identifier of a condition, used to distinguish
-                      between other conditions in the resource.
-                  status:
-                    type: string
-                    description: The status of the condition, either True, False or
-                      Unknown.
-                  lastTransitionTime:
-                    type: string
-                    description: Last time the condition of a type changed from one
-                      status to another. The required format is 'yyyy-MM-ddTHH:mm:ssZ',
-                      in the UTC time zone.
-                  reason:
-                    type: string
-                    description: The reason for the condition's last transition (a
-                      single word in CamelCase).
-                  message:
-                    type: string
-                    description: Human-readable message indicating details about the
-                      condition's last transition.
-              description: Current state of the Event Streams cluster.
             cp4iPresent:
               type: boolean
               description: Identifies whether IBM Cloud Pak for Integration Services
                 Binding is present.
-            phase:
-              type: string
-              description: Identifies the current status of the Event Streams instance.
-                This will be 'Pending', 'Running', or 'Failed'.
       required:
       - spec
   version: v1beta1
