@@ -1,0 +1,6 @@
+inventory:
+    # This is the main Operator runtime
+    metadata:
+        name: installOperator
+        displayName: Event Streams operator
+        displayDescription: Event Streams operator installation resources

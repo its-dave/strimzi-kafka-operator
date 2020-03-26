@@ -1,0 +1,57 @@
+resources:
+  metadata:
+    name: installOperator
+    displayName: Event Streams operator
+    displayDescription: Event Streams operator installation resources
+  resourceDefs:
+    files:
+    - ref: 010-ServiceAccount-strimzi-cluster-operator.yaml
+      mediaType: application/vnd.case.resource.k8s.v1+yaml
+    - ref: 020-ClusterRole-strimzi-cluster-operator-role.yaml
+      mediaType: application/vnd.case.resource.k8s.v1+yaml
+    - ref: 020-RoleBinding-strimzi-cluster-operator.yaml
+      mediaType: application/vnd.case.resource.k8s.v1+yaml
+    - ref: 021-ClusterRoleBinding-strimzi-cluster-operator.yaml
+      mediaType: application/vnd.case.resource.k8s.v1+yaml
+    - ref: 021-ClusterRole-strimzi-cluster-operator-role.yaml
+      mediaType: application/vnd.case.resource.k8s.v1+yaml
+    - ref: 030-ClusterRoleBinding-strimzi-cluster-operator-kafka-broker-delegation.yaml
+      mediaType: application/vnd.case.resource.k8s.v1+yaml
+    - ref: 030-ClusterRole-strimzi-kafka-broker.yaml
+      mediaType: application/vnd.case.resource.k8s.v1+yaml
+    - ref: 031-ClusterRole-strimzi-entity-operator.yaml
+      mediaType: application/vnd.case.resource.k8s.v1+yaml
+    - ref: 031-RoleBinding-strimzi-cluster-operator-entity-operator-delegation.yaml
+      mediaType: application/vnd.case.resource.k8s.v1+yaml
+    - ref: 032-ClusterRole-strimzi-topic-operator.yaml
+      mediaType: application/vnd.case.resource.k8s.v1+yaml
+    - ref: 032-RoleBinding-strimzi-cluster-operator-topic-operator-delegation.yaml
+      mediaType: application/vnd.case.resource.k8s.v1+yaml
+    - ref: 040-Crd-kafka.yaml
+      mediaType: application/vnd.case.resource.k8s.v1+yaml
+    - ref: 041-Crd-kafkaconnect.yaml
+      mediaType: application/vnd.case.resource.k8s.v1+yaml
+    - ref: 042-Crd-kafkaconnects2i.yaml
+      mediaType: application/vnd.case.resource.k8s.v1+yaml
+    - ref: 043-Crd-kafkatopic.yaml
+      mediaType: application/vnd.case.resource.k8s.v1+yaml
+    - ref: 044-Crd-kafkauser.yaml
+      mediaType: application/vnd.case.resource.k8s.v1+yaml
+    - ref: 045-Crd-kafkamirrormaker.yaml
+      mediaType: application/vnd.case.resource.k8s.v1+yaml
+    - ref: 046-Crd-kafkabridge.yaml
+      mediaType: application/vnd.case.resource.k8s.v1+yaml
+    - ref: 047-Crd-kafkaconnector.yaml
+      mediaType: application/vnd.case.resource.k8s.v1+yaml
+    - ref: 048-Crd-kafkamirrormaker2.yaml
+      mediaType: application/vnd.case.resource.k8s.v1+yaml
+    - ref: 100-SecurityContextConstraints-eventstreams.yaml
+      mediaType: application/vnd.case.resource.k8s.v1+yaml
+    - ref: 122-ClusterRole-eventstreams-ui.yaml
+      mediaType: application/vnd.case.resource.k8s.v1+yaml
+    - ref: 123-ClusterRole-eventstreams-admin.yaml
+      mediaType: application/vnd.case.resource.k8s.v1+yaml
+    - ref: 140-Crd-eventstreams.yaml
+      mediaType: application/vnd.case.resource.k8s.v1+yaml
+    - ref: 150-Deployment-eventstreams-cluster-operator.yaml
+      mediaType: application/vnd.case.resource.k8s.v1+yaml

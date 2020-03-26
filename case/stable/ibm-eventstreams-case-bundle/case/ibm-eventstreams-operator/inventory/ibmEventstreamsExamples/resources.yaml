@@ -1,0 +1,15 @@
+resources:
+  metadata:
+    name: examples
+    displayName: Event Streams Resources
+    displayDescription: Event Streams example custom resources
+  resourceDefs:
+    files:
+    - ref: eventstreams-nine-brokers.yaml
+      mediaType: application/vnd.case.resource.k8s.v1+yaml
+    - ref: eventstreams-quickstart.yaml
+      mediaType: application/vnd.case.resource.k8s.v1+yaml
+    - ref: eventstreams-six-brokers.yaml
+      mediaType: application/vnd.case.resource.k8s.v1+yaml
+    - ref: eventstreams-three-brokers.yaml
+      mediaType: application/vnd.case.resource.k8s.v1+yaml

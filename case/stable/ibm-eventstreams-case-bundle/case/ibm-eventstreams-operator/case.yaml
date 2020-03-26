@@ -1,0 +1,14 @@
+# https://github.ibm.com/CloudPakOpenContent/case-spec/blob/master/100-case.md
+name: ibm-eventstreams-operator
+specVersion: 1.0.0
+version: 1.0.0
+appVersion: 1.0.0
+description: ""
+displayName: ""
+displayDescription: ""
+icons: []
+organization: IBM
+webPage: https://www.ibm.com
+supports: {}
+catalogs: {}
+classifications: {}

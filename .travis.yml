@@ -99,6 +99,17 @@ matrix:
             git diff
             travis_terminate 1
           fi
+        - make -C case docker_build
+        - |
+          #!/bin/bash
+          echo "Checking generated files in deploy directory"
+          STATUS=$(git status --porcelain case)
+          echo "${STATUS}"
+          if [ -n "${STATUS}" ]; then
+            echo 'Error: Generated files in case dir differs to what is checked in. Run make -C case docker_build' >&2
+            git diff
+            travis_terminate 1
+          fi
 
     - language: java
       env:

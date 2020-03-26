@@ -1,0 +1,23 @@
+actions:
+    actionDefs:
+      create:
+        roles: 
+        - eventstreamsAdmin
+  
+        requires:
+          and:
+          - "/case/prereqs/k8sDistros/openshift"
+
+        k8sPermissions:
+        rules:
+        - rule: 
+            group: eventstreams.ibm.com
+            resource: EventStreams
+            verbs:
+            - get
+            - list
+            - watch
+            - create
+            - patch
+            - update
+            - delete

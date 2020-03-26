@@ -1,0 +1,6 @@
+inventory:
+    metadata:
+      name: examples
+      description: Event Streams Examples
+    k8sScope: namespace
+  
