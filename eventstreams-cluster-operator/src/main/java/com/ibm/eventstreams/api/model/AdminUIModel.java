@@ -12,19 +12,9 @@
  */
 package com.ibm.eventstreams.api.model;
 
-import static com.ibm.eventstreams.api.model.AbstractSecureEndpointModel.getInternalServiceName;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
 import com.ibm.eventstreams.Main;
 import com.ibm.eventstreams.api.DefaultResourceRequirements;
-import com.ibm.eventstreams.api.Listener;
+import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.spec.AdminUISpec;
 import com.ibm.eventstreams.api.spec.ComponentSpec;
 import com.ibm.eventstreams.api.spec.ComponentTemplate;
@@ -37,7 +27,6 @@ import com.ibm.eventstreams.api.spec.ImagesSpec;
 import com.ibm.eventstreams.api.spec.SecuritySpec;
 import com.ibm.eventstreams.controller.EventStreamsOperatorConfig;
 import com.ibm.iam.api.model.ClientModel;
-
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.ContainerBuilder;
 import io.fabric8.kubernetes.api.model.EnvVar;
@@ -65,6 +54,16 @@ import io.strimzi.api.kafka.model.KafkaClusterSpec;
 import io.strimzi.api.kafka.model.KafkaSpec;
 import io.strimzi.api.kafka.model.Logging;
 import io.strimzi.api.kafka.model.template.PodTemplate;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import static com.ibm.eventstreams.api.model.AbstractSecureEndpointsModel.getInternalServiceName;
 
 public class AdminUIModel extends AbstractModel {
 
@@ -256,8 +255,8 @@ public class AdminUIModel extends AbstractModel {
      * @return The Admin UI container
      */
     private Container getUIContainer() {
-        String adminApiService = getUrlProtocol(crEncryptionValue) + getInternalServiceName(getInstanceName(), AdminApiModel.COMPONENT_NAME) + "." +  getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + Listener.podToPodListener(tlsEnabled(crEncryptionValue)).getPort();
-        String schemaRegistryService = getUrlProtocol(crEncryptionValue) + getInternalServiceName(getInstanceName(), SchemaRegistryModel.COMPONENT_NAME) + "." +  getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + Listener.podToPodListener(tlsEnabled(crEncryptionValue)).getPort();
+        String adminApiService = getUrlProtocol(crEncryptionValue) + getInternalServiceName(getInstanceName(), AdminApiModel.COMPONENT_NAME) + "." +  getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.getPodToPodPort(tlsEnabled());
+        String schemaRegistryService = getUrlProtocol(crEncryptionValue) + getInternalServiceName(getInstanceName(), SchemaRegistryModel.COMPONENT_NAME) + "." +  getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.getPodToPodPort(tlsEnabled());
 
         List<EnvVar> envVarDefaults = new ArrayList<>();
 

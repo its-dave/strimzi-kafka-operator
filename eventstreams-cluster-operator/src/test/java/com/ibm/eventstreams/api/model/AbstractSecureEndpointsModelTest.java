@@ -21,6 +21,8 @@ import com.ibm.eventstreams.api.spec.EndpointSpecBuilder;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.spec.EventStreamsSpecBuilder;
+import com.ibm.eventstreams.api.spec.SecurityComponentSpec;
+import com.ibm.eventstreams.api.spec.SecurityComponentSpecBuilder;
 import com.ibm.eventstreams.api.spec.SecuritySpec;
 import com.ibm.eventstreams.api.spec.SecuritySpecBuilder;
 import io.fabric8.kubernetes.api.model.Container;
@@ -51,8 +53,8 @@ public class AbstractSecureEndpointsModelTest {
     private class ComponentModel extends AbstractSecureEndpointsModel {
         public static final String COMPONENT_NAME = "test-component";
 
-        public ComponentModel(EventStreams instance, List<EndpointSpec> endpoints) {
-            super(instance, endpoints, instance.getMetadata().getNamespace(), COMPONENT_NAME);
+        public ComponentModel(EventStreams instance, SecurityComponentSpec spec) {
+            super(instance, spec, COMPONENT_NAME);
             setEncryption(SecuritySpec.Encryption.TLS);
             setOwnerReference(instance);
         }
@@ -90,7 +92,11 @@ public class AbstractSecureEndpointsModelTest {
 
         EventStreams instance = ModelUtils.createEventStreams(instanceName, spec).build();
 
-        ComponentModel model = new ComponentModel(instance, Collections.singletonList(basicEndpointSpec));
+        SecurityComponentSpec securityComponentSpec = new SecurityComponentSpecBuilder()
+            .withEndpoints(basicEndpointSpec)
+            .build();
+
+        ComponentModel model = new ComponentModel(instance, securityComponentSpec);
 
         model.createService(EndpointServiceType.INTERNAL);
         model.createService(EndpointServiceType.ROUTE);
@@ -131,7 +137,11 @@ public class AbstractSecureEndpointsModelTest {
             .withAccessPort(9999)
             .build();
 
-        ComponentModel model = new ComponentModel(instance, Collections.singletonList(minimalSpec));
+        SecurityComponentSpec securityComponentSpec = new SecurityComponentSpecBuilder()
+            .withEndpoints(minimalSpec)
+            .build();
+
+        ComponentModel model = new ComponentModel(instance, securityComponentSpec);
 
         List<Endpoint> endpoint = model.getEndpoints();
 
@@ -157,7 +167,12 @@ public class AbstractSecureEndpointsModelTest {
             .build();
 
         EventStreams instance = ModelUtils.createEventStreams(instanceName, spec).build();
-        ComponentModel model = new ComponentModel(instance, Collections.singletonList(basicEndpointSpec));
+
+        SecurityComponentSpec securityComponentSpec = new SecurityComponentSpecBuilder()
+            .withEndpoints(basicEndpointSpec)
+            .build();
+
+        ComponentModel model = new ComponentModel(instance, securityComponentSpec);
 
         model.createService(EndpointServiceType.INTERNAL);
         model.createService(EndpointServiceType.ROUTE);
@@ -193,7 +208,11 @@ public class AbstractSecureEndpointsModelTest {
 
         EventStreams instance = ModelUtils.createEventStreams(instanceName, spec).build();
 
-        ComponentModel model = new ComponentModel(instance, Collections.singletonList(configuredEndpointsSpec));
+        SecurityComponentSpec securityComponentSpec = new SecurityComponentSpecBuilder()
+            .withEndpoints(configuredEndpointsSpec)
+            .build();
+
+        ComponentModel model = new ComponentModel(instance, securityComponentSpec);
 
         model.createService(EndpointServiceType.INTERNAL);
         model.createService(EndpointServiceType.ROUTE);
@@ -231,7 +250,11 @@ public class AbstractSecureEndpointsModelTest {
         endpointSpecs.add(basicPlainEndpointSpec);
         endpointSpecs.add(configuredEndpointsSpec);
 
-        ComponentModel model = new ComponentModel(instance, endpointSpecs);
+        SecurityComponentSpec securityComponentSpec = new SecurityComponentSpecBuilder()
+            .withEndpoints(basicPlainEndpointSpec, configuredEndpointsSpec)
+            .build();
+
+        ComponentModel model = new ComponentModel(instance, securityComponentSpec);
 
         model.createService(EndpointServiceType.INTERNAL);
         model.createService(EndpointServiceType.ROUTE);
@@ -272,9 +295,12 @@ public class AbstractSecureEndpointsModelTest {
 
         EventStreams instance = ModelUtils.createEventStreams(instanceName, spec).build();
 
-        List<EndpointSpec> endpointSpecs = Collections.singletonList(basicEndpointSpec);
+        SecurityComponentSpec securityComponentSpec = new SecurityComponentSpecBuilder()
+            .withEndpoints(basicEndpointSpec)
+            .build();
 
-        ComponentModel model = new ComponentModel(instance, endpointSpecs);
+        ComponentModel model = new ComponentModel(instance, securityComponentSpec);
+
         List<Volume> volumes = model.getSecurityVolumes();
 
         assertThat(volumes, hasSize(4));
@@ -318,11 +344,11 @@ public class AbstractSecureEndpointsModelTest {
 
         EventStreams instance = ModelUtils.createEventStreams(instanceName, spec).build();
 
-        List<EndpointSpec> endpointSpecs = new ArrayList<>();
-        endpointSpecs.add(basicPlainEndpointSpec);
-        endpointSpecs.add(configuredEndpointsSpec);
+        SecurityComponentSpec securityComponentSpec = new SecurityComponentSpecBuilder()
+            .withEndpoints(basicPlainEndpointSpec, configuredEndpointsSpec)
+            .build();
 
-        ComponentModel model = new ComponentModel(instance, endpointSpecs);
+        ComponentModel model = new ComponentModel(instance, securityComponentSpec);
         List<Volume> volumes = model.getSecurityVolumes();
 
         assertThat(volumes, hasSize(4));
@@ -365,8 +391,10 @@ public class AbstractSecureEndpointsModelTest {
         EventStreams instance = ModelUtils.createEventStreams(instanceName, spec).build();
 
         List<EndpointSpec> endpointSpecs = new ArrayList<>();
-        endpointSpecs.add(basicPlainEndpointSpec);
-        ComponentModel model = new ComponentModel(instance, endpointSpecs);
+        SecurityComponentSpec securityComponentSpec = new SecurityComponentSpecBuilder()
+            .withEndpoints(basicPlainEndpointSpec)
+            .build();
+        ComponentModel model = new ComponentModel(instance, securityComponentSpec);
 
         ContainerBuilder containerBuilder = new ContainerBuilder();
         model.configureSecurityVolumeMounts(containerBuilder);
@@ -396,7 +424,7 @@ public class AbstractSecureEndpointsModelTest {
     public void testCreationOfEnvVarsWithNoOverides() {
         EventStreams instance = ModelUtils.createDefaultEventStreams(instanceName).build();
 
-        ComponentModel model = new ComponentModel(instance, null);
+        ComponentModel model = new ComponentModel(instance, new SecurityComponentSpec());
 
         List<EnvVar> envVars = new ArrayList<>();
         model.configureSecurityEnvVars(envVars);
@@ -404,7 +432,7 @@ public class AbstractSecureEndpointsModelTest {
         assertThat(envVars, hasSize(2));
 
         assertThat(envVars.get(0).getName(), is("AUTHENTICATION"));
-        assertThat(envVars.get(0).getValue(), is("9443:BEARER,7080"));
+        assertThat(envVars.get(0).getValue(), is("9443:IAM-BEARER;SCRAM-SHA-512,7080"));
         assertThat(envVars.get(1).getName(), is("ENDPOINTS"));
         assertThat(envVars.get(1).getValue(), is("9443:external,7080"));
     }
@@ -414,10 +442,11 @@ public class AbstractSecureEndpointsModelTest {
     public void testCreationOfEnvVarsWithBasicOverrides() {
         EventStreams instance = ModelUtils.createDefaultEventStreams(instanceName).build();
 
+        SecurityComponentSpec securityComponentSpec = new SecurityComponentSpecBuilder()
+            .withEndpoints(basicEndpointSpec)
+            .build();
 
-        List<EndpointSpec> endpointSpecs = Collections.singletonList(basicEndpointSpec);
-
-        ComponentModel model = new ComponentModel(instance, endpointSpecs);
+        ComponentModel model = new ComponentModel(instance, securityComponentSpec);
 
         List<EnvVar> envVars = new ArrayList<>();
         model.configureSecurityEnvVars(envVars);
@@ -434,10 +463,11 @@ public class AbstractSecureEndpointsModelTest {
     public void testCreationOfEnvVarsWithOverrides() {
         EventStreams instance = ModelUtils.createDefaultEventStreams(instanceName).build();
 
-        List<EndpointSpec> endpointSpecs = new ArrayList<>();
-        endpointSpecs.add(basicPlainEndpointSpec);
-        endpointSpecs.add(configuredEndpointsSpec);
-        ComponentModel model = new ComponentModel(instance, endpointSpecs);
+        SecurityComponentSpec securityComponentSpec = new SecurityComponentSpecBuilder()
+            .withEndpoints(basicPlainEndpointSpec, configuredEndpointsSpec)
+            .build();
+
+        ComponentModel model = new ComponentModel(instance, securityComponentSpec);
 
         List<EnvVar> envVars = new ArrayList<>();
         model.configureSecurityEnvVars(envVars);
@@ -453,7 +483,7 @@ public class AbstractSecureEndpointsModelTest {
     @Test
     public void testCreationOfRoutesWithNoOverrides() {
         EventStreams instance = ModelUtils.createDefaultEventStreams(instanceName).build();
-        ComponentModel model = new ComponentModel(instance, null);
+        ComponentModel model = new ComponentModel(instance, new SecurityComponentSpec());
 
         Map<String, Route> routes = model.createRoutesFromEndpoints();
 
@@ -473,11 +503,11 @@ public class AbstractSecureEndpointsModelTest {
             .withTls(true)
             .build();
 
-        endpointSpecs.add(basicPlainEndpointSpec);
-        endpointSpecs.add(basicEndpointSpec);
-        endpointSpecs.add(configuredEndpointsSpec);
-        endpointSpecs.add(longNameRouteSpec);
-        ComponentModel model = new ComponentModel(instance, endpointSpecs);
+        SecurityComponentSpec securityComponentSpec = new SecurityComponentSpecBuilder()
+            .withEndpoints(basicPlainEndpointSpec, basicEndpointSpec, configuredEndpointsSpec, longNameRouteSpec)
+            .build();
+
+        ComponentModel model = new ComponentModel(instance, securityComponentSpec);
 
         Map<String, Route> routes = model.createRoutesFromEndpoints();
 

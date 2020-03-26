@@ -12,16 +12,10 @@
  */
 package com.ibm.eventstreams.api.model;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
 import com.ibm.eventstreams.Main;
 import com.ibm.eventstreams.api.DefaultResourceRequirements;
-import com.ibm.eventstreams.api.Listener;
+import com.ibm.eventstreams.api.Endpoint;
+import com.ibm.eventstreams.api.EndpointServiceType;
 import com.ibm.eventstreams.api.spec.ComponentSpec;
 import com.ibm.eventstreams.api.spec.ComponentTemplate;
 import com.ibm.eventstreams.api.spec.ContainerSpec;
@@ -31,7 +25,6 @@ import com.ibm.eventstreams.api.spec.ImagesSpec;
 import com.ibm.eventstreams.api.spec.SchemaRegistrySpec;
 import com.ibm.eventstreams.api.spec.SecuritySpec;
 import com.ibm.eventstreams.controller.EventStreamsOperatorConfig;
-
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.ContainerBuilder;
 import io.fabric8.kubernetes.api.model.EnvVar;
@@ -58,15 +51,22 @@ import io.strimzi.api.kafka.model.storage.PersistentClaimStorage;
 import io.strimzi.api.kafka.model.storage.Storage;
 import io.strimzi.api.kafka.model.template.PodTemplate;
 
-public class SchemaRegistryModel extends AbstractSecureEndpointModel {
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
 
     // static variables
     public static final String COMPONENT_NAME = "schema-registry";
     public static final String AVRO_SERVICE_CONTAINER_NAME = "avro-service";
     public static final int AVRO_SERVICE_PORT = 3080;
     public static final int DEFAULT_REPLICAS = 1;
-    private static final String TEMP_DIR_NAME = "tempdir";
-    private static final String SHARED_VOLUME_MOUNT_NAME = "shared";
+    public static final String TEMP_DIR_NAME = "tempdir";
+    public static final String SHARED_VOLUME_MOUNT_NAME = "shared";
     protected static final String LOG_LEVEL_ENV_NAME = "TRACE_LEVEL";
     protected static final String AVRO_LOG_LEVEL_ENV_NAME = "LOG_LEVEL";
     private static final String DEFAULT_LOG_STRING = "INFO";
@@ -100,7 +100,7 @@ public class SchemaRegistryModel extends AbstractSecureEndpointModel {
      */
     public SchemaRegistryModel(EventStreams instance,
                                EventStreamsOperatorConfig.ImageLookup imageConfig) {
-        super(instance, instance.getMetadata().getNamespace(), COMPONENT_NAME);
+        super(instance, instance.getSpec().getSchemaRegistry(), COMPONENT_NAME);
 
         Optional<SchemaRegistrySpec> schemaRegistrySpec = Optional.ofNullable(instance.getSpec()).map(EventStreamsSpec::getSchemaRegistry);
 
@@ -155,9 +155,10 @@ public class SchemaRegistryModel extends AbstractSecureEndpointModel {
 
             deployment = createDeployment(getContainers(), getVolumes());
 
-            createInternalService();
-            createExternalService();
-            createRoutesFromListeners();
+            createService(EndpointServiceType.INTERNAL);
+            createService(EndpointServiceType.ROUTE);
+            createService(EndpointServiceType.NODE_PORT);
+            routes = createRoutesFromEndpoints();
 
             serviceAccount = createServiceAccount();
             networkPolicy = createNetworkPolicy();
@@ -204,15 +205,6 @@ public class SchemaRegistryModel extends AbstractSecureEndpointModel {
             .build();
         volumes.add(temp);
 
-        Volume certsVolume = new VolumeBuilder()
-                .withNewName(CERTS_VOLUME_MOUNT_NAME)
-                .withNewSecret()
-                    .withNewSecretName(getCertSecretName()) //mount everything in the secret into this volume
-                .endSecret()
-                .build();
-        volumes.add(certsVolume);
-        volumes.add(createKafkaUserCertVolume());
-
         if (storage instanceof PersistentClaimStorage) {
             Volume sharedPersistentVolume = new VolumeBuilder()
                     .withName(SHARED_VOLUME_MOUNT_NAME)
@@ -230,6 +222,8 @@ public class SchemaRegistryModel extends AbstractSecureEndpointModel {
             volumes.add(sharedEphemeralVolume);
         }
 
+        volumes.addAll(getSecurityVolumes());
+
         return volumes;
     }
 
@@ -246,10 +240,7 @@ public class SchemaRegistryModel extends AbstractSecureEndpointModel {
      * @return The schema registry container
      */
     private Container getSchemaRegistryContainer() {
-        List<Listener> listeners = getListeners();
-        listeners.add(Listener.podToPodListener(tlsEnabled()));
-        List<EnvVar> envVarDefaults = Arrays.asList(
-            new EnvVarBuilder().withName("ENDPOINTS").withValue(Listener.createEndpointsString(listeners)).build(),
+        ArrayList<EnvVar> envVarDefaults = new ArrayList<>(Arrays.asList(
             new EnvVarBuilder().withName("LICENSE").withValue("accept").build(),
             new EnvVarBuilder().withName("NAMESPACE").withValue(getNamespace()).build(),
             new EnvVarBuilder().withName("CONFIGMAP").withValue("releaseConfigMap").build(),
@@ -271,11 +262,12 @@ public class SchemaRegistryModel extends AbstractSecureEndpointModel {
                 .endSecretKeyRef()
                 .endValueFrom()
                 .build()
-        );
+        ));
 
+        configureSecurityEnvVars(envVarDefaults);
         List<EnvVar> envVars = combineEnvVarListsNoDuplicateKeys(envVarDefaults);
 
-        return new ContainerBuilder()
+        ContainerBuilder builder = new ContainerBuilder()
             .withName(COMPONENT_NAME)
             .withImage(getImage())
             .withEnv(envVars)
@@ -289,19 +281,11 @@ public class SchemaRegistryModel extends AbstractSecureEndpointModel {
                 .withName(SHARED_VOLUME_MOUNT_NAME)
                 .withMountPath("/var/lib/schemas")
             .endVolumeMount()
-            .addNewVolumeMount()
-                .withNewName(CERTS_VOLUME_MOUNT_NAME)
-                .withMountPath("/certs")
-                .withNewReadOnly(true)
-            .endVolumeMount()
-            .addNewVolumeMount()
-                .withNewName(KAFKA_USER_SECRET_VOLUME_NAME)
-                .withMountPath("/certs/p2p")
-                .withNewReadOnly(true)
-            .endVolumeMount()
             .withLivenessProbe(createLivenessProbe())
-            .withReadinessProbe(createReadinessProbe())
-            .build();
+            .withReadinessProbe(createReadinessProbe());
+
+        configureSecurityVolumeMounts(builder);
+        return builder.build();
     }
 
     /**
@@ -312,7 +296,7 @@ public class SchemaRegistryModel extends AbstractSecureEndpointModel {
         Probe defaultLivenessProbe = new ProbeBuilder()
                 .withNewHttpGet()
                 .withPath("/live")
-                .withNewPort(Listener.podToPodListener(tlsEnabled()).getPort())
+                .withNewPort(Endpoint.getPodToPodPort(tlsEnabled()))
                 .withScheme(getHealthCheckProtocol())
                 .withHttpHeaders(new HTTPHeaderBuilder()
                         .withName("Accept")
@@ -336,7 +320,7 @@ public class SchemaRegistryModel extends AbstractSecureEndpointModel {
         Probe defaultReadinessProbe = new ProbeBuilder()
                 .withNewHttpGet()
                 .withPath("/ready")
-                .withNewPort(Listener.podToPodListener(tlsEnabled()).getPort())
+                .withNewPort(Endpoint.getPodToPodPort(tlsEnabled()))
                 .withScheme(getHealthCheckProtocol())
                 .withHttpHeaders(new HTTPHeaderBuilder()
                         .withName("Accept")
@@ -483,7 +467,7 @@ public class SchemaRegistryModel extends AbstractSecureEndpointModel {
      * to control rolling updates, for example when the cert secret changes.
      */
     public Deployment getDeployment(String certGenerationID) {
-        if (certGenerationID != null) {
+        if (certGenerationID != null && deployment != null) {
             deployment.getMetadata().getLabels().put(CERT_GENERATION_KEY, certGenerationID);
             deployment.getSpec().getTemplate().getMetadata().getLabels().put(CERT_GENERATION_KEY, certGenerationID);
         }
@@ -512,12 +496,9 @@ public class SchemaRegistryModel extends AbstractSecureEndpointModel {
     }
 
     private NetworkPolicy createNetworkPolicy() {
-        List<NetworkPolicyIngressRule> ingressRules = new ArrayList<>(1);
-        List<Listener> listeners = getListeners();
-        listeners.add(Listener.podToPodListener(tlsEnabled()));
-        listeners.forEach(listener -> {
-            ingressRules.add(createIngressRule(listener.getPort(), new HashMap<>()));
-        });
+        List<NetworkPolicyIngressRule> ingressRules = new ArrayList<>();
+
+        endpoints.forEach(endpoint -> ingressRules.add(createIngressRule(endpoint.getPort(), new HashMap<>())));
 
         return createNetworkPolicy(createLabelSelector(COMPONENT_NAME), ingressRules, null);
     }

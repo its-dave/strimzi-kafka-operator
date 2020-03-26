@@ -19,6 +19,7 @@ import com.ibm.eventstreams.api.spec.SecuritySpec;
 import io.strimzi.api.kafka.model.CertAndKeySecretSource;
 import lombok.Builder;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -34,13 +35,13 @@ public class Endpoint {
     private static final int DEFAULT_EXTERNAL_TLS_PORT = 9443;
     private static final EndpointServiceType DEFAULT_EXTERNAL_SERVICE_TYPE = EndpointServiceType.ROUTE;
     private static final int DEFAULT_EXTERNAL_PLAIN_PORT = 9080;
-    private static final List<String> DEFAULT_EXTERNAL_AUTHENTICATION_MECHANISM = Collections.singletonList("BEARER");
+    private static final List<String> DEFAULT_EXTERNAL_AUTHENTICATION_MECHANISM = Arrays.asList("IAM-BEARER", "SCRAM-SHA-512");
 
     public static final String DEFAULT_P2P_TLS_NAME = "p2ptls";
     public static final String DEFAULT_P2P_PLAIN_NAME = "pod2pod";
-    private static final int DEFAULT_P2P_TLS_PORT = 7443;
+    public static final int DEFAULT_P2P_TLS_PORT = 7443;
     private static final String DEFAULT_P2P_TLS_MOUNT = "p2p";
-    private static final int DEFAULT_P2P_PLAIN_PORT = 7080;
+    public static final int DEFAULT_P2P_PLAIN_PORT = 7080;
     private static final String DEFAULT_P2P_PATH = DEFAULT_P2P_TLS_MOUNT + "/podtls";
 
     private String name;
@@ -203,6 +204,15 @@ public class Endpoint {
      */
     public int getPort() {
         return port;
+    }
+
+    /**
+     * Gets the Pod to Pod port depending on what tls version is enabled
+     * @param tlsEnabled if tls enabled
+     * @return the port
+     */
+    public static int getPodToPodPort(boolean tlsEnabled) {
+        return tlsEnabled ? DEFAULT_P2P_TLS_PORT : DEFAULT_P2P_PLAIN_PORT;
     }
 
     /**

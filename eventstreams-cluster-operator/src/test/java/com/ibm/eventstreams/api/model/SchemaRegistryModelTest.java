@@ -12,39 +12,13 @@
  */
 package com.ibm.eventstreams.api.model;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.endsWith;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.startsWith;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.emptyIterableOf;
-import static org.hamcrest.Matchers.hasItem;
-import static org.mockito.Mockito.when;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
+import com.ibm.eventstreams.api.Endpoint;
+import com.ibm.eventstreams.api.EndpointServiceType;
 import com.ibm.eventstreams.api.Labels;
-import com.ibm.eventstreams.api.Listener;
 import com.ibm.eventstreams.api.model.utils.ModelUtils;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
 import com.ibm.eventstreams.controller.EventStreamsOperatorConfig;
-
-import org.hamcrest.collection.IsMapContaining;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.junit.jupiter.MockitoExtension;
-
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.EnvVarBuilder;
@@ -56,6 +30,8 @@ import io.fabric8.kubernetes.api.model.Quantity;
 import io.fabric8.kubernetes.api.model.ResourceRequirements;
 import io.fabric8.kubernetes.api.model.ResourceRequirementsBuilder;
 import io.fabric8.kubernetes.api.model.Service;
+import io.fabric8.kubernetes.api.model.Volume;
+import io.fabric8.kubernetes.api.model.VolumeMount;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicy;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicyPeer;
@@ -66,6 +42,31 @@ import io.strimzi.api.kafka.model.storage.EphemeralStorageBuilder;
 import io.strimzi.api.kafka.model.storage.PersistentClaimStorage;
 import io.strimzi.api.kafka.model.storage.PersistentClaimStorageBuilder;
 import io.strimzi.api.kafka.model.template.PodTemplateBuilder;
+import org.hamcrest.collection.IsMapContaining;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.endsWith;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.startsWith;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.emptyIterableOf;
+import static org.hamcrest.Matchers.hasItem;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 public class SchemaRegistryModelTest {
@@ -102,26 +103,26 @@ public class SchemaRegistryModelTest {
         assertThat(schemaRegistryDeployment.getMetadata().getName(), startsWith(componentPrefix));
         assertThat(schemaRegistryDeployment.getSpec().getReplicas(), is(defaultReplicas));
 
-        Service schemaRegistryInternalService = schemaRegistryModel.getInternalService();
+        Service schemaRegistryInternalService = schemaRegistryModel.getSecurityService(EndpointServiceType.INTERNAL);
         assertThat(schemaRegistryInternalService.getMetadata().getName(), startsWith(componentPrefix));
-        assertThat(schemaRegistryInternalService.getMetadata().getName(), endsWith(AbstractSecureEndpointModel.INTERNAL_SERVICE_SUFFIX));
+        assertThat(schemaRegistryInternalService.getMetadata().getName(), endsWith(AbstractSecureEndpointsModel.INTERNAL_SERVICE_SUFFIX));
 
-        Service schemaRegistryExternalService = schemaRegistryModel.getExternalService();
+        Service schemaRegistryExternalService = schemaRegistryModel.getSecurityService(EndpointServiceType.ROUTE);
         assertThat(schemaRegistryExternalService.getMetadata().getName(), startsWith(componentPrefix));
-        assertThat(schemaRegistryExternalService.getMetadata().getName(), endsWith(AbstractSecureEndpointModel.EXTERNAL_SERVICE_SUFFIX));
+        assertThat(schemaRegistryExternalService.getMetadata().getName(), endsWith(AbstractSecureEndpointsModel.ROUTE_SERVICE_SUFFIX));
 
         NetworkPolicy schemaRegistryNetworkPolicy = schemaRegistryModel.getNetworkPolicy();
         assertThat(schemaRegistryNetworkPolicy.getMetadata().getName(), is(componentPrefix));
         assertThat(schemaRegistryNetworkPolicy.getKind(), is("NetworkPolicy"));
 
-        assertThat(schemaRegistryNetworkPolicy.getSpec().getIngress().size(), is(Listener.enabledListeners().size() + 1));
-        List<Listener> listeners = Listener.enabledListeners();
-        listeners.add(Listener.podToPodListener(false));
-        List<Integer> listenerPorts = listeners.stream().map(Listener::getPort).collect(Collectors.toList());
+        assertThat(schemaRegistryNetworkPolicy.getSpec().getIngress().size(), is(2));
+        assertThat(schemaRegistryNetworkPolicy.getSpec().getIngress().size(), is(schemaRegistryModel.getEndpoints().size()));
+        List<Integer> endpointPorts = schemaRegistryModel.getEndpoints().stream().map(Endpoint::getPort).collect(Collectors.toList());
+
         schemaRegistryNetworkPolicy.getSpec().getIngress().forEach(ingress -> {
             assertThat(ingress.getFrom(), is(emptyIterableOf(NetworkPolicyPeer.class)));
             assertThat(ingress.getPorts().size(), is(1));
-            assertThat(listenerPorts, hasItem(ingress.getPorts().get(0).getPort().getIntVal()));
+            assertThat(endpointPorts, hasItem(ingress.getPorts().get(0).getPort().getIntVal()));
         });
         assertThat(schemaRegistryNetworkPolicy.getSpec().getEgress().size(), is(0));
 
@@ -534,7 +535,7 @@ public class SchemaRegistryModelTest {
     public void testCreateSchemaRegistryRouteWithTlsEncryption() {
         EventStreams eventStreams = createDefaultEventStreams().build();
         SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(eventStreams, imageConfig);
-        String expectedRouteName = instanceName + "-" + AbstractModel.APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME + "-" + Listener.EXTERNAL_TLS_NAME;
+        String expectedRouteName = instanceName + "-" + AbstractModel.APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME + "-" + Endpoint.DEFAULT_EXTERNAL_NAME;
         assertThat(schemaRegistryModel.getRoutes(), IsMapContaining.hasKey(expectedRouteName));
         assertThat(schemaRegistryModel.getRoutes().get(expectedRouteName).getSpec().getTls().getTermination(),  is("passthrough"));
     }
@@ -544,10 +545,57 @@ public class SchemaRegistryModelTest {
         EventStreams eventStreams = createDefaultEventStreams().build();
         SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(eventStreams, imageConfig);
 
-        assertThat(schemaRegistryModel.getDeployment("newID").getMetadata().getLabels().containsKey(AbstractSecureEndpointModel.CERT_GENERATION_KEY), is(true));
-        assertThat(schemaRegistryModel.getDeployment("newID").getMetadata().getLabels().get(AbstractSecureEndpointModel.CERT_GENERATION_KEY), is("newID"));
-        assertThat(schemaRegistryModel.getDeployment("newID").getSpec().getTemplate().getMetadata().getLabels().containsKey(AbstractSecureEndpointModel.CERT_GENERATION_KEY), is(true));
-        assertThat(schemaRegistryModel.getDeployment("newID").getSpec().getTemplate().getMetadata().getLabels().get(AbstractSecureEndpointModel.CERT_GENERATION_KEY), is("newID"));
+        assertThat(schemaRegistryModel.getDeployment("newID").getMetadata().getLabels().containsKey(AbstractSecureEndpointsModel.CERT_GENERATION_KEY), is(true));
+        assertThat(schemaRegistryModel.getDeployment("newID").getMetadata().getLabels().get(AbstractSecureEndpointsModel.CERT_GENERATION_KEY), is("newID"));
+        assertThat(schemaRegistryModel.getDeployment("newID").getSpec().getTemplate().getMetadata().getLabels().containsKey(AbstractSecureEndpointsModel.CERT_GENERATION_KEY), is(true));
+        assertThat(schemaRegistryModel.getDeployment("newID").getSpec().getTemplate().getMetadata().getLabels().get(AbstractSecureEndpointsModel.CERT_GENERATION_KEY), is("newID"));
+    }
+
+    @Test
+    public void testVolumeMounts() {
+        SchemaRegistryModel schemaRegistryModel = createDefaultSchemaRegistryModel();
+
+        List<VolumeMount> volumeMounts = schemaRegistryModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getVolumeMounts();
+
+        assertThat(volumeMounts.size(), is(6));
+
+        assertThat(volumeMounts.get(0).getName(), is(SchemaRegistryModel.TEMP_DIR_NAME));
+        assertThat(volumeMounts.get(0).getMountPath(), is("/var/lib/tmp"));
+
+        assertThat(volumeMounts.get(1).getName(), is(SchemaRegistryModel.SHARED_VOLUME_MOUNT_NAME));
+        assertThat(volumeMounts.get(1).getMountPath(), is("/var/lib/schemas"));
+
+        assertThat(volumeMounts.get(2).getName(), is(AbstractSecureEndpointsModel.CERTS_VOLUME_MOUNT_NAME));
+        assertThat(volumeMounts.get(2).getReadOnly(), is(true));
+        assertThat(volumeMounts.get(2).getMountPath(), is(AbstractSecureEndpointsModel.CERTIFICATE_PATH));
+
+        assertThat(volumeMounts.get(3).getName(), is(AbstractSecureEndpointsModel.CLUSTER_CA_VOLUME_MOUNT_NAME));
+        assertThat(volumeMounts.get(3).getReadOnly(), is(true));
+        assertThat(volumeMounts.get(3).getMountPath(), is(AbstractSecureEndpointsModel.CLUSTER_CERTIFICATE_PATH));
+
+        assertThat(volumeMounts.get(4).getName(), is(AbstractSecureEndpointsModel.CLIENT_CA_VOLUME_MOUNT_NAME));
+        assertThat(volumeMounts.get(4).getReadOnly(), is(true));
+        assertThat(volumeMounts.get(4).getMountPath(), is(AbstractSecureEndpointsModel.CLIENT_CA_CERTIFICATE_PATH));
+
+        assertThat(volumeMounts.get(5).getName(), is(AbstractSecureEndpointsModel.KAFKA_USER_SECRET_VOLUME_NAME));
+        assertThat(volumeMounts.get(5).getReadOnly(), is(true));
+        assertThat(volumeMounts.get(5).getMountPath(), is(AbstractSecureEndpointsModel.KAFKA_USER_CERTIFICATE_PATH));
+    }
+
+    @Test
+    public void testVolumes() {
+        SchemaRegistryModel schemaRegistryModel = createDefaultSchemaRegistryModel();
+
+        List<Volume> volumes = schemaRegistryModel.getDeployment().getSpec().getTemplate().getSpec().getVolumes();
+
+        assertThat(volumes.size(), is(6));
+
+        assertThat(volumes.get(0).getName(), is(SchemaRegistryModel.TEMP_DIR_NAME));
+        assertThat(volumes.get(1).getName(), is(SchemaRegistryModel.SHARED_VOLUME_MOUNT_NAME));
+        assertThat(volumes.get(2).getName(), is(AbstractSecureEndpointsModel.CERTS_VOLUME_MOUNT_NAME));
+        assertThat(volumes.get(3).getName(), is(AbstractSecureEndpointsModel.CLUSTER_CA_VOLUME_MOUNT_NAME));
+        assertThat(volumes.get(4).getName(), is(AbstractSecureEndpointsModel.CLIENT_CA_VOLUME_MOUNT_NAME));
+        assertThat(volumes.get(5).getName(), is(AbstractSecureEndpointsModel.KAFKA_USER_SECRET_VOLUME_NAME));
     }
 
     @Test

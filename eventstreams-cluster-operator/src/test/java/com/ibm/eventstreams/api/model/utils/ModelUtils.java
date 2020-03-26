@@ -14,15 +14,13 @@
 package com.ibm.eventstreams.api.model.utils;
 
 import com.ibm.eventstreams.api.EndpointServiceType;
-import com.ibm.eventstreams.api.Listener;
-import com.ibm.eventstreams.api.model.AbstractSecureEndpointModel;
 import com.ibm.eventstreams.api.model.AbstractSecureEndpointsModel;
 import com.ibm.eventstreams.api.model.EventStreamsKafkaModel;
 import com.ibm.eventstreams.api.model.ReplicatorUsersModel;
-import com.ibm.eventstreams.api.spec.EndpointSpec;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
+import com.ibm.eventstreams.api.spec.SecurityComponentSpec;
 import com.ibm.eventstreams.api.spec.SecuritySpec;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
@@ -192,19 +190,9 @@ public class ModelUtils {
                 .build();
     }
 
-    public static class EndpointModel extends AbstractSecureEndpointModel {
-        public EndpointModel(EventStreams instance, String namespace, String componentName, List<Listener> listeners) {
-            super(instance, namespace, componentName, listeners);
-            setEncryption(SecuritySpec.Encryption.TLS);
-            createInternalService();
-            createExternalService();
-            createRoutesFromListeners();
-        }
-    }
-
     public static class EndpointsModel extends AbstractSecureEndpointsModel {
-        public EndpointsModel(EventStreams instance, List<EndpointSpec> endpointSpecs, String namespace, String componentName) {
-            super(instance, endpointSpecs, namespace, componentName);
+        public EndpointsModel(EventStreams instance, SecurityComponentSpec spec, String componentName) {
+            super(instance, spec, componentName);
             setEncryption(SecuritySpec.Encryption.TLS);
             createService(EndpointServiceType.INTERNAL);
             createService(EndpointServiceType.ROUTE);

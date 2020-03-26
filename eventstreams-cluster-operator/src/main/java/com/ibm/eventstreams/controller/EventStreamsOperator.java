@@ -14,8 +14,6 @@ package com.ibm.eventstreams.controller;
 
 import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.EndpointServiceType;
-import com.ibm.eventstreams.api.Listener;
-import com.ibm.eventstreams.api.model.AbstractSecureEndpointModel;
 import com.ibm.eventstreams.api.model.AbstractSecureEndpointsModel;
 import com.ibm.eventstreams.api.model.AdminApiModel;
 import com.ibm.eventstreams.api.model.AdminUIModel;
@@ -59,7 +57,6 @@ import io.fabric8.kubernetes.client.dsl.Resource;
 import io.fabric8.openshift.api.model.Route;
 import io.fabric8.openshift.api.model.RouteSpec;
 import io.strimzi.api.kafka.Crds;
-import io.strimzi.api.kafka.model.CertAndKeySecretSource;
 import io.strimzi.api.kafka.model.Kafka;
 import io.strimzi.api.kafka.model.KafkaClusterSpec;
 import io.strimzi.api.kafka.model.KafkaSpec;
@@ -547,9 +544,9 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 customImageCount++;
             }
             restProducerFutures.add(serviceAccountOperator.reconcile(namespace, restProducer.getDefaultResourceName(), restProducer.getServiceAccount()));
-            // Keep old service for Route
-            restProducerFutures.add(serviceOperator.reconcile(namespace, restProducer.getInternalServiceName(), restProducer.getInternalService()));
-            restProducerFutures.add(serviceOperator.reconcile(namespace, restProducer.getExternalServiceName(), restProducer.getExternalService()));
+            for (EndpointServiceType type : EndpointServiceType.values()) {
+                restProducerFutures.add(serviceOperator.reconcile(namespace, restProducer.getServiceName(type), restProducer.getSecurityService(type)));
+            }
             restProducerFutures.add(networkPolicyOperator.reconcile(namespace, restProducer.getDefaultResourceName(), restProducer.getNetworkPolicy()));
             return CompositeFuture.join(restProducerFutures)
                 .compose(v -> reconcileRoutes(restProducer, restProducer.getRoutes()))
@@ -578,7 +575,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             adminApiFutures.add(networkPolicyOperator.createOrUpdate(adminApi.getNetworkPolicy()));
             adminApiFutures.add(roleBindingOperator.createOrUpdate(adminApi.getRoleBinding()));
             return CompositeFuture.join(adminApiFutures)
-                    .compose(res -> reconcileRoutes(adminApi, adminApi.getRoutes()))
+                    .compose(v -> reconcileRoutes(adminApi, adminApi.getRoutes()))
                     .compose(routesHostMap -> {
                         for (String adminRouteHost : routesHostMap.values()) {
                             String adminRouteUri = "https://" + adminRouteHost;
@@ -608,14 +605,15 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
 
             }
             schemaRegistryFutures.add(serviceAccountOperator.reconcile(namespace, schemaRegistry.getDefaultResourceName(), schemaRegistry.getServiceAccount()));
-            schemaRegistryFutures.add(serviceOperator.reconcile(namespace, schemaRegistry.getExternalServiceName(), schemaRegistry.getExternalService()));
-            schemaRegistryFutures.add(serviceOperator.reconcile(namespace, schemaRegistry.getInternalServiceName(), schemaRegistry.getInternalService()));
+            for (EndpointServiceType type : EndpointServiceType.values()) {
+                schemaRegistryFutures.add(serviceOperator.reconcile(namespace, schemaRegistry.getServiceName(type), schemaRegistry.getSecurityService(type)));
+            }
             schemaRegistryFutures.add(networkPolicyOperator.reconcile(namespace, schemaRegistry.getDefaultResourceName(), schemaRegistry.getNetworkPolicy()));
 
             return CompositeFuture.join(schemaRegistryFutures)
-                    .compose(res -> reconcileRoutes(schemaRegistry, schemaRegistry.getRoutes()))
+                    .compose(v -> reconcileRoutes(schemaRegistry, schemaRegistry.getRoutes()))
                     .compose(routesHostMap -> {
-                        String schemaRouteHost = routesHostMap.get(schemaRegistry.getRouteName(Listener.EXTERNAL_TLS_NAME));
+                        String schemaRouteHost = routesHostMap.get(schemaRegistry.getRouteName(Endpoint.DEFAULT_EXTERNAL_NAME));
                         String schemaRouteUri = "https://" + schemaRouteHost;
                         updateEndpoints(new EventStreamsEndpoint(EventStreamsEndpoint.SCHEMA_REGISTRY_KEY, EventStreamsEndpoint.EndpointType.api, schemaRouteUri));
                         return Future.succeededFuture(routesHostMap);
@@ -772,64 +770,6 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
          * @param dateSupplier
          * @return
          */
-        Future<ReconcileResult<Secret>> reconcileCerts(AbstractSecureEndpointModel model, Map<String, String> additionalHosts, Supplier<Date> dateSupplier) {
-            log.info("Starting certificate reconciliation for: " + model.getComponentName());
-            try {
-                boolean regenSecret = false;
-                Optional<Secret> certSecret = certificateManager.getSecret(model.getCertSecretName());
-                for (Listener listener: model.getTlsListeners()) {
-
-                    String host = listener.isExposed() ?
-                        Optional.ofNullable(additionalHosts.get(model.getRouteName(listener.getName())))
-                            .orElse("") :
-                        "";
-                    List<String> hosts = host.isEmpty() ? Collections.emptyList() : Collections.singletonList(host);
-                    Service service = listener.isExposed() ? model.getExternalService() : model.getInternalService();
-                    Optional<CertAndKeySecretSource> certAndKeySecretSource = listener.getCertOverride(instance.getSpec());
-
-                    // Check for user supplied certificates else check if we need to generate or renew our certificates
-                    if (certAndKeySecretSource.isPresent()) {
-                        Optional<CertAndKey> providedCertAndKey = certificateManager.certificateAndKey(certAndKeySecretSource.get());
-                        if (!providedCertAndKey.isPresent()) {
-                            throw new EventStreamsCertificateException("Provided broker cert secret: " + certAndKeySecretSource.get().getSecretName() + " could not be found");
-                        }
-                        if (certSecret.isPresent()) {
-                            CertAndKey currentCertAndKey = certificateManager.certificateAndKey(certSecret.get(), model.getCertSecretCertID(listener.getName()), model.getCertSecretKeyID(listener.getName()));
-                            if (certificateManager.sameCertAndKey(currentCertAndKey, providedCertAndKey.get())) {
-                                // set current cert for listener but do not set regenSecret to true. We have to set the cert in case a future listener causes a secret regen
-                                model.setCertAndKey(listener.getName(), currentCertAndKey);
-                            }
-                        } else {
-                            model.setCertAndKey(listener.getName(), providedCertAndKey.get());
-                            regenSecret = true;
-                        }
-                    } else if (!certSecret.isPresent() || certificateManager.shouldGenerateOrRenewCertificate(certSecret.get(), listener.getName(), dateSupplier, service, hosts)) {
-                        CertAndKey certAndKey = certificateManager.generateCertificateAndKey(service, hosts);
-                        model.setCertAndKey(listener.getName(), certAndKey);
-                        regenSecret = true;
-                    }
-                }
-                // services being null indicates that the secret should be deleted
-                if (model.getExternalService() != null || model.getInternalService() != null) {
-                    model.createCertificateSecretModelSecret();
-                }
-                // regen can't be false and the current certSecret not exist
-                // get certificate can return n ull and hence delete the secret
-                return regenSecret ? secretOperator.reconcile(namespace, model.getCertSecretName(), model.getCertificateSecretModelSecret()) : Future.succeededFuture(ReconcileResult.noop(certSecret.get()));
-            } catch (EventStreamsCertificateException e) {
-                log.error(e);
-                return Future.failedFuture(e);
-            }
-        }
-
-        /**
-         *
-         *
-         * @param model
-         * @param additionalHosts is a map of route names and their corresponding hosts generated by openshift
-         * @param dateSupplier
-         * @return
-         */
         Future<ReconcileResult<Secret>> reconcileCerts(AbstractSecureEndpointsModel model, Map<String, String> additionalHosts, Supplier<Date> dateSupplier) {
             log.info("Starting certificate reconciliation for: " + model.getComponentName());
             try {
@@ -970,7 +910,12 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             return setAuthSet.future();
         }
 
-        protected Future<Map<String, String>> reconcileRoutes(AbstractSecureEndpointModel model, Map<String, Route> routes) {
+        protected Future<Map<String, String>> reconcileRoutes(AbstractSecureEndpointsModel model, Map<String, Route> routes) {
+            return deleteUnspecifiedRoutes(model, routes)
+                .compose(res -> createRoutes(model, routes));
+        }
+
+        protected Future<Map<String, String>> createRoutes(AbstractSecureEndpointsModel model, Map<String, Route> routes) {
             if (!pfa.hasRoutes() || routeOperator == null) {
                 return Future.succeededFuture(Collections.emptyMap());
             }
@@ -986,7 +931,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                             .orElse("");
 
                         if (!routeHost.isEmpty()) {
-                            status.addToRoutes(entry.getKey().replaceFirst(model.getResourcePrefix() + "-", ""), routeHost);
+                            status.addToRoutes(getRouteShortName(model, entry.getKey()), routeHost);
                             map.put(entry.getKey(), routeHost);
                         }
                         return Future.succeededFuture(map);
@@ -1007,41 +952,47 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 });
         }
 
-        protected Future<Map<String, String>> reconcileRoutes(AbstractSecureEndpointsModel model, Map<String, Route> routes) {
+        /**
+         * Method checks the status for the existing routes and determines if no longer needed they should be deleted
+         * @param model the model to check its endpoints
+         * @param routes the map of all routes
+         * @return A list of futures of whether the routes have been deleted.
+         */
+        Future<List<ReconcileResult<Route>>> deleteUnspecifiedRoutes(AbstractSecureEndpointsModel model, Map<String, Route> routes) {
             if (!pfa.hasRoutes() || routeOperator == null) {
-                return Future.succeededFuture(Collections.emptyMap());
+                return Future.succeededFuture(Collections.emptyList());
             }
 
-            List<Future> routeFutures = routes.entrySet()
-                .stream()
-                .map(entry -> routeOperator.reconcile(namespace, entry.getKey(), entry.getValue())
-                    .compose(routeResult -> {
-                        Map<String, String> map = new HashMap<>(1);
-                        String routeHost = routeResult.resourceOpt()
-                            .map(Route::getSpec)
-                            .map(RouteSpec::getHost)
-                            .orElse("");
+            if (status.getRoutes() == null) {
+                return Future.succeededFuture(Collections.emptyList());
+            }
 
-                        if (!routeHost.isEmpty()) {
-                            status.addToRoutes(entry.getKey().replaceFirst(model.getResourcePrefix() + "-", ""), routeHost);
-                            map.put(entry.getKey(), routeHost);
-                        }
-                        return Future.succeededFuture(map);
-                    }))
+            List<String> removedKeys = new ArrayList<>();
+
+            // Checking for previously created routes in the status to see if they need to be deleted
+            List<Future> routeDeletionFutures = status.getRoutes().keySet().stream()
+                .filter(key -> key.contains(model.getComponentName()))
+                .filter(key -> !routes.containsKey(status.getRoutes().get(key)))
+                .map(key -> {
+                    Future<ReconcileResult<Route>> deletion = routeOperator.reconcile(namespace, getRouteLongName(model, key), null);
+                    removedKeys.add(key);
+                    return deletion;
+                })
                 .collect(Collectors.toList());
 
-            return CompositeFuture.join(routeFutures)
-                .compose(ar -> {
-                    List<Map<String, String>> allRoutesMaps = ar.list();
-                    Map<String, String> routesMap = allRoutesMaps
-                        .stream()
-                        .reduce((map1, map2) -> {
-                            map1.putAll(map2);
-                            return map1;
-                        })
-                        .orElse(Collections.emptyMap());
-                    return Future.succeededFuture(routesMap);
-                });
+            // Done to avoid ConcurrentModificationException
+            removedKeys.forEach(status::removeFromRoutes);
+
+            return CompositeFuture.join(routeDeletionFutures)
+                .compose(ar -> Future.succeededFuture(ar.list()));
+        }
+
+        private String getRouteShortName(AbstractSecureEndpointsModel model, String routeName) {
+            return routeName.replaceFirst(model.getResourcePrefix() + "-", "");
+        }
+
+        private String getRouteLongName(AbstractSecureEndpointsModel model, String routeName) {
+            return model.getResourcePrefix() + "-" + routeName;
         }
 
         protected void updateEndpoints(EventStreamsEndpoint newEndpoint) {

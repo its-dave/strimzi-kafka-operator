@@ -16,8 +16,7 @@ package com.ibm.eventstreams.controller;
 import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.EndpointServiceType;
 import com.ibm.eventstreams.api.Labels;
-import com.ibm.eventstreams.api.Listener;
-import com.ibm.eventstreams.api.model.AbstractSecureEndpointModel;
+import com.ibm.eventstreams.api.model.AbstractSecureEndpointsModel;
 import com.ibm.eventstreams.api.model.AdminApiModel;
 import com.ibm.eventstreams.api.model.AdminUIModel;
 import com.ibm.eventstreams.api.model.CertificateSecretModel;
@@ -35,6 +34,9 @@ import com.ibm.eventstreams.api.spec.EndpointSpec;
 import com.ibm.eventstreams.api.spec.EndpointSpecBuilder;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
+import com.ibm.eventstreams.api.spec.SchemaRegistrySpec;
+import com.ibm.eventstreams.api.spec.SecurityComponentSpec;
+import com.ibm.eventstreams.api.spec.SecurityComponentSpecBuilder;
 import com.ibm.eventstreams.api.spec.SecuritySpec;
 import com.ibm.eventstreams.api.spec.SecuritySpecBuilder;
 import com.ibm.eventstreams.api.status.EventStreamsAvailableVersions;
@@ -145,10 +147,8 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.aMapWithSize;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.IsNull.notNullValue;
@@ -414,7 +414,7 @@ public class EventStreamsOperatorTest {
                     new EventStreamsEndpointBuilder()
                         .withName("schemaregistry")
                         .withType(EventStreamsEndpoint.EndpointType.api)
-                        .withNewUri("https://" + SCHEMA_REGISTRY_ROUTE_NAME + "-external-tls." + ROUTE_HOST_POSTFIX)
+                        .withNewUri("https://" + SCHEMA_REGISTRY_ROUTE_NAME + "-" +  Endpoint.DEFAULT_EXTERNAL_NAME + "." + ROUTE_HOST_POSTFIX)
                         .build()));
                 async.flag();
             })));
@@ -795,9 +795,8 @@ public class EventStreamsOperatorTest {
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
         reconciliationState.icpClusterData = Collections.emptyMap();
 
-
-        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, null, NAMESPACE, "endpoint-component");
-        List<Endpoint> endpoints = endpointModel.createEndpoints(esCluster, null);
+        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, new SecurityComponentSpec(), "endpoint-component");
+        List<Endpoint> endpoints = endpointModel.createEndpoints(esCluster, new SecurityComponentSpec());
 
         Endpoint endpoint = endpoints.get(0);
         String routeName = endpointModel.getRouteName(endpoint.getName());
@@ -828,24 +827,32 @@ public class EventStreamsOperatorTest {
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
         reconciliationState.icpClusterData = Collections.emptyMap();
 
-        EndpointSpec spec = new EndpointSpecBuilder()
+        EndpointSpec internal = new EndpointSpecBuilder()
             .withName("internal")
             .withAccessPort(9990)
             .withType(EndpointServiceType.INTERNAL)
+            .withTls(true)
             .build();
 
-        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, Collections.singletonList(spec), NAMESPACE, "endpoint-component");
+        SecurityComponentSpec spec = new SecurityComponentSpecBuilder()
+            .withEndpoints(internal)
+            .build();
+
+        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, spec, "endpoint-component");
 
         reconciliationState.reconcileCerts(endpointModel, Collections.emptyMap(), Date::new).setHandler(ar -> {
             assertThat("Number of secrets do not match " + mockClient.secrets().list().getItems(), mockClient.secrets().list().getItems().size(), is(6));
             Secret secret = mockClient.secrets().withName(endpointModel.getCertificateSecretName()).get();
             assertThat("The expected secret is created", secret, is(notNullValue()));
-            CertAndKey certAndKey = reconciliationState.certificateManager.certificateAndKey(secret, endpointModel.getCertSecretCertID(spec.getName()), endpointModel.getCertSecretKeyID(spec.getName()));
+            CertAndKey certAndKey = reconciliationState.certificateManager.certificateAndKey(secret, endpointModel.getCertSecretCertID(internal.getName()), endpointModel.getCertSecretKeyID(internal.getName()));
+            assertThat("There is a key file data entry for tls internal endpoint", secret.getData().get(endpointModel.getCertSecretKeyID(internal.getName())).length(), greaterThan(0));
+            assertThat("There is a cert file data entry for tls internal endpoint", secret.getData().get(endpointModel.getCertSecretCertID(internal.getName())).length(), greaterThan(0));
+
             assertThat("There is no key file data entry for tls P2P port ", secret.getData().get(endpointModel.getCertSecretKeyID(Endpoint.DEFAULT_P2P_TLS_NAME)), is(nullValue()));
             assertThat("There is no cert file data entry for tls P2P port", secret.getData().get(endpointModel.getCertSecretCertID(Endpoint.DEFAULT_P2P_TLS_NAME)), is(nullValue()));
 
             X509Certificate certificate = ControllerUtils.checkCertificate(reconciliationState.certificateManager, certAndKey);
-            ControllerUtils.checkSans(context, reconciliationState.certificateManager, certificate, endpointModel.getSecurityService(spec.getType()), "");
+            ControllerUtils.checkSans(context, reconciliationState.certificateManager, certificate, endpointModel.getSecurityService(internal.getType()), "");
             async.flag();
         });
     }
@@ -861,15 +868,18 @@ public class EventStreamsOperatorTest {
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
         reconciliationState.icpClusterData = Collections.emptyMap();
 
-        EndpointSpec spec = new EndpointSpecBuilder()
+        EndpointSpec internal = new EndpointSpecBuilder()
             .withName("internal")
             .withAccessPort(9990)
             .withTls(false)
             .withType(EndpointServiceType.INTERNAL)
             .build();
 
-        List<EndpointSpec> specs = Collections.singletonList(spec);
-        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, specs, NAMESPACE, "endpoint-component");
+        SecurityComponentSpec spec = new SecurityComponentSpecBuilder()
+            .withEndpoints(internal)
+            .build();
+
+        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, spec, "endpoint-component");
 
         reconciliationState.reconcileCerts(endpointModel, Collections.emptyMap(), Date::new).setHandler(ar -> {
             assertThat("Number of secrets do not match " + mockClient.secrets().list().getItems(), mockClient.secrets().list().getItems().size(), is(6));
@@ -899,7 +909,6 @@ public class EventStreamsOperatorTest {
             .withType(EndpointServiceType.ROUTE)
             .build();
 
-
         EndpointSpec plainNodePort = new EndpointSpecBuilder()
             .withName("node-port")
             .withTls(false)
@@ -907,8 +916,11 @@ public class EventStreamsOperatorTest {
             .withType(EndpointServiceType.NODE_PORT)
             .build();
 
-        List<EndpointSpec> specs = Arrays.asList(plainInternal, plainNodePort);
-        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, specs, NAMESPACE, "endpoint-component");
+        SecurityComponentSpec spec = new SecurityComponentSpecBuilder()
+            .withEndpoints(plainInternal, plainNodePort)
+            .build();
+
+        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, spec, "endpoint-component");
 
         reconciliationState.reconcileCerts(endpointModel, Collections.emptyMap(), Date::new).setHandler(ar -> {
             assertThat("The number of secrets does not match", mockClient.secrets().list().getItems(), hasSize(6));
@@ -954,9 +966,11 @@ public class EventStreamsOperatorTest {
             .withType(EndpointServiceType.INTERNAL)
             .build();
 
+        SecurityComponentSpec spec = new SecurityComponentSpecBuilder()
+            .withEndpoints(route, nodePort, internal)
+            .build();
 
-        List<EndpointSpec> specs = Arrays.asList(route, nodePort, internal);
-        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, specs, NAMESPACE, "endpoint-component");
+        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, spec, "endpoint-component");
 
         reconciliationState.reconcileCerts(endpointModel, Collections.singletonMap(endpointModel.getRouteName(route.getName()), "additional.hosts"), Date::new).setHandler(ar -> {
             assertThat("The number of secrets does not match", mockClient.secrets().list().getItems(), hasSize(6));
@@ -992,7 +1006,11 @@ public class EventStreamsOperatorTest {
             .withType(EndpointServiceType.INTERNAL)
             .build();
 
-        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, Collections.singletonList(tlsInternal), NAMESPACE, "endpoint-component");
+        SecurityComponentSpec spec = new SecurityComponentSpecBuilder()
+            .withEndpoints(tlsInternal)
+            .build();
+
+        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, spec, "endpoint-component");
         Map<String, String> additionalHosts = Collections.singletonMap(tlsInternal.getName(), "extra.host.name");
 
         reconciliationState.reconcileCerts(endpointModel, additionalHosts, Date::new).setHandler(ar -> {
@@ -1026,7 +1044,11 @@ public class EventStreamsOperatorTest {
             .withType(EndpointServiceType.INTERNAL)
             .build();
 
-        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, Collections.singletonList(tlsInternal), NAMESPACE, "endpoint-component");
+        SecurityComponentSpec spec = new SecurityComponentSpecBuilder()
+            .withEndpoints(tlsInternal)
+            .build();
+
+        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, spec, "endpoint-component");
         Map<String, String> additionalHosts = Collections.singletonMap(tlsInternal.getName(), "extra.host.name");
 
         reconciliationState.reconcileCerts(endpointModel, additionalHosts, Date::new).setHandler(ar -> {
@@ -1060,7 +1082,11 @@ public class EventStreamsOperatorTest {
             .withType(EndpointServiceType.INTERNAL)
             .build();
 
-        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, Collections.singletonList(tlsInternal), NAMESPACE, "endpoint-component");
+        SecurityComponentSpec spec = new SecurityComponentSpecBuilder()
+            .withEndpoints(tlsInternal)
+            .build();
+
+        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, spec, "endpoint-component");
         Map<String, String> additionalHosts = Collections.singletonMap(tlsInternal.getName(), "extra.host.name");
 
         reconciliationState.reconcileCerts(endpointModel, additionalHosts, Date::new).setHandler(ar -> {
@@ -1104,9 +1130,11 @@ public class EventStreamsOperatorTest {
             .withType(EndpointServiceType.INTERNAL)
             .build();
 
-        List<EndpointSpec> specs = Arrays.asList(tlsInternal, tlsRoute);
+        SecurityComponentSpec spec = new SecurityComponentSpecBuilder()
+            .withEndpoints(tlsRoute, tlsInternal)
+            .build();
 
-        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, specs, NAMESPACE, "endpoint-component");
+        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, spec, "endpoint-component");
         Map<String, String> additionalHosts = Collections.singletonMap(endpointModel.getRouteName(tlsRoute.getName()), "extra.host.name");
 
         reconciliationState.reconcileCerts(endpointModel, additionalHosts, Date::new).setHandler(ar -> {
@@ -1175,9 +1203,11 @@ public class EventStreamsOperatorTest {
             .withCertOverrides(certOverrides)
             .build();
 
-        List<EndpointSpec> specs = Arrays.asList(tlsInternal, tlsRoute);
+        SecurityComponentSpec spec = new SecurityComponentSpecBuilder()
+            .withEndpoints(tlsRoute, tlsInternal)
+            .build();
 
-        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, specs, NAMESPACE, "endpoint-component");
+        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, spec, "endpoint-component");
         Map<String, String> additionalHosts = Collections.singletonMap(tlsInternal.getName(), "extra.host.name");
 
         reconciliationState.reconcileCerts(endpointModel, additionalHosts, Date::new).setHandler(ar -> {
@@ -1208,10 +1238,10 @@ public class EventStreamsOperatorTest {
 
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(false, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
-        EventStreams esCluster = createESClusterWithProvidedBrokerCerts(NAMESPACE, CLUSTER_NAME, secretName, secretKey, secretCertificate);
+        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
         esCluster.getSpec().setSecurity(new SecuritySpecBuilder().withEncryption(SecuritySpec.Encryption.TLS).build());
 
-        Checkpoint async = context.checkpoint(1);
+        Checkpoint async = context.checkpoint();
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
         reconciliationState.icpClusterData = Collections.emptyMap();
@@ -1230,7 +1260,12 @@ public class EventStreamsOperatorTest {
             .withCertOverrides(certOverrides)
             .build();
 
-        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, Collections.singletonList(tlsInternal), NAMESPACE, "endpoint-component");
+        SecurityComponentSpec spec = new SecurityComponentSpecBuilder()
+            .withEndpoints(tlsInternal)
+            .build();
+
+        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, spec, "endpoint-component");
+
         Map<String, String> additionalHosts = Collections.singletonMap(tlsInternal.getName(), "extra.host.name");
 
         reconciliationState.reconcileCerts(endpointModel, additionalHosts, Date::new).setHandler(ar -> {
@@ -1254,273 +1289,6 @@ public class EventStreamsOperatorTest {
         });
     }
 
-
-    @Test
-    public void testSingleListenerCertificateSecretContentIsValid(VertxTestContext context) {
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(false, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
-        Checkpoint async = context.checkpoint(1);
-        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
-        Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
-        EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
-        reconciliationState.icpClusterData = Collections.emptyMap();
-        Listener listener = Listener.externalTls();
-        List<Listener> listeners = Collections.singletonList(listener);
-        ModelUtils.EndpointModel endpointModel = new ModelUtils.EndpointModel(esCluster, NAMESPACE, "endpoint-component", listeners);
-        String routeName = endpointModel.getRouteName(listener.getName());
-        Map<String, String> additionalHosts = Collections.singletonMap(routeName, "extra.host.name");
-
-        reconciliationState.reconcileCerts(endpointModel, additionalHosts, Date::new)
-            .onComplete(context.succeeding(v -> context.verify(() -> {
-                assertThat("Number of secrets do not match " + mockClient.secrets().list().getItems(), mockClient.secrets().list().getItems().size(), is(6));
-                Secret secret = mockClient.secrets().withName(endpointModel.getCertSecretName()).get();
-                assertThat("The expected secret is created", secret, is(notNullValue()));
-                CertAndKey certAndKey = reconciliationState.certificateManager.certificateAndKey(secret, endpointModel.getCertSecretCertID(listener.getName()), endpointModel.getCertSecretKeyID(listener.getName()));
-                X509Certificate certificate = ControllerUtils.checkCertificate(reconciliationState.certificateManager, certAndKey);
-                ControllerUtils.checkSans(context, reconciliationState.certificateManager, certificate, endpointModel.getExternalService(), additionalHosts.get(routeName));
-                async.flag();
-            })));
-    }
-
-    @Test
-    public void testMultipleListenerCertificateSecretContentIsValid(VertxTestContext context) {
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(false, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
-        Checkpoint async = context.checkpoint();
-
-        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
-        Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
-        EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
-        reconciliationState.icpClusterData = Collections.emptyMap();
-
-        Listener internalListener = Listener.internalPlain();
-        Listener internalTlsListener = Listener.internalTls();
-        Listener externalTlsListener = Listener.externalTls();
-        List<Listener> listeners = Arrays.asList(internalListener, internalTlsListener, externalTlsListener);
-        ModelUtils.EndpointModel endpointModel = new ModelUtils.EndpointModel(esCluster, NAMESPACE, "endpoint-component", listeners);
-
-        Map<String, String> additionalHosts = Collections.singletonMap(endpointModel.getRouteName(externalTlsListener.getName()), "extra.host.name");
-
-        reconciliationState.reconcileCerts(endpointModel, additionalHosts, Date::new)
-            .onComplete(context.succeeding(v -> context.verify(() -> {
-                assertThat("The number of secrets does not match", mockClient.secrets().list().getItems(), hasSize(6));
-                Secret secret = mockClient.secrets().withName(endpointModel.getCertSecretName()).get();
-                assertThat("The certificate secret should be created", secret, is(notNullValue()));
-                assertThat("The secret does not contain cert key ID for plain listener", secret.getData().containsKey(endpointModel.getCertSecretKeyID(internalListener.getName())), is(false));
-                assertThat("The secret does not contain cert ID for plain listener", secret.getData().containsKey(endpointModel.getCertSecretCertID(internalListener.getName())), is(false));
-
-                CertAndKey internalTlsCertAndKey = reconciliationState.certificateManager.certificateAndKey(secret, endpointModel.getCertSecretCertID(internalTlsListener.getName()), endpointModel.getCertSecretKeyID(internalTlsListener.getName()));
-                CertAndKey externalTlsCertAndKey = reconciliationState.certificateManager.certificateAndKey(secret, endpointModel.getCertSecretCertID(externalTlsListener.getName()), endpointModel.getCertSecretKeyID(externalTlsListener.getName()));
-
-                X509Certificate internalTlsCertificate = ControllerUtils.checkCertificate(reconciliationState.certificateManager, internalTlsCertAndKey);
-                X509Certificate externalTlsCertificate = ControllerUtils.checkCertificate(reconciliationState.certificateManager, externalTlsCertAndKey);
-                ControllerUtils.checkSans(context, reconciliationState.certificateManager, internalTlsCertificate, endpointModel.getInternalService(), "");
-                ControllerUtils.checkSans(context, reconciliationState.certificateManager, externalTlsCertificate, endpointModel.getExternalService(), additionalHosts.get(endpointModel.getRouteName(externalTlsListener.getName())));
-                async.flag();
-            })));
-    }
-
-    @Test
-    public void testEndpointCertificateSecretContentUnchangedByStandardReconciliation(VertxTestContext context) {
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(false, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
-        Checkpoint async = context.checkpoint();
-        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
-        Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
-        EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
-        reconciliationState.icpClusterData = Collections.emptyMap();
-        List<Listener> listeners = Arrays.asList(Listener.externalTls(), Listener.internalTls());
-        ModelUtils.EndpointModel endpointModel = new ModelUtils.EndpointModel(esCluster, NAMESPACE, "endpoint-component", listeners);
-        Map<String, String> additionalHosts = Collections.singletonMap(Listener.externalTls().getName(), "extra.host.name");
-        AtomicReference<Secret> firstSecret = new AtomicReference<>();
-        reconciliationState.reconcileCerts(endpointModel, additionalHosts, Date::new)
-            .onComplete(context.succeeding(v -> context.verify(() -> {
-                assertThat("The number of secrets does not match", mockClient.secrets().list().getItems(), hasSize(6));
-                firstSecret.set(mockClient.secrets().withName(endpointModel.getCertSecretName()).get());
-            })))
-            .compose(v -> reconciliationState.reconcileCerts(endpointModel, additionalHosts,  Date::new))
-            .onComplete(context.succeeding(v -> context.verify(() -> {
-                assertThat("The number of secrets does not match", mockClient.secrets().list().getItems(), hasSize(6));
-                Secret secondSecret = mockClient.secrets().withName(endpointModel.getCertSecretName()).get();
-                assertThat("The secret has not changed", secondSecret, is(firstSecret.get()));
-                async.flag();
-            })));
-    }
-
-    @Test
-    public void testEndpointCertificateSecretRegeneratedWhenExpired(VertxTestContext context) {
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(false, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
-        Checkpoint async = context.checkpoint();
-        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
-        Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
-        EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
-        reconciliationState.icpClusterData = Collections.emptyMap();
-        List<Listener> listeners = Arrays.asList(Listener.externalTls(), Listener.internalTls());
-        ModelUtils.EndpointModel endpointModel = new ModelUtils.EndpointModel(esCluster, NAMESPACE, "endpoint-component", listeners);
-        Map<String, String> additionalHosts = Collections.singletonMap(Listener.externalTls().getName(), "extra.host.name");
-        AtomicReference<Secret> firstSecret = new AtomicReference<>();
-        reconciliationState.reconcileCerts(endpointModel, additionalHosts, Date::new)
-            .onComplete(context.succeeding(v -> context.verify(() -> {
-                assertThat("The number of secrets does not match", mockClient.secrets().list().getItems(), hasSize(6));
-                firstSecret.set(mockClient.secrets().withName(endpointModel.getCertSecretName()).get());
-            })))
-            .compose(v -> reconciliationState.reconcileCerts(endpointModel, additionalHosts,  () -> Date.from(Instant.now().plusSeconds(TWO_YEARS_PLUS_IN_SECONDS))))
-            .onComplete(context.succeeding(v -> context.verify(() -> {
-                assertThat("The number of secrets does not match", mockClient.secrets().list().getItems(), hasSize(6));
-                Secret secondSecret = mockClient.secrets().withName(endpointModel.getCertSecretName()).get();
-                assertThat(secondSecret, is(notNullValue()));
-                assertThat("The secret has changed", secondSecret, not(firstSecret.get()));
-                async.flag();
-            })));
-    }
-
-    @Test
-    public void testEndpointCertificateSecretRegeneratedWhenCAChanges(VertxTestContext context) {
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(false, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
-        Checkpoint async = context.checkpoint(1);
-        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
-        Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
-        EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
-        reconciliationState.icpClusterData = Collections.emptyMap();
-        List<Listener> listeners = Arrays.asList(Listener.externalTls(), Listener.internalTls());
-        ModelUtils.EndpointModel endpointModel = new ModelUtils.EndpointModel(esCluster, NAMESPACE, "endpoint-component", listeners);
-        Map<String, String> additionalHosts = Collections.singletonMap(Listener.externalTls().getName(), "extra.host.name");
-        AtomicReference<Secret> firstSecret = new AtomicReference<>();
-        reconciliationState.reconcileCerts(endpointModel, additionalHosts, Date::new)
-            .onComplete(context.succeeding(v -> context.verify(() -> {
-                assertThat("The number of secrets does not match", mockClient.secrets().list().getItems(), hasSize(6));
-                firstSecret.set(mockClient.secrets().withName(endpointModel.getCertSecretName()).get());
-                List<Secret> newClusterCA = new ArrayList<>(ModelUtils.generateClusterCa(NAMESPACE, CLUSTER_NAME, APP_NAME, ModelUtils.Certificates.NEW_CLUSTER_CA, ModelUtils.Keys.NEW_CLUSTER_CA_KEY));
-                mockClient.secrets().createOrReplace(newClusterCA.get(0));
-                mockClient.secrets().createOrReplace(newClusterCA.get(1));
-            })))
-            .compose(v -> reconciliationState.reconcileCerts(endpointModel, additionalHosts, Date::new))
-            .onComplete(context.succeeding(v -> context.verify(() -> {
-                assertThat("The number of secrets does not match", mockClient.secrets().list().getItems(), hasSize(6));
-                Secret secondSecret = mockClient.secrets().withName(endpointModel.getCertSecretName()).get();
-                assertThat(secondSecret, is(notNullValue()));
-                assertThat("The secret has changed", secondSecret, not(firstSecret.get()));
-                async.flag();
-            })));
-    }
-
-    @Test
-    public void testEndpointCertificateSecretDoesntChangeForInternalServiceWhenHostsChange(VertxTestContext context) {
-        Checkpoint async = context.checkpoint();
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(false, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
-        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
-        esCluster.getSpec().setSecurity(new SecuritySpecBuilder().withEncryption(SecuritySpec.Encryption.TLS).build());
-
-        Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
-
-        EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
-        reconciliationState.icpClusterData = Collections.emptyMap();
-
-        EndpointSpec tlsInternal = new EndpointSpecBuilder()
-            .withName("internal")
-            .withTls(true)
-            .withAccessPort(9990)
-            .withType(EndpointServiceType.INTERNAL)
-            .build();
-        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, Collections.singletonList(tlsInternal), NAMESPACE, "endpoint-component");
-        Map<String, String> additionalHosts = Collections.singletonMap(tlsInternal.getName(), "extra.host.name");
-
-        reconciliationState.reconcileCerts(endpointModel, additionalHosts, Date::new)
-            .onComplete(context.succeeding(v -> context.verify(() -> {
-                assertThat("The number of secrets does not match", mockClient.secrets().list().getItems().size(), is(6));
-                Secret firstSecret = mockClient.secrets().withName(endpointModel.getCertificateSecretName()).get();
-                CertAndKey originalInternalTlsCertAndKey = reconciliationState.certificateManager.certificateAndKey(firstSecret, endpointModel.getCertSecretCertID(tlsInternal.getName()), endpointModel.getCertSecretKeyID(tlsInternal.getName()));
-                Map<String, String> newHosts = Collections.singletonMap(Listener.externalTls().getName(), "extra.host.name.2");
-                reconciliationState.reconcileCerts(endpointModel, newHosts, Date::new).onComplete(context.succeeding(v2 -> context.verify(() -> {
-                    assertThat("The number of secrets does not match", mockClient.secrets().list().getItems().size(), is(6));
-                    Secret secondSecret = mockClient.secrets().withName(endpointModel.getCertificateSecretName()).get();
-                    assertThat("The secret has changed", secondSecret, is(firstSecret));
-                    CertAndKey newInternalTlsCertAndKey = reconciliationState.certificateManager.certificateAndKey(secondSecret, endpointModel.getCertSecretCertID(tlsInternal.getName()), endpointModel.getCertSecretKeyID(tlsInternal.getName()));
-                    assertThat("The internalTls cert data hasn't changed", originalInternalTlsCertAndKey.cert(), is(newInternalTlsCertAndKey.cert()));
-                    assertThat("The internalTls key data hasn't changed", originalInternalTlsCertAndKey.key(), is(newInternalTlsCertAndKey.key()));
-                    async.flag();
-                })));
-            })));
-    }
-
-    @Test
-    public void testEndpointCertificatePopulatedWithProvidedBrokerCerts(VertxTestContext context) {
-        String secretName = "provided-broker-cert";
-        String secretKey = "broker.cert";
-        String secretCertificate = "broker.key";
-        Map<String, String> data = new HashMap<>();
-        data.put(secretKey, "YW55IG9sZCBndWJiaW5zCg==");
-        data.put(secretCertificate, "YW55IG9sZCBndWJiaW5zCg==");
-        Secret providedSecret = ModelUtils.generateSecret(NAMESPACE, secretName, data);
-        mockClient.secrets().create(providedSecret);
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(false, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
-        EventStreams esCluster = createESClusterWithProvidedBrokerCerts(NAMESPACE, CLUSTER_NAME, secretName, secretKey, secretCertificate);
-        Checkpoint async = context.checkpoint(1);
-        Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
-        EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
-        reconciliationState.icpClusterData = Collections.emptyMap();
-        Listener internalTlsListener = Listener.internalTls();
-        Listener externalTlsListener = Listener.externalTls();
-        List<Listener> listeners = Arrays.asList(externalTlsListener, internalTlsListener);
-        ModelUtils.EndpointModel endpointModel = new ModelUtils.EndpointModel(esCluster, NAMESPACE, "endpoint-component", listeners);
-        Map<String, String> additionalHosts = Collections.singletonMap(externalTlsListener.getName(), "extra.host.name");
-
-        reconciliationState.reconcileCerts(endpointModel, additionalHosts, Date::new)
-            .onComplete(context.succeeding(v -> context.verify(() -> {
-                assertThat("The number of secrets does not match", mockClient.secrets().list().getItems().size(), is(7));
-                Secret secret = mockClient.secrets().withName(endpointModel.getCertSecretName()).get();
-                assertThat("The admin api cert secret has been populated with the internal provided cert", secret.getData().get(endpointModel.getCertSecretCertID(internalTlsListener.getName())), is(providedSecret.getData().get(secretCertificate)));
-                assertThat("The admin api cert secret has been populated with the internal provided key", secret.getData().get(endpointModel.getCertSecretKeyID(internalTlsListener.getName())), is(providedSecret.getData().get(secretKey)));
-                assertThat("The admin api cert secret has been populated with the external provided cert", secret.getData().get(endpointModel.getCertSecretCertID(externalTlsListener.getName())), is(providedSecret.getData().get(secretCertificate)));
-                assertThat("The admin api cert secret has been populated with the external provided key", secret.getData().get(endpointModel.getCertSecretKeyID(externalTlsListener.getName())), is(providedSecret.getData().get(secretKey)));
-                mockClient.secrets().delete(providedSecret);
-                async.flag();
-            })));
-    }
-
-    @Test
-    public void testEndpointCertificatePopulatedWithProvidedExternalBrokerCerts(VertxTestContext context) {
-        String secretName = "provided-broker-cert";
-        String secretKey = "broker.cert";
-        String secretCertificate = "broker.key";
-        Map<String, String> data = new HashMap<>();
-        data.put(secretKey, "YW55IG9sZCBndWJiaW5zCg==");
-        data.put(secretCertificate, "YW55IG9sZCBndWJiaW5zCg==");
-        Secret providedSecret = ModelUtils.generateSecret(NAMESPACE, secretName, data);
-        mockClient.secrets().create(providedSecret);
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(false, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
-        EventStreams esCluster = createESClusterWithProvidedExternalBrokerCerts(NAMESPACE, CLUSTER_NAME, secretName, secretKey, secretCertificate);
-        Checkpoint async = context.checkpoint(1);
-        Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
-        EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
-        reconciliationState.icpClusterData = Collections.emptyMap();
-        Listener internalTlsListener = Listener.internalTls();
-        Listener externalTlsListener = Listener.externalTls();
-        List<Listener> listeners = Arrays.asList(externalTlsListener, internalTlsListener);
-        ModelUtils.EndpointModel endpointModel = new ModelUtils.EndpointModel(esCluster, NAMESPACE, "endpoint-component", listeners);
-        Map<String, String> additionalHosts = Collections.singletonMap(externalTlsListener.getName(), "extra.host.name");
-
-        reconciliationState.reconcileCerts(endpointModel, additionalHosts, Date::new)
-            .onComplete(context.succeeding(v -> context.verify(() -> {
-                assertThat("The number of secrets does not match", mockClient.secrets().list().getItems().size(), is(7));
-                Secret secret = mockClient.secrets().withName(endpointModel.getCertSecretName()).get();
-                assertThat("The admin api cert secret has not been populated with the internal provided cert", secret.getData().get(endpointModel.getCertSecretCertID(internalTlsListener.getName())), not(providedSecret.getData().get(secretCertificate)));
-                assertThat("The admin api cert secret has not been populated with the internal provided key", secret.getData().get(endpointModel.getCertSecretKeyID(internalTlsListener.getName())), not(providedSecret.getData().get(secretKey)));
-                CertAndKey internalTlsCertAndKey = reconciliationState.certificateManager.certificateAndKey(secret, endpointModel.getCertSecretCertID(internalTlsListener.getName()), endpointModel.getCertSecretKeyID(internalTlsListener.getName()));
-                X509Certificate internalTlsCertificate = ControllerUtils.checkCertificate(reconciliationState.certificateManager, internalTlsCertAndKey);
-                ControllerUtils.checkSans(context, reconciliationState.certificateManager, internalTlsCertificate, endpointModel.getInternalService(), "");
-                assertThat("The admin api cert secret has been populated with the external provided cert", secret.getData().get(endpointModel.getCertSecretCertID(externalTlsListener.getName())), is(providedSecret.getData().get(secretCertificate)));
-                assertThat("The admin api cert secret has been populated with the external provided key", secret.getData().get(endpointModel.getCertSecretKeyID(externalTlsListener.getName())), is(providedSecret.getData().get(secretKey)));
-                mockClient.secrets().delete(providedSecret);
-                async.flag();
-            })));
-    }
-
     @Test
     public void testAllSecureEndpointModelsCertsCreatedOpenShift(VertxTestContext context) {
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
@@ -1530,8 +1298,6 @@ public class EventStreamsOperatorTest {
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState state = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
         state.icpClusterData = Collections.emptyMap();
-        Listener listener = Listener.externalTls();
-        Listener.setEnabledListeners(Collections.singletonList(listener));
 
         CompositeFuture.join(state.createRestProducer(Date::new),
             state.createSchemaRegistry(Date::new),
@@ -1545,27 +1311,23 @@ public class EventStreamsOperatorTest {
                                 .filter(service -> service.getMetadata().getName().contains("external"))
                                 .filter(service -> service.getMetadata().getName().startsWith(secret.getMetadata().getName().replace("-cert", "")))
                                 .findAny();
-                        String suffix = secret.getMetadata().getName().contains("admin-api") ? Endpoint.DEFAULT_EXTERNAL_NAME : "tls";
 
                         Optional<Route> routeOpt = mockClient.adapt(OpenShiftClient.class).routes().list().getItems()
                                 .stream()
-                                .filter(route -> route.getMetadata().getName().endsWith(suffix))
+                                .filter(route -> route.getMetadata().getName().endsWith(Endpoint.DEFAULT_EXTERNAL_NAME))
                                 .filter(route -> route.getMetadata().getName().startsWith(secret.getMetadata().getName().replace("-cert", "")))
                                 .findAny();
                         assertThat("We found the service for the secret " + secret.getMetadata().getName(), serviceOpt.isPresent(), is(true));
                         assertThat("We found the route for the secret " + secret.getMetadata().getName(), routeOpt.isPresent(), is(true));
-                        String name =  secret.getMetadata().getName().contains("admin-api") ? Endpoint.DEFAULT_EXTERNAL_NAME : listener.getName();
-                        String certID = secret.getData().keySet().stream().filter(string -> string.endsWith(CertificateSecretModel.formatCertID(name))).findAny().get();
-                        String keyID = secret.getData().keySet().stream().filter(string -> string.endsWith(CertificateSecretModel.formatKeyID(name))).findAny().get();
+                        String certID = secret.getData().keySet().stream().filter(string -> string.endsWith(CertificateSecretModel.formatCertID(Endpoint.DEFAULT_EXTERNAL_NAME))).findAny().get();
+                        String keyID = secret.getData().keySet().stream().filter(string -> string.endsWith(CertificateSecretModel.formatKeyID(Endpoint.DEFAULT_EXTERNAL_NAME))).findAny().get();
                         CertAndKey certAndKey = state.certificateManager.certificateAndKey(secret, certID, keyID);
                         X509Certificate certificate = ControllerUtils.checkCertificate(state.certificateManager, certAndKey);
-                        Service service = secret.getMetadata().getName().contains("admin-api") ? null : serviceOpt.get();
-                        ControllerUtils.checkSans(context, state.certificateManager, certificate, service, routeOpt.get().getSpec().getHost());
+                        ControllerUtils.checkSans(context, state.certificateManager, certificate, null, routeOpt.get().getSpec().getHost());
                     }
                 });
                 async.flag();
             })));
-        Listener.setEnabledListeners(Arrays.asList(Listener.externalTls(), Listener.externalPlain(), Listener.internalTls()));
         async.flag();
     }
 
@@ -1634,20 +1396,16 @@ public class EventStreamsOperatorTest {
                 .withReplicas(1)
                 .withEndpoints(new ArrayList<>(Arrays.asList(internalTlsBearer, internalTlsNone)))
             .endAdminApi()
-            .withNewSchemaRegistry()
-            .withReplicas(1)
-            .endSchemaRegistry()
             .endSpec()
             .build();
 
         AtomicReference<Secret> secretReference = new AtomicReference<>();
         Checkpoint async = context.checkpoint(3);
-        ModelUtils.EndpointModel endpointModel = new ModelUtils.EndpointModel(secureInstance, NAMESPACE, "admin-api", Collections.emptyList());
-
+        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(secureInstance, null, "admin-api");
 
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), secureInstance)
             .onComplete(context.succeeding(v -> {
-                Secret secret = mockClient.secrets().withName(endpointModel.getCertSecretName()).get();
+                Secret secret = mockClient.secrets().withName(endpointModel.getCertificateSecretName()).get();
 
                 assertThat(secret, is(notNullValue()));
 
@@ -1662,7 +1420,7 @@ public class EventStreamsOperatorTest {
             }))
             .compose(v -> esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), insecureInstance))
             .onComplete(context.succeeding(v -> {
-                Secret secret = mockClient.secrets().withName(endpointModel.getCertSecretName()).get();
+                Secret secret = mockClient.secrets().withName(endpointModel.getCertificateSecretName()).get();
                 assertThat(secret, is(notNullValue()));
 
                 assertThat(secret, not(secretReference.get()));
@@ -1750,12 +1508,11 @@ public class EventStreamsOperatorTest {
 
         AtomicReference<Secret> secretReference = new AtomicReference<>();
         Checkpoint async = context.checkpoint(3);
-        ModelUtils.EndpointModel endpointModel = new ModelUtils.EndpointModel(secureInstance, NAMESPACE, "admin-api", Collections.emptyList());
-
+        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(secureInstance, null, "admin-api");
 
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), insecureInstance)
             .onComplete(context.succeeding(v -> {
-                Secret secret = mockClient.secrets().withName(endpointModel.getCertSecretName()).get();
+                Secret secret = mockClient.secrets().withName(endpointModel.getCertificateSecretName()).get();
 
                 assertThat(secret, is(notNullValue()));
 
@@ -1771,7 +1528,7 @@ public class EventStreamsOperatorTest {
             }))
             .compose(v -> esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), secureInstance))
             .onComplete(context.succeeding(v -> {
-                Secret secret = mockClient.secrets().withName(endpointModel.getCertSecretName()).get();
+                Secret secret = mockClient.secrets().withName(endpointModel.getCertificateSecretName()).get();
                 assertThat(secret, is(notNullValue()));
 
                 assertThat(secret, not(secretReference.get()));
@@ -1782,6 +1539,96 @@ public class EventStreamsOperatorTest {
                 assertThat(secret.getData().get(endpointModel.getCertSecretKeyID(internalTlsMutualTls.getName())).length(), greaterThan(0));
                 assertThat(secret.getData().get(endpointModel.getCertSecretCertID(internalTlsMutualTls.getName())).length(), greaterThan(0));
 
+                async.flag();
+            }));
+        async.flag();
+    }
+
+    @Test
+    public void testEndpointCertificateSecretCreatedIfNotPresent(VertxTestContext context) {
+        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
+        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
+
+        EndpointSpec internalTlsMutualTls = new EndpointSpecBuilder()
+            .withName("mutual")
+            .withAccessPort(9999)
+            .withType(EndpointServiceType.INTERNAL)
+            .build();
+
+        EventStreams beforeInstance = new EventStreamsBuilder()
+            .withMetadata(new ObjectMetaBuilder()
+                .withNewName(CLUSTER_NAME)
+                .withNewNamespace(NAMESPACE)
+                .build())
+            .withNewSpec()
+            .withSecurity(new SecuritySpecBuilder()
+                .withEncryption(SecuritySpec.Encryption.TLS)
+                .build())
+            .withNewAdminApi()
+            .withReplicas(1)
+            .endAdminApi()
+            .withLicenseAccept(true)
+            .withNewVersion(DEFAULT_VERSION)
+            .withStrimziOverrides(new KafkaSpecBuilder()
+                .withNewKafka()
+                .withReplicas(1)
+                .withNewListeners()
+                .endListeners()
+                .withNewEphemeralStorage()
+                .endEphemeralStorage()
+                .endKafka()
+                .withNewZookeeper()
+                .withReplicas(1)
+                .withNewEphemeralStorage()
+                .endEphemeralStorage()
+                .endZookeeper()
+                .build())
+            .endSpec()
+            .build();
+
+        EventStreams afterInstance = new EventStreamsBuilder(beforeInstance)
+            .editSpec()
+            .withSecurity(new SecuritySpecBuilder()
+                .withEncryption(SecuritySpec.Encryption.NONE)
+                .build())
+            .withNewAdminApi()
+            .withReplicas(1)
+            .withEndpoints(Collections.singletonList(internalTlsMutualTls))
+            .endAdminApi()
+            .endSpec()
+            .build();
+
+        AtomicReference<Secret> secretReference = new AtomicReference<>();
+        Checkpoint async = context.checkpoint(3);
+        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(beforeInstance, null, "admin-api");
+
+        esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), beforeInstance)
+            .onComplete(context.succeeding(v -> {
+                Secret secret = mockClient.secrets().withName(endpointModel.getCertificateSecretName()).get();
+
+                assertThat(secret, is(notNullValue()));
+
+                assertThat(secret.getData().get(endpointModel.getCertSecretKeyID(internalTlsMutualTls.getName())), is(nullValue()));
+                assertThat(secret.getData().get(endpointModel.getCertSecretCertID(internalTlsMutualTls.getName())), is(nullValue()));
+
+                assertThat(secret.getData().get(endpointModel.getCertSecretKeyID(Endpoint.DEFAULT_EXTERNAL_NAME)).length(), greaterThan(0));
+                assertThat(secret.getData().get(endpointModel.getCertSecretCertID(Endpoint.DEFAULT_EXTERNAL_NAME)).length(), greaterThan(0));
+                secretReference.set(secret);
+
+                async.flag();
+            }))
+            .compose(v -> esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), afterInstance))
+            .onComplete(context.succeeding(v -> {
+                Secret secret = mockClient.secrets().withName(endpointModel.getCertificateSecretName()).get();
+                assertThat(secret, is(notNullValue()));
+
+                assertThat(secret, not(secretReference.get()));
+
+                assertThat(secret.getData().get(endpointModel.getCertSecretKeyID(internalTlsMutualTls.getName())).length(), greaterThan(0));
+                assertThat(secret.getData().get(endpointModel.getCertSecretCertID(internalTlsMutualTls.getName())).length(), greaterThan(0));
+
+                assertThat(secret.getData().get(endpointModel.getCertSecretKeyID(Endpoint.DEFAULT_EXTERNAL_NAME)), is(nullValue()));
+                assertThat(secret.getData().get(endpointModel.getCertSecretCertID(Endpoint.DEFAULT_EXTERNAL_NAME)), is(nullValue()));
                 async.flag();
             }));
         async.flag();
@@ -1825,83 +1672,6 @@ public class EventStreamsOperatorTest {
         async.flag();
     }
 
-    @Test
-    public void testCreateOrUpdateRoutesReturnNothingk8s(VertxTestContext context) {
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(false, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
-        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
-        Checkpoint async = context.checkpoint(1);
-        Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
-        EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
-        reconciliationState.icpClusterData = Collections.emptyMap();
-        Listener internalTlsListener = Listener.internalTls();
-        Listener externalTlsListener = Listener.externalTls();
-        List<Listener> listeners = Arrays.asList(externalTlsListener, internalTlsListener);
-        ModelUtils.EndpointModel endpointModel = new ModelUtils.EndpointModel(esCluster, NAMESPACE, "endpoint-component", listeners);
-
-        reconciliationState.reconcileRoutes(endpointModel, endpointModel.getRoutes())
-            .onComplete(context.succeeding(routes -> context.verify(() -> {
-                assertThat(routes, aMapWithSize(0));
-                async.flag();
-            })));
-    }
-
-    @Test
-    public void testCreateOrUpdateRoutesMapOpenShiftNoExternalListeners(VertxTestContext context) {
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
-        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
-        Checkpoint async = context.checkpoint(1);
-        Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
-        EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
-        reconciliationState.icpClusterData = Collections.emptyMap();
-        Listener internalTlsListener = Listener.internalTls();
-        List<Listener> listeners = Collections.singletonList(internalTlsListener);
-        // Use admin api name for route matching with the mock client
-        ModelUtils.EndpointModel endpointModel = new ModelUtils.EndpointModel(esCluster, NAMESPACE, "admin-api", listeners);
-
-        reconciliationState.reconcileRoutes(endpointModel, endpointModel.getRoutes())
-            .onComplete(context.succeeding(routes -> context.verify(() -> {
-                assertThat(routes, aMapWithSize(0));
-                async.flag();
-            })));
-    }
-
-    @Test
-    public void testCreateOrUpdateRoutesMapOpenShift(VertxTestContext context) {
-        Checkpoint async = context.checkpoint(1);
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
-
-        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
-        Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
-        EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
-        reconciliationState.icpClusterData = Collections.emptyMap();
-
-        Listener internalTlsListener = Listener.internalTls();
-        Listener externalTlsListener = Listener.externalTls();
-        Listener externalPlainListener = Listener.externalPlain();
-        List<Listener> listeners = Arrays.asList(externalTlsListener, internalTlsListener, externalPlainListener);
-
-        // Use admin api name for route matching with the mock client
-        ModelUtils.EndpointModel endpointModel = new ModelUtils.EndpointModel(esCluster, NAMESPACE, "admin-api", listeners);
-
-        reconciliationState.reconcileRoutes(endpointModel, endpointModel.getRoutes())
-            .onComplete(context.succeeding(routes -> context.verify(() -> {
-                assertThat(routes, aMapWithSize(2));
-                String externalTlsListenerRoute = endpointModel.getRouteName(externalTlsListener.getName());
-                String externalPlainListenerRoute = endpointModel.getRouteName(externalPlainListener.getName());
-
-                assertThat(routes, hasKey(externalTlsListenerRoute));
-                assertThat(routes, hasKey(externalPlainListenerRoute));
-
-                assertThat("routes : " + routes.toString(), routes.get(externalTlsListenerRoute), is(formatRouteHost(ADMIN_API_ROUTE_NAME + "-" + Listener.EXTERNAL_TLS_NAME)));
-                assertThat("routes : " + routes.toString(), routes.get(externalPlainListenerRoute), is(formatRouteHost(ADMIN_API_ROUTE_NAME + "-" + Listener.EXTERNAL_PLAIN_NAME)));
-                async.flag();
-            })));
-    }
-
-    @Test
     public void testCreateMinimalEventStreams(VertxTestContext context) {
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(false, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
@@ -1936,8 +1706,8 @@ public class EventStreamsOperatorTest {
         expectedDeployments.add(CLUSTER_NAME + "-" + APP_NAME + "-" + AdminApiModel.COMPONENT_NAME);
 
         Set<String> expectedServices = new HashSet<>();
-        expectedServices.add(CLUSTER_NAME + "-" + APP_NAME + "-" + AdminApiModel.COMPONENT_NAME + "-" + AbstractSecureEndpointModel.EXTERNAL_SERVICE_SUFFIX);
-        expectedServices.add(CLUSTER_NAME + "-" + APP_NAME + "-" + AdminApiModel.COMPONENT_NAME + "-" + AbstractSecureEndpointModel.INTERNAL_SERVICE_SUFFIX);
+        expectedServices.add(CLUSTER_NAME + "-" + APP_NAME + "-" + AdminApiModel.COMPONENT_NAME + "-" + AbstractSecureEndpointsModel.ROUTE_SERVICE_SUFFIX);
+        expectedServices.add(CLUSTER_NAME + "-" + APP_NAME + "-" + AdminApiModel.COMPONENT_NAME + "-" + AbstractSecureEndpointsModel.INTERNAL_SERVICE_SUFFIX);
 
         // Set<String> expectedRoutes = new HashSet<>();
         // expectedRoutes.add(PROXY_ROUTE_NAME);
@@ -2037,8 +1807,6 @@ public class EventStreamsOperatorTest {
                         .withNewNamespace(NAMESPACE)
                         .build())
                 .withNewSpec()
-                    .withNewAdminApi()
-                    .endAdminApi()
                     .withLicenseAccept(true)
                     .withNewVersion(DEFAULT_VERSION)
                     .withStrimziOverrides(new KafkaSpecBuilder()
@@ -2063,8 +1831,6 @@ public class EventStreamsOperatorTest {
                     .withNewRestProducer()
                         .withReplicas(1)
                     .endRestProducer()
-                    .withNewAdminApi()
-                    .endAdminApi()
                 .endSpec()
                 .build();
 
@@ -2078,13 +1844,12 @@ public class EventStreamsOperatorTest {
         Set<String> serviceNames = new HashSet<>();
         serviceNames.add(internalServiceName);
         serviceNames.add(externalServiceName);
-        String externalPlainRouteName = defaultComponentResourceName + "-" + Listener.EXTERNAL_PLAIN_NAME;
-        String externalTlsRouteName = defaultComponentResourceName + "-" + Listener.EXTERNAL_TLS_NAME;
+        String defaultRoute = defaultComponentResourceName + "-" + Endpoint.DEFAULT_EXTERNAL_NAME;
+        String shortRouteName = RestProducerModel.COMPONENT_NAME + "-" + Endpoint.DEFAULT_EXTERNAL_NAME;
         Set<String> routeNames = new HashSet<>();
-        routeNames.add(externalPlainRouteName);
-        routeNames.add(externalTlsRouteName);
+        routeNames.add(defaultRoute);
 
-        Checkpoint async = context.checkpoint(3);
+        Checkpoint async = context.checkpoint();
 
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), minimalInstance)
             .onComplete(context.succeeding(v -> {
@@ -2093,24 +1858,39 @@ public class EventStreamsOperatorTest {
                 verifyContainsResource(context, deploymentName, KubeResourceType.DEPLOYMENTS, false);
                 verifyContainsResources(context, serviceNames, KubeResourceType.SERVICES, false);
                 verifyContainsResources(context, routeNames, KubeResourceType.ROUTES, false);
-                async.flag();
             }))
-            .compose(v -> esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), instance))
+            .map(v -> {
+                ArgumentCaptor<EventStreams> updatedEventStreams = ArgumentCaptor.forClass(EventStreams.class);
+                verify(esResourceOperator, times(2)).createOrUpdate(updatedEventStreams.capture());
+                context.verify(() -> assertThat(updatedEventStreams.getValue().getStatus().getRoutes().get(shortRouteName), is(nullValue())));
+                updatedEventStreams.getValue().getSpec().setRestProducer(new SecurityComponentSpec());
+                return updatedEventStreams.getValue();
+            })
+            .compose(restProducerInstance -> esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), restProducerInstance))
             .onComplete(context.succeeding(v -> {
                 verifyContainsResource(context, serviceAccountName, KubeResourceType.SERVICE_ACCOUNTS, true);
                 verifyContainsResource(context, networkPolicyName, KubeResourceType.NETWORK_POLICYS, true);
                 verifyContainsResource(context, deploymentName, KubeResourceType.DEPLOYMENTS, true);
                 verifyContainsResources(context, serviceNames, KubeResourceType.SERVICES, true);
                 verifyContainsResources(context, routeNames, KubeResourceType.ROUTES, true);
-                async.flag();
             }))
-            .compose(v -> esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), minimalInstance))
+            .map(v -> {
+                ArgumentCaptor<EventStreams> updatedEventStreams = ArgumentCaptor.forClass(EventStreams.class);
+                verify(esResourceOperator, times(3)).createOrUpdate(updatedEventStreams.capture());
+                context.verify(() -> assertThat(updatedEventStreams.getValue().getStatus().getRoutes().get(shortRouteName), is(notNullValue())));
+                updatedEventStreams.getValue().getSpec().setRestProducer(null);
+                return updatedEventStreams.getValue();
+            })
+            .compose(noRestProducerInstance -> esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), noRestProducerInstance))
             .onComplete(context.succeeding(v -> {
                 verifyContainsResource(context, serviceAccountName, KubeResourceType.SERVICE_ACCOUNTS, false);
                 verifyContainsResource(context, networkPolicyName, KubeResourceType.NETWORK_POLICYS, false);
                 verifyContainsResource(context, deploymentName, KubeResourceType.DEPLOYMENTS, false);
                 verifyContainsResources(context, serviceNames, KubeResourceType.SERVICES, false);
                 verifyContainsResources(context, routeNames, KubeResourceType.ROUTES, false);
+                ArgumentCaptor<EventStreams> updatedEventStreams = ArgumentCaptor.forClass(EventStreams.class);
+                verify(esResourceOperator, times(4)).createOrUpdate(updatedEventStreams.capture());
+                context.verify(() -> assertThat(updatedEventStreams.getValue().getStatus().getRoutes().get(shortRouteName), is(nullValue())));
                 async.flag();
             }));
     }
@@ -2126,8 +1906,6 @@ public class EventStreamsOperatorTest {
                         .withNewNamespace(NAMESPACE)
                         .build())
                 .withNewSpec()
-                .withNewAdminApi()
-                .endAdminApi()
                 .withLicenseAccept(true)
                 .withNewVersion(DEFAULT_VERSION)
                 .withStrimziOverrides(new KafkaSpecBuilder()
@@ -2205,8 +1983,6 @@ public class EventStreamsOperatorTest {
                         .withNewNamespace(NAMESPACE)
                         .build())
                 .withNewSpec()
-                .withNewAdminApi()
-                .endAdminApi()
                 .withLicenseAccept(true)
                 .withNewVersion(DEFAULT_VERSION)
                 .withStrimziOverrides(new KafkaSpecBuilder()
@@ -2280,8 +2056,6 @@ public class EventStreamsOperatorTest {
                         .withNewNamespace(NAMESPACE)
                         .build())
                 .withNewSpec()
-                .withNewAdminApi()
-                .endAdminApi()
                 .withLicenseAccept(true)
                 .withNewVersion(DEFAULT_VERSION)
                 .withStrimziOverrides(new KafkaSpecBuilder()
@@ -2363,14 +2137,12 @@ public class EventStreamsOperatorTest {
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
 
-        EventStreams minimalInstance = new EventStreamsBuilder()
+        EventStreams instance = new EventStreamsBuilder()
                 .withMetadata(new ObjectMetaBuilder()
                         .withNewName(CLUSTER_NAME)
                         .withNewNamespace(NAMESPACE)
                         .build())
                 .withNewSpec()
-                .withNewAdminApi()
-                .endAdminApi()
                 .withLicenseAccept(true)
                 .withNewVersion(DEFAULT_VERSION)
                 .withStrimziOverrides(new KafkaSpecBuilder()
@@ -2390,14 +2162,6 @@ public class EventStreamsOperatorTest {
                 .endSpec()
                 .build();
 
-        EventStreams instance = new EventStreamsBuilder(minimalInstance)
-                .editSpec()
-                    .withNewSchemaRegistry()
-                        .withReplicas(1)
-                    .endSchemaRegistry()
-                .endSpec()
-                .build();
-
         String defaultComponentResourceName = CLUSTER_NAME + "-" + APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME;
 
         String serviceAccountName = defaultComponentResourceName;
@@ -2408,41 +2172,130 @@ public class EventStreamsOperatorTest {
         Set<String> serviceNames = new HashSet<>();
         serviceNames.add(internalServiceName);
         serviceNames.add(externalServiceName);
-        String externalPlainRouteName = defaultComponentResourceName + "-" + Listener.EXTERNAL_PLAIN_NAME;
-        String externalTlsRouteName = defaultComponentResourceName + "-" + Listener.EXTERNAL_TLS_NAME;
+        String externalTlsRouteName = defaultComponentResourceName + "-" + Endpoint.DEFAULT_EXTERNAL_NAME;
         Set<String> routeNames = new HashSet<>();
-        routeNames.add(externalPlainRouteName);
         routeNames.add(externalTlsRouteName);
 
-        Checkpoint async = context.checkpoint(3);
+        String shortRouteName = SchemaRegistryModel.COMPONENT_NAME + "-" + Endpoint.DEFAULT_EXTERNAL_NAME;
+        Checkpoint async = context.checkpoint();
 
-        esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), minimalInstance)
-                .onComplete(context.succeeding(v -> {
-                    verifyContainsResource(context, serviceAccountName, KubeResourceType.SERVICE_ACCOUNTS, false);
-                    verifyContainsResource(context, networkPolicyName, KubeResourceType.NETWORK_POLICYS, false);
-                    verifyContainsResource(context, deploymentName, KubeResourceType.DEPLOYMENTS, false);
-                    verifyContainsResources(context, serviceNames, KubeResourceType.SERVICES, false);
-                    verifyContainsResources(context, routeNames, KubeResourceType.ROUTES, false);
-                    async.flag();
-                }))
-                .compose(v -> esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), instance))
-                .onComplete(context.succeeding(v -> {
-                    verifyContainsResource(context, serviceAccountName, KubeResourceType.SERVICE_ACCOUNTS, true);
-                    verifyContainsResource(context, networkPolicyName, KubeResourceType.NETWORK_POLICYS, true);
-                    verifyContainsResource(context, deploymentName, KubeResourceType.DEPLOYMENTS, true);
-                    verifyContainsResources(context, serviceNames, KubeResourceType.SERVICES, true);
-                    verifyContainsResources(context, routeNames, KubeResourceType.ROUTES, true);
-                    async.flag();
-                }))
-                .compose(v -> esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), minimalInstance))
-                .onComplete(context.succeeding(v -> {
-                    verifyContainsResource(context, serviceAccountName, KubeResourceType.SERVICE_ACCOUNTS, false);
-                    verifyContainsResource(context, networkPolicyName, KubeResourceType.NETWORK_POLICYS, false);
-                    verifyContainsResource(context, deploymentName, KubeResourceType.DEPLOYMENTS, false);
-                    verifyContainsResources(context, serviceNames, KubeResourceType.SERVICES, false);
-                    verifyContainsResources(context, routeNames, KubeResourceType.ROUTES, false);
-                    async.flag();
-                }));
+        esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), instance)
+            .onComplete(context.succeeding(v -> {
+                verifyContainsResource(context, serviceAccountName, KubeResourceType.SERVICE_ACCOUNTS, false);
+                verifyContainsResource(context, networkPolicyName, KubeResourceType.NETWORK_POLICYS, false);
+                verifyContainsResource(context, deploymentName, KubeResourceType.DEPLOYMENTS, false);
+                verifyContainsResources(context, serviceNames, KubeResourceType.SERVICES, false);
+                verifyContainsResources(context, routeNames, KubeResourceType.ROUTES, false);
+                async.flag();
+            }))
+            .map(v -> {
+                ArgumentCaptor<EventStreams> updatedEventStreams = ArgumentCaptor.forClass(EventStreams.class);
+                verify(esResourceOperator).createOrUpdate(updatedEventStreams.capture());
+                context.verify(() -> assertThat(updatedEventStreams.getValue().getStatus().getRoutes().get(shortRouteName), is(notNullValue())));
+                updatedEventStreams.getValue().getSpec().setSchemaRegistry(new SchemaRegistrySpec());
+                return updatedEventStreams.getValue();
+            })
+            .compose(schemaRegistryInstance -> esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), schemaRegistryInstance))
+            .onComplete(context.succeeding(v -> {
+                verifyContainsResource(context, serviceAccountName, KubeResourceType.SERVICE_ACCOUNTS, true);
+                verifyContainsResource(context, networkPolicyName, KubeResourceType.NETWORK_POLICYS, true);
+                verifyContainsResource(context, deploymentName, KubeResourceType.DEPLOYMENTS, true);
+                verifyContainsResources(context, serviceNames, KubeResourceType.SERVICES, true);
+                verifyContainsResources(context, routeNames, KubeResourceType.ROUTES, true);
+            }))
+            .map(v -> {
+                ArgumentCaptor<EventStreams> updatedEventStreams = ArgumentCaptor.forClass(EventStreams.class);
+                verify(esResourceOperator, times(2)).createOrUpdate(updatedEventStreams.capture());
+                context.verify(() -> assertThat(updatedEventStreams.getValue().getStatus().getRoutes().get(shortRouteName), is(notNullValue())));
+                updatedEventStreams.getValue().getSpec().setSchemaRegistry(null);
+                return updatedEventStreams.getValue();
+            })
+            .compose(noSchemaRegistryInstance -> esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), noSchemaRegistryInstance))
+            .onComplete(context.succeeding(v -> {
+                verifyContainsResource(context, serviceAccountName, KubeResourceType.SERVICE_ACCOUNTS, false);
+                verifyContainsResource(context, networkPolicyName, KubeResourceType.NETWORK_POLICYS, false);
+                verifyContainsResource(context, deploymentName, KubeResourceType.DEPLOYMENTS, false);
+                verifyContainsResources(context, serviceNames, KubeResourceType.SERVICES, false);
+                verifyContainsResources(context, routeNames, KubeResourceType.ROUTES, false);
+                ArgumentCaptor<EventStreams> updatedEventStreams = ArgumentCaptor.forClass(EventStreams.class);
+                verify(esResourceOperator, times(3)).createOrUpdate(updatedEventStreams.capture());
+                context.verify(() -> assertThat(updatedEventStreams.getValue().getStatus().getRoutes().get(shortRouteName), is(nullValue())));
+                async.flag();
+            }));
+
+    }
+
+    @Test
+    public void testRoutesAreDeletedFromStatus(VertxTestContext context) {
+        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
+        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
+
+        String componentName = "endpoint-component";
+
+        String previousDefaultEndpoint = "my-es-ibm-es-" + componentName + "-external";
+        String previousCustomEndpoint = "my-es-ibm-es-" + componentName + "-random-name";
+
+        Map<String, String> routes = new HashMap<>();
+        routes.put(previousDefaultEndpoint, previousDefaultEndpoint + ".apps.test");
+        routes.put(previousCustomEndpoint, previousCustomEndpoint + ".apps.test");
+
+        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
+        esCluster.setStatus(new EventStreamsStatusBuilder()
+            .withRoutes(routes)
+            .build());
+        Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
+        EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
+        reconciliationState.icpClusterData = Collections.emptyMap();
+
+        Checkpoint async = context.checkpoint();
+
+        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, null, componentName);
+        assertThat(esCluster.getStatus().getRoutes().get(previousCustomEndpoint), is(notNullValue()));
+        assertThat(esCluster.getStatus().getRoutes().get(previousDefaultEndpoint), is(notNullValue()));
+
+        reconciliationState.deleteUnspecifiedRoutes(endpointModel, endpointModel.getRoutes())
+            .onComplete(context.succeeding(list -> {
+                assertThat(list, hasSize(2));
+                assertThat(list.get(0), is(ReconcileResult.deleted()));
+                assertThat(list.get(1), is(ReconcileResult.deleted()));
+                async.flag();
+            }));
+    }
+
+    @Test
+    public void testRoutesFromDifferentComponentAreDeletedFromStatus(VertxTestContext context) {
+        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
+        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
+
+        String differentComponentName = "different-component";
+        String componentName = "endpoint-component";
+
+        String defaultEndpoint = "my-es-ibm-es-" + differentComponentName + "-external";
+        String customEndpoint = "my-es-ibm-es-" + differentComponentName + "-random-name";
+
+        Map<String, String> routes = new HashMap<>();
+        routes.put(defaultEndpoint, defaultEndpoint + ".apps.test");
+        routes.put(customEndpoint, customEndpoint + ".apps.test");
+
+        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
+        esCluster.setStatus(new EventStreamsStatusBuilder()
+            .withRoutes(routes)
+            .build());
+        Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
+        EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
+        reconciliationState.icpClusterData = Collections.emptyMap();
+
+        Checkpoint async = context.checkpoint();
+
+        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, null, componentName);
+        assertThat(esCluster.getStatus().getRoutes().get(customEndpoint), is(notNullValue()));
+        assertThat(esCluster.getStatus().getRoutes().get(defaultEndpoint), is(notNullValue()));
+
+        reconciliationState.deleteUnspecifiedRoutes(endpointModel, endpointModel.getRoutes())
+            .onComplete(context.succeeding(list -> {
+                assertThat(list, hasSize(0));
+                async.flag();
+            }));
     }
 
     @Test
@@ -2687,12 +2540,12 @@ public class EventStreamsOperatorTest {
 
     private Set<String> getExpectedServiceNames(String clusterName) {
         Set<String> expectedServices = new HashSet<>();
-        expectedServices.add(clusterName + "-" + APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME + "-" + AbstractSecureEndpointModel.EXTERNAL_SERVICE_SUFFIX);
-        expectedServices.add(clusterName + "-" + APP_NAME + "-" + RestProducerModel.COMPONENT_NAME + "-" + AbstractSecureEndpointModel.EXTERNAL_SERVICE_SUFFIX);
-        expectedServices.add(clusterName + "-" + APP_NAME + "-" + AdminApiModel.COMPONENT_NAME + "-" + AbstractSecureEndpointModel.EXTERNAL_SERVICE_SUFFIX);
-        expectedServices.add(clusterName + "-" + APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME + "-" + AbstractSecureEndpointModel.INTERNAL_SERVICE_SUFFIX);
-        expectedServices.add(clusterName + "-" + APP_NAME + "-" + RestProducerModel.COMPONENT_NAME + "-" + AbstractSecureEndpointModel.INTERNAL_SERVICE_SUFFIX);
-        expectedServices.add(clusterName + "-" + APP_NAME + "-" + AdminApiModel.COMPONENT_NAME + "-" + AbstractSecureEndpointModel.INTERNAL_SERVICE_SUFFIX);
+        expectedServices.add(clusterName + "-" + APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME + "-" + AbstractSecureEndpointsModel.ROUTE_SERVICE_SUFFIX);
+        expectedServices.add(clusterName + "-" + APP_NAME + "-" + RestProducerModel.COMPONENT_NAME + "-" + AbstractSecureEndpointsModel.ROUTE_SERVICE_SUFFIX);
+        expectedServices.add(clusterName + "-" + APP_NAME + "-" + AdminApiModel.COMPONENT_NAME + "-" + AbstractSecureEndpointsModel.ROUTE_SERVICE_SUFFIX);
+        expectedServices.add(clusterName + "-" + APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME + "-" + AbstractSecureEndpointsModel.INTERNAL_SERVICE_SUFFIX);
+        expectedServices.add(clusterName + "-" + APP_NAME + "-" + RestProducerModel.COMPONENT_NAME + "-" + AbstractSecureEndpointsModel.INTERNAL_SERVICE_SUFFIX);
+        expectedServices.add(clusterName + "-" + APP_NAME + "-" + AdminApiModel.COMPONENT_NAME + "-" + AbstractSecureEndpointsModel.INTERNAL_SERVICE_SUFFIX);
         expectedServices.add(clusterName + "-" + APP_NAME + "-" + AdminUIModel.COMPONENT_NAME);
         expectedServices.add(clusterName + "-" + APP_NAME + "-" + CollectorModel.COMPONENT_NAME);
         return expectedServices;
@@ -2701,11 +2554,9 @@ public class EventStreamsOperatorTest {
     private Set<String> getExpectedRouteNames(String clusterName) {
         Set<String> expectedRoutes = new HashSet<>();
         expectedRoutes.add(UI_ROUTE_NAME);
-        expectedRoutes.add(REST_PRODUCER_ROUTE_NAME + "-" + Listener.EXTERNAL_TLS_NAME);
-        expectedRoutes.add(SCHEMA_REGISTRY_ROUTE_NAME + "-" + Listener.EXTERNAL_TLS_NAME);
+        expectedRoutes.add(REST_PRODUCER_ROUTE_NAME + "-" + Endpoint.DEFAULT_EXTERNAL_NAME);
+        expectedRoutes.add(SCHEMA_REGISTRY_ROUTE_NAME + "-" + Endpoint.DEFAULT_EXTERNAL_NAME);
         expectedRoutes.add(ADMIN_API_ROUTE_NAME + "-" + Endpoint.DEFAULT_EXTERNAL_NAME);
-        expectedRoutes.add(REST_PRODUCER_ROUTE_NAME + "-" + Listener.EXTERNAL_PLAIN_NAME);
-        expectedRoutes.add(SCHEMA_REGISTRY_ROUTE_NAME + "-" + Listener.EXTERNAL_PLAIN_NAME);
         return expectedRoutes;
     }
 
@@ -2918,11 +2769,9 @@ public class EventStreamsOperatorTest {
     private void createRoutesInMockClient() {
         List<Route> routes = new ArrayList<>();
         routes.add(createRoute(UI_ROUTE_NAME, NAMESPACE));
-        routes.add(createRoute(REST_PRODUCER_ROUTE_NAME + "-" + Listener.EXTERNAL_TLS_NAME, NAMESPACE));
-        routes.add(createRoute(SCHEMA_REGISTRY_ROUTE_NAME + "-" + Listener.EXTERNAL_TLS_NAME, NAMESPACE));
+        routes.add(createRoute(REST_PRODUCER_ROUTE_NAME + "-" + Endpoint.DEFAULT_EXTERNAL_NAME, NAMESPACE));
+        routes.add(createRoute(SCHEMA_REGISTRY_ROUTE_NAME + "-" + Endpoint.DEFAULT_EXTERNAL_NAME, NAMESPACE));
         routes.add(createRoute(ADMIN_API_ROUTE_NAME + "-" + Endpoint.DEFAULT_EXTERNAL_NAME, NAMESPACE));
-        routes.add(createRoute(REST_PRODUCER_ROUTE_NAME + "-" + Listener.EXTERNAL_PLAIN_NAME, NAMESPACE));
-        routes.add(createRoute(SCHEMA_REGISTRY_ROUTE_NAME + "-" + Listener.EXTERNAL_PLAIN_NAME, NAMESPACE));
 
         routes.forEach(this::deployRouteInMockClient);
     }

@@ -14,8 +14,8 @@ package com.ibm.eventstreams.api.model;
 
 import com.ibm.eventstreams.Main;
 import com.ibm.eventstreams.api.DefaultResourceRequirements;
+import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.EndpointServiceType;
-import com.ibm.eventstreams.api.Listener;
 import com.ibm.eventstreams.api.spec.ComponentSpec;
 import com.ibm.eventstreams.api.spec.ComponentTemplate;
 import com.ibm.eventstreams.api.spec.ContainerSpec;
@@ -36,6 +36,7 @@ import io.fabric8.kubernetes.api.model.ServiceAccount;
 import io.fabric8.kubernetes.api.model.Volume;
 import io.fabric8.kubernetes.api.model.VolumeBuilder;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
+import io.fabric8.kubernetes.api.model.apps.DeploymentBuilder;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicy;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicyIngressRule;
 import io.fabric8.kubernetes.api.model.rbac.RoleBinding;
@@ -55,8 +56,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
-import static com.ibm.eventstreams.api.model.AbstractSecureEndpointModel.getInternalServiceName;
 
 public class AdminApiModel extends AbstractSecureEndpointsModel {
 
@@ -109,7 +108,7 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
                          EventStreamsOperatorConfig.ImageLookup imageConfig,
                          List<ListenerStatus> kafkaListeners,
                          Map<String, String> icpClusterData) {
-        super(instance, instance.getSpec().getAdminApi().getEndpoints(), instance.getMetadata().getNamespace(), COMPONENT_NAME);
+        super(instance, instance.getSpec().getAdminApi(), COMPONENT_NAME);
         this.kafkaListeners = kafkaListeners != null ? new ArrayList<>(kafkaListeners) : new ArrayList<>();
 
         this.prometheusHost = icpClusterData.getOrDefault("cluster_address", "null");
@@ -311,7 +310,7 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
         String kafkaBootstrapInternalPlainUrl = getInternalPlainKafkaBootstrap(kafkaListeners);
         String kafkaBootstrapInternalTlsUrl = getInternalTlsKafkaBootstrap(kafkaListeners);
         String kafkaBootstrapExternalUrl = getExternalKafkaBootstrap(kafkaListeners);
-        String schemaRegistryEndpoint =  getInternalServiceName(getInstanceName(), SchemaRegistryModel.COMPONENT_NAME) + "." +  getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + Listener.podToPodListener(tlsEnabled()).getPort();
+        String schemaRegistryEndpoint =  getInternalServiceName(getInstanceName(), SchemaRegistryModel.COMPONENT_NAME) + "." +  getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.getPodToPodPort(tlsEnabled());
         String zookeeperEndpoint = EventStreamsKafkaModel.getKafkaInstanceName(getInstanceName()) + "-" + EventStreamsKafkaModel.ZOOKEEPER_COMPONENT_NAME + "-client." + getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.ZOOKEEPER_PORT;
         String kafkaConnectRestEndpoint = "http://" + getResourcePrefix() + "-" + ReplicatorModel.COMPONENT_NAME + "-mirrormaker2-api." + getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + ReplicatorModel.REPLICATOR_PORT;
 
@@ -421,7 +420,7 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
         Probe defaultLivenessProbe = new ProbeBuilder()
                 .withNewHttpGet()
                 .withPath("/liveness")
-                .withNewPort(Listener.podToPodListener(tlsEnabled()).getPort())
+                .withNewPort(Endpoint.getPodToPodPort(tlsEnabled()))
                 .withScheme(getHealthCheckProtocol())
                 .withHttpHeaders(new HTTPHeaderBuilder()
                         .withName("Accept")
@@ -445,7 +444,7 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
         Probe defaultReadinessProbe = new ProbeBuilder()
                 .withNewHttpGet()
                 .withPath("/liveness")
-                .withNewPort(Listener.podToPodListener(tlsEnabled()).getPort())
+                .withNewPort(Endpoint.getPodToPodPort(tlsEnabled()))
                 .withScheme(getHealthCheckProtocol())
                 .withHttpHeaders(new HTTPHeaderBuilder()
                         .withName("Accept")
@@ -484,8 +483,20 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
      * to control rolling updates, for example when the cert secret changes.
      */
     public Deployment getDeployment(String certGenerationID) {
-        deployment.getMetadata().getLabels().put(CERT_GENERATION_KEY, certGenerationID);
-        deployment.getSpec().getTemplate().getMetadata().getLabels().put(CERT_GENERATION_KEY, certGenerationID);
+        if (certGenerationID != null && deployment != null) {
+            return new DeploymentBuilder(deployment)
+                .editOrNewMetadata()
+                .addToLabels(CERT_GENERATION_KEY, certGenerationID)
+                .endMetadata()
+                .editOrNewSpec()
+                .editOrNewTemplate()
+                .editOrNewMetadata()
+                .addToLabels(CERT_GENERATION_KEY, certGenerationID)
+                .endMetadata()
+                .endTemplate()
+                .endSpec()
+                .build();
+        }
         return deployment;
     }
 

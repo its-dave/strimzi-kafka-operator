@@ -13,8 +13,9 @@
 package com.ibm.eventstreams.api.model;
 
 import com.ibm.eventstreams.Main;
+import com.ibm.eventstreams.api.Endpoint;
+import com.ibm.eventstreams.api.EndpointServiceType;
 import com.ibm.eventstreams.api.Labels;
-import com.ibm.eventstreams.api.Listener;
 import com.ibm.eventstreams.api.model.utils.ModelUtils;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
@@ -29,6 +30,7 @@ import io.fabric8.kubernetes.api.model.Quantity;
 import io.fabric8.kubernetes.api.model.ResourceRequirements;
 import io.fabric8.kubernetes.api.model.ResourceRequirementsBuilder;
 import io.fabric8.kubernetes.api.model.Service;
+import io.fabric8.kubernetes.api.model.Volume;
 import io.fabric8.kubernetes.api.model.VolumeMount;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicy;
@@ -37,7 +39,6 @@ import io.fabric8.openshift.api.model.Route;
 import io.strimzi.api.kafka.model.status.ListenerStatus;
 import io.strimzi.api.kafka.model.status.ListenerStatusBuilder;
 import io.strimzi.api.kafka.model.template.PodTemplateBuilder;
-
 import org.hamcrest.collection.IsMapWithSize;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -57,10 +58,10 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.emptyIterableOf;
 import static org.hamcrest.Matchers.hasItem;
 import static org.mockito.Mockito.when;
-import static org.hamcrest.Matchers.containsInAnyOrder;
 
 @ExtendWith(MockitoExtension.class)
 public class RestProducerModelTest {
@@ -96,16 +97,12 @@ public class RestProducerModelTest {
         assertThat(restProducerDeployment.getMetadata().getName(), startsWith(componentPrefix));
         assertThat(restProducerDeployment.getSpec().getReplicas(), is(defaultReplicas));
 
-        Service adminApiInternalService = restProducerModel.getInternalService();
-        String expectedInternalServiceName = componentPrefix + "-" + AbstractSecureEndpointModel.INTERNAL_SERVICE_SUFFIX;
-        assertThat(adminApiInternalService.getMetadata().getName(), is(expectedInternalServiceName));
-
-        Service adminApiExternalService = restProducerModel.getExternalService();
-        String expectedExternalServiceName = componentPrefix + "-" + AbstractSecureEndpointModel.EXTERNAL_SERVICE_SUFFIX;
+        Service adminApiExternalService = restProducerModel.getSecurityService(EndpointServiceType.ROUTE);
+        String expectedExternalServiceName = componentPrefix + "-" + AbstractSecureEndpointsModel.ROUTE_SERVICE_SUFFIX;
         assertThat(adminApiExternalService.getMetadata().getName(), is(expectedExternalServiceName));
 
         Map<String, Route> restProducerRoutes = restProducerModel.getRoutes();
-        assertThat(restProducerRoutes, IsMapWithSize.aMapWithSize(2));
+        assertThat(restProducerRoutes, IsMapWithSize.aMapWithSize(1));
         restProducerRoutes.forEach((key, route) -> {
             assertThat(route.getMetadata().getName(), startsWith(componentPrefix));
             assertThat(route.getMetadata().getName(), containsString(key));
@@ -146,6 +143,51 @@ public class RestProducerModelTest {
     }
 
     @Test
+    public void testVolumeMounts() {
+        RestProducerModel restProducerModel = createDefaultRestProducerModel();
+
+        List<VolumeMount> volumeMounts = restProducerModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getVolumeMounts();
+
+        assertThat(volumeMounts.size(), is(5));
+
+        assertThat(volumeMounts.get(0).getName(), is(RestProducerModel.IBMCLOUD_CA_VOLUME_MOUNT_NAME));
+        assertThat(volumeMounts.get(0).getReadOnly(), is(true));
+        assertThat(volumeMounts.get(0).getMountPath(), is(RestProducerModel.IBMCLOUD_CA_CERTIFICATE_PATH));
+
+        assertThat(volumeMounts.get(1).getName(), is(AbstractSecureEndpointsModel.CERTS_VOLUME_MOUNT_NAME));
+        assertThat(volumeMounts.get(1).getReadOnly(), is(true));
+        assertThat(volumeMounts.get(1).getMountPath(), is(AbstractSecureEndpointsModel.CERTIFICATE_PATH));
+
+        assertThat(volumeMounts.get(2).getName(), is(AbstractSecureEndpointsModel.CLUSTER_CA_VOLUME_MOUNT_NAME));
+        assertThat(volumeMounts.get(2).getReadOnly(), is(true));
+        assertThat(volumeMounts.get(2).getMountPath(), is(AbstractSecureEndpointsModel.CLUSTER_CERTIFICATE_PATH));
+
+        assertThat(volumeMounts.get(3).getName(), is(AbstractSecureEndpointsModel.CLIENT_CA_VOLUME_MOUNT_NAME));
+        assertThat(volumeMounts.get(3).getReadOnly(), is(true));
+        assertThat(volumeMounts.get(3).getMountPath(), is(AbstractSecureEndpointsModel.CLIENT_CA_CERTIFICATE_PATH));
+
+        assertThat(volumeMounts.get(4).getName(), is(AbstractSecureEndpointsModel.KAFKA_USER_SECRET_VOLUME_NAME));
+        assertThat(volumeMounts.get(4).getReadOnly(), is(true));
+        assertThat(volumeMounts.get(4).getMountPath(), is(AbstractSecureEndpointsModel.KAFKA_USER_CERTIFICATE_PATH));
+
+    }
+
+    @Test
+    public void testVolumes() {
+        RestProducerModel restProducerModel = createDefaultRestProducerModel();
+
+        List<Volume> volumes = restProducerModel.getDeployment().getSpec().getTemplate().getSpec().getVolumes();
+
+        assertThat(volumes.size(), is(5));
+
+        assertThat(volumes.get(0).getName(), is(AbstractSecureEndpointsModel.CERTS_VOLUME_MOUNT_NAME));
+        assertThat(volumes.get(1).getName(), is(AbstractSecureEndpointsModel.CLUSTER_CA_VOLUME_MOUNT_NAME));
+        assertThat(volumes.get(2).getName(), is(AbstractSecureEndpointsModel.CLIENT_CA_VOLUME_MOUNT_NAME));
+        assertThat(volumes.get(3).getName(), is(AbstractSecureEndpointsModel.KAFKA_USER_SECRET_VOLUME_NAME));
+        assertThat(volumes.get(4).getName(), is(RestProducerModel.IBMCLOUD_CA_VOLUME_MOUNT_NAME));
+    }
+
+    @Test
     public void testNetworkPolicy() {
         RestProducerModel restProducerModel = createDefaultRestProducerModel();
 
@@ -154,16 +196,13 @@ public class RestProducerModelTest {
         assertThat(restProducerNetworkPolicy.getMetadata().getName(), is(expectedNetworkPolicyName));
         assertThat(restProducerNetworkPolicy.getKind(), is("NetworkPolicy"));
 
-        int numberOfPodToPodListeners = 1;
-        int expectNumberOfIngresses = Listener.enabledListeners().size() + numberOfPodToPodListeners;
-        assertThat(restProducerNetworkPolicy.getSpec().getIngress().size(), is(expectNumberOfIngresses));
-        List<Listener> listeners = Listener.enabledListeners();
-        listeners.add(Listener.podToPodListener(false));
-        List<Integer> listenerPorts = listeners.stream().map(Listener::getPort).collect(Collectors.toList());
+        assertThat(restProducerNetworkPolicy.getSpec().getIngress().size(), is(restProducerModel.getEndpoints().size()));
+        List<Integer> endpointPorts = restProducerModel.getEndpoints().stream().map(Endpoint::getPort).collect(Collectors.toList());
+
         restProducerNetworkPolicy.getSpec().getIngress().forEach(ingress -> {
             assertThat(ingress.getFrom(), is(emptyIterableOf(NetworkPolicyPeer.class)));
             assertThat(ingress.getPorts().size(), is(1));
-            assertThat(listenerPorts, hasItem(ingress.getPorts().get(0).getPort().getIntVal()));
+            assertThat(endpointPorts, hasItem(ingress.getPorts().get(0).getPort().getIntVal()));
         });
 
         assertThat(restProducerNetworkPolicy.getSpec().getPodSelector().getMatchLabels().size(), is(1));
@@ -438,8 +477,8 @@ public class RestProducerModelTest {
 
         RestProducerModel restProducerModel = new RestProducerModel(eventStreams, imageConfig, listeners, mockIcpClusterDataMap);
         Map<String, Route> routes = restProducerModel.getRoutes();
-        assertThat(routes, IsMapWithSize.aMapWithSize(2));
-        assertThat(routes.get(restProducerModel.getRouteName(Listener.EXTERNAL_TLS_NAME)).getSpec().getTls().getTermination(), is("passthrough"));
+        assertThat(routes, IsMapWithSize.aMapWithSize(1));
+        assertThat(routes.get(restProducerModel.getRouteName(Endpoint.DEFAULT_EXTERNAL_NAME)).getSpec().getTls().getTermination(), is("passthrough"));
     }
 
     @Test
@@ -447,39 +486,9 @@ public class RestProducerModelTest {
         EventStreams eventStreams = createDefaultEventStreams().build();
         RestProducerModel restProducerModel = new RestProducerModel(eventStreams, imageConfig, null, mockIcpClusterDataMap);
 
-        assertThat(restProducerModel.getDeployment("newID").getMetadata().getLabels().containsKey(AbstractSecureEndpointModel.CERT_GENERATION_KEY), is(true));
-        assertThat(restProducerModel.getDeployment("newID").getMetadata().getLabels().get(AbstractSecureEndpointModel.CERT_GENERATION_KEY), is("newID"));
-        assertThat(restProducerModel.getDeployment("newID").getSpec().getTemplate().getMetadata().getLabels().containsKey(AbstractSecureEndpointModel.CERT_GENERATION_KEY), is(true));
-        assertThat(restProducerModel.getDeployment("newID").getSpec().getTemplate().getMetadata().getLabels().get(AbstractSecureEndpointModel.CERT_GENERATION_KEY), is("newID"));
-    }
-
-    @Test
-    public void testVolumeMounts() {
-        EventStreams eventStreams = createDefaultEventStreams().build();
-        RestProducerModel adminApiModel = new RestProducerModel(eventStreams, imageConfig, null, mockIcpClusterDataMap);
-
-        List<VolumeMount> volumeMounts = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getVolumeMounts();
-
-        assertThat(volumeMounts.size(), is(5));
-
-        assertThat(volumeMounts.get(0).getName(), is(RestProducerModel.KAFKA_USER_SECRET_VOLUME_NAME));
-        assertThat(volumeMounts.get(0).getReadOnly(), is(true));
-        assertThat(volumeMounts.get(0).getMountPath(), is(RestProducerModel.KAFKA_USER_CERTIFICATE_PATH));
-
-        assertThat(volumeMounts.get(1).getName(), is(RestProducerModel.CERTS_VOLUME_MOUNT_NAME));
-        assertThat(volumeMounts.get(1).getReadOnly(), is(true));
-        assertThat(volumeMounts.get(1).getMountPath(), is(RestProducerModel.CERTIFICATE_PATH));
-
-        assertThat(volumeMounts.get(2).getName(), is(RestProducerModel.CLUSTER_CA_VOLUME_MOUNT_NAME));
-        assertThat(volumeMounts.get(2).getReadOnly(), is(true));
-        assertThat(volumeMounts.get(2).getMountPath(), is(RestProducerModel.CLUSTER_CERTIFICATE_PATH));
-
-        assertThat(volumeMounts.get(3).getName(), is(RestProducerModel.CLIENT_CA_VOLUME_MOUNT_NAME));
-        assertThat(volumeMounts.get(3).getReadOnly(), is(true));
-        assertThat(volumeMounts.get(3).getMountPath(), is(RestProducerModel.CLIENT_CA_CERTIFICATE_PATH));
-
-        assertThat(volumeMounts.get(4).getName(), is(RestProducerModel.IBMCLOUD_CA_VOLUME_MOUNT_NAME));
-        assertThat(volumeMounts.get(4).getReadOnly(), is(true));
-        assertThat(volumeMounts.get(4).getMountPath(), is(RestProducerModel.IBMCLOUD_CA_CERTIFICATE_PATH));
+        assertThat(restProducerModel.getDeployment("newID").getMetadata().getLabels().containsKey(AbstractSecureEndpointsModel.CERT_GENERATION_KEY), is(true));
+        assertThat(restProducerModel.getDeployment("newID").getMetadata().getLabels().get(AbstractSecureEndpointsModel.CERT_GENERATION_KEY), is("newID"));
+        assertThat(restProducerModel.getDeployment("newID").getSpec().getTemplate().getMetadata().getLabels().containsKey(AbstractSecureEndpointsModel.CERT_GENERATION_KEY), is(true));
+        assertThat(restProducerModel.getDeployment("newID").getSpec().getTemplate().getMetadata().getLabels().get(AbstractSecureEndpointsModel.CERT_GENERATION_KEY), is("newID"));
     }
 }

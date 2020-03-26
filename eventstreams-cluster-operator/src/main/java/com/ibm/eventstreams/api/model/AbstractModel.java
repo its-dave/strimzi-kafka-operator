@@ -12,25 +12,12 @@
  */
 package com.ibm.eventstreams.api.model;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 import com.ibm.eventstreams.Main;
 import com.ibm.eventstreams.api.Labels;
-import com.ibm.eventstreams.api.Listener;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.spec.ExternalAccess;
 import com.ibm.eventstreams.api.spec.SecuritySpec.Encryption;
-
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
 import io.fabric8.kubernetes.api.model.Container;
@@ -89,6 +76,17 @@ import io.strimzi.api.kafka.model.listener.KafkaListeners;
 import io.strimzi.api.kafka.model.status.ListenerAddress;
 import io.strimzi.api.kafka.model.status.ListenerStatus;
 import io.strimzi.api.kafka.model.template.PodTemplate;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @SuppressWarnings({"checkstyle:ClassFanOutComplexity", "checkstyle:ClassDataAbstractionCoupling"})
 public abstract class AbstractModel {
@@ -533,14 +531,6 @@ public abstract class AbstractModel {
                     .addToLabels(getComponentLabels())
                 .endMetadata()
                 .withData(data)
-                .build();
-    }
-
-    protected ServicePort createServicePort(Listener listener) {
-        return new ServicePortBuilder()
-                .withNewName(getComponentNameWithSuffix(listener.getName()))
-                .withNewProtocol("TCP")
-                .withPort(listener.getPort())
                 .build();
     }
 

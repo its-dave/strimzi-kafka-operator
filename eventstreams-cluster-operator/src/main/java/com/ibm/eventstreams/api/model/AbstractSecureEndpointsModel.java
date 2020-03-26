@@ -14,8 +14,8 @@ package com.ibm.eventstreams.api.model;
 
 import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.EndpointServiceType;
-import com.ibm.eventstreams.api.spec.EndpointSpec;
 import com.ibm.eventstreams.api.spec.EventStreams;
+import com.ibm.eventstreams.api.spec.SecurityComponentSpec;
 import io.fabric8.kubernetes.api.model.ContainerBuilder;
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.EnvVarBuilder;
@@ -74,10 +74,10 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
     private Service nodePortService;
 
 
-    public AbstractSecureEndpointsModel(EventStreams instance, List<EndpointSpec> endpointSpecs, String namespace, String componentName) {
-        super(instance.getMetadata().getName(), namespace, componentName);
-        this.certificateSecretModel = new CertificateSecretModel(instance, namespace, componentName);
-        this.endpoints = createEndpoints(instance, endpointSpecs);
+    public AbstractSecureEndpointsModel(EventStreams instance, SecurityComponentSpec spec, String componentName) {
+        super(instance.getMetadata().getName(), instance.getMetadata().getNamespace(), componentName);
+        this.certificateSecretModel = new CertificateSecretModel(instance, instance.getMetadata().getNamespace(), componentName);
+        this.endpoints = createEndpoints(instance, spec);
         this.routes = new HashMap<>();
     }
 
@@ -91,9 +91,22 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
      *             component's endpoint (schema registry, admin rest, or rest producer) to configure.
      * @return list of secure endpoints
      */
-    public List<Endpoint> createEndpoints(EventStreams instance, List<EndpointSpec> spec) {
-        List<Endpoint> endpoints =  Optional.ofNullable(spec)
-            .map(endpointSpec -> endpointSpec.stream().map(Endpoint.createEndpointFromSpec()).collect(Collectors.toList()))
+    public List<Endpoint> createEndpoints(EventStreams instance, SecurityComponentSpec spec) {
+        return Optional.ofNullable(spec)
+            .map(securityComponentSpec -> getEndpoints(instance, securityComponentSpec))
+            .orElse(Collections.emptyList());
+    }
+
+    /**
+     * Creates a list of endpoints given the Eventstreams CR and the specified SecurityComponents endpoints
+     * @param instance the current EventStreams CR
+     * @param spec the SecurityComponent which contains the endpoints to create
+     * @return A list of endpoints
+     */
+    private List<Endpoint> getEndpoints(EventStreams instance, SecurityComponentSpec spec) {
+        List<Endpoint> endpoints = Optional.ofNullable(spec)
+            .map(SecurityComponentSpec::getEndpoints)
+            .map(endpointSpecs -> endpointSpecs.stream().map(Endpoint.createEndpointFromSpec()).collect(Collectors.toList()))
             .orElse(new ArrayList<>(Collections.singletonList(Endpoint.createDefaultExternalEndpoint())));
 
         endpoints.add(Endpoint.createP2PEndpoint(instance));
@@ -331,6 +344,21 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
     public Map<String, Route> getRoutes() {
         return routes;
     }
+
+    /**
+     * @return Service return the internal service name
+     */
+    public static String getInternalServiceName(String instanceName, String componentName) {
+        return getDefaultResourceNameWithSuffix(INTERNAL_SERVICE_SUFFIX, instanceName, componentName);
+    }
+
+    /**
+     * @return Service return the internal service name
+     */
+    public String getInternalServiceName() {
+        return getInternalServiceName(getInstanceName(), getComponentName());
+    }
+
 
     public static String getExternalServiceName(String instanceName, String componentName) {
         return getDefaultResourceNameWithSuffix(ROUTE_SERVICE_SUFFIX, instanceName, componentName);
