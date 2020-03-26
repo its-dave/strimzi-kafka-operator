@@ -302,6 +302,7 @@ public class EventStreamsOperatorTest {
         Set<String> expectedSecrets = getExpectedSecretNames(CLUSTER_NAME);
         Set<String> expectedKafkaUsers = getExpectedKafkaUsers(CLUSTER_NAME);
         Set<String> expectedKafkas = getExpectedKafkas(CLUSTER_NAME);
+        Set<String> expectedNetworkPolicies = getExpectedNetworkPolicyNames(CLUSTER_NAME);
 
         Checkpoint async = context.checkpoint();
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster)
@@ -311,6 +312,7 @@ public class EventStreamsOperatorTest {
                 verifyHasOnlyResources(context, expectedServices, KubeResourceType.SERVICES);
                 verifyHasOnlyResources(context, expectedRoutes, KubeResourceType.ROUTES);
                 verifyHasOnlyResources(context, expectedSecrets, KubeResourceType.SECRETS);
+                verifyHasOnlyResources(context, expectedNetworkPolicies, KubeResourceType.NETWORK_POLICYS);
 
                 verifyHasOnlyResources(context, expectedKafkas, KubeResourceType.KAFKAS);
                 Set<HasMetadata> kafkas = getResources(NAMESPACE, KubeResourceType.KAFKAS);
@@ -346,6 +348,7 @@ public class EventStreamsOperatorTest {
         Set<String> expectedServices = getExpectedServiceNames(CLUSTER_NAME);
         Set<String> expectedRoutes = new HashSet<>();
         Set<String> expectedSecrets = getExpectedSecretNames(CLUSTER_NAME);
+        Set<String> expectedNetworkPolicies = getExpectedNetworkPolicyNames(CLUSTER_NAME);
 
         Checkpoint async = context.checkpoint();
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster)
@@ -354,6 +357,7 @@ public class EventStreamsOperatorTest {
                 verifyHasOnlyResources(context, expectedServices, KubeResourceType.SERVICES);
                 verifyHasOnlyResources(context, expectedRoutes, KubeResourceType.ROUTES);
                 verifyHasOnlyResources(context, expectedSecrets, KubeResourceType.SECRETS);
+                verifyHasOnlyResources(context, expectedNetworkPolicies, KubeResourceType.NETWORK_POLICYS);
                 verifyReplicasInDeployments(context, expectedResourcesWithReplicas);
                 async.flag();
             })));
@@ -2702,6 +2706,18 @@ public class EventStreamsOperatorTest {
         expectedRoutes.add(ADMIN_API_ROUTE_NAME + "-" + Endpoint.DEFAULT_EXTERNAL_NAME);
         expectedRoutes.add(REST_PRODUCER_ROUTE_NAME + "-" + Listener.EXTERNAL_PLAIN_NAME);
         expectedRoutes.add(SCHEMA_REGISTRY_ROUTE_NAME + "-" + Listener.EXTERNAL_PLAIN_NAME);
+        return expectedRoutes;
+    }
+
+    private Set<String> getExpectedNetworkPolicyNames(String clusterName) {
+        Set<String> expectedRoutes = new HashSet<>();
+        expectedRoutes.add(clusterName + "-" + APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME);
+        expectedRoutes.add(clusterName + "-" + APP_NAME + "-" + RestProducerModel.COMPONENT_NAME);
+        expectedRoutes.add(clusterName + "-" + APP_NAME + "-" + AdminApiModel.COMPONENT_NAME);
+        expectedRoutes.add(clusterName + "-" + APP_NAME + "-" + CollectorModel.COMPONENT_NAME);
+        expectedRoutes.add(clusterName + "-" + APP_NAME + "-" + AdminUIModel.COMPONENT_NAME);
+        expectedRoutes.add(clusterName + "-" + APP_NAME + "-" + ReplicatorModel.COMPONENT_NAME);
+        expectedRoutes.add(clusterName + "-" + APP_NAME + "-" + "kafka"); // TODO reference KafkaCluster.APPLICATION_NAME
         return expectedRoutes;
     }
 

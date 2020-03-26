@@ -278,7 +278,7 @@ metadata:
     categories: Streaming & Messaging
     certified: 'false'
     containerImage: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-operator-icp-linux-amd64:latest
-    createdAt: 2020-03-25T09:57:25Z
+    createdAt: 2020-03-25T16:34:03Z
     description: Kafka-based messaging platform for handling real-time data feeds.
     repository: https://github.ibm.com/mhub/qp-eventstreams-operator
     support: IBM
@@ -958,7 +958,7 @@ spec:
                     fieldRef:
                       fieldPath: metadata.name
                 - name: EVENTSTREAMS_DEFAULT_REST_PRODUCER_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-rest-producer-v2-icp-linux-amd64:2020-02-28-15.50.15-cffeadc-exp
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-rest-producer-v2-icp-linux-amd64:2020-03-25-13.14.02-b508e6c
                 - name: EVENTSTREAMS_DEFAULT_ADMIN_API_IMAGE
                   value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-admin-icp-linux-amd64:2020-03-24-09.19.04-4191bd2
                 - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_IMAGE

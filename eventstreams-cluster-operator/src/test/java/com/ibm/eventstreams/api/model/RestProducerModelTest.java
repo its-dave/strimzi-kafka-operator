@@ -29,6 +29,7 @@ import io.fabric8.kubernetes.api.model.Quantity;
 import io.fabric8.kubernetes.api.model.ResourceRequirements;
 import io.fabric8.kubernetes.api.model.ResourceRequirementsBuilder;
 import io.fabric8.kubernetes.api.model.Service;
+import io.fabric8.kubernetes.api.model.VolumeMount;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicy;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicyPeer;
@@ -64,6 +65,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 @ExtendWith(MockitoExtension.class)
 public class RestProducerModelTest {
 
+    private final Map<String, String> mockIcpClusterDataMap = new HashMap<>();
     private final String instanceName = "test-instance";
     private final String componentPrefix = instanceName + "-" + AbstractModel.APP_NAME + "-" + RestProducerModel.COMPONENT_NAME;
     private final int defaultReplicas = 1;
@@ -83,7 +85,7 @@ public class RestProducerModelTest {
 
     private RestProducerModel createDefaultRestProducerModel() {
         EventStreams instance = createDefaultEventStreams().build();
-        return new RestProducerModel(instance, imageConfig, listeners);
+        return new RestProducerModel(instance, imageConfig, listeners, mockIcpClusterDataMap);
     }
 
     @Test
@@ -134,7 +136,7 @@ public class RestProducerModelTest {
                     .endRestProducer()
                 .endSpec()
                 .build();
-        RestProducerModel restProducerModel = new RestProducerModel(eventStreamsResource, imageConfig, listeners);
+        RestProducerModel restProducerModel = new RestProducerModel(eventStreamsResource, imageConfig, listeners, mockIcpClusterDataMap);
 
         ResourceRequirements resourceRequirements = restProducerModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getResources();
         assertThat(resourceRequirements.getRequests().get("cpu").getAmount(), is("500m"));
@@ -187,7 +189,7 @@ public class RestProducerModelTest {
         Map<String, String> expectedImages = new HashMap<>();
         expectedImages.put(RestProducerModel.COMPONENT_NAME, restProducerImage);
 
-        List<Container> containers = new RestProducerModel(instance, imageConfig, listeners).getDeployment().getSpec().getTemplate()
+        List<Container> containers = new RestProducerModel(instance, imageConfig, listeners, mockIcpClusterDataMap).getDeployment().getSpec().getTemplate()
                 .getSpec().getContainers();
 
         ModelUtils.assertCorrectImageOverridesOnContainers(containers, expectedImages);
@@ -235,7 +237,7 @@ public class RestProducerModelTest {
                 .endSpec()
                 .build();
 
-        List<Container> containers = new RestProducerModel(instance, imageConfig, listeners).getDeployment().getSpec().getTemplate()
+        List<Container> containers = new RestProducerModel(instance, imageConfig, listeners, mockIcpClusterDataMap).getDeployment().getSpec().getTemplate()
                 .getSpec().getContainers();
 
         Map<String, String> expectedImages = new HashMap<>();
@@ -264,7 +266,7 @@ public class RestProducerModelTest {
             .endSpec()
             .build();
 
-        assertThat(new RestProducerModel(eventStreams, imageConfig, listeners).getServiceAccount()
+        assertThat(new RestProducerModel(eventStreams, imageConfig, listeners, mockIcpClusterDataMap).getServiceAccount()
                         .getImagePullSecrets(), contains(imagePullSecretOverride));
     }
 
@@ -284,7 +286,7 @@ public class RestProducerModelTest {
             .endSpec()
             .build();
 
-        assertThat(new RestProducerModel(eventStreams, imageConfig, listeners).getServiceAccount()
+        assertThat(new RestProducerModel(eventStreams, imageConfig, listeners, mockIcpClusterDataMap).getServiceAccount()
                         .getImagePullSecrets(), contains(imagePullSecretOverride));
     }
 
@@ -313,20 +315,23 @@ public class RestProducerModelTest {
             .endSpec()
             .build();
 
-        assertThat(new RestProducerModel(eventStreams, imageConfig, listeners).getServiceAccount()
+        assertThat(new RestProducerModel(eventStreams, imageConfig, listeners, mockIcpClusterDataMap).getServiceAccount()
                         .getImagePullSecrets(), containsInAnyOrder(globalPullSecretOverride, componentPullSecretOverride));
     }
 
     @Test
     public void testContainerHasDefaultKafkaBootstrapEnvironmentVariables() {
         EventStreams defaultEs = createDefaultEventStreams().build();
-        RestProducerModel restProducerModel = new RestProducerModel(defaultEs, imageConfig, listeners);
+        RestProducerModel restProducerModel = new RestProducerModel(defaultEs, imageConfig, listeners, mockIcpClusterDataMap);
 
         String kafkaBootstrap = instanceName + "-kafka-bootstrap." + restProducerModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_PORT;
+        String runasKafkaBootstrap = instanceName + "-kafka-bootstrap." + restProducerModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_RUNAS_PORT;
         EnvVar kafkaBootstrapUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_SERVERS").withValue(kafkaBootstrap).build();
+        EnvVar runasKafkaBootstrapUrlEnv = new EnvVarBuilder().withName("RUNAS_KAFKA_BOOTSTRAP_SERVERS").withValue(runasKafkaBootstrap).build();
         Container adminApiContainer = restProducerModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0);
 
         assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapUrlEnv));
+        assertThat(adminApiContainer.getEnv(), hasItem(runasKafkaBootstrapUrlEnv));
     }
 
     @Test
@@ -347,7 +352,7 @@ public class RestProducerModelTest {
         List<ListenerStatus> listeners = new ArrayList<>();
         listeners.add(listener);
 
-        RestProducerModel restProducerModel = new RestProducerModel(defaultEs, imageConfig, listeners);
+        RestProducerModel restProducerModel = new RestProducerModel(defaultEs, imageConfig, listeners, mockIcpClusterDataMap);
         String expectedKafkaBootstrap = hostName + ":" + port;
 
         EnvVar kafkaBootstrapUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_SERVERS").withValue(expectedKafkaBootstrap).build();
@@ -380,7 +385,7 @@ public class RestProducerModelTest {
         List<ListenerStatus> listeners = new ArrayList<>();
         listeners.add(listener);
 
-        RestProducerModel restProducerModel = new RestProducerModel(defaultEs, imageConfig, listeners);
+        RestProducerModel restProducerModel = new RestProducerModel(defaultEs, imageConfig, listeners, mockIcpClusterDataMap);
         String expectedKafkaBootstrap = hostName + ":" + port;
 
         EnvVar kafkaBootstrapUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_SERVERS").withValue(expectedKafkaBootstrap).build();
@@ -398,7 +403,7 @@ public class RestProducerModelTest {
         List<ListenerStatus> listeners = new ArrayList<>();
         listeners.add(listener);
 
-        RestProducerModel restProducerModel = new RestProducerModel(defaultEs, imageConfig, listeners);
+        RestProducerModel restProducerModel = new RestProducerModel(defaultEs, imageConfig, listeners, mockIcpClusterDataMap);
         String expectedKafkaBootstrap = instanceName + "-kafka-bootstrap." + restProducerModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_PORT;
 
         EnvVar kafkaBootstrapUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_SERVERS").withValue(expectedKafkaBootstrap).build();
@@ -412,7 +417,7 @@ public class RestProducerModelTest {
 
         EventStreams defaultEs = createDefaultEventStreams().build();
 
-        RestProducerModel restProducerModel = new RestProducerModel(defaultEs, imageConfig, null);
+        RestProducerModel restProducerModel = new RestProducerModel(defaultEs, imageConfig, null, mockIcpClusterDataMap);
         String expectedKafkaBootstrap = instanceName + "-kafka-bootstrap." + restProducerModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_PORT;
 
         EnvVar kafkaBootstrapUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_SERVERS").withValue(expectedKafkaBootstrap).build();
@@ -431,7 +436,7 @@ public class RestProducerModelTest {
                 .endSpec()
                 .build();
 
-        RestProducerModel restProducerModel = new RestProducerModel(eventStreams, imageConfig, listeners);
+        RestProducerModel restProducerModel = new RestProducerModel(eventStreams, imageConfig, listeners, mockIcpClusterDataMap);
         Map<String, Route> routes = restProducerModel.getRoutes();
         assertThat(routes, IsMapWithSize.aMapWithSize(2));
         assertThat(routes.get(restProducerModel.getRouteName(Listener.EXTERNAL_TLS_NAME)).getSpec().getTls().getTermination(), is("passthrough"));
@@ -440,11 +445,41 @@ public class RestProducerModelTest {
     @Test
     public void testGenerationIdLabelOnDeployment() {
         EventStreams eventStreams = createDefaultEventStreams().build();
-        RestProducerModel restProducerModel = new RestProducerModel(eventStreams, imageConfig, null);
+        RestProducerModel restProducerModel = new RestProducerModel(eventStreams, imageConfig, null, mockIcpClusterDataMap);
 
         assertThat(restProducerModel.getDeployment("newID").getMetadata().getLabels().containsKey(AbstractSecureEndpointModel.CERT_GENERATION_KEY), is(true));
         assertThat(restProducerModel.getDeployment("newID").getMetadata().getLabels().get(AbstractSecureEndpointModel.CERT_GENERATION_KEY), is("newID"));
         assertThat(restProducerModel.getDeployment("newID").getSpec().getTemplate().getMetadata().getLabels().containsKey(AbstractSecureEndpointModel.CERT_GENERATION_KEY), is(true));
         assertThat(restProducerModel.getDeployment("newID").getSpec().getTemplate().getMetadata().getLabels().get(AbstractSecureEndpointModel.CERT_GENERATION_KEY), is("newID"));
+    }
+
+    @Test
+    public void testVolumeMounts() {
+        EventStreams eventStreams = createDefaultEventStreams().build();
+        RestProducerModel adminApiModel = new RestProducerModel(eventStreams, imageConfig, null, mockIcpClusterDataMap);
+
+        List<VolumeMount> volumeMounts = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getVolumeMounts();
+
+        assertThat(volumeMounts.size(), is(5));
+
+        assertThat(volumeMounts.get(0).getName(), is(RestProducerModel.KAFKA_USER_SECRET_VOLUME_NAME));
+        assertThat(volumeMounts.get(0).getReadOnly(), is(true));
+        assertThat(volumeMounts.get(0).getMountPath(), is(RestProducerModel.KAFKA_USER_CERTIFICATE_PATH));
+
+        assertThat(volumeMounts.get(1).getName(), is(RestProducerModel.CERTS_VOLUME_MOUNT_NAME));
+        assertThat(volumeMounts.get(1).getReadOnly(), is(true));
+        assertThat(volumeMounts.get(1).getMountPath(), is(RestProducerModel.CERTIFICATE_PATH));
+
+        assertThat(volumeMounts.get(2).getName(), is(RestProducerModel.CLUSTER_CA_VOLUME_MOUNT_NAME));
+        assertThat(volumeMounts.get(2).getReadOnly(), is(true));
+        assertThat(volumeMounts.get(2).getMountPath(), is(RestProducerModel.CLUSTER_CERTIFICATE_PATH));
+
+        assertThat(volumeMounts.get(3).getName(), is(RestProducerModel.CLIENT_CA_VOLUME_MOUNT_NAME));
+        assertThat(volumeMounts.get(3).getReadOnly(), is(true));
+        assertThat(volumeMounts.get(3).getMountPath(), is(RestProducerModel.CLIENT_CA_CERTIFICATE_PATH));
+
+        assertThat(volumeMounts.get(4).getName(), is(RestProducerModel.IBMCLOUD_CA_VOLUME_MOUNT_NAME));
+        assertThat(volumeMounts.get(4).getReadOnly(), is(true));
+        assertThat(volumeMounts.get(4).getMountPath(), is(RestProducerModel.IBMCLOUD_CA_CERTIFICATE_PATH));
     }
 }

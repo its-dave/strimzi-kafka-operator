@@ -2043,7 +2043,7 @@ public class KafkaCluster extends AbstractModel {
      * @return The network policy.
      */
     public NetworkPolicy generateNetworkPolicy(boolean namespaceAndPodSelectorNetworkPolicySupported) {
-        List<NetworkPolicyIngressRule> rules = new ArrayList<>(6);
+        List<NetworkPolicyIngressRule> rules = new ArrayList<>(5);
 
         NetworkPolicyIngressRule replicationRule = new NetworkPolicyIngressRuleBuilder()
                 .addNewPort()
@@ -2160,9 +2160,6 @@ public class KafkaCluster extends AbstractModel {
             rules.add(jmxRule);
         }
 
-        // Add the RunAsNetwork Policy
-        rules.add(generateRunAsNetworkPolicy());
-
         NetworkPolicy networkPolicy = new NetworkPolicyBuilder()
                 .withNewMetadata()
                     .withName(policyName(cluster))
@@ -2180,28 +2177,6 @@ public class KafkaCluster extends AbstractModel {
 
         log.trace("Created network policy {}", networkPolicy);
         return networkPolicy;
-    }
-
-    private NetworkPolicyIngressRule generateRunAsNetworkPolicy() {
-        NetworkPolicyIngressRule runAsRule = new NetworkPolicyIngressRuleBuilder()
-            .addNewPort()
-            .withNewPort(RUNAS_PORT)
-            .endPort()
-            .build();
-
-        NetworkPolicyPeer adminAPIPodPeer = new NetworkPolicyPeerBuilder()
-            .withNewPodSelector()
-            .addToMatchLabels(Labels.STRIMZI_NAME_LABEL, cluster + "-ibm-es-admin-api")
-            .endPodSelector()
-            .withNewNamespaceSelector()
-            .endNamespaceSelector()
-            .build();
-
-        List<NetworkPolicyPeer> runasAdminApiPortPeers = new ArrayList<>(1);
-        runasAdminApiPortPeers.add(adminAPIPodPeer);
-        runAsRule.setFrom(runasAdminApiPortPeers);
-
-        return runAsRule;
     }
 
     /**

@@ -23,6 +23,7 @@ import com.ibm.eventstreams.api.model.ClusterSecretsModel;
 import com.ibm.eventstreams.api.model.CollectorModel;
 import com.ibm.eventstreams.api.model.EventStreamsKafkaModel;
 import com.ibm.eventstreams.api.model.InternalKafkaUserModel;
+import com.ibm.eventstreams.api.model.KafkaNetworkPolicyExtensionModel;
 import com.ibm.eventstreams.api.model.MessageAuthenticationModel;
 import com.ibm.eventstreams.api.model.ReplicatorModel;
 import com.ibm.eventstreams.api.model.ReplicatorUsersModel;
@@ -186,6 +187,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 .compose(state -> state.waitForCp4iServicesBindingStatus())
                 .compose(state -> state.createKafkaCustomResource())
                 .compose(state -> state.waitForKafkaStatus())
+                .compose(state -> state.createKafkaNetworkPolicyExtension())
                 .compose(state -> state.createReplicatorUsers()) //needs to be before createReplicator and createAdminAPI
                 .compose(state -> state.createInternalKafkaUser())
                 .compose(state -> state.createMessageAuthenticationSecret())
@@ -470,6 +472,13 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                     });
         }
 
+        Future<ReconciliationState> createKafkaNetworkPolicyExtension() {
+            KafkaNetworkPolicyExtensionModel kafkaNetworkPolicyExtensionModel = new KafkaNetworkPolicyExtensionModel(instance);
+            return networkPolicyOperator
+                .reconcile(namespace, kafkaNetworkPolicyExtensionModel.getDefaultResourceName(), kafkaNetworkPolicyExtensionModel.getNetworkPolicy())
+                .map(v -> this);
+        }
+
         Future<ReconciliationState> createReplicatorUsers() {
 
             List<Future> usersCreated = new ArrayList<>();
@@ -533,7 +542,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         Future<ReconciliationState> createRestProducer(Supplier<Date> dateSupplier) {
             log.info("Starting rest producer reconcile");
             List<Future> restProducerFutures = new ArrayList<>();
-            RestProducerModel restProducer = new RestProducerModel(instance, imageConfig, status.getKafkaListeners());
+            RestProducerModel restProducer = new RestProducerModel(instance, imageConfig, status.getKafkaListeners(), icpClusterData);
             if (restProducer.getCustomImage()) {
                 customImageCount++;
             }
