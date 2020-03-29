@@ -103,8 +103,8 @@ public class ModelUtils {
 
     public static Set<Secret> generateClusterCa(String namespace, String clusterName, String appName, Certificates cert, Keys key) {
         String kafkaInstanceName = EventStreamsKafkaModel.getKafkaInstanceName(clusterName);
-        Map<String, String> labels = Labels.forCluster(kafkaInstanceName)
-                .withKind(Kafka.RESOURCE_KIND)
+        Map<String, String> labels = Labels.forStrimziCluster(kafkaInstanceName)
+                .withStrimziKind(Kafka.RESOURCE_KIND)
                 .toMap();
         Secret clusterCa = new SecretBuilder()
                 .withNewMetadata()
@@ -132,7 +132,7 @@ public class ModelUtils {
 
     public static Set<Secret> generateReplicatorConnectSecrets(String namespace, String clusterName, String appName, Certificates cert, Keys key) {
 
-        Map<String, String> labels = Labels.forCluster(EventStreamsKafkaModel.getKafkaInstanceName(clusterName)).withKind(Kafka.RESOURCE_KIND).toMap();
+        Map<String, String> labels = Labels.forStrimziCluster(EventStreamsKafkaModel.getKafkaInstanceName(clusterName)).withStrimziKind(Kafka.RESOURCE_KIND).toMap();
 
         Secret replicatorConnect = new SecretBuilder()
             .withNewMetadata()
