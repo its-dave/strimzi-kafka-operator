@@ -21,8 +21,10 @@ import java.util.Map;
         include = JsonTypeInfo.As.EXISTING_PROPERTY,
         property = "type")
 @JsonSubTypes({
-        @JsonSubTypes.Type(name = KafkaAuthorizationSimple.TYPE_SIMPLE, value = KafkaAuthorizationSimple.class),
-        @JsonSubTypes.Type(name = KafkaAuthorizationKeycloak.TYPE_KEYCLOAK, value = KafkaAuthorizationKeycloak.class),
+// Event Streams does not support the default 'simple' or 'keycloak' options so prevent the from parsing. Instead
+// users can omit this field or specify 'runas' type.
+//        @JsonSubTypes.Type(name = KafkaAuthorizationSimple.TYPE_SIMPLE, value = KafkaAuthorizationSimple.class),
+//        @JsonSubTypes.Type(name = KafkaAuthorizationKeycloak.TYPE_KEYCLOAK, value = KafkaAuthorizationKeycloak.class),
         @JsonSubTypes.Type(name = KafkaAuthorizationRunAs.TYPE_RUNAS, value = KafkaAuthorizationRunAs.class)
 })
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -33,8 +35,8 @@ public abstract class KafkaAuthorization implements UnknownPropertyPreserving, S
     private Map<String, Object> additionalProperties;
 
     @Description("Authorization type. " +
-            "Currently the only supported type is `simple`. " +
-            "`simple` authorization type uses Kafka's `kafka.security.auth.SimpleAclAuthorizer` class for authorization.")
+            "Currently the only supported type is `runas`. " +
+            "`runas` authorization type is the required setting if security is enabled.")
     public abstract String getType();
 
     @Override
