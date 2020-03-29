@@ -55,7 +55,7 @@ public class AbstractSecureEndpointsModelTest {
 
         public ComponentModel(EventStreams instance, SecurityComponentSpec spec) {
             super(instance, spec, COMPONENT_NAME);
-            setEncryption(SecuritySpec.Encryption.TLS);
+            setEncryption(SecuritySpec.Encryption.INTERNAL_TLS);
             setOwnerReference(instance);
         }
     }
@@ -87,7 +87,7 @@ public class AbstractSecureEndpointsModelTest {
     public void testCreationOfServicesFromDefaultConfigurationOfEndpoints() {
         EventStreamsSpec spec = new EventStreamsSpecBuilder()
             .withSecurity(new SecuritySpecBuilder()
-                .withEncryption(SecuritySpec.Encryption.TLS).build())
+                .withEncryption(SecuritySpec.Encryption.INTERNAL_TLS).build())
             .build();
 
         EventStreams instance = ModelUtils.createEventStreams(instanceName, spec).build();
@@ -127,7 +127,7 @@ public class AbstractSecureEndpointsModelTest {
     public void testCreationOfEndpointFromMinimalConfigurationOfEndpoint() {
         EventStreamsSpec spec = new EventStreamsSpecBuilder()
             .withSecurity(new SecuritySpecBuilder()
-                .withEncryption(SecuritySpec.Encryption.TLS).build())
+                .withEncryption(SecuritySpec.Encryption.INTERNAL_TLS).build())
             .build();
 
         EventStreams instance = ModelUtils.createEventStreams(instanceName, spec).build();
@@ -203,7 +203,7 @@ public class AbstractSecureEndpointsModelTest {
     public void testCreationOfServicesFromFullyConfiguredOfEndpoint() {
         EventStreamsSpec spec = new EventStreamsSpecBuilder()
             .withSecurity(new SecuritySpecBuilder()
-                .withEncryption(SecuritySpec.Encryption.TLS).build())
+                .withEncryption(SecuritySpec.Encryption.INTERNAL_TLS).build())
             .build();
 
         EventStreams instance = ModelUtils.createEventStreams(instanceName, spec).build();
@@ -241,7 +241,7 @@ public class AbstractSecureEndpointsModelTest {
     public void testCreationOfServicesFromMultipleEndpointConfigurations() {
         EventStreamsSpec spec = new EventStreamsSpecBuilder()
             .withSecurity(new SecuritySpecBuilder()
-                .withEncryption(SecuritySpec.Encryption.TLS).build())
+                .withEncryption(SecuritySpec.Encryption.INTERNAL_TLS).build())
             .build();
 
         EventStreams instance = ModelUtils.createEventStreams(instanceName, spec).build();

@@ -219,7 +219,7 @@ public abstract class AbstractModel {
 
     protected static Boolean tlsEnabled(Encryption encryption) {
         switch (encryption) {
-            case TLS: return true;
+            case INTERNAL_TLS: return true;
             default: return false;
         }
     }
@@ -229,7 +229,7 @@ public abstract class AbstractModel {
     }
     protected String getUrlProtocol(Encryption encryption) {
         switch (encryption) {
-            case TLS: return "https://";
+            case INTERNAL_TLS: return "https://";
             default: return "http://";
         }
     }

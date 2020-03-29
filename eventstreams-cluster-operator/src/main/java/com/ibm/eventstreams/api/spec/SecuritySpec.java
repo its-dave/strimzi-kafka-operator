@@ -16,6 +16,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import io.strimzi.crdgenerator.annotations.Description;
 import io.sundr.builder.annotations.Buildable;
 import lombok.EqualsAndHashCode;
 
@@ -33,11 +34,12 @@ public class SecuritySpec implements Serializable {
     private Encryption encryption;
 
     public enum Encryption {
-        TLS,
+        INTERNAL_TLS,
         // MUTUAL_TLS, TODO
         NONE;
     }
 
+    @Description("Configuration of whether Event Streams components communicate through TLS or plain")
     public Encryption getEncryption() {
         return encryption;
     }

@@ -38,7 +38,7 @@ public class Cp4iServicesBindingTest {
                 .build())
             .editSpec()
             .withNewSecurity().
-                withEncryption(SecuritySpec.Encryption.TLS)
+                withEncryption(SecuritySpec.Encryption.INTERNAL_TLS)
             .endSecurity()
             .withNewReplicator()
             .withReplicas(defaultReplicas)

@@ -3873,8 +3873,10 @@ spec:
                 encryption:
                   type: string
                   enum:
-                  - TLS
+                  - INTERNAL_TLS
                   - NONE
+                  description: Configuration of whether Event Streams components communicate
+                    through TLS or plain.
               description: Security configuration for the Event Streams components.
             strimziOverrides:
               type: object

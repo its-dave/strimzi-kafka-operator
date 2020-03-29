@@ -130,7 +130,7 @@ public class AdminUIModel extends AbstractModel {
             setPodTemplate(userInterfaceSpec.map(ComponentSpec::getTemplate)
                             .map(ComponentTemplate::getPod)
                             .orElseGet(PodTemplate::new));
-            setEncryption(SecuritySpec.Encryption.TLS);
+            setEncryption(SecuritySpec.Encryption.INTERNAL_TLS);
             crEncryptionValue = Optional.ofNullable(instance.getSpec())
                 .map(EventStreamsSpec::getSecurity)
                 .map(SecuritySpec::getEncryption)

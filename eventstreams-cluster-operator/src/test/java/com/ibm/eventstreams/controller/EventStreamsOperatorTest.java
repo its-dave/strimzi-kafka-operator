@@ -897,7 +897,7 @@ public class EventStreamsOperatorTest {
         Checkpoint async = context.checkpoint(1);
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
 
-        esCluster.getSpec().setSecurity(new SecuritySpecBuilder().withEncryption(SecuritySpec.Encryption.TLS).build());
+        esCluster.getSpec().setSecurity(new SecuritySpecBuilder().withEncryption(SecuritySpec.Encryption.INTERNAL_TLS).build());
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
         reconciliationState.icpClusterData = Collections.emptyMap();
@@ -941,7 +941,7 @@ public class EventStreamsOperatorTest {
         Checkpoint async = context.checkpoint(1);
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
 
-        esCluster.getSpec().setSecurity(new SecuritySpecBuilder().withEncryption(SecuritySpec.Encryption.TLS).build());
+        esCluster.getSpec().setSecurity(new SecuritySpecBuilder().withEncryption(SecuritySpec.Encryption.INTERNAL_TLS).build());
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
         reconciliationState.icpClusterData = Collections.emptyMap();
@@ -994,7 +994,7 @@ public class EventStreamsOperatorTest {
         Checkpoint async = context.checkpoint(1);
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
 
-        esCluster.getSpec().setSecurity(new SecuritySpecBuilder().withEncryption(SecuritySpec.Encryption.TLS).build());
+        esCluster.getSpec().setSecurity(new SecuritySpecBuilder().withEncryption(SecuritySpec.Encryption.INTERNAL_TLS).build());
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
         reconciliationState.icpClusterData = Collections.emptyMap();
@@ -1032,7 +1032,7 @@ public class EventStreamsOperatorTest {
         Checkpoint async = context.checkpoint(1);
 
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
-        esCluster.getSpec().setSecurity(new SecuritySpecBuilder().withEncryption(SecuritySpec.Encryption.TLS).build());
+        esCluster.getSpec().setSecurity(new SecuritySpecBuilder().withEncryption(SecuritySpec.Encryption.INTERNAL_TLS).build());
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
         reconciliationState.icpClusterData = Collections.emptyMap();
@@ -1070,7 +1070,7 @@ public class EventStreamsOperatorTest {
         Checkpoint async = context.checkpoint(1);
 
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
-        esCluster.getSpec().setSecurity(new SecuritySpecBuilder().withEncryption(SecuritySpec.Encryption.TLS).build());
+        esCluster.getSpec().setSecurity(new SecuritySpecBuilder().withEncryption(SecuritySpec.Encryption.INTERNAL_TLS).build());
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
         reconciliationState.icpClusterData = Collections.emptyMap();
@@ -1112,7 +1112,7 @@ public class EventStreamsOperatorTest {
 
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
-        esCluster.getSpec().setSecurity(new SecuritySpecBuilder().withEncryption(SecuritySpec.Encryption.TLS).build());
+        esCluster.getSpec().setSecurity(new SecuritySpecBuilder().withEncryption(SecuritySpec.Encryption.INTERNAL_TLS).build());
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
         reconciliationState.icpClusterData = Collections.emptyMap();
 
@@ -1174,7 +1174,7 @@ public class EventStreamsOperatorTest {
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(false, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
         EventStreams esCluster = createESClusterWithProvidedBrokerCerts(NAMESPACE, CLUSTER_NAME, secretName, secretKey, secretCertificate);
-        esCluster.getSpec().setSecurity(new SecuritySpecBuilder().withEncryption(SecuritySpec.Encryption.TLS).build());
+        esCluster.getSpec().setSecurity(new SecuritySpecBuilder().withEncryption(SecuritySpec.Encryption.INTERNAL_TLS).build());
 
         Checkpoint async = context.checkpoint(1);
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
@@ -1239,7 +1239,7 @@ public class EventStreamsOperatorTest {
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(false, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
-        esCluster.getSpec().setSecurity(new SecuritySpecBuilder().withEncryption(SecuritySpec.Encryption.TLS).build());
+        esCluster.getSpec().setSecurity(new SecuritySpecBuilder().withEncryption(SecuritySpec.Encryption.INTERNAL_TLS).build());
 
         Checkpoint async = context.checkpoint();
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
@@ -1362,7 +1362,7 @@ public class EventStreamsOperatorTest {
                 .build())
             .withNewSpec()
             .withSecurity(new SecuritySpecBuilder()
-                .withEncryption(SecuritySpec.Encryption.TLS)
+                .withEncryption(SecuritySpec.Encryption.INTERNAL_TLS)
             .build())
             .withNewAdminApi()
                 .withReplicas(1)
@@ -1466,7 +1466,7 @@ public class EventStreamsOperatorTest {
                 .build())
             .withNewSpec()
             .withSecurity(new SecuritySpecBuilder()
-                .withEncryption(SecuritySpec.Encryption.TLS)
+                .withEncryption(SecuritySpec.Encryption.INTERNAL_TLS)
                 .build())
             .withNewAdminApi()
             .withReplicas(1)
@@ -1562,7 +1562,7 @@ public class EventStreamsOperatorTest {
                 .build())
             .withNewSpec()
             .withSecurity(new SecuritySpecBuilder()
-                .withEncryption(SecuritySpec.Encryption.TLS)
+                .withEncryption(SecuritySpec.Encryption.INTERNAL_TLS)
                 .build())
             .withNewAdminApi()
             .withReplicas(1)

@@ -193,7 +193,7 @@ public class ModelUtils {
     public static class EndpointsModel extends AbstractSecureEndpointsModel {
         public EndpointsModel(EventStreams instance, SecurityComponentSpec spec, String componentName) {
             super(instance, spec, componentName);
-            setEncryption(SecuritySpec.Encryption.TLS);
+            setEncryption(SecuritySpec.Encryption.INTERNAL_TLS);
             createService(EndpointServiceType.INTERNAL);
             createService(EndpointServiceType.ROUTE);
             createService(EndpointServiceType.NODE_PORT);

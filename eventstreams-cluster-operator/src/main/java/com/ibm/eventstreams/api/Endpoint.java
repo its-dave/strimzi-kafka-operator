@@ -175,7 +175,7 @@ public class Endpoint {
         return Optional.ofNullable(instance.getSpec())
             .map(EventStreamsSpec::getSecurity)
             .map(SecuritySpec::getEncryption)
-            .map(encryption ->  encryption == SecuritySpec.Encryption.TLS)
+            .map(encryption ->  encryption == SecuritySpec.Encryption.INTERNAL_TLS)
             .orElse(DEFAULT_TLS_SETTING);
     }
 

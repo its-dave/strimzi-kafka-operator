@@ -42,7 +42,7 @@ public class ClientModelTest {
                 .build())
             .editSpec()
             .withNewSecurity().
-                withEncryption(SecuritySpec.Encryption.TLS)
+                withEncryption(SecuritySpec.Encryption.INTERNAL_TLS)
             .endSecurity()
             .withNewReplicator()
             .withReplicas(defaultReplicas)

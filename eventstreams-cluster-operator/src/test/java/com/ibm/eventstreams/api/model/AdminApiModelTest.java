@@ -247,7 +247,7 @@ public class AdminApiModelTest {
     public void testAdminApiIngressNetworkPolicyWithTLS() {
         EventStreams eventStreams = createDefaultEventStreams()
                 .editSpec()
-                .withSecurity(new SecuritySpecBuilder().withEncryption(SecuritySpec.Encryption.TLS).build())
+                .withSecurity(new SecuritySpecBuilder().withEncryption(SecuritySpec.Encryption.INTERNAL_TLS).build())
                 .withAdminApi(new AdminApiSpecBuilder()
                     .withEndpoints(
                         new EndpointSpecBuilder()
@@ -548,7 +548,7 @@ public class AdminApiModelTest {
         EventStreams defaultEs = createDefaultEventStreams()
             .editSpec()
                 .editOrNewSecurity()
-                    .withEncryption(SecuritySpec.Encryption.TLS)
+                    .withEncryption(SecuritySpec.Encryption.INTERNAL_TLS)
                 .endSecurity()
             .endSpec()
             .build();
@@ -724,7 +724,7 @@ public class AdminApiModelTest {
         EventStreams eventStreams = createDefaultEventStreams()
                 .editSpec()
                     .withNewSecurity()
-                        .withEncryption(SecuritySpec.Encryption.TLS)
+                        .withEncryption(SecuritySpec.Encryption.INTERNAL_TLS)
                     .endSecurity()
                 .endSpec()
                 .build();

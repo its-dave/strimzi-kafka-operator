@@ -408,7 +408,7 @@ public class RestProducerModelTest {
         EventStreams defaultEs = createDefaultEventStreams()
                 .editSpec()
                 .editOrNewSecurity()
-                .withEncryption(SecuritySpec.Encryption.TLS)
+                .withEncryption(SecuritySpec.Encryption.INTERNAL_TLS)
                 .endSecurity()
                 .endSpec()
                 .build();
@@ -470,7 +470,7 @@ public class RestProducerModelTest {
         EventStreams eventStreams = createDefaultEventStreams()
                 .editSpec()
                     .withNewSecurity()
-                        .withEncryption(SecuritySpec.Encryption.TLS)
+                        .withEncryption(SecuritySpec.Encryption.INTERNAL_TLS)
                     .endSecurity()
                 .endSpec()
                 .build();
