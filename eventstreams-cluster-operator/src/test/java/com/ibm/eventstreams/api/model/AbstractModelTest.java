@@ -16,6 +16,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.lessThan;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -49,7 +50,7 @@ public class AbstractModelTest {
 
     // Extend AbstractModel to test the abstract class
     private class ComponentModel extends AbstractModel {
-        private static final String COMPONENT_NAME = "test-component";
+        private static final String COMPONENT_NAME = "test";
 
         public ComponentModel(EventStreams instance) {
             super(instance.getMetadata().getName(), instance.getMetadata().getNamespace(), COMPONENT_NAME);
@@ -299,5 +300,51 @@ public class AbstractModelTest {
 
         Probe newCombinedProbe = model.combineProbeDefinitions(probe, overridesProbe);
         assertThat(newCombinedProbe, is(expectedProbe));
+    }
+
+    @Test
+    public void testGetDefaultResourceNameWithShortSuffix() {
+        // Short suffix to show no truncation is done if it is not required
+        EventStreams instance = ModelUtils.createDefaultEventStreams(instanceName).build();
+        ComponentModel model = new ComponentModel(instance);
+        assertThat(model.getDefaultResourceNameWithSuffix("suffix"), is("test-instance-ibm-es-test-suffix"));
+        assertThat(model.getDefaultResourceNameWithSuffix("suffix").length(), is(lessThan(64)));
+    }
+
+    @Test
+    public void testGetDefaultResourceNameWithLongSuffixOnlyShortenAppName() {
+        // Longer suffix (39 characters) - should only shorten the app name and not hash the instance name
+        EventStreams instance = ModelUtils.createDefaultEventStreams(instanceName).build();
+        ComponentModel model = new ComponentModel(instance);
+        assertThat(model.getDefaultResourceNameWithSuffix("BitLongerSuffixTestingAppNameTruncation"), is("test-instance-es-test-BitLongerSuffixTestingAppNameTruncation"));
+        assertThat(model.getDefaultResourceNameWithSuffix("BitLongerSuffixTestingAppNameTruncation").length(), is(lessThan(64)));
+    }
+
+    @Test
+    public void testGetDefaultResourceNameWithLongSuffixHashInstanceKeepAppName() {
+        // Longer suffix (43 characters), to see the instance name is hashed but the truncated App name is retained
+        EventStreams instance = ModelUtils.createDefaultEventStreams(instanceName).build();
+        ComponentModel model = new ComponentModel(instance);
+        assertThat(model.getDefaultResourceNameWithSuffix("LongerSuffixToTestHashingInstanceAndAppName"), is("test-i-tqjt-es-test-LongerSuffixToTestHashingInstanceAndAppName"));
+        assertThat(model.getDefaultResourceNameWithSuffix("LongerSuffixToTestHashingInstanceAndAppName").length(), is(lessThan(64)));
+    }
+
+    @Test
+    public void testGetDefaultResourceNameWithLongSuffixHashInstanceDropAppName() {
+        // Longer suffix (50 characters), to see the instance gets hashed and the app name is not included
+        EventStreams instance = ModelUtils.createDefaultEventStreams(instanceName).build();
+        ComponentModel model = new ComponentModel(instance);
+        assertThat(model.getDefaultResourceNameWithSuffix("LongerSuffixToTestHashingInstanceNameLosingAppName"), is("t-tqjt-test-LongerSuffixToTestHashingInstanceNameLosingAppName"));
+        assertThat(model.getDefaultResourceNameWithSuffix("LongerSuffixToTestHashingInstanceNameLosingAppName").length(), is(lessThan(64)));
+    }
+
+    @Test
+    public void testGetDefaultResourceNameWithSuffixLongerThanMaximumSuffixLength() {
+        // Suffix longer than the 63 character limit, to see the suffix gets hashed and subsequently as does the Instance name and the App name is dropped
+        // Designed to ensure as much of the suffix is retained as is possible
+        EventStreams instance = ModelUtils.createDefaultEventStreams(instanceName).build();
+        ComponentModel model = new ComponentModel(instance);
+        assertThat(model.getDefaultResourceNameWithSuffix("AVeryLongSuffixThatIsLongerThanSixtyFourCharactersToTestTruncation"), is("t-tqjt-test-AVeryLongSuffixThatIsLongerThanSixtyFourChara-+Cv2"));
+        assertThat(model.getDefaultResourceNameWithSuffix("AVeryLongSuffixThatIsLongerThanSixtyFourCharactersToTestTruncation").length(), is(lessThan(64)));
     }
 }

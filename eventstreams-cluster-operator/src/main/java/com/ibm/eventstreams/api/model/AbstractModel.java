@@ -76,9 +76,15 @@ import io.strimzi.api.kafka.model.listener.KafkaListeners;
 import io.strimzi.api.kafka.model.status.ListenerAddress;
 import io.strimzi.api.kafka.model.status.ListenerStatus;
 import io.strimzi.api.kafka.model.template.PodTemplate;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -92,8 +98,10 @@ import java.util.stream.Stream;
 public abstract class AbstractModel {
 
     public static final String APP_NAME = "ibm-es";
+    public static final String APP_NAME_TRUNCATED = "es";
     public static final String DEFAULT_PROMETHEUS_PORT = "8081";
     public static final String DEFAULT_COMPONENT_NAME = "eventstreams";
+    public static final int MAX_RESOURCE_NAME_LENGTH = 63;
 
     public static final String CONFIG_MAP_SUFFIX = "-config";
 
@@ -138,6 +146,8 @@ public abstract class AbstractModel {
     protected boolean customImage;
     private io.strimzi.api.kafka.model.Probe livenessProbe;
     private io.strimzi.api.kafka.model.Probe readinessProbe;
+
+    private static final Logger log = LogManager.getLogger();
 
     protected AbstractModel(String instanceName, String namespace, String componentName) {
         this.instanceName = instanceName;
@@ -227,12 +237,14 @@ public abstract class AbstractModel {
     protected String getUrlProtocol() {
         return tlsEnabled() ? "https://" : "http://";
     }
+
     protected String getUrlProtocol(Encryption encryption) {
         switch (encryption) {
             case INTERNAL_TLS: return "https://";
             default: return "http://";
         }
     }
+
     protected String getHealthCheckProtocol() {
         return tlsEnabled() ? "HTTPS" : "HTTP";
     }
@@ -243,6 +255,10 @@ public abstract class AbstractModel {
 
     protected static String getResourcePrefix(String instanceName) {
         return instanceName + "-" + APP_NAME;
+    }
+
+    protected static String getResourcePrefixTruncatedAppName(String instanceName) {
+        return instanceName + "-" + APP_NAME_TRUNCATED;
     }
 
     public String getImage() {
@@ -306,11 +322,80 @@ public abstract class AbstractModel {
     }
 
     public static String getDefaultResourceNameWithSuffix(String suffix, String instanceName, String componentName) {
-        return suffix.isEmpty() ? getDefaultResourceName(instanceName, componentName) : getDefaultResourceName(instanceName, componentName) + "-" + suffix;
+        if (suffix.isEmpty()) {
+            return getDefaultResourceName(instanceName, componentName);
+        }
+
+        final int minPrefixWithComponentLength = 12;
+        // -1 to account for '-'
+        int maxPrefixWithComponentLength = MAX_RESOURCE_NAME_LENGTH - suffix.length() - 1;
+        final int maxSuffixStringLength = 50;
+        final String resourceNameWithoutTruncation = getDefaultResourceName(instanceName, componentName) + "-" + suffix;
+        if (resourceNameWithoutTruncation.length() < MAX_RESOURCE_NAME_LENGTH) {
+            return resourceNameWithoutTruncation;
+        }
+        if (maxPrefixWithComponentLength < minPrefixWithComponentLength) {
+            // Suffix is at least 51 characters (MAX_RESOURCE_NAME_LENGTH - 12)
+            suffix = suffix.substring(0, maxSuffixStringLength - 5) + '-' + getHash(suffix).substring(0, 4);
+            maxPrefixWithComponentLength = MAX_RESOURCE_NAME_LENGTH - suffix.length() - 1;
+        }
+        return getDefaultResourceNameWithTruncation(instanceName, componentName, maxPrefixWithComponentLength) + "-" + suffix;
     }
 
     public static String getDefaultResourceName(String instanceName, String componentName) {
-        return getResourcePrefix(instanceName) + "-" + componentName;
+        return getDefaultResourceNameWithTruncation(instanceName, componentName, MAX_RESOURCE_NAME_LENGTH);
+    }
+
+    private static String getDefaultResourceNameWithTruncation(String instanceName, String componentName, int maxPrefixWithComponentLength) {
+        String noTruncationResourceName = getResourcePrefix(instanceName) + "-" + componentName;
+        if (noTruncationResourceName.length() > maxPrefixWithComponentLength) {
+            return getResourcePrefixTruncated(instanceName, componentName, maxPrefixWithComponentLength);
+        }
+        return noTruncationResourceName;
+    }
+
+    private static String getResourcePrefixTruncated(String instanceName, String componentName, int maxPrefixWithComponentLength) {
+        // Truncate the App name and avoid further truncation, if possible
+        String truncatedAppNamePrefixResourceName = getResourcePrefixTruncatedAppName(instanceName) + "-" + componentName;
+        if (truncatedAppNamePrefixResourceName.length() > maxPrefixWithComponentLength) {
+            // Hash the Instance name
+            int maxInstanceNameLength = maxPrefixWithComponentLength - APP_NAME_TRUNCATED.length() - componentName.length() - 2;
+            int charactersOfInstanceNameToKeep = Math.min(maxInstanceNameLength, instanceName.length());
+            if (maxInstanceNameLength < 5) {
+                // If the number of characters available for the prefix is insufficient, drop the App name
+                maxInstanceNameLength = maxPrefixWithComponentLength - componentName.length() - 2;
+                if (maxInstanceNameLength > 5) {
+                    charactersOfInstanceNameToKeep = Math.max(charactersOfInstanceNameToKeep, maxInstanceNameLength);
+                    instanceName = instanceName.substring(0, charactersOfInstanceNameToKeep - 5) + '-' + getHash(instanceName).substring(0, 4);
+                    return instanceName + "-" + componentName;
+                }
+            // Sufficient characters to hash Instance name whilst keeping truncated App name
+            } else {
+                instanceName = instanceName.substring(0, charactersOfInstanceNameToKeep - 5) + '-' + getHash(instanceName).substring(0, 4);               
+                return getResourcePrefixTruncatedAppName(instanceName) + "-" + componentName;
+            }
+        }
+        return truncatedAppNamePrefixResourceName;
+    }
+
+    /**
+     * Hash a given String using SHA-256 converting it to a String using a Base64 encoder.
+     * If digest cannot be created due to a NoSuchAlgorithmException, return the original
+     * value which will lead to a name which is too long being returned and an error
+     * which will be logged
+     * @param value to be hashed
+     * @return hashed value encoded to String
+     */
+    private static String getHash(String value) {
+        MessageDigest digest;
+        try {
+            digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(value.getBytes(StandardCharsets.UTF_8));
+            return Base64.getEncoder().encodeToString(hash);
+        } catch (NoSuchAlgorithmException e) {
+            log.error("Error whilst encrypting instance name: {}", e);
+            return value;
+        }
     }
 
     public String getRouteName() {
