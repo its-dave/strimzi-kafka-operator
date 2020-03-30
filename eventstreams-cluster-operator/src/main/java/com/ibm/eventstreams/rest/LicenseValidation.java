@@ -36,11 +36,11 @@ public class LicenseValidation extends AbstractValidation {
         ValidationResponsePayload outcome = null;
 
         if (shouldReject(customResourceSpec)) {
-            outcome = ValidationResponsePayload.createFailureResponse(
+            outcome = ValidationResponsePayload.createFailureResponsePayload(
                     "The IBM Event Streams license must be accepted before installation",
                     "License not accepted");
         } else {
-            outcome = ValidationResponsePayload.createSuccessResponse();
+            outcome = ValidationResponsePayload.createSuccessResponsePayload();
         }
 
         routingContext

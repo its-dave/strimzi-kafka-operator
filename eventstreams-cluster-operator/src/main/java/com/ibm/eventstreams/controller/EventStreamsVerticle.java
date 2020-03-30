@@ -13,6 +13,7 @@
 package com.ibm.eventstreams.controller;
 
 import com.ibm.eventstreams.api.spec.EventStreams;
+import com.ibm.eventstreams.rest.EndpointValidation;
 import com.ibm.eventstreams.rest.EntityLabelValidation;
 import com.ibm.eventstreams.rest.KubernetesProbe;
 import com.ibm.eventstreams.rest.LicenseValidation;
@@ -150,6 +151,7 @@ public class EventStreamsVerticle extends AbstractVerticle {
         router.route(HttpMethod.POST, "/admissionwebhook/rejectinvalidversions").handler(VersionValidation::rejectInvalidVersions);
         router.route(HttpMethod.POST, "/admissionwebhook/rejectmissingtopiclabels").handler(EntityLabelValidation::rejectInvalidKafkaTopics);
         router.route(HttpMethod.POST, "/admissionwebhook/rejectmissinguserlabels").handler(EntityLabelValidation::rejectInvalidKafkaUsers);
+        router.route(HttpMethod.POST, "/admissionwebhook/rejectinvalidendpoints").handler(EndpointValidation::rejectInvalidEndpoint);
 
         router.errorHandler(500, rc -> {
             Throwable failure = rc.failure();

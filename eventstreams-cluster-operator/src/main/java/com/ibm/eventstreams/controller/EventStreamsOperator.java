@@ -35,9 +35,11 @@ import com.ibm.eventstreams.api.status.EventStreamsStatusBuilder;
 import com.ibm.eventstreams.controller.certificates.EventStreamsCertificateException;
 import com.ibm.eventstreams.controller.certificates.EventStreamsCertificateManager;
 import com.ibm.eventstreams.replicator.ReplicatorCredentials;
+import com.ibm.eventstreams.rest.EndpointValidation;
 import com.ibm.eventstreams.rest.LicenseValidation;
 import com.ibm.eventstreams.rest.NameValidation;
 import com.ibm.eventstreams.rest.VersionValidation;
+import com.ibm.eventstreams.rest.ValidationResponsePayload.ValidationResponse;
 import com.ibm.iam.api.controller.Cp4iServicesBindingResourceOperator;
 import com.ibm.iam.api.model.ClientModel;
 import com.ibm.iam.api.model.Cp4iServicesBindingModel;
@@ -257,6 +259,11 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             }
             if (VersionValidation.shouldReject(instance)) {
                 addNotReadyCondition("InvalidVersion", "Invalid custom resource: Unsupported version. Supported versions are " + VersionValidation.VALID_APP_VERSIONS.toString());
+                isValidCR = false;
+            }
+            ValidationResponse response = EndpointValidation.validateEndpoints(instance).getResponse();
+            if (response != null) {
+                addNotReadyCondition(EndpointValidation.FAILURE_REASON, response.getStatus().getMessage());
                 isValidCR = false;
             }
             if (!ReplicatorUsersModel.isValidInstance(instance)) {

@@ -1338,14 +1338,14 @@ public class EventStreamsOperatorTest {
 
         EndpointSpec internalTlsBearer = new EndpointSpecBuilder()
             .withName("bearer")
-            .withAccessPort(9999)
+            .withAccessPort(7777)
             .withType(EndpointServiceType.INTERNAL)
             .withAuthenticationMechanisms(Collections.singletonList("BEARER"))
             .build();
 
         EndpointSpec internalTlsMutualTls = new EndpointSpecBuilder()
             .withName("mutual")
-            .withAccessPort(9999)
+            .withAccessPort(8888)
             .withType(EndpointServiceType.INTERNAL)
             .build();
 
@@ -1442,14 +1442,14 @@ public class EventStreamsOperatorTest {
 
         EndpointSpec internalTlsBearer = new EndpointSpecBuilder()
             .withName("bearer")
-            .withAccessPort(9999)
+            .withAccessPort(7777)
             .withType(EndpointServiceType.INTERNAL)
             .withAuthenticationMechanisms(Collections.singletonList("BEARER"))
             .build();
 
         EndpointSpec internalTlsMutualTls = new EndpointSpecBuilder()
             .withName("mutual")
-            .withAccessPort(9999)
+            .withAccessPort(8888)
             .withType(EndpointServiceType.INTERNAL)
             .build();
 

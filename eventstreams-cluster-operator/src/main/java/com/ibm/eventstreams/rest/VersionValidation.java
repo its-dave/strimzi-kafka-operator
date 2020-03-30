@@ -42,11 +42,11 @@ public class VersionValidation extends AbstractValidation {
         ValidationResponsePayload outcome = null;
 
         if (shouldReject(customResourceSpec)) {
-            outcome = ValidationResponsePayload.createFailureResponse(
+            outcome = ValidationResponsePayload.createFailureResponsePayload(
                     "Supported version values are: 2020.1, 2020.1.1",
                     "Unsupported version");
         } else {
-            outcome = ValidationResponsePayload.createSuccessResponse();
+            outcome = ValidationResponsePayload.createSuccessResponsePayload();
         }
 
         routingContext

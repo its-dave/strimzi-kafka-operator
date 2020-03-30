@@ -59,11 +59,11 @@ public class EntityLabelValidation extends AbstractValidation {
         ValidationResponsePayload outcome = null;
 
         if (shouldReject(customResourceSpec)) {
-            outcome = ValidationResponsePayload.createFailureResponse(
+            outcome = ValidationResponsePayload.createFailureResponsePayload(
                     EXPECTED_LABEL + " is a required label to identify the cluster",
                     "Missing cluster label");
         } else {
-            outcome = ValidationResponsePayload.createSuccessResponse();
+            outcome = ValidationResponsePayload.createSuccessResponsePayload();
         }
 
         routingContext

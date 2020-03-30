@@ -38,11 +38,11 @@ public class NameValidation extends AbstractValidation {
         ValidationResponsePayload outcome = null;
 
         if (shouldReject(customResourceSpec)) {
-            outcome = ValidationResponsePayload.createFailureResponse(
+            outcome = ValidationResponsePayload.createFailureResponsePayload(
                     "Names should not be longer than 16 characters",
                     "Name too long");
         } else {
-            outcome = ValidationResponsePayload.createSuccessResponse();
+            outcome = ValidationResponsePayload.createSuccessResponsePayload();
         }
 
         routingContext

@@ -21,19 +21,20 @@ public class ValidationResponsePayload {
 
     private ValidationResponse response;
 
-    public static ValidationResponsePayload createSuccessResponse() {
+    public static ValidationResponsePayload createSuccessResponsePayload() {
         ValidationResponseStatus vrs = new ValidationResponseStatus(ValidationStatusType.Success, 200, "ok", "ok");
         ValidationResponse vr = new ValidationResponse(true, vrs);
         return new ValidationResponsePayload(vr);
     }
-    public static ValidationResponsePayload createFailureResponse(String message, String reason) {
-        ValidationResponseStatus vrs = new ValidationResponseStatus(ValidationStatusType.Failure, 400, message, reason);
-        ValidationResponse vr = new ValidationResponse(false, vrs);
+    public static ValidationResponsePayload createFailureResponsePayload(String message, String reason) {
+        ValidationResponse vr = createFailureResponse(message, reason);
         return new ValidationResponsePayload(vr);
     }
 
-
-
+    public static ValidationResponse createFailureResponse(String message, String reason) {
+        ValidationResponseStatus vrs = new ValidationResponseStatus(ValidationStatusType.Failure, 400, message, reason);
+        return new ValidationResponse(false, vrs);
+    }
 
     ValidationResponsePayload(ValidationResponse response) {
         this.response = response;
