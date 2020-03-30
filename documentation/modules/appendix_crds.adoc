@@ -727,7 +727,7 @@ Used in: xref:type-IngressListenerConfiguration-{context}[`IngressListenerConfig
 Used in: xref:type-KafkaClusterSpec-{context}[`KafkaClusterSpec`]
 
 
-The `type` property is a discriminator that distinguishes the use of the type `KafkaAuthorizationSimple` from xref:type-KafkaAuthorizationKeycloak-{context}[`KafkaAuthorizationKeycloak`], xref:type-KafkaAuthorizationRunAs-{context}[`KafkaAuthorizationRunAs`].
+The `type` property is a discriminator that distinguishes the use of the type `KafkaAuthorizationSimple` from xref:type-KafkaAuthorizationKeycloak-{context}[`KafkaAuthorizationKeycloak`].
 It must have the value `simple` for the type `KafkaAuthorizationSimple`.
 [options="header"]
 |====
@@ -744,7 +744,7 @@ It must have the value `simple` for the type `KafkaAuthorizationSimple`.
 Used in: xref:type-KafkaClusterSpec-{context}[`KafkaClusterSpec`]
 
 
-The `type` property is a discriminator that distinguishes the use of the type `KafkaAuthorizationKeycloak` from xref:type-KafkaAuthorizationSimple-{context}[`KafkaAuthorizationSimple`], xref:type-KafkaAuthorizationRunAs-{context}[`KafkaAuthorizationRunAs`].
+The `type` property is a discriminator that distinguishes the use of the type `KafkaAuthorizationKeycloak` from xref:type-KafkaAuthorizationSimple-{context}[`KafkaAuthorizationSimple`].
 It must have the value `keycloak` for the type `KafkaAuthorizationKeycloak`.
 [options="header"]
 |====
@@ -762,23 +762,6 @@ It must have the value `keycloak` for the type `KafkaAuthorizationKeycloak`.
 |delegateToKafkaAcls             1.2+<.<|Whether authorization decision should be delegated to the 'Simple' authorizer if DENIED by Keycloak Authorization Services policies.Default value is `false`.
 |boolean
 |superUsers                      1.2+<.<|List of super users. Should contain list of user principals which should get unlimited access rights.
-|string array
-|====
-
-[id='type-KafkaAuthorizationRunAs-{context}']
-### `KafkaAuthorizationRunAs` schema reference
-
-Used in: xref:type-KafkaClusterSpec-{context}[`KafkaClusterSpec`]
-
-
-The `type` property is a discriminator that distinguishes the use of the type `KafkaAuthorizationRunAs` from xref:type-KafkaAuthorizationSimple-{context}[`KafkaAuthorizationSimple`], xref:type-KafkaAuthorizationKeycloak-{context}[`KafkaAuthorizationKeycloak`].
-It must have the value `runas` for the type `KafkaAuthorizationRunAs`.
-[options="header"]
-|====
-|Property           |Description
-|type        1.2+<.<|Must be `runas`.
-|string
-|superUsers  1.2+<.<|List of super users. Should contain list of user principals which should get unlimited access rights.
 |string array
 |====
 
