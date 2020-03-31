@@ -46,6 +46,9 @@ import lombok.EqualsAndHashCode;
         versions = {
             @Crd.Spec.Version(name = EventStreams.V1BETA1, served = true, storage = true)
         },
+        subresources = @Crd.Spec.Subresources(
+            status = @Crd.Spec.Subresources.Status()
+        ),
         additionalPrinterColumns = {
             @Crd.Spec.AdditionalPrinterColumn(
                     name = "Ready",

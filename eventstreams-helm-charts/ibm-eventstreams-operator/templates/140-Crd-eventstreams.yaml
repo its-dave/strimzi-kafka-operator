@@ -28,6 +28,8 @@ spec:
     JSONPath: .spec.strimziOverrides.kafka.replicas
     type: integer
     priority: 1
+  subresources:
+    status: {}
   validation:
     openAPIV3Schema:
       type: object
