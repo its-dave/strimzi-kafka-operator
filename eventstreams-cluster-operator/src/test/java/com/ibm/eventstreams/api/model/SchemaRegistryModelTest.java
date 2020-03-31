@@ -367,8 +367,14 @@ public class SchemaRegistryModelTest {
                 .withValue("INFO")
                 .build();
         List<EnvVar> envVars = schemaRegistryModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().stream().filter(container -> SchemaRegistryModel.COMPONENT_NAME.equals(container.getName())).findFirst().get().getEnv();
+        EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:IAM-BEARER;SCRAM-SHA-512,7080").build();
+        EnvVar endpoints = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7080").build();
+        EnvVar tlsVersion = new EnvVarBuilder().withName("TLS_VERSION").withValue("9443:TLSv1.2,7080").build();
 
         assertThat(envVars, hasItem(expectedEnvVar));
+        assertThat(envVars, hasItem(authentication));
+        assertThat(envVars, hasItem(endpoints));
+        assertThat(envVars, hasItem(tlsVersion));
     }
 
     @Test

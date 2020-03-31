@@ -15,6 +15,7 @@ package com.ibm.eventstreams.api.model;
 import com.ibm.eventstreams.Main;
 import com.ibm.eventstreams.api.DefaultResourceRequirements;
 import com.ibm.eventstreams.api.Endpoint;
+import com.ibm.eventstreams.api.TlsVersion;
 import com.ibm.eventstreams.api.spec.AdminUISpec;
 import com.ibm.eventstreams.api.spec.ComponentSpec;
 import com.ibm.eventstreams.api.spec.ComponentTemplate;
@@ -97,7 +98,7 @@ public class AdminUIModel extends AbstractModel {
     private String traceString = "ExpressApp;INFO,Simulated;INFO,KubernetesClient;INFO";
     private Map<String, String> icpClusterData;
     private String oidcSecretName;
-    private SecuritySpec.Encryption crEncryptionValue;
+    private TlsVersion crTlsVersionValue;
     private String enableProducerMetricsPanels;
     private String enableMetricsPanels;
 
@@ -130,11 +131,11 @@ public class AdminUIModel extends AbstractModel {
             setPodTemplate(userInterfaceSpec.map(ComponentSpec::getTemplate)
                             .map(ComponentTemplate::getPod)
                             .orElseGet(PodTemplate::new));
-            setEncryption(SecuritySpec.Encryption.INTERNAL_TLS);
-            crEncryptionValue = Optional.ofNullable(instance.getSpec())
+            setTlsVersion(TlsVersion.TLS_V1_2);
+            crTlsVersionValue = Optional.ofNullable(instance.getSpec())
                 .map(EventStreamsSpec::getSecurity)
-                .map(SecuritySpec::getEncryption)
-                .orElse(DEFAULT_ENCRYPTION);
+                .map(SecuritySpec::getInternalTls)
+                .orElse(DEFAULT_INTERNAL_TLS);
             setGlobalPullSecrets(Optional.ofNullable(instance.getSpec())
                                     .map(EventStreamsSpec::getImages)
                                     .map(ImagesSpec::getPullSecrets)
@@ -181,7 +182,7 @@ public class AdminUIModel extends AbstractModel {
             setExternalAccess(userInterfaceSpec.map(ComponentSpec::getExternalAccess)
                     .orElse(defaultExternalAccess));
 
-            deployment = createDeployment(getContainers(), getVolumes());
+            deployment = createDeployment(getContainers(instance), getVolumes());
             serviceAccount = createServiceAccount();
             roleBinding = createAdminUIRoleBinding();
 
@@ -246,17 +247,17 @@ public class AdminUIModel extends AbstractModel {
      * 
      * @return A list of containers to put in the Admin UI pod
      */
-    private List<Container> getContainers() {
-        return Arrays.asList(getUIContainer(), getRedisContainer());
+    private List<Container> getContainers(EventStreams instance) {
+        return Arrays.asList(getUIContainer(instance), getRedisContainer());
     }
 
     /**
      * 
      * @return The Admin UI container
      */
-    private Container getUIContainer() {
-        String adminApiService = getUrlProtocol(crEncryptionValue) + getInternalServiceName(getInstanceName(), AdminApiModel.COMPONENT_NAME) + "." +  getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.getPodToPodPort(tlsEnabled());
-        String schemaRegistryService = getUrlProtocol(crEncryptionValue) + getInternalServiceName(getInstanceName(), SchemaRegistryModel.COMPONENT_NAME) + "." +  getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.getPodToPodPort(tlsEnabled());
+    private Container getUIContainer(EventStreams instance) {
+        String adminApiService = getUrlProtocol(crTlsVersionValue) + getInternalServiceName(getInstanceName(), AdminApiModel.COMPONENT_NAME) + "." +  getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.getPodToPodPort(tlsEnabled());
+        String schemaRegistryService = getUrlProtocol(crTlsVersionValue) + getInternalServiceName(getInstanceName(), SchemaRegistryModel.COMPONENT_NAME) + "." +  getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.getPodToPodPort(tlsEnabled());
 
         List<EnvVar> envVarDefaults = new ArrayList<>();
 
@@ -292,6 +293,7 @@ public class AdminUIModel extends AbstractModel {
         envVarDefaults.add(new EnvVarBuilder().withName("API_URL").withValue(adminApiService).build());
         envVarDefaults.add(new EnvVarBuilder().withName("PRODUCER_METRICS_ENABLED").withValue(enableProducerMetricsPanels).build());
         envVarDefaults.add(new EnvVarBuilder().withName("METRICS_ENABLED").withValue(enableMetricsPanels).build());
+        envVarDefaults.add(new EnvVarBuilder().withName(TLS_VERSION_ENV_KEY).withValue(getTlsVersionEnvValue(instance)).build());
 
         envVarDefaults.add(new EnvVarBuilder().withName("REDIS_HOST").withValue("127.0.0.1").build());
 

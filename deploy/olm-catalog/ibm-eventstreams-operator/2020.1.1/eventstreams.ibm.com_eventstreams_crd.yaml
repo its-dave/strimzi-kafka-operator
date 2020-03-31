@@ -84,17 +84,14 @@ spec:
                         type: integer
                         description: Defines what port will be opened up for the client
                           to communicate with.
-                      tls:
-                        type: boolean
-                        description: Defines whether TLS communication will be used
-                          for this specified endpoint for the component.
                       tlsVersion:
                         type: string
                         enum:
                         - TLSv1.2
                         - TLSv1.3
-                        description: Defines which TLS version that will be used for
-                          the endpoint.
+                        - NONE
+                        description: Defines which TLS version or no TLS version if
+                          that will be used for the endpoint.
                       certOverrides:
                         type: object
                         properties:
@@ -1509,17 +1506,14 @@ spec:
                         type: integer
                         description: Defines what port will be opened up for the client
                           to communicate with.
-                      tls:
-                        type: boolean
-                        description: Defines whether TLS communication will be used
-                          for this specified endpoint for the component.
                       tlsVersion:
                         type: string
                         enum:
                         - TLSv1.2
                         - TLSv1.3
-                        description: Defines which TLS version that will be used for
-                          the endpoint.
+                        - NONE
+                        description: Defines which TLS version or no TLS version if
+                          that will be used for the endpoint.
                       certOverrides:
                         type: object
                         properties:
@@ -3406,17 +3400,14 @@ spec:
                         type: integer
                         description: Defines what port will be opened up for the client
                           to communicate with.
-                      tls:
-                        type: boolean
-                        description: Defines whether TLS communication will be used
-                          for this specified endpoint for the component.
                       tlsVersion:
                         type: string
                         enum:
                         - TLSv1.2
                         - TLSv1.3
-                        description: Defines which TLS version that will be used for
-                          the endpoint.
+                        - NONE
+                        description: Defines which TLS version or no TLS version if
+                          that will be used for the endpoint.
                       certOverrides:
                         type: object
                         properties:
@@ -3870,13 +3861,14 @@ spec:
             security:
               type: object
               properties:
-                encryption:
+                internalTls:
                   type: string
                   enum:
-                  - INTERNAL_TLS
+                  - TLSv1.2
+                  - TLSv1.3
                   - NONE
-                  description: Configuration of whether Event Streams components communicate
-                    through TLS or plain.
+                  description: Configure what TLS version Event Streams components
+                    use to communicate with one another.
               description: Security configuration for the Event Streams components.
             strimziOverrides:
               type: object

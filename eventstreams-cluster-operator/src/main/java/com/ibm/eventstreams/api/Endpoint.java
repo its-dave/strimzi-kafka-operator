@@ -17,7 +17,6 @@ import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.spec.SecuritySpec;
 import io.strimzi.api.kafka.model.CertAndKeySecretSource;
-import lombok.Builder;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -25,9 +24,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
-@Builder
 public class Endpoint {
     private static final boolean DEFAULT_TLS_SETTING = false;
+    private static final TlsVersion DEFAULT_P2P_TLS_VERSION = TlsVersion.NONE;
     private static final boolean DEFAULT_EXTERNAL_ENDPOINT_TLS_SETTING = true;
     private static final TlsVersion DEFAULT_TLS_VERSION = TlsVersion.TLS_V1_2;
 
@@ -46,17 +45,15 @@ public class Endpoint {
 
     private String name;
     private int port;
-    private boolean tls;
     private TlsVersion tlsVersion;
     private EndpointServiceType type;
     private String path;
     private CertAndKeySecretSource certificateAndKeyOverride;
     private List<String> authenticationMechanisms;
 
-    public Endpoint(String name, int port, boolean tls, TlsVersion tlsVersion, EndpointServiceType type, String path, CertAndKeySecretSource certificateAndKeyOverride, List<String> authenticationMechanisms) {
+    public Endpoint(String name, int port, TlsVersion tlsVersion, EndpointServiceType type, String path, CertAndKeySecretSource certificateAndKeyOverride, List<String> authenticationMechanisms) {
         this.name = name;
         this.port = port;
-        this.tls = tls;
         this.tlsVersion = tlsVersion;
         this.type = type;
         this.path = path;
@@ -73,7 +70,6 @@ public class Endpoint {
     public static Endpoint createDefaultExternalEndpoint() {
         return new Endpoint(DEFAULT_EXTERNAL_NAME,
                             DEFAULT_EXTERNAL_TLS_PORT,
-                            DEFAULT_EXTERNAL_ENDPOINT_TLS_SETTING,
                             DEFAULT_TLS_VERSION,
                             DEFAULT_EXTERNAL_SERVICE_TYPE,
                             DEFAULT_EXTERNAL_NAME,
@@ -92,8 +88,7 @@ public class Endpoint {
 
         return new Endpoint(isTls ? DEFAULT_P2P_TLS_NAME : DEFAULT_P2P_PLAIN_NAME,
                             isTls ? DEFAULT_P2P_TLS_PORT : DEFAULT_P2P_PLAIN_PORT,
-                            isTls,
-                            DEFAULT_TLS_VERSION,
+                            getP2PTlsVersion(instance),
                             EndpointServiceType.INTERNAL,
                             isTls ? DEFAULT_P2P_PATH : null,
                             null,
@@ -108,7 +103,6 @@ public class Endpoint {
     public static Function<EndpointSpec, Endpoint> createEndpointFromSpec() {
         return spec -> new Endpoint(spec.getName(),
                                     getPortOrDefault(spec),
-                                    getTlsOrDefault(spec),
                                     getTlsVersionOrDefault(spec),
                                     getTypeOrDefault(spec),
                                     getPathOrDefault(spec),
@@ -138,6 +132,19 @@ public class Endpoint {
     }
 
     /**
+     * Gets the pod to pod TLS version based on the internal TLS setting of the Event Streams Spec
+     * @param instance the event streams CR
+     * @return Pod to Pod TLS Version
+     */
+    private static TlsVersion getP2PTlsVersion(EventStreams instance) {
+        return Optional.ofNullable(instance)
+            .map(EventStreams::getSpec)
+            .map(EventStreamsSpec::getSecurity)
+            .map(SecuritySpec::getInternalTls)
+            .orElse(DEFAULT_P2P_TLS_VERSION);
+    }
+
+    /**
      * Gets the TLS specified by the user or it will default to a default TLS version.
      * @param spec the user configured endpoint CR
      * @return the Tls version configured by the user or the default
@@ -153,7 +160,9 @@ public class Endpoint {
      * @return the service type of the endpoint
      */
     private static boolean getTlsOrDefault(EndpointSpec spec) {
-        return Optional.ofNullable(spec.getTls()).orElse(DEFAULT_EXTERNAL_ENDPOINT_TLS_SETTING);
+        return Optional.ofNullable(spec.getTlsVersion())
+            .map(tlsVersion -> !TlsVersion.NONE.equals(tlsVersion))
+            .orElse(DEFAULT_EXTERNAL_ENDPOINT_TLS_SETTING);
     }
 
     /**
@@ -174,8 +183,8 @@ public class Endpoint {
     private static boolean isTls(EventStreams instance) {
         return Optional.ofNullable(instance.getSpec())
             .map(EventStreamsSpec::getSecurity)
-            .map(SecuritySpec::getEncryption)
-            .map(encryption ->  encryption == SecuritySpec.Encryption.INTERNAL_TLS)
+            .map(SecuritySpec::getInternalTls)
+            .map(encryption -> !encryption.equals(TlsVersion.NONE))
             .orElse(DEFAULT_TLS_SETTING);
     }
 
@@ -220,7 +229,7 @@ public class Endpoint {
      * @return boolean whether endpoint should be configured with TLS
      */
     public boolean isTls() {
-        return tls;
+        return !TlsVersion.NONE.equals(tlsVersion);
     }
 
     /**
@@ -229,6 +238,14 @@ public class Endpoint {
      */
     public EndpointServiceType getType() {
         return type;
+    }
+
+    /**
+     * Gets the TLS Version the endpoint is configured with
+     * @return the tls version
+     */
+    public TlsVersion getTlsVersion() {
+        return tlsVersion;
     }
 
     /**

@@ -12,9 +12,9 @@
  */
 package com.ibm.iam.api.model;
 
+import com.ibm.eventstreams.api.TlsVersion;
 import com.ibm.eventstreams.api.model.utils.ModelUtils;
 import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
-import com.ibm.eventstreams.api.spec.SecuritySpec;
 import com.ibm.iam.api.spec.Cp4iServicesBinding;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
@@ -37,8 +37,8 @@ public class Cp4iServicesBindingTest {
                 .withNewNamespace(namespace)
                 .build())
             .editSpec()
-            .withNewSecurity().
-                withEncryption(SecuritySpec.Encryption.INTERNAL_TLS)
+            .withNewSecurity()
+                .withInternalTls(TlsVersion.TLS_V1_2)
             .endSecurity()
             .withNewReplicator()
             .withReplicas(defaultReplicas)

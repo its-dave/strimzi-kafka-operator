@@ -129,10 +129,10 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
         setPodTemplate(adminApiSpec.map(ComponentSpec::getTemplate)
                             .map(ComponentTemplate::getPod)
                             .orElseGet(PodTemplate::new));
-        setEncryption(Optional.ofNullable(instance.getSpec())
+        setTlsVersion(Optional.ofNullable(instance.getSpec())
                             .map(EventStreamsSpec::getSecurity)
-                            .map(SecuritySpec::getEncryption)
-                            .orElse(DEFAULT_ENCRYPTION));
+                            .map(SecuritySpec::getInternalTls)
+                            .orElse(DEFAULT_INTERNAL_TLS));
         setGlobalPullSecrets(Optional.ofNullable(instance.getSpec())
                                 .map(EventStreamsSpec::getImages)
                                 .map(ImagesSpec::getPullSecrets)

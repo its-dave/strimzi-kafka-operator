@@ -16,6 +16,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.ibm.eventstreams.api.TlsVersion;
 import io.strimzi.crdgenerator.annotations.Description;
 import io.sundr.builder.annotations.Buildable;
 import lombok.EqualsAndHashCode;
@@ -25,27 +26,21 @@ import java.io.Serializable;
 @JsonDeserialize(using = JsonDeserializer.None.class)
 @Buildable(editableEnabled = false, generateBuilderPackage = false, builderPackage = "io.fabric8.kubernetes.api.builder")
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({"encryption"})
+@JsonPropertyOrder({"internalTLS"})
 @EqualsAndHashCode
 public class SecuritySpec implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private Encryption encryption;
+    private TlsVersion internalTls;
 
-    public enum Encryption {
-        INTERNAL_TLS,
-        // MUTUAL_TLS, TODO
-        NONE;
+    @Description("Configure what TLS version Event Streams components use to communicate with one another.")
+    public TlsVersion getInternalTls() {
+        return internalTls;
     }
 
-    @Description("Configuration of whether Event Streams components communicate through TLS or plain")
-    public Encryption getEncryption() {
-        return encryption;
-    }
-
-    public void setEncryption(Encryption encryption) {
-        this.encryption = encryption;
+    public void setInternalTls(TlsVersion internalTls) {
+        this.internalTls = internalTls;
     }
 
 }

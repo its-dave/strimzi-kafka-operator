@@ -14,10 +14,11 @@ package com.ibm.eventstreams.api.model;
 
 import com.ibm.eventstreams.Main;
 import com.ibm.eventstreams.api.Labels;
+import com.ibm.eventstreams.api.TlsVersion;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.spec.ExternalAccess;
-import com.ibm.eventstreams.api.spec.SecuritySpec.Encryption;
+import com.ibm.eventstreams.api.spec.SecuritySpec;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
 import io.fabric8.kubernetes.api.model.Container;
@@ -105,7 +106,9 @@ public abstract class AbstractModel {
 
     public static final String CONFIG_MAP_SUFFIX = "-config";
 
-    protected static final Encryption DEFAULT_ENCRYPTION = Encryption.NONE;
+    protected static final String TLS_VERSION_ENV_KEY = "TLS_VERSION";
+    protected static final TlsVersion DEFAULT_INTERNAL_TLS = TlsVersion.NONE;
+    protected static final TlsVersion DEFAULT_TLS_VERSION = TlsVersion.TLS_V1_2;
 
     private static final String PRODUCT_ID = "ID";
     private static final String PRODUCT_NAME = "eventstreams";
@@ -139,7 +142,7 @@ public abstract class AbstractModel {
     private ExternalAccess externalAccess;
     private ResourceRequirements resourceRequirements;
     private PodTemplate podTemplate;
-    private Encryption encryption;
+    private TlsVersion tlsVersion;
 
     private List<LocalObjectReference> globalPullSecrets;
     protected String image = "";
@@ -199,12 +202,12 @@ public abstract class AbstractModel {
         this.resourceRequirements = resourceRequirements;
     }
 
-    protected void setEncryption(Encryption encryption) {
-        this.encryption = encryption;
+    protected void setTlsVersion(TlsVersion tlsVersion) {
+        this.tlsVersion = tlsVersion;
     }
 
-    protected Encryption getEncryption() {
-        return encryption;
+    protected TlsVersion getTlsVersion() {
+        return tlsVersion;
     }
 
     protected io.strimzi.api.kafka.model.Probe getLivenessProbe() {
@@ -224,13 +227,13 @@ public abstract class AbstractModel {
     }
 
     protected Boolean tlsEnabled() {
-        return tlsEnabled(getEncryption());
+        return tlsEnabled(getTlsVersion());
     }
 
-    protected static Boolean tlsEnabled(Encryption encryption) {
-        switch (encryption) {
-            case INTERNAL_TLS: return true;
-            default: return false;
+    protected static Boolean tlsEnabled(TlsVersion tlsVersion) {
+        switch (tlsVersion) {
+            case NONE: return false;
+            default: return true;
         }
     }
 
@@ -238,10 +241,10 @@ public abstract class AbstractModel {
         return tlsEnabled() ? "https://" : "http://";
     }
 
-    protected String getUrlProtocol(Encryption encryption) {
-        switch (encryption) {
-            case INTERNAL_TLS: return "https://";
-            default: return "http://";
+    protected String getUrlProtocol(TlsVersion internalTLS) {
+        switch (internalTLS) {
+            case NONE: return "http://";
+            default: return "https://";
         }
     }
 
@@ -371,7 +374,7 @@ public abstract class AbstractModel {
                 }
             // Sufficient characters to hash Instance name whilst keeping truncated App name
             } else {
-                instanceName = instanceName.substring(0, charactersOfInstanceNameToKeep - 5) + '-' + getHash(instanceName).substring(0, 4);               
+                instanceName = instanceName.substring(0, charactersOfInstanceNameToKeep - 5) + '-' + getHash(instanceName).substring(0, 4);
                 return getResourcePrefixTruncatedAppName(instanceName) + "-" + componentName;
             }
         }
@@ -926,5 +929,14 @@ public abstract class AbstractModel {
                 .map(KafkaListeners::getExternal)
                 .map(KafkaListenerExternal::getAuth)
                 .isPresent();
+    }
+
+    public String getTlsVersionEnvValue(EventStreams instance) {
+        return Optional.of(instance)
+            .map(EventStreams::getSpec)
+            .map(EventStreamsSpec::getSecurity)
+            .map(SecuritySpec::getInternalTls)
+            .map(TlsVersion::toString)
+            .orElse(DEFAULT_TLS_VERSION.toValue());
     }
 }

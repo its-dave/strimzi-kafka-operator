@@ -161,6 +161,7 @@ public class AdminUIModelTest {
                 new EnvVarBuilder().withName("ICP_USER_MGMT_PORT").withValue("443").build(),
                 new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue("true").build(),
                 new EnvVarBuilder().withName("SCHEMA_REGISTRY_URL").withValue(schemaRegistryService).build(),
+                new EnvVarBuilder().withName(AbstractModel.TLS_VERSION_ENV_KEY).withValue("TLSv1.2").build(),
                 new EnvVarBuilder().withName("ICP_USER_MGMT_HIGHEST_ROLE_FOR_CRN").withValue("idmgmt/identity/api/v1/teams/highestRole").build()));
 
         Service userInterfaceService = adminUIModel.getService();

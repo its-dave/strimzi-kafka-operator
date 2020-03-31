@@ -15,6 +15,7 @@ package com.ibm.eventstreams.api.model;
 import com.ibm.eventstreams.Main;
 import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.EndpointServiceType;
+import com.ibm.eventstreams.api.TlsVersion;
 import com.ibm.eventstreams.api.model.utils.ModelUtils;
 import com.ibm.eventstreams.api.spec.AdminApiSpecBuilder;
 import com.ibm.eventstreams.api.spec.EndpointSpec;
@@ -23,7 +24,6 @@ import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.spec.EventStreamsSpecBuilder;
-import com.ibm.eventstreams.api.spec.SecuritySpec;
 import com.ibm.eventstreams.api.spec.SecuritySpecBuilder;
 import com.ibm.eventstreams.controller.EventStreamsOperatorConfig;
 import io.fabric8.kubernetes.api.model.Container;
@@ -173,6 +173,7 @@ public class AdminApiModelTest {
         EnvVar clientCaCertPath = new EnvVarBuilder().withName("CLIENT_CA_PATH").withValue("/certs/client/ca.crt").build();
         EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:IAM-BEARER;SCRAM-SHA-512,7080").build();
         EnvVar endpoints = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7080").build();
+        EnvVar tlsVersion = new EnvVarBuilder().withName("TLS_VERSION").withValue("9443:TLSv1.2,7080").build();
 
         EnvVarSource esCaCertEnvVarSource = new EnvVarSourceBuilder().withSecretKeyRef(new SecretKeySelector("ca.crt", instanceName + "-cluster-ca-cert", true)).build();
         EnvVar esCaCertEnv = new EnvVarBuilder().withName("ES_CACERT").withValueFrom(esCaCertEnvVarSource).build();
@@ -190,6 +191,7 @@ public class AdminApiModelTest {
         assertThat(defaultEnvVars, hasItem(authentication));
         assertThat(defaultEnvVars, hasItem(endpoints));
         assertThat(defaultEnvVars, hasItem(esCaCertEnv));
+        assertThat(defaultEnvVars, hasItem(tlsVersion));
     }
 
     @Test
@@ -247,7 +249,7 @@ public class AdminApiModelTest {
     public void testAdminApiIngressNetworkPolicyWithTLS() {
         EventStreams eventStreams = createDefaultEventStreams()
                 .editSpec()
-                .withSecurity(new SecuritySpecBuilder().withEncryption(SecuritySpec.Encryption.INTERNAL_TLS).build())
+                .withSecurity(new SecuritySpecBuilder().withInternalTls(TlsVersion.TLS_V1_2).build())
                 .withAdminApi(new AdminApiSpecBuilder()
                     .withEndpoints(
                         new EndpointSpecBuilder()
@@ -548,7 +550,7 @@ public class AdminApiModelTest {
         EventStreams defaultEs = createDefaultEventStreams()
             .editSpec()
                 .editOrNewSecurity()
-                    .withEncryption(SecuritySpec.Encryption.INTERNAL_TLS)
+                    .withInternalTls(TlsVersion.TLS_V1_2)
                 .endSecurity()
             .endSpec()
             .build();
@@ -724,7 +726,7 @@ public class AdminApiModelTest {
         EventStreams eventStreams = createDefaultEventStreams()
                 .editSpec()
                     .withNewSecurity()
-                        .withEncryption(SecuritySpec.Encryption.INTERNAL_TLS)
+                        .withInternalTls(TlsVersion.TLS_V1_2)
                     .endSecurity()
                 .endSpec()
                 .build();
@@ -748,7 +750,7 @@ public class AdminApiModelTest {
         EndpointSpec endpointSpec = new EndpointSpecBuilder()
             .withName(routeName)
             .withAccessPort(9999)
-            .withTls(false)
+            .withTlsVersion(TlsVersion.NONE)
             .build();
 
         EventStreams eventStreams = createDefaultEventStreams().build();

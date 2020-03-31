@@ -83,10 +83,10 @@ public class EventStreamsKafkaModel extends AbstractModel {
         super(instance.getMetadata().getName(), instance.getMetadata().getNamespace(), STRIMZI_COMPONENT_NAME);
 
         setOwnerReference(instance);
-        setEncryption(Optional.ofNullable(instance.getSpec())
+        setTlsVersion(Optional.ofNullable(instance.getSpec())
                             .map(EventStreamsSpec::getSecurity)
-                            .map(SecuritySpec::getEncryption)
-                            .orElse(DEFAULT_ENCRYPTION));
+                            .map(SecuritySpec::getInternalTls)
+                            .orElse(DEFAULT_INTERNAL_TLS));
 
         // These fields are required in the CRD but kept
         // as optional now to handle any potential null pointers

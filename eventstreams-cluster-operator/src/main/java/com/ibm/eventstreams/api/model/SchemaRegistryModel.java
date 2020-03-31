@@ -117,10 +117,10 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
                         .map(EventStreamsSpec::getImages)
                         .map(ImagesSpec::getPullSecrets)
                         .orElseGet(imageConfig::getPullSecrets));
-            setEncryption(Optional.ofNullable(instance.getSpec())
+            setTlsVersion(Optional.ofNullable(instance.getSpec())
                         .map(EventStreamsSpec::getSecurity)
-                        .map(SecuritySpec::getEncryption)
-                        .orElse(DEFAULT_ENCRYPTION));
+                        .map(SecuritySpec::getInternalTls)
+                        .orElse(DEFAULT_INTERNAL_TLS));
 
             storage = schemaRegistrySpec.map(SchemaRegistrySpec::getStorage)
                     .orElseGet(EphemeralStorage::new);

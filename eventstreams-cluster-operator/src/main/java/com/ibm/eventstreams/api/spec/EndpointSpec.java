@@ -38,7 +38,6 @@ public class EndpointSpec implements Serializable {
     private String name;
     private EndpointServiceType type;
     private Integer accessPort;
-    private Boolean tls;
     private TlsVersion tlsVersion;
     private CertAndKeySecretSource certOverrides;
     private List<String> authenticationMechanisms;
@@ -72,15 +71,7 @@ public class EndpointSpec implements Serializable {
         this.accessPort = accessPort;
     }
 
-    @Description("Defines whether TLS communication will be used for this specified endpoint for the component.")
-    public Boolean getTls() {
-        return tls;
-    }
-    public void setTls(Boolean tls) {
-        this.tls = tls;
-    }
-
-    @Description("Defines which TLS version that will be used for the endpoint.")
+    @Description("Defines which TLS version or no TLS version if that will be used for the endpoint.")
     public TlsVersion getTlsVersion() {
         return tlsVersion;
     }

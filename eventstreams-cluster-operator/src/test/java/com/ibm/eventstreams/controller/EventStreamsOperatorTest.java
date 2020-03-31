@@ -16,6 +16,7 @@ package com.ibm.eventstreams.controller;
 import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.EndpointServiceType;
 import com.ibm.eventstreams.api.Labels;
+import com.ibm.eventstreams.api.TlsVersion;
 import com.ibm.eventstreams.api.model.AbstractSecureEndpointsModel;
 import com.ibm.eventstreams.api.model.AdminApiModel;
 import com.ibm.eventstreams.api.model.AdminUIModel;
@@ -37,7 +38,6 @@ import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
 import com.ibm.eventstreams.api.spec.SchemaRegistrySpec;
 import com.ibm.eventstreams.api.spec.SecurityComponentSpec;
 import com.ibm.eventstreams.api.spec.SecurityComponentSpecBuilder;
-import com.ibm.eventstreams.api.spec.SecuritySpec;
 import com.ibm.eventstreams.api.spec.SecuritySpecBuilder;
 import com.ibm.eventstreams.api.status.EventStreamsAvailableVersions;
 import com.ibm.eventstreams.api.status.EventStreamsEndpoint;
@@ -831,7 +831,6 @@ public class EventStreamsOperatorTest {
             .withName("internal")
             .withAccessPort(9990)
             .withType(EndpointServiceType.INTERNAL)
-            .withTls(true)
             .build();
 
         SecurityComponentSpec spec = new SecurityComponentSpecBuilder()
@@ -871,7 +870,7 @@ public class EventStreamsOperatorTest {
         EndpointSpec internal = new EndpointSpecBuilder()
             .withName("internal")
             .withAccessPort(9990)
-            .withTls(false)
+            .withTlsVersion(TlsVersion.NONE)
             .withType(EndpointServiceType.INTERNAL)
             .build();
 
@@ -897,21 +896,21 @@ public class EventStreamsOperatorTest {
         Checkpoint async = context.checkpoint(1);
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
 
-        esCluster.getSpec().setSecurity(new SecuritySpecBuilder().withEncryption(SecuritySpec.Encryption.INTERNAL_TLS).build());
+        esCluster.getSpec().setSecurity(new SecuritySpecBuilder().withInternalTls(TlsVersion.TLS_V1_2).build());
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
         reconciliationState.icpClusterData = Collections.emptyMap();
 
         EndpointSpec plainInternal = new EndpointSpecBuilder()
             .withName("route")
-            .withTls(false)
+            .withTlsVersion(TlsVersion.NONE)
             .withAccessPort(9990)
             .withType(EndpointServiceType.ROUTE)
             .build();
 
         EndpointSpec plainNodePort = new EndpointSpecBuilder()
             .withName("node-port")
-            .withTls(false)
+            .withTlsVersion(TlsVersion.NONE)
             .withAccessPort(9990)
             .withType(EndpointServiceType.NODE_PORT)
             .build();
@@ -941,27 +940,27 @@ public class EventStreamsOperatorTest {
         Checkpoint async = context.checkpoint(1);
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
 
-        esCluster.getSpec().setSecurity(new SecuritySpecBuilder().withEncryption(SecuritySpec.Encryption.INTERNAL_TLS).build());
+        esCluster.getSpec().setSecurity(new SecuritySpecBuilder().withInternalTls(TlsVersion.TLS_V1_2).build());
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
         reconciliationState.icpClusterData = Collections.emptyMap();
 
         EndpointSpec route = new EndpointSpecBuilder()
             .withName("route")
-            .withTls(true)
+            .withTlsVersion(TlsVersion.TLS_V1_2)
             .withAccessPort(9990)
             .build();
 
         EndpointSpec nodePort = new EndpointSpecBuilder()
             .withName("node-port")
-            .withTls(true)
+            .withTlsVersion(TlsVersion.TLS_V1_2)
             .withAccessPort(8080)
             .withType(EndpointServiceType.NODE_PORT)
             .build();
 
         EndpointSpec internal = new EndpointSpecBuilder()
             .withName("internal")
-            .withTls(true)
+            .withTlsVersion(TlsVersion.TLS_V1_2)
             .withAccessPort(1234)
             .withType(EndpointServiceType.INTERNAL)
             .build();
@@ -994,14 +993,14 @@ public class EventStreamsOperatorTest {
         Checkpoint async = context.checkpoint(1);
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
 
-        esCluster.getSpec().setSecurity(new SecuritySpecBuilder().withEncryption(SecuritySpec.Encryption.INTERNAL_TLS).build());
+        esCluster.getSpec().setSecurity(new SecuritySpecBuilder().withInternalTls(TlsVersion.TLS_V1_2).build());
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
         reconciliationState.icpClusterData = Collections.emptyMap();
 
         EndpointSpec tlsInternal = new EndpointSpecBuilder()
             .withName("internal")
-            .withTls(true)
+            .withTlsVersion(TlsVersion.TLS_V1_2)
             .withAccessPort(9990)
             .withType(EndpointServiceType.INTERNAL)
             .build();
@@ -1032,14 +1031,14 @@ public class EventStreamsOperatorTest {
         Checkpoint async = context.checkpoint(1);
 
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
-        esCluster.getSpec().setSecurity(new SecuritySpecBuilder().withEncryption(SecuritySpec.Encryption.INTERNAL_TLS).build());
+        esCluster.getSpec().setSecurity(new SecuritySpecBuilder().withInternalTls(TlsVersion.TLS_V1_2).build());
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
         reconciliationState.icpClusterData = Collections.emptyMap();
 
         EndpointSpec tlsInternal = new EndpointSpecBuilder()
             .withName("internal")
-            .withTls(true)
+            .withTlsVersion(TlsVersion.TLS_V1_2)
             .withAccessPort(9990)
             .withType(EndpointServiceType.INTERNAL)
             .build();
@@ -1070,14 +1069,14 @@ public class EventStreamsOperatorTest {
         Checkpoint async = context.checkpoint(1);
 
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
-        esCluster.getSpec().setSecurity(new SecuritySpecBuilder().withEncryption(SecuritySpec.Encryption.INTERNAL_TLS).build());
+        esCluster.getSpec().setSecurity(new SecuritySpecBuilder().withInternalTls(TlsVersion.TLS_V1_2).build());
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
         reconciliationState.icpClusterData = Collections.emptyMap();
 
         EndpointSpec tlsInternal = new EndpointSpecBuilder()
             .withName("internal")
-            .withTls(true)
+            .withTlsVersion(TlsVersion.TLS_V1_2)
             .withAccessPort(9990)
             .withType(EndpointServiceType.INTERNAL)
             .build();
@@ -1112,20 +1111,20 @@ public class EventStreamsOperatorTest {
 
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
-        esCluster.getSpec().setSecurity(new SecuritySpecBuilder().withEncryption(SecuritySpec.Encryption.INTERNAL_TLS).build());
+        esCluster.getSpec().setSecurity(new SecuritySpecBuilder().withInternalTls(TlsVersion.TLS_V1_2).build());
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
         reconciliationState.icpClusterData = Collections.emptyMap();
 
         EndpointSpec tlsRoute = new EndpointSpecBuilder()
             .withName("route")
-            .withTls(true)
+            .withTlsVersion(TlsVersion.TLS_V1_2)
             .withAccessPort(9990)
             .withType(EndpointServiceType.ROUTE)
             .build();
 
         EndpointSpec tlsInternal = new EndpointSpecBuilder()
             .withName("internal")
-            .withTls(true)
+            .withTlsVersion(TlsVersion.TLS_V1_2)
             .withAccessPort(9990)
             .withType(EndpointServiceType.INTERNAL)
             .build();
@@ -1174,7 +1173,7 @@ public class EventStreamsOperatorTest {
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(false, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
         EventStreams esCluster = createESClusterWithProvidedBrokerCerts(NAMESPACE, CLUSTER_NAME, secretName, secretKey, secretCertificate);
-        esCluster.getSpec().setSecurity(new SecuritySpecBuilder().withEncryption(SecuritySpec.Encryption.INTERNAL_TLS).build());
+        esCluster.getSpec().setSecurity(new SecuritySpecBuilder().withInternalTls(TlsVersion.TLS_V1_2).build());
 
         Checkpoint async = context.checkpoint(1);
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
@@ -1189,7 +1188,7 @@ public class EventStreamsOperatorTest {
 
         EndpointSpec tlsRoute = new EndpointSpecBuilder()
             .withName("route")
-            .withTls(true)
+            .withTlsVersion(TlsVersion.TLS_V1_2)
             .withAccessPort(9990)
             .withType(EndpointServiceType.ROUTE)
             .withCertOverrides(certOverrides)
@@ -1197,7 +1196,7 @@ public class EventStreamsOperatorTest {
 
         EndpointSpec tlsInternal = new EndpointSpecBuilder()
             .withName("internal")
-            .withTls(true)
+            .withTlsVersion(TlsVersion.TLS_V1_2)
             .withAccessPort(9990)
             .withType(EndpointServiceType.INTERNAL)
             .withCertOverrides(certOverrides)
@@ -1239,7 +1238,7 @@ public class EventStreamsOperatorTest {
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(false, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
-        esCluster.getSpec().setSecurity(new SecuritySpecBuilder().withEncryption(SecuritySpec.Encryption.INTERNAL_TLS).build());
+        esCluster.getSpec().setSecurity(new SecuritySpecBuilder().withInternalTls(TlsVersion.TLS_V1_2).build());
 
         Checkpoint async = context.checkpoint();
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
@@ -1254,7 +1253,7 @@ public class EventStreamsOperatorTest {
 
         EndpointSpec tlsInternal = new EndpointSpecBuilder()
             .withName("internal")
-            .withTls(true)
+            .withTlsVersion(TlsVersion.TLS_V1_2)
             .withAccessPort(9990)
             .withType(EndpointServiceType.INTERNAL)
             .withCertOverrides(certOverrides)
@@ -1362,7 +1361,7 @@ public class EventStreamsOperatorTest {
                 .build())
             .withNewSpec()
             .withSecurity(new SecuritySpecBuilder()
-                .withEncryption(SecuritySpec.Encryption.INTERNAL_TLS)
+                .withInternalTls(TlsVersion.NONE)
             .build())
             .withNewAdminApi()
                 .withReplicas(1)
@@ -1390,7 +1389,7 @@ public class EventStreamsOperatorTest {
         EventStreams insecureInstance = new EventStreamsBuilder(secureInstance)
             .editSpec()
             .withSecurity(new SecuritySpecBuilder()
-                .withEncryption(SecuritySpec.Encryption.NONE)
+                .withInternalTls(TlsVersion.NONE)
                 .build())
             .withNewAdminApi()
                 .withReplicas(1)
@@ -1466,7 +1465,7 @@ public class EventStreamsOperatorTest {
                 .build())
             .withNewSpec()
             .withSecurity(new SecuritySpecBuilder()
-                .withEncryption(SecuritySpec.Encryption.INTERNAL_TLS)
+                .withInternalTls(TlsVersion.TLS_V1_2)
                 .build())
             .withNewAdminApi()
             .withReplicas(1)
@@ -1494,7 +1493,7 @@ public class EventStreamsOperatorTest {
         EventStreams insecureInstance = new EventStreamsBuilder(secureInstance)
             .editSpec()
             .withSecurity(new SecuritySpecBuilder()
-                .withEncryption(SecuritySpec.Encryption.NONE)
+                .withInternalTls(TlsVersion.NONE)
                 .build())
             .withNewAdminApi()
             .withReplicas(1)
@@ -1562,7 +1561,7 @@ public class EventStreamsOperatorTest {
                 .build())
             .withNewSpec()
             .withSecurity(new SecuritySpecBuilder()
-                .withEncryption(SecuritySpec.Encryption.INTERNAL_TLS)
+                .withInternalTls(TlsVersion.TLS_V1_2)
                 .build())
             .withNewAdminApi()
             .withReplicas(1)
@@ -1589,7 +1588,7 @@ public class EventStreamsOperatorTest {
         EventStreams afterInstance = new EventStreamsBuilder(beforeInstance)
             .editSpec()
             .withSecurity(new SecuritySpecBuilder()
-                .withEncryption(SecuritySpec.Encryption.NONE)
+                .withInternalTls(TlsVersion.NONE)
                 .build())
             .withNewAdminApi()
             .withReplicas(1)

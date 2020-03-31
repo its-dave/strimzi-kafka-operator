@@ -23,7 +23,6 @@ import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.spec.EventStreamsSpecBuilder;
 import com.ibm.eventstreams.api.spec.SecurityComponentSpec;
 import com.ibm.eventstreams.api.spec.SecurityComponentSpecBuilder;
-import com.ibm.eventstreams.api.spec.SecuritySpec;
 import com.ibm.eventstreams.api.spec.SecuritySpecBuilder;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.ContainerBuilder;
@@ -55,7 +54,7 @@ public class AbstractSecureEndpointsModelTest {
 
         public ComponentModel(EventStreams instance, SecurityComponentSpec spec) {
             super(instance, spec, COMPONENT_NAME);
-            setEncryption(SecuritySpec.Encryption.INTERNAL_TLS);
+            setTlsVersion(TlsVersion.TLS_V1_2);
             setOwnerReference(instance);
         }
     }
@@ -66,15 +65,14 @@ public class AbstractSecureEndpointsModelTest {
 
     private EndpointSpec basicPlainEndpointSpec = new EndpointSpecBuilder()
         .withName("basic-tls")
-        .withTls(false)
+        .withTlsVersion(TlsVersion.NONE)
         .build();
 
     private EndpointSpec configuredEndpointsSpec = new EndpointSpecBuilder()
         .withName("fully-configured")
         .withAccessPort(8080)
         .withType(EndpointServiceType.NODE_PORT)
-        .withTls(true)
-        .withTlsVersion(TlsVersion.TLS_V1_2)
+        .withTlsVersion(TlsVersion.TLS_V1_3)
         .withCertOverrides(new CertAndKeySecretSourceBuilder()
             .withCertificate("random-cert")
             .withKey("random-key")
@@ -87,7 +85,7 @@ public class AbstractSecureEndpointsModelTest {
     public void testCreationOfServicesFromDefaultConfigurationOfEndpoints() {
         EventStreamsSpec spec = new EventStreamsSpecBuilder()
             .withSecurity(new SecuritySpecBuilder()
-                .withEncryption(SecuritySpec.Encryption.INTERNAL_TLS).build())
+                .withInternalTls(TlsVersion.TLS_V1_2).build())
             .build();
 
         EventStreams instance = ModelUtils.createEventStreams(instanceName, spec).build();
@@ -127,7 +125,7 @@ public class AbstractSecureEndpointsModelTest {
     public void testCreationOfEndpointFromMinimalConfigurationOfEndpoint() {
         EventStreamsSpec spec = new EventStreamsSpecBuilder()
             .withSecurity(new SecuritySpecBuilder()
-                .withEncryption(SecuritySpec.Encryption.INTERNAL_TLS).build())
+                .withInternalTls(TlsVersion.TLS_V1_2).build())
             .build();
 
         EventStreams instance = ModelUtils.createEventStreams(instanceName, spec).build();
@@ -163,7 +161,7 @@ public class AbstractSecureEndpointsModelTest {
     public void testCreationOfServicesFromDefaultNonTlsEventStreams() {
         EventStreamsSpec spec = new EventStreamsSpecBuilder()
             .withSecurity(new SecuritySpecBuilder()
-                .withEncryption(SecuritySpec.Encryption.NONE).build())
+                .withInternalTls(TlsVersion.NONE).build())
             .build();
 
         EventStreams instance = ModelUtils.createEventStreams(instanceName, spec).build();
@@ -203,7 +201,7 @@ public class AbstractSecureEndpointsModelTest {
     public void testCreationOfServicesFromFullyConfiguredOfEndpoint() {
         EventStreamsSpec spec = new EventStreamsSpecBuilder()
             .withSecurity(new SecuritySpecBuilder()
-                .withEncryption(SecuritySpec.Encryption.INTERNAL_TLS).build())
+                .withInternalTls(TlsVersion.TLS_V1_2).build())
             .build();
 
         EventStreams instance = ModelUtils.createEventStreams(instanceName, spec).build();
@@ -241,7 +239,7 @@ public class AbstractSecureEndpointsModelTest {
     public void testCreationOfServicesFromMultipleEndpointConfigurations() {
         EventStreamsSpec spec = new EventStreamsSpecBuilder()
             .withSecurity(new SecuritySpecBuilder()
-                .withEncryption(SecuritySpec.Encryption.INTERNAL_TLS).build())
+                .withInternalTls(TlsVersion.TLS_V1_2).build())
             .build();
 
         EventStreams instance = ModelUtils.createEventStreams(instanceName, spec).build();
@@ -290,7 +288,7 @@ public class AbstractSecureEndpointsModelTest {
     public void testCreationOfVolumesWithNoCertOverrides() {
         EventStreamsSpec spec = new EventStreamsSpecBuilder()
             .withSecurity(new SecuritySpecBuilder()
-                .withEncryption(SecuritySpec.Encryption.NONE).build())
+                .withInternalTls(TlsVersion.TLS_V1_2).build())
             .build();
 
         EventStreams instance = ModelUtils.createEventStreams(instanceName, spec).build();
@@ -339,7 +337,7 @@ public class AbstractSecureEndpointsModelTest {
     public void testCreationOfVolumesWithCertOverrides() {
         EventStreamsSpec spec = new EventStreamsSpecBuilder()
             .withSecurity(new SecuritySpecBuilder()
-                .withEncryption(SecuritySpec.Encryption.NONE).build())
+                .withInternalTls(TlsVersion.TLS_V1_2).build())
             .build();
 
         EventStreams instance = ModelUtils.createEventStreams(instanceName, spec).build();
@@ -385,12 +383,11 @@ public class AbstractSecureEndpointsModelTest {
     public void testCreateVolumeMount() {
         EventStreamsSpec spec = new EventStreamsSpecBuilder()
             .withSecurity(new SecuritySpecBuilder()
-                .withEncryption(SecuritySpec.Encryption.NONE).build())
+                .withInternalTls(TlsVersion.NONE).build())
             .build();
 
         EventStreams instance = ModelUtils.createEventStreams(instanceName, spec).build();
 
-        List<EndpointSpec> endpointSpecs = new ArrayList<>();
         SecurityComponentSpec securityComponentSpec = new SecurityComponentSpecBuilder()
             .withEndpoints(basicPlainEndpointSpec)
             .build();
@@ -429,12 +426,14 @@ public class AbstractSecureEndpointsModelTest {
         List<EnvVar> envVars = new ArrayList<>();
         model.configureSecurityEnvVars(envVars);
 
-        assertThat(envVars, hasSize(2));
+        assertThat(envVars, hasSize(3));
 
         assertThat(envVars.get(0).getName(), is("AUTHENTICATION"));
         assertThat(envVars.get(0).getValue(), is("9443:IAM-BEARER;SCRAM-SHA-512,7080"));
         assertThat(envVars.get(1).getName(), is("ENDPOINTS"));
         assertThat(envVars.get(1).getValue(), is("9443:external,7080"));
+        assertThat(envVars.get(2).getName(), is("TLS_VERSION"));
+        assertThat(envVars.get(2).getValue(), is("9443:TLSv1.2,7080"));
     }
 
 
@@ -451,12 +450,14 @@ public class AbstractSecureEndpointsModelTest {
         List<EnvVar> envVars = new ArrayList<>();
         model.configureSecurityEnvVars(envVars);
 
-        assertThat(envVars, hasSize(2));
+        assertThat(envVars, hasSize(3));
 
         assertThat(envVars.get(0).getName(), is("AUTHENTICATION"));
         assertThat(envVars.get(0).getValue(), is("9443,7080"));
         assertThat(envVars.get(1).getName(), is("ENDPOINTS"));
         assertThat(envVars.get(1).getValue(), is("9443:required-field,7080"));
+        assertThat(envVars.get(2).getName(), is("TLS_VERSION"));
+        assertThat(envVars.get(2).getValue(), is("9443:TLSv1.2,7080"));
     }
 
     @Test
@@ -472,12 +473,14 @@ public class AbstractSecureEndpointsModelTest {
         List<EnvVar> envVars = new ArrayList<>();
         model.configureSecurityEnvVars(envVars);
 
-        assertThat(envVars, hasSize(2));
+        assertThat(envVars, hasSize(3));
 
         assertThat(envVars.get(0).getName(), is("AUTHENTICATION"));
         assertThat(envVars.get(0).getValue(), is("9080,8080:MUTUAL_TLS,7080"));
         assertThat(envVars.get(1).getName(), is("ENDPOINTS"));
         assertThat(envVars.get(1).getValue(), is("9080,8080:fully-configured,7080"));
+        assertThat(envVars.get(2).getName(), is("TLS_VERSION"));
+        assertThat(envVars.get(2).getValue(), is("9080,8080:TLSv1.3,7080"));
     }
 
     @Test
@@ -495,12 +498,11 @@ public class AbstractSecureEndpointsModelTest {
     @Test
     public void testCreationOfRoutesWithOverrides() {
         EventStreams instance = ModelUtils.createDefaultEventStreams(instanceName).build();
-        List<EndpointSpec> endpointSpecs = new ArrayList<>();
 
         EndpointSpec longNameRouteSpec = new EndpointSpecBuilder()
             .withName("long-name")
             .withAccessPort(343)
-            .withTls(true)
+            .withTlsVersion(TlsVersion.TLS_V1_2)
             .build();
 
         SecurityComponentSpec securityComponentSpec = new SecurityComponentSpecBuilder()

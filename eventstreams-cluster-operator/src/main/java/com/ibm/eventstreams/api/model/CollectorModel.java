@@ -12,13 +12,6 @@
  */
 package com.ibm.eventstreams.api.model;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
 import com.ibm.eventstreams.api.DefaultResourceRequirements;
 import com.ibm.eventstreams.api.spec.ComponentSpec;
 import com.ibm.eventstreams.api.spec.ComponentTemplate;
@@ -28,7 +21,6 @@ import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.spec.ImagesSpec;
 import com.ibm.eventstreams.api.spec.SecuritySpec;
 import com.ibm.eventstreams.controller.EventStreamsOperatorConfig;
-
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.ContainerBuilder;
 import io.fabric8.kubernetes.api.model.EnvVar;
@@ -50,6 +42,13 @@ import io.strimzi.api.kafka.model.KafkaClusterSpec;
 import io.strimzi.api.kafka.model.KafkaSpec;
 import io.strimzi.api.kafka.model.Logging;
 import io.strimzi.api.kafka.model.template.PodTemplate;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 public class CollectorModel extends AbstractModel {
 
@@ -85,10 +84,10 @@ public class CollectorModel extends AbstractModel {
             setPodTemplate(collectorSpec.map(ComponentSpec::getTemplate)
                             .map(ComponentTemplate::getPod)
                             .orElseGet(PodTemplate::new));
-            setEncryption(Optional.ofNullable(instance.getSpec())
+            setTlsVersion(Optional.ofNullable(instance.getSpec())
                             .map(EventStreamsSpec::getSecurity)
-                            .map(SecuritySpec::getEncryption)
-                            .orElse(DEFAULT_ENCRYPTION));
+                            .map(SecuritySpec::getInternalTls)
+                            .orElse(DEFAULT_INTERNAL_TLS));
             setGlobalPullSecrets(Optional.ofNullable(instance.getSpec())
                                     .map(EventStreamsSpec::getImages)
                                     .map(ImagesSpec::getPullSecrets)
@@ -111,7 +110,7 @@ public class CollectorModel extends AbstractModel {
                 .filter(map -> map.containsKey("interceptor.class.names"))
                 .isPresent();
                                 
-            deployment = createDeployment(getContainers(), getVolumes());
+            deployment = createDeployment(getContainers(instance), getVolumes());
             service = createService(enableProducerMetrics);
             networkPolicy = createNetworkPolicy();
             serviceAccount = createServiceAccount();
@@ -131,15 +130,15 @@ public class CollectorModel extends AbstractModel {
      * 
      * @return The list of containers to put into the Collector pod
      */
-    private List<Container> getContainers() {
-        return Arrays.asList(getCollectorContainer());
+    private List<Container> getContainers(EventStreams instance) {
+        return Arrays.asList(getCollectorContainer(instance));
     }
 
     /**
      * 
      * @return The Collector container
      */
-    private Container getCollectorContainer() {
+    private Container getCollectorContainer(EventStreams instance) {
         List<EnvVar> envVarDefaults = Arrays.asList(
             new EnvVarBuilder().withName("TRACE_LEVEL").withValue(traceLevel).build(),
             new EnvVarBuilder().withName("API_PORT").withValue(Integer.toString(API_PORT)).build(),
@@ -150,7 +149,8 @@ public class CollectorModel extends AbstractModel {
             new EnvVarBuilder().withName("LICENSE").withValue("accept").build(),
             // following env vars used only for label-pod-with-zone-name.sh script // TODO do we need this script
             new EnvVarBuilder().withName("NAMESPACE").withValue(getNamespace()).build(),
-            new EnvVarBuilder().withName("CONFIGMAP").withValue("configmap").build()
+            new EnvVarBuilder().withName("CONFIGMAP").withValue("configmap").build(),
+            new EnvVarBuilder().withName(TLS_VERSION_ENV_KEY).withValue(getTlsVersionEnvValue(instance)).build()
         );
 
         List<EnvVar> envVars = combineEnvVarListsNoDuplicateKeys(envVarDefaults);

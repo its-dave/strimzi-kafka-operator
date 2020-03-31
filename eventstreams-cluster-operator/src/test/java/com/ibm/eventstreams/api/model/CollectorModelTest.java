@@ -254,6 +254,20 @@ public class CollectorModelTest {
     }
 
     @Test
+    public void testTlsVersionEnvValue() {
+        EventStreams defaultEs = createDefaultEventStreams().build();
+        CollectorModel collectorModel = new CollectorModel(defaultEs, imageConfig);
+
+        EnvVar expectedEnvVar = new EnvVarBuilder()
+            .withName(AbstractModel.TLS_VERSION_ENV_KEY)
+            .withValue("TLSv1.2")
+            .build();
+
+        List<EnvVar> envVars = collectorModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getEnv();
+        assertThat(envVars, hasItem(expectedEnvVar));
+    }
+
+    @Test
     public void testDefaultLogging() {
         EventStreams defaultEs = createDefaultEventStreams().build();
         CollectorModel collectorModel = new CollectorModel(defaultEs, imageConfig);

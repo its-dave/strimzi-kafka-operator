@@ -16,10 +16,10 @@ import com.ibm.eventstreams.Main;
 import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.EndpointServiceType;
 import com.ibm.eventstreams.api.Labels;
+import com.ibm.eventstreams.api.TlsVersion;
 import com.ibm.eventstreams.api.model.utils.ModelUtils;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
-import com.ibm.eventstreams.api.spec.SecuritySpec;
 import com.ibm.eventstreams.controller.EventStreamsOperatorConfig;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.EnvVar;
@@ -366,11 +366,18 @@ public class RestProducerModelTest {
         String kafkaBootstrap = instanceName + "-kafka-bootstrap." + restProducerModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_PORT;
         String runasKafkaBootstrap = instanceName + "-kafka-bootstrap." + restProducerModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_RUNAS_PORT;
         EnvVar kafkaBootstrapUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_SERVERS").withValue(kafkaBootstrap).build();
+        EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:IAM-BEARER;SCRAM-SHA-512,7080").build();
+        EnvVar endpoints = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7080").build();
+        EnvVar tlsVersion = new EnvVarBuilder().withName("TLS_VERSION").withValue("9443:TLSv1.2,7080").build();
         EnvVar runasKafkaBootstrapUrlEnv = new EnvVarBuilder().withName("RUNAS_KAFKA_BOOTSTRAP_SERVERS").withValue(runasKafkaBootstrap).build();
         Container adminApiContainer = restProducerModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0);
 
         assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapUrlEnv));
         assertThat(adminApiContainer.getEnv(), hasItem(runasKafkaBootstrapUrlEnv));
+        assertThat(adminApiContainer.getEnv(), hasItem(authentication));
+        assertThat(adminApiContainer.getEnv(), hasItem(endpoints));
+        assertThat(adminApiContainer.getEnv(), hasItem(tlsVersion));
+
     }
 
     @Test
@@ -408,7 +415,7 @@ public class RestProducerModelTest {
         EventStreams defaultEs = createDefaultEventStreams()
                 .editSpec()
                 .editOrNewSecurity()
-                .withEncryption(SecuritySpec.Encryption.INTERNAL_TLS)
+                .withInternalTls(TlsVersion.TLS_V1_2)
                 .endSecurity()
                 .endSpec()
                 .build();
@@ -470,7 +477,7 @@ public class RestProducerModelTest {
         EventStreams eventStreams = createDefaultEventStreams()
                 .editSpec()
                     .withNewSecurity()
-                        .withEncryption(SecuritySpec.Encryption.INTERNAL_TLS)
+                        .withInternalTls(TlsVersion.TLS_V1_2)
                     .endSecurity()
                 .endSpec()
                 .build();

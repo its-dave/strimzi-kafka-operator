@@ -55,6 +55,8 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
 
     private static final String AUTHENTICATION_ENV_VAR_KEY = "AUTHENTICATION";
     private static final String ENDPOINTS_ENV_VAR_KEY = "ENDPOINTS";
+    private static final String TLS_VERSION_ENV_VAR_KEY = "TLS_VERSION";
+
 
     public static final String CERTS_VOLUME_MOUNT_NAME = "certs";
     public static final String CLIENT_CA_VOLUME_MOUNT_NAME = "client-ca";
@@ -72,6 +74,8 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
     private Service internalService;
     private Service routeService;
     private Service nodePortService;
+    private Service loadBalancerService;
+    private Service ingressService;
 
 
     public AbstractSecureEndpointsModel(EventStreams instance, SecurityComponentSpec spec, String componentName) {
@@ -153,8 +157,14 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
                 return NODE_PORT_SERVICE_SUFFIX;
             case ROUTE:
                 return ROUTE_SERVICE_SUFFIX;
-            default:
+            case INTERNAL:
                 return INTERNAL_SERVICE_SUFFIX;
+            case LOAD_BALANCER:
+                return LOAD_BALANCER_SERVICE_SUFFIX;
+            case INGRESS:
+                return INGRESS_SERVICE_SUFFIX;
+            default:
+                return "";
         }
     }
 
@@ -171,8 +181,14 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
                 return nodePortService;
             case ROUTE:
                 return routeService;
-            default:
+            case INGRESS:
+                return ingressService;
+            case LOAD_BALANCER:
+                return loadBalancerService;
+            case INTERNAL:
                 return internalService;
+            default:
+                return null;
         }
     }
 
@@ -297,6 +313,13 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
                 .map(getEndpointsEnvValue())
                 .collect(Collectors.joining(PORT_SEPARATOR)))
             .build());
+
+        envVars.add(new EnvVarBuilder()
+            .withName(TLS_VERSION_ENV_VAR_KEY)
+            .withValue(endpoints.stream()
+                .map(getTlsVersionEnvValue())
+                .collect(Collectors.joining(PORT_SEPARATOR)))
+            .build());
     }
 
     /**
@@ -320,6 +343,16 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
         return endpoint -> {
             if (endpoint.isTls()) {
                 return String.format("%d%s%s", endpoint.getPort(), KEY_VALUE_SEPARATOR, endpoint.getPath());
+            } else {
+                return Integer.toString(endpoint.getPort());
+            }
+        };
+    }
+
+    private Function<Endpoint, String> getTlsVersionEnvValue() {
+        return endpoint -> {
+            if (endpoint.isTls()) {
+                return String.format("%d:%s", endpoint.getPort(), endpoint.getTlsVersion().toValue());
             } else {
                 return Integer.toString(endpoint.getPort());
             }
