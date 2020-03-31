@@ -327,7 +327,7 @@ spec:
             storage:
                 type: ephemeral
         security:
-            encryption: TLS
+            internalTls: TLSv1.2
         strimziOverrides:
             kafka:
                 replicas: 3
@@ -397,7 +397,7 @@ spec:
             storage:
                 type: ephemeral
         security:
-            encryption: TLS
+            internalTls: TLSv1.2
         strimziOverrides:
             kafka:
                 replicas: 6
@@ -467,7 +467,7 @@ spec:
             storage:
                 type: ephemeral
         security:
-            encryption: TLS
+            internalTls: TLSv1.2
         strimziOverrides:
             kafka:
                 replicas: 9
