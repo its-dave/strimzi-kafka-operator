@@ -31,6 +31,7 @@ import com.ibm.eventstreams.api.model.RestProducerModel;
 import com.ibm.eventstreams.api.model.SchemaRegistryModel;
 import com.ibm.eventstreams.api.model.utils.MockEventStreamsKube;
 import com.ibm.eventstreams.api.model.utils.ModelUtils;
+import com.ibm.eventstreams.api.spec.AdminApiSpecBuilder;
 import com.ibm.eventstreams.api.spec.EndpointSpec;
 import com.ibm.eventstreams.api.spec.EndpointSpecBuilder;
 import com.ibm.eventstreams.api.spec.EventStreams;
@@ -46,6 +47,7 @@ import com.ibm.eventstreams.api.status.EventStreamsStatus;
 import com.ibm.eventstreams.api.status.EventStreamsStatusBuilder;
 import com.ibm.eventstreams.api.status.EventStreamsVersions;
 import com.ibm.eventstreams.controller.utils.ControllerUtils;
+import com.ibm.eventstreams.rest.PlainListenerValidation;
 import com.ibm.iam.api.controller.Cp4iServicesBindingResourceOperator;
 import com.ibm.iam.api.spec.Cp4iServicesBinding;
 import com.ibm.iam.api.spec.Cp4iServicesBindingDoneable;
@@ -596,6 +598,31 @@ public class EventStreamsOperatorTest {
                 assertThat("Status is incorrect, found status : " + updatedEventStreams.getValue().getStatus(),
                         updatedEventStreams.getValue().getStatus().getConditions().get(0).getMessage(),
                         is("Listener client authentication unsupported for Geo Replication. Supported versions are TLS and SCRAM"));
+                async.flag();
+            })));
+    }
+
+    @Test
+    public void testEventStreamsInvalidPlainListenerThrows(VertxTestContext context) {
+        mockRoutes();
+        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
+
+        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
+
+        EventStreams eventStreams = createMinimalESInstance();
+        eventStreams.getSpec().getStrimziOverrides().getKafka().getListeners().setPlain(null);
+
+        ArgumentCaptor<EventStreams> updatedEventStreams = ArgumentCaptor.forClass(EventStreams.class);
+
+        Checkpoint async = context.checkpoint();
+        esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), eventStreams)
+            .onComplete(context.failing(e -> context.verify(() -> {
+                assertThat(e.getMessage(), is("Invalid Event Streams specification: further details in the status conditions"));
+                // check status
+                verify(esResourceOperator).createOrUpdate(updatedEventStreams.capture());
+                assertThat("Status is incorrect, found status : " + updatedEventStreams.getValue().getStatus(),
+                    updatedEventStreams.getValue().getStatus().getConditions().get(0).getMessage(),
+                    is(PlainListenerValidation.FAILURE_MISSING_PLAIN_LISTENER_REASON));
                 async.flag();
             })));
     }
@@ -1373,6 +1400,8 @@ public class EventStreamsOperatorTest {
                 .withNewKafka()
                 .withReplicas(1)
                 .withNewListeners()
+                    .withNewPlain()
+                    .endPlain()
                 .endListeners()
                 .withNewEphemeralStorage()
                 .endEphemeralStorage()
@@ -1502,6 +1531,22 @@ public class EventStreamsOperatorTest {
             .withNewSchemaRegistry()
             .withReplicas(1)
             .endSchemaRegistry()
+            .withStrimziOverrides(new KafkaSpecBuilder()
+                .withNewKafka()
+                .withReplicas(1)
+                .withNewListeners()
+                    .withNewPlain()
+                    .endPlain()
+                .endListeners()
+                .withNewEphemeralStorage()
+                .endEphemeralStorage()
+                .endKafka()
+                .withNewZookeeper()
+                .withReplicas(1)
+                .withNewEphemeralStorage()
+                .endEphemeralStorage()
+                .endZookeeper()
+                .build())
             .endSpec()
             .build();
 
@@ -1554,36 +1599,10 @@ public class EventStreamsOperatorTest {
             .withType(EndpointServiceType.INTERNAL)
             .build();
 
-        EventStreams beforeInstance = new EventStreamsBuilder()
-            .withMetadata(new ObjectMetaBuilder()
-                .withNewName(CLUSTER_NAME)
-                .withNewNamespace(NAMESPACE)
-                .build())
-            .withNewSpec()
-            .withSecurity(new SecuritySpecBuilder()
-                .withInternalTls(TlsVersion.TLS_V1_2)
-                .build())
-            .withNewAdminApi()
+        EventStreams beforeInstance = createMinimalESInstance();
+        beforeInstance.getSpec().setAdminApi(new AdminApiSpecBuilder()
             .withReplicas(1)
-            .endAdminApi()
-            .withLicenseAccept(true)
-            .withNewVersion(DEFAULT_VERSION)
-            .withStrimziOverrides(new KafkaSpecBuilder()
-                .withNewKafka()
-                .withReplicas(1)
-                .withNewListeners()
-                .endListeners()
-                .withNewEphemeralStorage()
-                .endEphemeralStorage()
-                .endKafka()
-                .withNewZookeeper()
-                .withReplicas(1)
-                .withNewEphemeralStorage()
-                .endEphemeralStorage()
-                .endZookeeper()
-                .build())
-            .endSpec()
-            .build();
+            .build());
 
         EventStreams afterInstance = new EventStreamsBuilder(beforeInstance)
             .editSpec()
@@ -1674,32 +1693,7 @@ public class EventStreamsOperatorTest {
     public void testCreateMinimalEventStreams(VertxTestContext context) {
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(false, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
-        EventStreams minimalCluster = new EventStreamsBuilder()
-                .withMetadata(new ObjectMetaBuilder()
-                        .withNewName(CLUSTER_NAME)
-                        .withNewNamespace(NAMESPACE)
-                        .build())
-                .withNewSpec()
-                    .withLicenseAccept(true)
-                    .withNewVersion(DEFAULT_VERSION)
-                    .withNewAdminApi()
-                    .endAdminApi()
-                    .withStrimziOverrides(new KafkaSpecBuilder()
-                            .withNewKafka()
-                                .withReplicas(1)
-                                .withNewListeners()
-                                .endListeners()
-                                .withNewEphemeralStorage()
-                                .endEphemeralStorage()
-                            .endKafka()
-                            .withNewZookeeper()
-                                .withReplicas(1)
-                                .withNewEphemeralStorage()
-                                .endEphemeralStorage()
-                            .endZookeeper()
-                            .build())
-                .endSpec()
-            .build();
+        EventStreams minimalCluster = createMinimalESInstance();
 
         Set<String> expectedDeployments = new HashSet<>();
         expectedDeployments.add(CLUSTER_NAME + "-" + APP_NAME + "-" + AdminApiModel.COMPONENT_NAME);
@@ -1731,32 +1725,7 @@ public class EventStreamsOperatorTest {
     public void testComponentResourcesAreDeletedWhenRemovedFromCR(VertxTestContext context) {
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(false, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
-        EventStreams instanceMinimal = new EventStreamsBuilder()
-                .withMetadata(new ObjectMetaBuilder()
-                        .withNewName(CLUSTER_NAME)
-                        .withNewNamespace(NAMESPACE)
-                        .build())
-                .withNewSpec()
-                    .withLicenseAccept(true)
-                    .withNewVersion(DEFAULT_VERSION)
-                    .withNewAdminApi()
-                    .endAdminApi()
-                    .withStrimziOverrides(new KafkaSpecBuilder()
-                            .withNewKafka()
-                                .withReplicas(1)
-                                .withNewListeners()
-                                .endListeners()
-                                .withNewEphemeralStorage()
-                                .endEphemeralStorage()
-                            .endKafka()
-                            .withNewZookeeper()
-                                .withReplicas(1)
-                                .withNewEphemeralStorage()
-                                .endEphemeralStorage()
-                            .endZookeeper()
-                            .build())
-                .endSpec()
-            .build();
+        EventStreams instanceMinimal = createMinimalESInstance();
 
         EventStreams instance = new EventStreamsBuilder()
                 .withMetadata(new ObjectMetaBuilder()
@@ -1800,38 +1769,7 @@ public class EventStreamsOperatorTest {
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
 
-        EventStreams minimalInstance = new EventStreamsBuilder()
-                .withMetadata(new ObjectMetaBuilder()
-                        .withNewName(CLUSTER_NAME)
-                        .withNewNamespace(NAMESPACE)
-                        .build())
-                .withNewSpec()
-                    .withLicenseAccept(true)
-                    .withNewVersion(DEFAULT_VERSION)
-                    .withStrimziOverrides(new KafkaSpecBuilder()
-                            .withNewKafka()
-                                .withReplicas(1)
-                                .withNewListeners()
-                                .endListeners()
-                                .withNewEphemeralStorage()
-                                .endEphemeralStorage()
-                            .endKafka()
-                            .withNewZookeeper()
-                                .withReplicas(1)
-                                .withNewEphemeralStorage()
-                                .endEphemeralStorage()
-                            .endZookeeper()
-                            .build())
-                .endSpec()
-                .build();
-
-        EventStreams instance = new EventStreamsBuilder(minimalInstance)
-                .editSpec()
-                    .withNewRestProducer()
-                        .withReplicas(1)
-                    .endRestProducer()
-                .endSpec()
-                .build();
+        EventStreams minimalInstance = createMinimalESInstance();
 
         String defaultComponentResourceName = CLUSTER_NAME + "-" + APP_NAME + "-" + RestProducerModel.COMPONENT_NAME;
 
@@ -1899,30 +1837,7 @@ public class EventStreamsOperatorTest {
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
 
-        EventStreams minimalInstance = new EventStreamsBuilder()
-                .withMetadata(new ObjectMetaBuilder()
-                        .withNewName(CLUSTER_NAME)
-                        .withNewNamespace(NAMESPACE)
-                        .build())
-                .withNewSpec()
-                .withLicenseAccept(true)
-                .withNewVersion(DEFAULT_VERSION)
-                .withStrimziOverrides(new KafkaSpecBuilder()
-                        .withNewKafka()
-                            .withReplicas(1)
-                            .withNewListeners()
-                            .endListeners()
-                            .withNewEphemeralStorage()
-                            .endEphemeralStorage()
-                        .endKafka()
-                        .withNewZookeeper()
-                            .withReplicas(1)
-                            .withNewEphemeralStorage()
-                            .endEphemeralStorage()
-                        .endZookeeper()
-                        .build())
-                .endSpec()
-                .build();
+        EventStreams minimalInstance = createMinimalESInstance();
 
         EventStreams instance = new EventStreamsBuilder(minimalInstance)
                 .editSpec()
@@ -1976,30 +1891,7 @@ public class EventStreamsOperatorTest {
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
 
-        EventStreams minimalInstance = new EventStreamsBuilder()
-                .withMetadata(new ObjectMetaBuilder()
-                        .withNewName(CLUSTER_NAME)
-                        .withNewNamespace(NAMESPACE)
-                        .build())
-                .withNewSpec()
-                .withLicenseAccept(true)
-                .withNewVersion(DEFAULT_VERSION)
-                .withStrimziOverrides(new KafkaSpecBuilder()
-                        .withNewKafka()
-                        .withReplicas(1)
-                        .withNewListeners()
-                        .endListeners()
-                        .withNewEphemeralStorage()
-                        .endEphemeralStorage()
-                        .endKafka()
-                        .withNewZookeeper()
-                        .withReplicas(1)
-                        .withNewEphemeralStorage()
-                        .endEphemeralStorage()
-                        .endZookeeper()
-                        .build())
-                .endSpec()
-                .build();
+        EventStreams minimalInstance = createMinimalESInstance();
 
         EventStreams instance = new EventStreamsBuilder(minimalInstance)
                 .editSpec()
@@ -2049,34 +1941,14 @@ public class EventStreamsOperatorTest {
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
 
-        EventStreams minimalInstance = new EventStreamsBuilder()
-                .withMetadata(new ObjectMetaBuilder()
-                        .withNewName(CLUSTER_NAME)
-                        .withNewNamespace(NAMESPACE)
-                        .build())
-                .withNewSpec()
-                .withLicenseAccept(true)
-                .withNewVersion(DEFAULT_VERSION)
-                .withStrimziOverrides(new KafkaSpecBuilder()
-                        .withNewKafka()
-                            .withReplicas(1)
-                            .withNewEphemeralStorage()
-                            .endEphemeralStorage()
-                        .endKafka()
-                        .withNewZookeeper()
-                            .withReplicas(1)
-                            .withNewEphemeralStorage()
-                            .endEphemeralStorage()
-                        .endZookeeper()
-                        .build())
-                .endSpec()
-                .build();
+        EventStreams minimalInstance = createMinimalESInstance();
 
         EventStreams instance = new EventStreamsBuilder(minimalInstance)
                 .editSpec()
                     .withStrimziOverrides(new KafkaSpecBuilder(minimalInstance.getSpec().getStrimziOverrides())
                             .editOrNewKafka()
                                 .withListeners(ModelUtils.getMutualTLSOnBothInternalAndExternalListenerSpec())
+
                             .endKafka()
                             .build())
                     .withNewReplicator()
@@ -2148,6 +2020,8 @@ public class EventStreamsOperatorTest {
                         .withNewKafka()
                             .withReplicas(1)
                             .withNewListeners()
+                                .withNewPlain()
+                                .endPlain()
                             .endListeners()
                             .withNewEphemeralStorage()
                             .endEphemeralStorage()
@@ -2649,6 +2523,8 @@ public class EventStreamsOperatorTest {
             .editOrNewKafka()
                 .withReplicas(3)
                 .withNewListeners()
+                    .withNewPlain()
+                    .endPlain()
                     .withNewTls()
                         .withNewKafkaListenerAuthenticationTlsAuth()
                         .endKafkaListenerAuthenticationTlsAuth()
@@ -2664,6 +2540,35 @@ public class EventStreamsOperatorTest {
             .endZookeeper();
 
         return createEventStreamsWithStrimziOverrides(namespace, clusterName, kafka.build());
+    }
+
+    private EventStreams createMinimalESInstance() {
+        return new EventStreamsBuilder()
+            .withMetadata(new ObjectMetaBuilder()
+                .withNewName(CLUSTER_NAME)
+                .withNewNamespace(NAMESPACE)
+                .build())
+            .withNewSpec()
+            .withLicenseAccept(true)
+            .withNewVersion(DEFAULT_VERSION)
+            .withStrimziOverrides(new KafkaSpecBuilder()
+                .withNewKafka()
+                .withReplicas(1)
+                .withNewListeners()
+                .withNewPlain()
+                .endPlain()
+                .endListeners()
+                .withNewEphemeralStorage()
+                .endEphemeralStorage()
+                .endKafka()
+                .withNewZookeeper()
+                .withReplicas(1)
+                .withNewEphemeralStorage()
+                .endEphemeralStorage()
+                .endZookeeper()
+                .build())
+            .endSpec()
+            .build();
     }
 
     private EventStreams createESClusterWithProvidedExternalBrokerCerts(String namespace, String clusterName, String secretName, String secretKey, String secretCertificate) {

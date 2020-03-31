@@ -211,6 +211,8 @@ public class ModelUtils {
                     .withNewKafkaListenerAuthenticationTlsAuth()
                     .endKafkaListenerAuthenticationTlsAuth()
                 .endTls()
+                .withNewPlain()
+                .endPlain()
                 .build();
     }
 

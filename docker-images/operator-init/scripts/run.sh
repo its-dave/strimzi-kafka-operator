@@ -204,6 +204,19 @@ webhooks:
         name: eventstreams-cluster-operator
         path: /admissionwebhook/rejectmissinguserlabels
       caBundle: "$cabundle"
+  - name: eventstreams.ibm.com.rejectinvalidplainlistenerconfiguration
+    rules:
+      - apiGroups: ["eventstreams.ibm.com"]
+        apiVersions: ["v1beta1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["eventstreams"]
+    failurePolicy: Ignore
+    clientConfig:
+      service:
+        namespace: $EVENTSTREAMS_OPERATOR_NAMESPACE
+        name: eventstreams-cluster-operator
+        path: /admissionwebhook/rejectinvalidplainlistenerconfiguration
+      caBundle: "$cabundle"
   - name: eventstreams.ibm.com.rejectinvalidendpoints
     rules:
       - apiGroups: ["eventstreams.ibm.com"]
