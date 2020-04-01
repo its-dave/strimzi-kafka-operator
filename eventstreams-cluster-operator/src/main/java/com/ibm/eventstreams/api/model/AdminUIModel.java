@@ -194,7 +194,7 @@ public class AdminUIModel extends AbstractModel {
             TLSConfig tlsConfig = new TLSConfigBuilder()
                     .withNewTermination("reencrypt")
                     .build();
-            route = createRoute(getRouteName(), getDefaultResourceName(), UI_SERVICE_PORT, tlsConfig);
+            route = createRoute(getRouteName(), getDefaultResourceName(), UI_SERVICE_PORT, tlsConfig, new HashMap<>());
         }
     }
 

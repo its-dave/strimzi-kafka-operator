@@ -28,6 +28,9 @@ public class Labels {
     public static final String KUBERNETES_MANAGED_BY_LABEL = KUBERNETES_DOMAIN + "managed-by";
     public static final String KUBERNETES_MANAGED_BY = "eventstreams-operator";
 
+    public static final String EVENTSTREAMS_AUTHENTICATION_LABEL = io.strimzi.operator.common.model.Labels.STRIMZI_DOMAIN + "authentication";
+    public static final String EVENTSTREAMS_PROTOCOL_LABEL = io.strimzi.operator.common.model.Labels.STRIMZI_DOMAIN + "protocol";
+
     public static final String NAME_LABEL = io.strimzi.operator.common.model.Labels.STRIMZI_NAME_LABEL;
 
 }

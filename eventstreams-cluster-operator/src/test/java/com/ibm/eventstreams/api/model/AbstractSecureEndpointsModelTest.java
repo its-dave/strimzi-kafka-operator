@@ -14,6 +14,7 @@ package com.ibm.eventstreams.api.model;
 
 import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.EndpointServiceType;
+import com.ibm.eventstreams.api.Labels;
 import com.ibm.eventstreams.api.TlsVersion;
 import com.ibm.eventstreams.api.model.utils.ModelUtils;
 import com.ibm.eventstreams.api.spec.EndpointSpec;
@@ -43,6 +44,8 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.aMapWithSize;
+import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasSize;
 
 public class AbstractSecureEndpointsModelTest {
@@ -519,6 +522,85 @@ public class AbstractSecureEndpointsModelTest {
         assertThat(routes.get(String.format("%s-ibm-es-%s-%s", instanceName, ComponentModel.COMPONENT_NAME, longNameRouteSpec.getName())), is(notNullValue()));
         assertThat(routes.get(String.format("%s-ibm-es-%s-%s", instanceName, ComponentModel.COMPONENT_NAME, basicPlainEndpointSpec.getName())), is(notNullValue()));
         assertThat(routes.get(String.format("%s-ibm-es-%s-%s", instanceName, ComponentModel.COMPONENT_NAME, configuredEndpointsSpec.getName())), is(nullValue()));
+    }
+
+    @Test
+    public void testCreateRoutesHasDefaultLabels() {
+        EventStreams instance = ModelUtils.createDefaultEventStreams(instanceName).build();
+        ComponentModel model = new ComponentModel(instance, new SecurityComponentSpec());
+
+        Map<String, Route> routes = model.createRoutesFromEndpoints();
+
+        assertThat(routes, aMapWithSize(1));
+
+        routes.forEach((key, route) -> {
+            assertThat(route.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_AUTHENTICATION_LABEL, "IAM-BEARER,SCRAM-SHA-512"));
+            assertThat(route.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_PROTOCOL_LABEL, "https"));
+        });
+    }
+
+    @Test
+    public void testCreateRoutesWithTlsEndpointHasCorrectCustomLabels() {
+        EventStreams instance = ModelUtils.createDefaultEventStreams(instanceName).build();
+
+        EndpointSpec configuredEndpointsSpec = new EndpointSpecBuilder()
+            .withName("fully-configured")
+            .withAccessPort(8080)
+            .withType(EndpointServiceType.ROUTE)
+            .withTlsVersion(TlsVersion.TLS_V1_2)
+            .withCertOverrides(new CertAndKeySecretSourceBuilder()
+                .withCertificate("random-cert")
+                .withKey("random-key")
+                .withSecretName("random-secret")
+                .build())
+            .withAuthenticationMechanisms(Collections.singletonList("MUTUAL_TLS"))
+            .build();
+
+        SecurityComponentSpec securityComponentSpec = new SecurityComponentSpecBuilder()
+            .withEndpoints(configuredEndpointsSpec)
+            .build();
+
+        ComponentModel model = new ComponentModel(instance, securityComponentSpec);
+
+        Map<String, Route> routes = model.createRoutesFromEndpoints();
+
+        assertThat(routes, aMapWithSize(1));
+        routes.forEach((key, route) -> {
+            assertThat(route.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_AUTHENTICATION_LABEL, "MUTUAL_TLS"));
+            assertThat(route.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_PROTOCOL_LABEL, "https"));
+        });
+    }
+
+    @Test
+    public void testCreateRoutesWithoutTlsEndpointHasCorrectCustomLabels() {
+        EventStreams instance = ModelUtils.createDefaultEventStreams(instanceName).build();
+
+        EndpointSpec configuredEndpointsSpec = new EndpointSpecBuilder()
+            .withName("fully-configured-without-tls")
+            .withAccessPort(8080)
+            .withType(EndpointServiceType.ROUTE)
+            .withTlsVersion(TlsVersion.NONE)
+            .withCertOverrides(new CertAndKeySecretSourceBuilder()
+                .withCertificate("random-cert")
+                .withKey("random-key")
+                .withSecretName("random-secret")
+                .build())
+            .withAuthenticationMechanisms(Collections.singletonList("MUTUAL_TLS"))
+            .build();
+
+        SecurityComponentSpec securityComponentSpec = new SecurityComponentSpecBuilder()
+            .withEndpoints(configuredEndpointsSpec)
+            .build();
+
+        ComponentModel model = new ComponentModel(instance, securityComponentSpec);
+
+        Map<String, Route> routes = model.createRoutesFromEndpoints();
+
+        assertThat(routes, aMapWithSize(1));
+        routes.forEach((key, route) -> {
+            assertThat(route.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_AUTHENTICATION_LABEL, "MUTUAL_TLS"));
+            assertThat(route.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_PROTOCOL_LABEL, "http"));
+        });
     }
 
 }

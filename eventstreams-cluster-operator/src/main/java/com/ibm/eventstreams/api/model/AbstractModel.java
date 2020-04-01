@@ -461,6 +461,13 @@ public abstract class AbstractModel {
         return labels;
     }
 
+    public Map<String, String> generateSecurityLabels(boolean isTls, List<String> authenticationMechanisms) {
+        Map<String, String> labels = new HashMap<>();
+        labels.put(Labels.EVENTSTREAMS_AUTHENTICATION_LABEL, authenticationMechanisms.stream().collect(Collectors.joining(",")));
+        labels.put(Labels.EVENTSTREAMS_PROTOCOL_LABEL, isTls ? "https" : "http");
+        return labels;
+    }
+
     private Map<String, String> getGenericLabels() {
         Map<String, String> labels = new HashMap<>();
 
@@ -667,15 +674,17 @@ public abstract class AbstractModel {
      * @param serviceName the name of the service associated with the route
      * @param port the port to route to on the service
      * @param tlsConfig the TLSConfig to set in the route, if null it is not set
+     * @param additionalLabels map of security labels
      * @return a configured Route
      */
-    protected Route createRoute(String name, String serviceName, int port, TLSConfig tlsConfig) {
+    protected Route createRoute(String name, String serviceName, int port, TLSConfig tlsConfig, Map<String, String> additionalLabels) {
         RouteBuilder route = new RouteBuilder()
                 .withNewMetadata()
                     .withName(name)
                     .withNamespace(namespace)
                     .withOwnerReferences(getEventStreamsOwnerReference())
                     .addToLabels(getComponentLabels())
+                    .addToLabels(additionalLabels)
                 .endMetadata()
                 .withNewSpec()
                     .withNewSubdomain("")

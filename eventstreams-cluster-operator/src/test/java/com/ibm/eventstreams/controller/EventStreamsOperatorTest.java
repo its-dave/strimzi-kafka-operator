@@ -150,6 +150,7 @@ import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.hasSize;
@@ -2759,5 +2760,200 @@ public class EventStreamsOperatorTest {
         cp4iResourceOperator = mock(Cp4iServicesBindingResourceOperator.class);
 
         return cp4iResourceOperator;
+    }
+
+    @Test
+    public void testDefaultEndpointRouteLabelsChangeWhenCustomEndpointsProvided(VertxTestContext context) {
+        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
+        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
+
+        EndpointSpec secureRouteMutualTls = new EndpointSpecBuilder()
+            .withName("secure-mutual")
+            .withAccessPort(9999)
+            .withTlsVersion(TlsVersion.TLS_V1_2)
+            .withType(EndpointServiceType.ROUTE)
+            .withAuthenticationMechanisms(Collections.singletonList("MUTUAL_TLS"))
+            .build();
+
+        String shortRouteName = AdminApiModel.COMPONENT_NAME + "-" + Endpoint.DEFAULT_EXTERNAL_NAME;
+        String longRouteName = String.format("%s-ibm-es-%s-%s", CLUSTER_NAME, AdminApiModel.COMPONENT_NAME, Endpoint.DEFAULT_EXTERNAL_NAME);
+        String expectedLongRouteName = String.format("%s-ibm-es-%s-%s", CLUSTER_NAME, AdminApiModel.COMPONENT_NAME, secureRouteMutualTls.getName());
+
+        EventStreams defaultInstance = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
+
+        Checkpoint async = context.checkpoint();
+
+        esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), defaultInstance)
+            .onComplete(context.succeeding(v -> context.verify(() -> {
+                Route route = routeOperator.get(NAMESPACE,  longRouteName);
+
+                assertThat(route.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_AUTHENTICATION_LABEL, "IAM-BEARER,SCRAM-SHA-512"));
+                assertThat(route.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_PROTOCOL_LABEL, "https"));
+            })))
+            .map(v -> {
+                ArgumentCaptor<EventStreams> updatedEventStreams = ArgumentCaptor.forClass(EventStreams.class);
+                verify(esResourceOperator, times(2)).updateEventStreamsStatus(updatedEventStreams.capture());
+                context.verify(() -> assertThat(updatedEventStreams.getValue().getStatus().getRoutes().get(shortRouteName), is(notNullValue())));
+
+                // Get the default CR that was used and return the updated CR with secure endpoints. In the next compose we use this
+                // updated CR which has custom endpoints.
+                EventStreams customEventStreams = new EventStreamsBuilder(defaultInstance)
+                    .editSpec()
+                    .withNewAdminApi()
+                        .withReplicas(1)
+                        .withEndpoints(secureRouteMutualTls)
+                    .endAdminApi()
+                    .endSpec()
+                    .build();
+                return customEventStreams;
+            })
+            .compose(customEventStreams -> esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), customEventStreams))
+            .onComplete(context.succeeding(v -> context.verify(() -> {
+                Route route = routeOperator.get(NAMESPACE, expectedLongRouteName);
+
+                assertThat(route.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_AUTHENTICATION_LABEL, "MUTUAL_TLS"));
+                assertThat(route.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_PROTOCOL_LABEL, "https"));
+                async.flag();
+            })));
+    }
+
+    @Test
+    public void testEndpointRouteLabelsChangeWhenEndpointsUpdated(VertxTestContext context) {
+        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
+        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
+
+        EndpointSpec secureRouteBearer = new EndpointSpecBuilder()
+            .withName("secure-bearer")
+            .withAccessPort(9999)
+            .withType(EndpointServiceType.ROUTE)
+            .withTlsVersion(TlsVersion.TLS_V1_2)
+            .withAuthenticationMechanisms(Collections.singletonList("BEARER"))
+            .build();
+
+        EndpointSpec secureRouteMutualTls = new EndpointSpecBuilder()
+            .withName("secure-mutual")
+            .withAccessPort(9998)
+            .withTlsVersion(TlsVersion.TLS_V1_2)
+            .withType(EndpointServiceType.ROUTE)
+            .withAuthenticationMechanisms(Collections.singletonList("MUTUAL_TLS"))
+            .build();
+
+        EndpointSpec insecureRouteMutualTls = new EndpointSpecBuilder()
+            .withName("insecure-mutual")
+            .withAccessPort(9999)
+            .withTlsVersion(TlsVersion.NONE)
+            .withType(EndpointServiceType.ROUTE)
+            .withAuthenticationMechanisms(Collections.singletonList("MUTUAL_TLS"))
+            .build();
+
+        EndpointSpec insecureRouteBearer = new EndpointSpecBuilder()
+            .withName("insecure-bearer")
+            .withAccessPort(9998)
+            .withTlsVersion(TlsVersion.NONE)
+            .withType(EndpointServiceType.ROUTE)
+            .withAuthenticationMechanisms(Collections.singletonList("BEARER"))
+            .build();
+
+        EventStreams secureInstance = new EventStreamsBuilder()
+            .withMetadata(new ObjectMetaBuilder()
+                .withNewName(CLUSTER_NAME)
+                .withNewNamespace(NAMESPACE)
+                .build())
+            .withNewSpec()
+            .withSecurity(new SecuritySpecBuilder()
+                .withInternalTls(TlsVersion.TLS_V1_2)
+                .build())
+            .withNewAdminApi()
+                .withReplicas(1)
+                .withEndpoints(new ArrayList<>(Arrays.asList(secureRouteBearer, secureRouteMutualTls)))
+            .endAdminApi()
+            .withLicenseAccept(true)
+            .withNewVersion(DEFAULT_VERSION)
+            .withStrimziOverrides(new KafkaSpecBuilder()
+                .withNewKafka()
+                    .withReplicas(1)
+                    .withNewListeners()
+                    .endListeners()
+                    .withNewEphemeralStorage()
+                    .endEphemeralStorage()
+                .endKafka()
+                .withNewZookeeper()
+                    .withReplicas(1)
+                    .withNewEphemeralStorage()
+                    .endEphemeralStorage()
+                .endZookeeper()
+                .build())
+            .endSpec()
+            .build();
+
+        String secureMutualTlsRouteLongName = String.format("%s-ibm-es-%s-%s", CLUSTER_NAME, AdminApiModel.COMPONENT_NAME, secureRouteMutualTls.getName());
+        String secureBearerRouteLongName = String.format("%s-ibm-es-%s-%s", CLUSTER_NAME, AdminApiModel.COMPONENT_NAME, secureRouteBearer.getName());
+        String insecureMutualTlsRouteLongName = String.format("%s-ibm-es-%s-%s", CLUSTER_NAME, AdminApiModel.COMPONENT_NAME, insecureRouteMutualTls.getName());
+        String insecureBearerRouteLongName = String.format("%s-ibm-es-%s-%s", CLUSTER_NAME, AdminApiModel.COMPONENT_NAME, insecureRouteBearer.getName());
+
+        Checkpoint async = context.checkpoint();
+
+        esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), secureInstance)
+            .onComplete(context.succeeding(v -> context.verify(() -> {
+                Route secureMutualTlsRoute = routeOperator.get(NAMESPACE, secureMutualTlsRouteLongName);
+                Route secureBearerRoute = routeOperator.get(NAMESPACE, secureBearerRouteLongName);
+
+                assertThat(secureMutualTlsRoute.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_AUTHENTICATION_LABEL, "MUTUAL_TLS"));
+                assertThat(secureMutualTlsRoute.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_PROTOCOL_LABEL, "https"));
+                assertThat(secureBearerRoute.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_AUTHENTICATION_LABEL, "BEARER"));
+                assertThat(secureBearerRoute.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_PROTOCOL_LABEL, "https"));
+            })))
+            .map(v -> {
+                ArgumentCaptor<EventStreams> updatedEventStreams = ArgumentCaptor.forClass(EventStreams.class);
+                verify(esResourceOperator, times(2)).updateEventStreamsStatus(updatedEventStreams.capture());
+                context.verify(() -> assertThat(updatedEventStreams.getValue().getStatus().getRoutes().get("admin-api-secure-mutual"), is(notNullValue())));
+                context.verify(() -> assertThat(updatedEventStreams.getValue().getStatus().getRoutes().get("admin-api-secure-bearer"), is(notNullValue())));
+
+                // Get the CR used previously and return the updated CR with insecure endpoints.
+                EventStreams insecureInstance = new EventStreamsBuilder(secureInstance)
+                    .editSpec()
+                    .withSecurity(new SecuritySpecBuilder()
+                        .withInternalTls(TlsVersion.NONE)
+                        .build())
+                    .withNewAdminApi()
+                        .withReplicas(1)
+                        .withEndpoints(new ArrayList<>(Arrays.asList(insecureRouteBearer, insecureRouteMutualTls)))
+                    .endAdminApi()
+                    .withStrimziOverrides(new KafkaSpecBuilder()
+                        .withNewKafka()
+                            .withReplicas(1)
+                            .withNewListeners()
+                                .withNewPlain()
+                                .endPlain()
+                            .endListeners()
+                            .withNewEphemeralStorage()
+                            .endEphemeralStorage()
+                        .endKafka()
+                        .withNewZookeeper()
+                            .withReplicas(1)
+                            .withNewEphemeralStorage()
+                            .endEphemeralStorage()
+                        .endZookeeper()
+                        .build())
+                    .endSpec()
+                    .build();
+                return insecureInstance;
+            })
+            .compose(insecureInstance -> esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), insecureInstance))
+            .onComplete(context.succeeding(v -> context.verify(() -> {
+                Route insecureMutualTlsRoute = routeOperator.get(NAMESPACE, insecureMutualTlsRouteLongName);
+                Route insecureBearerRoute = routeOperator.get(NAMESPACE, insecureBearerRouteLongName);
+
+                assertThat(insecureMutualTlsRoute.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_AUTHENTICATION_LABEL, "MUTUAL_TLS"));
+                assertThat(insecureMutualTlsRoute.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_PROTOCOL_LABEL, "http"));
+                assertThat(insecureBearerRoute.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_AUTHENTICATION_LABEL, "BEARER"));
+                assertThat(insecureBearerRoute.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_PROTOCOL_LABEL, "http"));
+
+                ArgumentCaptor<EventStreams> updatedEventStreams = ArgumentCaptor.forClass(EventStreams.class);
+                verify(esResourceOperator, times(3)).updateEventStreamsStatus(updatedEventStreams.capture());
+                assertThat(updatedEventStreams.getValue().getStatus().getRoutes().get("admin-api-insecure-mutual"), is(notNullValue()));
+                assertThat(updatedEventStreams.getValue().getStatus().getRoutes().get("admin-api-insecure-bearer"), is(notNullValue()));
+                async.flag();
+            })));
     }
 }

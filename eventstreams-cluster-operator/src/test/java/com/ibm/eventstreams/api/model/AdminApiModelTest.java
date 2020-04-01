@@ -110,9 +110,9 @@ public class AdminApiModelTest {
     private EventStreamsBuilder createEventStreams(EventStreamsSpec eventStreamsSpec) {
         return ModelUtils.createEventStreams(instanceName, eventStreamsSpec)
                 .editSpec()
-                .withNewAdminApi()
-                .withReplicas(defaultReplicas)
-                .endAdminApi()
+                    .withNewAdminApi()
+                        .withReplicas(defaultReplicas)
+                    .endAdminApi()
                 .endSpec();
     }
 
@@ -911,5 +911,4 @@ public class AdminApiModelTest {
             )
             .build();
     }
-
 }
