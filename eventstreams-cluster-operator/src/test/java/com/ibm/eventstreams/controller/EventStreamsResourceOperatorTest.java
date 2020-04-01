@@ -14,9 +14,12 @@ package com.ibm.eventstreams.controller;
 
 
 import com.ibm.eventstreams.api.model.utils.MockEventStreamsKube;
+import com.ibm.eventstreams.api.model.utils.ModelUtils;
+import com.ibm.eventstreams.api.spec.EventStreams;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.dsl.base.OperationSupport;
 import io.strimzi.api.kafka.KafkaList;
 import io.strimzi.api.kafka.model.DoneableKafka;
 import io.strimzi.api.kafka.model.Kafka;
@@ -26,12 +29,22 @@ import io.strimzi.api.kafka.model.status.KafkaStatus;
 import io.strimzi.api.kafka.model.status.KafkaStatusBuilder;
 import io.strimzi.test.mockkube.MockKube;
 import io.vertx.core.Vertx;
+import io.vertx.junit5.Checkpoint;
 import io.vertx.junit5.VertxExtension;
+import io.vertx.junit5.VertxTestContext;
+import okhttp3.Call;
+import okhttp3.OkHttpClient;
+import okhttp3.Protocol;
+import okhttp3.Request;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.io.IOException;
+import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -40,6 +53,10 @@ import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(VertxExtension.class)
 public class EventStreamsResourceOperatorTest {
@@ -153,6 +170,53 @@ public class EventStreamsResourceOperatorTest {
         mockedKafkaClient.close();
     }
 
+    @Test
+    public void testUpdateStatusAsync(VertxTestContext context) throws IOException {
+        KubernetesClient mockClient = mock(KubernetesClient.class);
+
+        OkHttpClient mockOkHttp = mock(OkHttpClient.class);
+        when(mockClient.adapt(eq(OkHttpClient.class))).thenReturn(mockOkHttp);
+        URL fakeUrl = new URL("http", "my-host", 9443, "/");
+        when(mockClient.getMasterUrl()).thenReturn(fakeUrl);
+        Call mockCall = mock(Call.class);
+        when(mockOkHttp.newCall(any(Request.class))).thenReturn(mockCall);
+        ResponseBody body = ResponseBody.create(OperationSupport.JSON, "{ }");
+        Response response = new Response.Builder().code(200).request(new Request.Builder().url(fakeUrl).build()).body(body).message("Created").protocol(Protocol.HTTP_1_1).build();
+        when(mockCall.execute()).thenReturn(response);
+
+        EventStreams es = ModelUtils.createDefaultEventStreams("test").build();
+
+        Checkpoint async = context.checkpoint();
+        EventStreamsResourceOperator operator = new EventStreamsResourceOperator(vertx, mockClient);
+        operator.updateEventStreamsStatus(es).setHandler(res -> {
+            context.verify(() -> assertThat(res.succeeded(), is(true)));
+            async.flag();
+        });
+    }
+
+    @Test
+    public void testUpdateStatusFail(VertxTestContext context) throws IOException {
+        KubernetesClient mockClient = mock(KubernetesClient.class);
+
+        OkHttpClient mockOkHttp = mock(OkHttpClient.class);
+        when(mockClient.adapt(eq(OkHttpClient.class))).thenReturn(mockOkHttp);
+        URL fakeUrl = new URL("http", "my-host", 9443, "/");
+        when(mockClient.getMasterUrl()).thenReturn(fakeUrl);
+        Call mockCall = mock(Call.class);
+        when(mockOkHttp.newCall(any(Request.class))).thenReturn(mockCall);
+        ResponseBody body = ResponseBody.create(OperationSupport.JSON, "{ }");
+        Response response = new Response.Builder().code(409).request(new Request.Builder().url(fakeUrl).build()).body(body).message("Conflict").protocol(Protocol.HTTP_1_1).build();
+        when(mockCall.execute()).thenReturn(response);
+
+        EventStreams es = ModelUtils.createDefaultEventStreams("test").build();
+
+        Checkpoint async = context.checkpoint();
+        EventStreamsResourceOperator operator = new EventStreamsResourceOperator(vertx, mockClient);
+        operator.updateEventStreamsStatus(es).setHandler(res -> {
+            context.verify(() -> assertThat(res.succeeded(), is(false)));
+            async.flag();
+        });
+    }
 
 
 

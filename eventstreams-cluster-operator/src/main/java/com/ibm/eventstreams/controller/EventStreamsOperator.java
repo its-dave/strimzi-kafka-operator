@@ -28,6 +28,7 @@ import com.ibm.eventstreams.api.model.ReplicatorUsersModel;
 import com.ibm.eventstreams.api.model.RestProducerModel;
 import com.ibm.eventstreams.api.model.SchemaRegistryModel;
 import com.ibm.eventstreams.api.spec.EventStreams;
+import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.status.EventStreamsEndpoint;
 import com.ibm.eventstreams.api.status.EventStreamsStatus;
@@ -96,6 +97,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -199,7 +201,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 .compose(state -> state.createCollector())
                 .compose(state -> state.createOAuthClient())
                 .compose(state -> state.checkEventStreamsSpec(this::dateSupplier))
-                .compose(state -> state.updateStatus())
+                .compose(state -> state.finalStatusUpdate())
                 .onSuccess(state -> chainPromise.complete())
                 .onFailure(t -> chainPromise.fail(t));
 
@@ -278,32 +280,32 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             }
 
             if (isValidCR) {
-                status.addToConditions(
-                    previousConditions
-                            .stream()
-                            // restore any previous readiness condition if this was set, so
-                            // that timestamps remain consistent
-                            .filter(c -> "Ready".equals(c.getType()) || "Creating".equals(c.getType()))
-                            .findFirst()
-                            // otherwise set a new condition saying that the reconcile loop is running
-                            .orElse(new ConditionBuilder()
-                                        .withLastTransitionTime(ModelUtils.formatTimestamp(dateSupplier()))
-                                        .withType("NotReady")
-                                        .withStatus("True")
-                                        .withReason("Creating")
-                                        .withMessage("Event Streams is being deployed")
-                                        .build()));
+                addCondition(previousConditions
+                        .stream()
+                        // restore any previous readiness condition if this was set, so
+                        // that timestamps remain consistent
+                        .filter(c -> "Ready".equals(c.getType()) || "Creating".equals(c.getType()))
+                        .findFirst()
+                        // otherwise set a new condition saying that the reconcile loop is running
+                        .orElse(new ConditionBuilder()
+                                    .withLastTransitionTime(ModelUtils.formatTimestamp(dateSupplier()))
+                                    .withType("NotReady")
+                                    .withStatus("True")
+                                    .withReason("Creating")
+                                    .withMessage("Event Streams is being deployed")
+                                    .build()));
             } else {
                 phase = "Failed";
             }
 
-            instance.setStatus(status.withPhase(phase).build());
+            EventStreamsStatus statusSubresource = status.withPhase(phase).build();
+            instance.setStatus(statusSubresource);
 
             // Update if we need to notify the user of an error, otherwise
             //  on the first run only, otherwise the user will see status
             //  warning conditions flicker in and out of the list
             if (!isValidCR || previousConditions.isEmpty()) {
-                esResourceOperator.createOrUpdate(instance);
+                updateStatus(statusSubresource);
             }
 
             if (isValidCR) {
@@ -330,10 +332,12 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
 
             if (!iamPresent) {
                 addNotReadyCondition("DependencyMissing", "Could not retrieve cloud pak resources");
-                instance.setStatus(status.withPhase("Failed").build());
+
+                EventStreamsStatus statusSubresource = status.withPhase("Failed").build();
+                instance.setStatus(statusSubresource);
+
                 Promise<ReconciliationState> failReconcile = Promise.promise();
-                Future<ReconcileResult<EventStreams>> updateStatus = esResourceOperator.createOrUpdate(instance);
-                updateStatus.onComplete(f -> {
+                updateStatus(statusSubresource).onComplete(f -> {
                     log.info("IAM not present : " + f.succeeded());
                     failReconcile.fail("Exit Reconcile as IAM not present");
                 });
@@ -361,9 +365,11 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                     }
                 } else {
                     addNotReadyCondition("DependencyMissing", "could not get secret 'ibmcloud-cluster-ca-cert' in namespace 'kube-public'");
-                    instance.setStatus(status.withPhase("Failed").build());
-                    Future<ReconcileResult<EventStreams>> updateStatus = esResourceOperator.createOrUpdate(instance);
-                    updateStatus.onComplete(f -> {
+
+                    EventStreamsStatus statusSubresource = status.withPhase("Failed").build();
+                    instance.setStatus(statusSubresource);
+
+                    updateStatus(statusSubresource).onComplete(f -> {
                         log.info("'ibmcloud-cluster-ca-cert' not present : " + f.succeeded());
                         clusterCaSecretPromise.fail("could not get secret 'ibmcloud-cluster-ca-cert' in namespace 'kube-public'");
                     });
@@ -385,18 +391,22 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                     })
                     .onFailure(err -> {
                         addNotReadyCondition("FailedCreate", err.getMessage());
-                        instance.setStatus(status.withPhase("Failed").build());
-                        Future<ReconcileResult<EventStreams>> updateStatus = esResourceOperator.createOrUpdate(instance);
-                        updateStatus.onComplete(f -> {
+
+                        EventStreamsStatus statusSubresource = status.withPhase("Failed").build();
+                        instance.setStatus(statusSubresource);
+
+                        updateStatus(statusSubresource).onComplete(f -> {
                             log.info("Failure to create ICP Cluster CA Cert secret " + f.succeeded());
                             clusterCaSecretPromise.fail(err);
                         });
                     });
             } else {
                 addNotReadyCondition("DependencyMissing", "Encoded ICP CA Cert not in ICPClusterData");
-                instance.setStatus(status.withPhase("Failed").build());
-                Future<ReconcileResult<EventStreams>> updateStatus = esResourceOperator.createOrUpdate(instance);
-                updateStatus.onComplete(f -> {
+
+                EventStreamsStatus statusSubresource = status.withPhase("Failed").build();
+                instance.setStatus(statusSubresource);
+
+                updateStatus(statusSubresource).onComplete(f -> {
                     log.info("Encoded ICP CA Cert not in ICPClusterData: " + f.succeeded());
                     clusterCaSecretPromise.fail("Encoded ICP CA Cert not in ICPClusterData");
                 });
@@ -739,19 +749,47 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         }
 
 
-        Future<ReconciliationState> updateStatus() {
+        Future<ReconciliationState> updateStatus(EventStreamsStatus newStatus) {
+            Promise<ReconciliationState> updateStatusPromise = Promise.promise();
+
+            esResourceOperator.getAsync(namespace, instance.getMetadata().getName()).setHandler(getRes -> {
+                if (getRes.succeeded()) {
+                    EventStreams current = getRes.result();
+                    if (current != null) {
+                        EventStreams updatedStatus = new EventStreamsBuilder(current).withStatus(newStatus).build();
+                        esResourceOperator.updateEventStreamsStatus(updatedStatus)
+                                .setHandler(updateRes -> {
+                                    if (updateRes.succeeded()) {
+                                        updateStatusPromise.complete(this);
+                                    } else {
+                                        log.error("Failed to update status", updateRes.cause());
+                                        updateStatusPromise.fail(updateRes.cause());
+                                    }
+                                });
+                    } else {
+                        log.error("Event Streams resource not found");
+                        updateStatusPromise.fail("Event Streams resource not found");
+                    }
+                } else {
+                    log.error("Event Streams resource not found", getRes.cause());
+                    updateStatusPromise.fail(getRes.cause());
+                }
+            });
+
+            return updateStatusPromise.future();
+        }
+
+
+
+        Future<ReconciliationState> finalStatusUpdate() {
             status.withCustomImages(customImageCount > 0);
             status.withPhase("Running");
             addReadyCondition();
 
+            log.info("Updating status");
             EventStreamsStatus esStatus = status.build();
-            if (instance.getStatus() != esStatus) {
-                log.info("Updating status");
-                instance.setStatus(esStatus);
-                return esResourceOperator.createOrUpdate(instance)
-                    .map(res -> this);
-            }
-            return Future.succeededFuture(this);
+            instance.setStatus(esStatus);
+            return updateStatus(esStatus);
         }
 
         /**
@@ -1026,12 +1064,11 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         private void addToConditions(Condition condition) {
             // restore the equivalent previous condition if found, otherwise
             //  add the new condition to the status
-            status.addToConditions(
-                    this.previousConditions
-                            .stream()
-                            .filter(c -> condition.getReason().equals(c.getReason()))
-                            .findFirst()
-                            .orElse(condition));
+            addCondition(previousConditions
+                    .stream()
+                    .filter(c -> condition.getReason().equals(c.getReason()))
+                    .findFirst()
+                    .orElse(condition));
         }
 
         /**
@@ -1042,12 +1079,11 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         private void addReadyCondition() {
             boolean needsReadyCondition = status.getMatchingCondition(cond -> "Ready".equals(cond.getType())) == null;
             if (needsReadyCondition) {
-                status.addToConditions(
-                        new ConditionBuilder()
-                                .withLastTransitionTime(ModelUtils.formatTimestamp(dateSupplier()))
-                                .withType("Ready")
-                                .withStatus("True")
-                                .build());
+                addCondition(new ConditionBuilder()
+                        .withLastTransitionTime(ModelUtils.formatTimestamp(dateSupplier()))
+                        .withType("Ready")
+                        .withStatus("True")
+                        .build());
             }
         }
 
@@ -1067,6 +1103,16 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                         .withReason(reason)
                         .withMessage(message)
                         .build());
+        }
+
+        /**
+         * Adds a condition to the status, and then sorts the list to ensure
+         * that they are maintained in order of timestamp.
+         */
+        private void addCondition(Condition condition) {
+            status.addToConditions(condition);
+            status.getConditions().sort(Comparator.comparing(Condition::getLastTransitionTime)
+                                            .thenComparing(Condition::getType, Comparator.reverseOrder()));
         }
     }
 

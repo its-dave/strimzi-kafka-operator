@@ -235,6 +235,8 @@ public class EventStreamsOperatorTest {
 
         imageConfig = mock(EventStreamsOperatorConfig.ImageLookup.class);
 
+        EventStreams mockEventStreams = ModelUtils.createDefaultEventStreams(CLUSTER_NAME).build();
+
         Kafka mockKafka = new Kafka();
         mockKafka.setMetadata(new ObjectMetaBuilder().withName(CLUSTER_NAME).withNamespace(NAMESPACE).build());
         mockKafka.setStatus(new KafkaStatusBuilder().build());
@@ -244,6 +246,8 @@ public class EventStreamsOperatorTest {
         when(esResourceOperator.kafkaCRHasReadyStatus(anyString(), anyString(), anyLong(), anyLong())).thenReturn(Future.succeededFuture());
         when(esResourceOperator.createOrUpdate(any(EventStreams.class))).thenReturn(Future.succeededFuture());
         when(esResourceOperator.getKafkaInstance(anyString(), anyString())).thenReturn(mockKafkaInstance);
+        when(esResourceOperator.getAsync(anyString(), anyString())).thenReturn(Future.succeededFuture(mockEventStreams));
+        when(esResourceOperator.updateEventStreamsStatus(any(EventStreams.class))).thenReturn(Future.succeededFuture(mockEventStreams));
 
         Cp4iServicesBinding mockCp4i = new Cp4iServicesBinding();
         mockCp4i.setMetadata(new ObjectMetaBuilder().withName(CLUSTER_NAME).withNamespace(NAMESPACE).build());
@@ -375,7 +379,7 @@ public class EventStreamsOperatorTest {
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster)
             .onComplete(context.succeeding(v -> context.verify(() -> {
                 ArgumentCaptor<EventStreams> argument = ArgumentCaptor.forClass(EventStreams.class);
-                verify(esResourceOperator, times(2)).createOrUpdate(argument.capture());
+                verify(esResourceOperator, times(2)).updateEventStreamsStatus(argument.capture());
                 assertThat(argument.getValue().getStatus().getVersions().getReconciled(), is(DEFAULT_VERSION));
                 assertThat(argument.getValue().getStatus().getVersions().getAvailable().getVersions(),
                         hasItem(hasProperty("name", is(DEFAULT_VERSION))));
@@ -395,7 +399,7 @@ public class EventStreamsOperatorTest {
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster)
             .onComplete(context.succeeding(v -> context.verify(() -> {
                 ArgumentCaptor<EventStreams> argument = ArgumentCaptor.forClass(EventStreams.class);
-                verify(esResourceOperator, times(2)).createOrUpdate(argument.capture());
+                verify(esResourceOperator, times(2)).updateEventStreamsStatus(argument.capture());
 
                 List<EventStreamsEndpoint> endpoints = argument.getValue().getStatus().getEndpoints();
                 // check that there aren't duplicates in the list
@@ -441,7 +445,7 @@ public class EventStreamsOperatorTest {
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster)
             .onComplete(context.failing(e -> context.verify(() -> {
                 ArgumentCaptor<EventStreams> argument = ArgumentCaptor.forClass(EventStreams.class);
-                verify(esResourceOperator, times(2)).createOrUpdate(argument.capture());
+                verify(esResourceOperator, times(2)).updateEventStreamsStatus(argument.capture());
                 assertThat(argument.getValue().getStatus().getConditions(),
                         hasItem(hasProperty("message", is("Could not retrieve cloud pak resources"))));
                 async.flag();
@@ -465,7 +469,7 @@ public class EventStreamsOperatorTest {
                 assertThat(e.getMessage(), is("Exit Reconcile as IAM not present"));
 
                 ArgumentCaptor<EventStreams> argument = ArgumentCaptor.forClass(EventStreams.class);
-                verify(esResourceOperator, times(2)).createOrUpdate(argument.capture());
+                verify(esResourceOperator, times(2)).updateEventStreamsStatus(argument.capture());
                 assertThat(argument.getValue().getStatus().getConditions(),
                         hasItem(hasProperty("message", is("Could not retrieve cloud pak resources"))));
                 async.flag();
@@ -485,7 +489,7 @@ public class EventStreamsOperatorTest {
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster)
             .onComplete(context.succeeding(v -> context.verify(() -> {
                 ArgumentCaptor<EventStreams> argument = ArgumentCaptor.forClass(EventStreams.class);
-                verify(esResourceOperator, times(2)).createOrUpdate(argument.capture());
+                verify(esResourceOperator, times(2)).updateEventStreamsStatus(argument.capture());
                 assertThat(argument.getValue().getStatus().isCustomImages(), is(true));
                 async.flag();
             })));
@@ -504,7 +508,7 @@ public class EventStreamsOperatorTest {
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster)
             .onComplete(context.succeeding(v -> context.verify(() -> {
                 ArgumentCaptor<EventStreams> argument = ArgumentCaptor.forClass(EventStreams.class);
-                verify(esResourceOperator, times(2)).createOrUpdate(argument.capture());
+                verify(esResourceOperator, times(2)).updateEventStreamsStatus(argument.capture());
                 assertThat(argument.getValue().getStatus().isCustomImages(), is(false));
                 async.flag();
             })));
@@ -528,7 +532,7 @@ public class EventStreamsOperatorTest {
                 .onComplete(context.failing(e -> context.verify(() -> {
                     assertThat(e.getMessage(), is("Invalid Event Streams specification: further details in the status conditions"));
                     // check status
-                    verify(esResourceOperator).createOrUpdate(updatedEventStreams.capture());
+                    verify(esResourceOperator).updateEventStreamsStatus(updatedEventStreams.capture());
                     assertThat("Status is incorrect, found status : " + updatedEventStreams.getValue().getStatus(), updatedEventStreams.getValue().getStatus().getConditions().get(0).getMessage(), is("Invalid custom resource: EventStreams metadata name too long. Maximum length is 16"));
                     async.flag();
                 })));
@@ -552,7 +556,7 @@ public class EventStreamsOperatorTest {
 
                 assertThat(e.getMessage(), is("Invalid Event Streams specification: further details in the status conditions"));
                 // check status
-                verify(esResourceOperator).createOrUpdate(updatedEventStreams.capture());
+                verify(esResourceOperator).updateEventStreamsStatus(updatedEventStreams.capture());
                 assertThat("Status is incorrect, found status : " + updatedEventStreams.getValue().getStatus(),
                         updatedEventStreams.getValue().getStatus().getConditions().get(0).getMessage().equals("Invalid custom resource: Unsupported version. Supported versions are [2020.1.1, 2020.1]"));
                 async.flag();
@@ -594,7 +598,7 @@ public class EventStreamsOperatorTest {
             .onComplete(context.failing(e -> context.verify(() -> {
                 assertThat(e.getMessage(), is("Invalid Event Streams specification: further details in the status conditions"));
                 // check status
-                verify(esResourceOperator).createOrUpdate(updatedEventStreams.capture());
+                verify(esResourceOperator).updateEventStreamsStatus(updatedEventStreams.capture());
                 assertThat("Status is incorrect, found status : " + updatedEventStreams.getValue().getStatus(),
                         updatedEventStreams.getValue().getStatus().getConditions().get(0).getMessage(),
                         is("Listener client authentication unsupported for Geo Replication. Supported versions are TLS and SCRAM"));
@@ -619,7 +623,7 @@ public class EventStreamsOperatorTest {
             .onComplete(context.failing(e -> context.verify(() -> {
                 assertThat(e.getMessage(), is("Invalid Event Streams specification: further details in the status conditions"));
                 // check status
-                verify(esResourceOperator).createOrUpdate(updatedEventStreams.capture());
+                verify(esResourceOperator).updateEventStreamsStatus(updatedEventStreams.capture());
                 assertThat("Status is incorrect, found status : " + updatedEventStreams.getValue().getStatus(),
                     updatedEventStreams.getValue().getStatus().getConditions().get(0).getMessage(),
                     is(PlainListenerValidation.FAILURE_MISSING_PLAIN_LISTENER_REASON));
@@ -770,7 +774,7 @@ public class EventStreamsOperatorTest {
                 verifyKafkaBootstrapServers(NAMESPACE, deploymentName, expectedInternalBootstrap);
 
                 ArgumentCaptor<EventStreams> argument = ArgumentCaptor.forClass(EventStreams.class);
-                verify(esResourceOperator).createOrUpdate(argument.capture());
+                verify(esResourceOperator).updateEventStreamsStatus(argument.capture());
                 assertEquals(2, argument.getValue().getStatus().getKafkaListeners().size());
                 assertEquals(internalListenerType, argument.getValue().getStatus().getKafkaListeners().get(0).getType());
                 assertEquals(internalHost, argument.getValue().getStatus().getKafkaListeners().get(0).getAddresses().get(0).getHost());
@@ -798,7 +802,7 @@ public class EventStreamsOperatorTest {
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster)
             .onComplete(context.succeeding(v -> context.verify(() -> {
                 ArgumentCaptor<EventStreams> argument = ArgumentCaptor.forClass(EventStreams.class);
-                verify(esResourceOperator, times(2)).createOrUpdate(argument.capture());
+                verify(esResourceOperator, times(2)).updateEventStreamsStatus(argument.capture());
                 assertThat(argument.getValue().getStatus().isCustomImages(), is(false));
                 assertThat(esCluster.getStatus().getVersions().getReconciled(), is(EventStreamsVersions.OPERAND_VERSION));
                 assertThat(esCluster.getStatus().getVersions().getAvailable().getChannels(),
@@ -1798,10 +1802,11 @@ public class EventStreamsOperatorTest {
             }))
             .map(v -> {
                 ArgumentCaptor<EventStreams> updatedEventStreams = ArgumentCaptor.forClass(EventStreams.class);
-                verify(esResourceOperator, times(2)).createOrUpdate(updatedEventStreams.capture());
+                verify(esResourceOperator, times(2)).updateEventStreamsStatus(updatedEventStreams.capture());
                 context.verify(() -> assertThat(updatedEventStreams.getValue().getStatus().getRoutes().get(shortRouteName), is(nullValue())));
-                updatedEventStreams.getValue().getSpec().setRestProducer(new SecurityComponentSpec());
-                return updatedEventStreams.getValue();
+                minimalInstance.getSpec().setRestProducer(new SecurityComponentSpec());
+                minimalInstance.setStatus(updatedEventStreams.getValue().getStatus());
+                return minimalInstance;
             })
             .compose(restProducerInstance -> esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), restProducerInstance))
             .onComplete(context.succeeding(v -> {
@@ -1813,10 +1818,11 @@ public class EventStreamsOperatorTest {
             }))
             .map(v -> {
                 ArgumentCaptor<EventStreams> updatedEventStreams = ArgumentCaptor.forClass(EventStreams.class);
-                verify(esResourceOperator, times(3)).createOrUpdate(updatedEventStreams.capture());
+                verify(esResourceOperator, times(3)).updateEventStreamsStatus(updatedEventStreams.capture());
                 context.verify(() -> assertThat(updatedEventStreams.getValue().getStatus().getRoutes().get(shortRouteName), is(notNullValue())));
-                updatedEventStreams.getValue().getSpec().setRestProducer(null);
-                return updatedEventStreams.getValue();
+                minimalInstance.getSpec().setRestProducer(null);
+                minimalInstance.setStatus(updatedEventStreams.getValue().getStatus());
+                return minimalInstance;
             })
             .compose(noRestProducerInstance -> esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), noRestProducerInstance))
             .onComplete(context.succeeding(v -> {
@@ -1826,7 +1832,7 @@ public class EventStreamsOperatorTest {
                 verifyContainsResources(context, serviceNames, KubeResourceType.SERVICES, false);
                 verifyContainsResources(context, routeNames, KubeResourceType.ROUTES, false);
                 ArgumentCaptor<EventStreams> updatedEventStreams = ArgumentCaptor.forClass(EventStreams.class);
-                verify(esResourceOperator, times(4)).createOrUpdate(updatedEventStreams.capture());
+                verify(esResourceOperator, times(4)).updateEventStreamsStatus(updatedEventStreams.capture());
                 context.verify(() -> assertThat(updatedEventStreams.getValue().getStatus().getRoutes().get(shortRouteName), is(nullValue())));
                 async.flag();
             }));
