@@ -124,10 +124,10 @@ public class VolumeUtils {
         String validName = getValidVolumeName(name);
 
         int mode = 0444;
-        if (isOpenshift) {
+        //if (isOpenshift) {
             // We do not run as root so breaks is not read for anyone
             // mode = 0440;
-        }
+        //}
 
         SecretVolumeSource secretVolumeSource = new SecretVolumeSourceBuilder()
                 .withDefaultMode(mode)

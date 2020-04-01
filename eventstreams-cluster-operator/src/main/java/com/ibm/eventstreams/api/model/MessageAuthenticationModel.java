@@ -15,6 +15,7 @@ package com.ibm.eventstreams.api.model;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import io.fabric8.kubernetes.api.model.Secret;
 
+import java.nio.charset.Charset;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
@@ -29,12 +30,10 @@ public class MessageAuthenticationModel extends AbstractModel {
     public static final String SECRET_SUFFIX = "hmac-secret";
     public static final String HMAC_SECRET = "hmac.secret";
     public static final int NUM_OF_UUID_GEN = 3;
-    static EventStreams instance;
-    static Secret secret;
+    Secret secret;
 
     public MessageAuthenticationModel(EventStreams instance) {
         super(instance.getMetadata().getName(), instance.getMetadata().getNamespace(), DEFAULT_COMPONENT_NAME);
-        this.instance = instance;
         setOwnerReference(instance);
         secret = createSecret();
     }
@@ -48,12 +47,12 @@ public class MessageAuthenticationModel extends AbstractModel {
     }
 
     public Secret createSecret() {
-        return createSecret(getNamespace(), getSecretName(instance.getMetadata().getName()), createSecretData(), getComponentLabels(), null);
+        return createSecret(getNamespace(), getSecretName(getInstanceName()), createSecretData(), getComponentLabels(), null);
     }
 
     private Map<String, String> createSecretData() {
         Map<String, String> data = new HashMap<>();
-        data.put(HMAC_SECRET, Base64.getEncoder().encodeToString(generateSecret().getBytes()));
+        data.put(HMAC_SECRET, Base64.getEncoder().encodeToString(generateSecret().getBytes(Charset.forName("UTF-8"))));
         return data;
     }
 

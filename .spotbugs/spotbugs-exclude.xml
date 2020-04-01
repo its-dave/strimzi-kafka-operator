@@ -8,6 +8,18 @@
     <Package name="io.strimzi.certs"/>
   </Match>
   <Match>
+    <Class name="~com\.ibm\.iam\.api\.spec\..+(Doneable|Builder|FluentImpl)(\$.*)?" />
+  </Match>
+  <Match>
+    <Class name="~com\.ibm\.iam\.api\.status\..+(Builder|FluentImpl)(\$.*)?" />
+  </Match>
+  <Match>
+    <Class name="~com\.ibm\.eventstreams\.api\.spec\..+(Doneable|Builder|FluentImpl)(\$.*)?" />
+  </Match>
+  <Match>
+    <Class name="~com\.ibm\.eventstreams\.api\.status\..+(Builder|FluentImpl)(\$.*)?" />
+  </Match>
+  <Match>
     <Class name="~io\.strimzi\.api\.kafka\.model\..+(Builder|FluentImpl)(\$.*)?" />
   </Match>
   <Match>

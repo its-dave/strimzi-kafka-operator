@@ -74,8 +74,8 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
     private Service internalService;
     private Service routeService;
     private Service nodePortService;
-    private Service loadBalancerService;
-    private Service ingressService;
+    // private Service loadBalancerService = null;
+    // private Service ingressService = null;
 
 
     public AbstractSecureEndpointsModel(EventStreams instance, SecurityComponentSpec spec, String componentName) {
@@ -182,9 +182,9 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
             case ROUTE:
                 return routeService;
             case INGRESS:
-                return ingressService;
+                return null; // ingressService;
             case LOAD_BALANCER:
-                return loadBalancerService;
+                return null; // loadBalancerService;
             case INTERNAL:
                 return internalService;
             default:

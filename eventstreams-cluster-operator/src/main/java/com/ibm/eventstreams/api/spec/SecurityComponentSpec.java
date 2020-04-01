@@ -27,6 +27,9 @@ import java.util.List;
 @JsonPropertyOrder({"endpoints"})
 @EqualsAndHashCode(callSuper = true)
 public class SecurityComponentSpec extends ComponentSpec {
+
+    private static final long serialVersionUID = 1L;
+
     List<EndpointSpec> endpoints;
 
     @Description("Defines endpoints that will be created to communicate with the component. If nothing is specified, a " +

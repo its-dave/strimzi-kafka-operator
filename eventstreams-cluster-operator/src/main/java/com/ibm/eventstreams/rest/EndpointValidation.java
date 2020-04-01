@@ -94,7 +94,7 @@ public class EndpointValidation extends AbstractValidation {
 
     // TODO what kafka listener types are actually invalid
     private static void checkKafkaListenersValidTypes(ValidationResponsePayload outcome, Optional<KafkaListeners> listeners) {
-        if (listeners.map(KafkaListeners::getExternal).map(KafkaListenerExternal::getType).isPresent() &&  listeners.map(KafkaListeners::getExternal).map(KafkaListenerExternal::getType).get() != "route") {
+        if (listeners.map(KafkaListeners::getExternal).map(KafkaListenerExternal::getType).isPresent() &&  !listeners.map(KafkaListeners::getExternal).map(KafkaListenerExternal::getType).get().equals("route")) {
             outcome.setResponse(invalidKafkaListenerResponse("external"));
         }
     }

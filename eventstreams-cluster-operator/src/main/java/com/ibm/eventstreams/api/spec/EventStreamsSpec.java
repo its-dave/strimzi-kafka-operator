@@ -42,7 +42,6 @@ public class EventStreamsSpec implements Serializable {
     private SchemaRegistrySpec schemaRegistry;
     private ComponentSpec collector;
     private KafkaSpec strimziOverrides;
-    private MonitoringSpec monitoring;
     private ReplicatorSpec replicator;
     private SecuritySpec security;
     private ImagesSpec images;

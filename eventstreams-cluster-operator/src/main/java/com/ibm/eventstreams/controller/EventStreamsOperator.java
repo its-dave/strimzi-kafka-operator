@@ -243,7 +243,6 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
 
         Future<ReconciliationState> validateCustomResource() {
             String phase = Optional.ofNullable(status.getPhase()).orElse("Pending");
-            List<Condition> conditions = Optional.ofNullable(status.getConditions()).orElse(new ArrayList<>());
 
             // fail straight away if the CR previously had errored conditions
             if (previousConditions.stream().anyMatch(c -> "Errored".equals(c.getReason()))) {
@@ -540,7 +539,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                             .compose(secret -> {
                                 // Secret should only be created once
                                 if (secret == null) {
-                                    log.debug("Reconciling replicator secret {} with value {}", secretName, secret);
+                                    log.debug("Reconciling replicator secret {}", secretName);
                                     return secretOperator.reconcile(namespace, secretName, replicatorModel.getSecret());
                                 }
                                 return Future.succeededFuture(ReconcileResult.noop(secret));

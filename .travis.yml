@@ -124,6 +124,8 @@ matrix:
         - mvn -q install -DskipTests=true -Dmaven.javadoc.skip=true -B -V
       script:
         - make eventstreams_java_build
+        - make -C cluster-operator spotbugs
+        - make -C eventstreams-cluster-operator spotbugs
         - |
           #!/bin/bash
           echo "Checking generated files in eventstreams-helm-charts directory"
