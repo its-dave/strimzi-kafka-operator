@@ -14,7 +14,7 @@ COPY LICENSE /licenses/LICENSE
 
 LABEL name="eventstreams-cluster-operator" \
       vendor="IBM" \
-      release="2020.1.1" \
+      release="2020.2.1" \
       summary="Event Streams Kafka Operator" \
       description="Event Streams Kafka Operator is a high-throughput, fault-tolerant, pub-sub technology for building event-driven applications. It is built on top of Apache Kafka(R) and Strimzi"
 

@@ -61,12 +61,12 @@ public class VersionValidationTest extends RestApiTest {
 
     @Test
     public void testExplicitVersion(VertxTestContext context) {
-        tryValidVersion("2020.1.1", context);
+        tryValidVersion("2020.2.1", context);
     }
 
     @Test
     public void testUpgradableVersion(VertxTestContext context) {
-        tryValidVersion("2020.1", context);
+        tryValidVersion("2020.2", context);
     }
 
     @Test
@@ -88,7 +88,7 @@ public class VersionValidationTest extends RestApiTest {
                 assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is("Unsupported version"));
                 assertThat(responseObj.getJsonObject("response").getJsonObject("status").getInteger("code"), is(400));
                 assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("message"),
-                        is("Supported version values are: 2020.1, 2020.1.1"));
+                        is("Supported version values are: 2020.2, 2020.2.1"));
             } else {
                 fail("Failed to post webhook request");
             }

@@ -275,7 +275,7 @@ spec:
         namespace: placeholder
     spec:
         licenseAccept: false
-        version: 2020.1.1
+        version: 2020.2.1
         adminApi: {}
         adminUI: {}
         collector: {}
@@ -330,7 +330,7 @@ spec:
         namespace: placeholder
     spec:
         licenseAccept: false
-        version: 2020.1.1
+        version: 2020.2.1
         adminApi: {}
         adminUI: {}
         collector: {}
@@ -400,7 +400,7 @@ spec:
         namespace: placeholder
     spec:
         licenseAccept: false
-        version: 2020.1.1
+        version: 2020.2.1
         adminApi: {}
         adminUI: {}
         collector: {}
@@ -470,7 +470,7 @@ spec:
         namespace: placeholder
     spec:
         licenseAccept: false
-        version: 2020.1.1
+        version: 2020.2.1
         adminApi: {}
         adminUI: {}
         collector: {}

@@ -51,7 +51,7 @@ metadata:
                 }
               }
             },
-            "version": "2020.1.1"
+            "version": "2020.2.1"
           }
         },
         {
@@ -124,7 +124,7 @@ metadata:
                 }
               }
             },
-            "version": "2020.1.1"
+            "version": "2020.2.1"
           }
         },
         {
@@ -197,7 +197,7 @@ metadata:
                 }
               }
             },
-            "version": "2020.1.1"
+            "version": "2020.2.1"
           }
         },
         {
@@ -270,7 +270,7 @@ metadata:
                 }
               }
             },
-            "version": "2020.1.1"
+            "version": "2020.2.1"
           }
         }
       ]
@@ -282,7 +282,7 @@ metadata:
     description: Kafka-based messaging platform for handling real-time data feeds.
     repository: https://github.ibm.com/mhub/qp-eventstreams-operator
     support: IBM
-  name: ibm-eventstreams-operator.v2020.1.1
+  name: ibm-eventstreams-operator.v2020.2.1
   namespace: placeholder
   alm-examples-metadata:
     quickstart:
@@ -312,7 +312,7 @@ metadata:
         vpc: '37'
         cpu: '40'
         memory: '78 GB'
-  version: 2020.1.1
+  version: 2020.2.1
 spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
@@ -465,8 +465,8 @@ spec:
     authorization for users and connecting applications.\n* Schema registry and support
     for schemas to define structure of data.\n* Support for setting up your clusters
     across multiple availability zones to add resilience to your  deployment.\n###
-    What's new in 2020.1.1:\n* Fully supported  operator-based deployment.\n* Support
-    for OpenShift 4.2.\n* Apache Kafka version updated to 2.4.0.\n* New supported
+    What's new in 2020.2.1:\n* Fully supported  operator-based deployment.\n* Support
+    for OpenShift 4.3.\n* Apache Kafka version updated to 2.4.0.\n* New supported
     connectors added to the expanded Connector catalog.\n### Documentation\nFor more
     information, see the [IBM Event Streams documentation](https://ibm.github.io/event-streams).\n"
   displayName: IBM Event Streams Operator
@@ -1051,4 +1051,4 @@ spec:
   selector:
     matchLabels:
       name: ibm-eventstreams-operator
-  version: 2020.1.1
+  version: 2020.2.1

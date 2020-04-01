@@ -1,6 +1,6 @@
 PROJECT_NAME=deploy
 
-CSV_VERSION = 2020.1.1
+CSV_VERSION = 2020.2.1
 
 WORKING_DIR := $(shell pwd)
 BASE_DIR := $(WORKING_DIR)/..
@@ -14,11 +14,11 @@ INVENTORY_FILES_TO_BASE := ../../../../../../../..
 include ../Makefile.os
 .PHONY: all clean build_csv deploy delete_deploy verify docker_build docker_push
 
-all: 
+all:
 
-verify: 
+verify:
 
-clean: 
+clean:
 	rm -rf $(INVENTORY_DIR)/*/files/*
 	yq w -i $(INVENTORY_DIR)/ibmEventstreamsExamples/resources.yaml resources.resourceDefs.files ""
 	yq w -i $(INVENTORY_DIR)/ibmEventstreamsOperatorInstall/resources.yaml resources.resourceDefs.files ""
@@ -34,11 +34,11 @@ build_case: clean
 	# # symlink install files to case
 	cd $(INVENTORY_DIR)/ibmEventstreamsOperatorInstall/files ;\
 	ln -sf $(INVENTORY_FILES_TO_BASE)/install/ibm-eventstreams-operator/* ./
-	
+
 	$(FIND) $(BASE_DIR)/install/ibm-eventstreams-operator -type f -name '*.yaml' | sort -d | xargs -n1 $(WORKING_DIR)/generateResourceFilesList.sh $(INVENTORY_DIR)/ibmEventstreamsOperatorInstall/resources.yaml
 
 	$(CP) $(BASE_DIR)/EVENTSTREAMS.md $(INVENTORY_DIR)/ibmEventstreamsOperatorInstall/README.md
-	
+
 prepare_stable:
 	$(CP) -R stable $(BASE_DIR)/stable
 

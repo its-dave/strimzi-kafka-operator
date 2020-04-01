@@ -27,7 +27,7 @@ import static java.util.Arrays.asList;
 public class VersionValidation extends AbstractValidation {
 
     private static final Logger log = LogManager.getLogger(NameValidation.class.getName());
-    
+
     public static final List<String> VALID_APP_VERSIONS = unmodifiableList(asList(EventStreamsVersions.OPERAND_VERSION, EventStreamsVersions.AUTO_UPGRADE_VERSION));
 
     public static boolean shouldReject(EventStreams customResourceSpec) {
@@ -43,7 +43,7 @@ public class VersionValidation extends AbstractValidation {
 
         if (shouldReject(customResourceSpec)) {
             outcome = ValidationResponsePayload.createFailureResponsePayload(
-                    "Supported version values are: 2020.1, 2020.1.1",
+                    "Supported version values are: 2020.2, 2020.2.1",
                     "Unsupported version");
         } else {
             outcome = ValidationResponsePayload.createSuccessResponsePayload();

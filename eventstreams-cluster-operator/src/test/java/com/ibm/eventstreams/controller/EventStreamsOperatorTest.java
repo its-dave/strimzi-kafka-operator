@@ -182,7 +182,7 @@ public class EventStreamsOperatorTest {
     private static final String ROUTE_HOST_POSTFIX = "apps.route.test";
     private static final int EXPECTED_DEFAULT_REPLICAS = 1;
     private static final String REPLICATOR_DATA = "[replicatorTestData]";
-    private static final String DEFAULT_VERSION = "2020.1.1";
+    private static final String DEFAULT_VERSION = "2020.2.1";
     private static final int TWO_YEARS_PLUS_IN_SECONDS = 70000000;
     private static final String CP4I_TEST_HEADER_URL = "https://icp4i-services-demo.my-ns.svc.cluster.local:3000";
     private static final String CP4I_ADMIN_UI_ENVAR_NAME = "ICP4I_PLATFORM_SERVICES_URL";
@@ -293,7 +293,7 @@ public class EventStreamsOperatorTest {
     public void closeMockClient() {
         mockClient.close();
     }
-        
+
     @Test
     public void testCreateDefaultEventStreamsInstanceOpenShift(VertxTestContext context) {
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
@@ -384,7 +384,7 @@ public class EventStreamsOperatorTest {
                 assertThat(argument.getValue().getStatus().getVersions().getAvailable().getVersions(),
                         hasItem(hasProperty("name", is(DEFAULT_VERSION))));
                 assertThat(argument.getValue().getStatus().getVersions().getAvailable().getChannels(),
-                        hasItem(hasProperty("name", is("2020.1"))));
+                        hasItem(hasProperty("name", is("2020.2"))));
                 async.flag();
             })));
     }
@@ -558,7 +558,7 @@ public class EventStreamsOperatorTest {
                 // check status
                 verify(esResourceOperator).updateEventStreamsStatus(updatedEventStreams.capture());
                 assertThat("Status is incorrect, found status : " + updatedEventStreams.getValue().getStatus(),
-                        updatedEventStreams.getValue().getStatus().getConditions().get(0).getMessage().equals("Invalid custom resource: Unsupported version. Supported versions are [2020.1.1, 2020.1]"));
+                        updatedEventStreams.getValue().getStatus().getConditions().get(0).getMessage().equals("Invalid custom resource: Unsupported version. Supported versions are [2020.2.1, 2020.2]"));
                 async.flag();
             })));
     }
@@ -2258,7 +2258,7 @@ public class EventStreamsOperatorTest {
                 Container uiContainer = adminUI.get().getSpec().getTemplate().getSpec().getContainers().get(0);
                 assertThat(uiContainer.getEnv(), hasItem(new EnvVarBuilder().withName(CP4I_ADMIN_UI_ENVAR_NAME).withValue("").build()));
                 async.flag();
-            })));              
+            })));
     }
 
     private void updateReplicatorSecretData(Set<HasMetadata> actualResourcesList) {

@@ -33,8 +33,8 @@ public class EventStreamsVersions implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    public static final String OPERAND_VERSION = "2020.1.1";
-    public static final String AUTO_UPGRADE_VERSION = "2020.1";
+    public static final String OPERAND_VERSION = "2020.2.1";
+    public static final String AUTO_UPGRADE_VERSION = "2020.2";
     private static final EventStreamsAvailableVersions AVAILABLE_VERSIONS = new EventStreamsAvailableVersions();
 
     @Description("The current running version of this Operator")

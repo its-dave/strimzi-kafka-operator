@@ -43,7 +43,7 @@ class EventStreamsIT {
     private static final String EVENTSTREAMS_CUSTOM_RESOURCE_DEFINITION = System.getProperty("installDirectory") + "/ibm-eventstreams-operator/140-Crd-eventstreams.yaml";
     private static final String API_VERSION = "eventstreams.ibm.com/v1beta1";
     private static final String NAME = "my-es";
-    private static final String VERSION = "2020.1.1";
+    private static final String VERSION = "2020.2.1";
 
     private KafkaSpec validKafkaSpec;
     private KubeClusterResource cluster = KubeClusterResource.getInstance();

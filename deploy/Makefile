@@ -1,6 +1,6 @@
 PROJECT_NAME=deploy
 
-CSV_VERSION = 2020.1.1
+CSV_VERSION = 2020.2.1
 
 # TODO verfy this is still true
 OPERATOR_NAME := ibm-eventstreams-operator
