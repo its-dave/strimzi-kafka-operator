@@ -66,6 +66,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.emptyIterableOf;
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasItems;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -85,6 +86,8 @@ public class SchemaRegistryModelTest {
                         .withReplicas(defaultReplicas)
                         .withNewAvro()
                         .endAvro()
+                        .withNewProxy()
+                        .endProxy()
                         .withStorage(new EphemeralStorageBuilder().build())
                     .endSchemaRegistry()
                 .endSpec();
@@ -145,10 +148,12 @@ public class SchemaRegistryModelTest {
         SchemaRegistryModel schemaRegistryModel = createDefaultSchemaRegistryModel();
         List<Container> containerList = schemaRegistryModel.getDeployment().getSpec().getTemplate().getSpec().getContainers();
         containerList.forEach(container -> {
-            assertThat(container.getResources().getRequests().get("cpu").getAmount(), is("500m"));
-            assertThat(container.getResources().getRequests().get("memory").getAmount(), is("256Mi"));
-            assertThat(container.getResources().getLimits().get("cpu").getAmount(), is("500m"));
-            assertThat(container.getResources().getLimits().get("memory").getAmount(), is("256Mi"));
+            if (container.getName() != SchemaRegistryModel.SCHEMA_REGISTRY_PROXY_CONTAINER_NAME) {
+                assertThat(container.getResources().getRequests().get("cpu").getAmount(), is("500m"));
+                assertThat(container.getResources().getRequests().get("memory").getAmount(), is("256Mi"));
+                assertThat(container.getResources().getLimits().get("cpu").getAmount(), is("500m"));
+                assertThat(container.getResources().getLimits().get("memory").getAmount(), is("256Mi"));
+            }
         });
     }
 
@@ -199,6 +204,7 @@ public class SchemaRegistryModelTest {
     public void testImageOverride() {
         String schemaImage = "schema-image:latest";
         String avroImage = "avro-image:latest";
+        String schemaProxyImage = "schema-proxy-image:latest";
 
         EventStreams instance = createDefaultEventStreams()
                 .editSpec()
@@ -207,6 +213,9 @@ public class SchemaRegistryModelTest {
                         .withNewAvro()
                             .withImage(avroImage)
                         .endAvro()
+                        .withNewProxy()
+                            .withImage(schemaProxyImage)
+                        .endProxy()
                     .endSchemaRegistry()
                 .endSpec()
                 .build();
@@ -214,6 +223,7 @@ public class SchemaRegistryModelTest {
         Map<String, String> expectedImages = new HashMap<>();
         expectedImages.put(SchemaRegistryModel.COMPONENT_NAME, schemaImage);
         expectedImages.put(SchemaRegistryModel.AVRO_SERVICE_CONTAINER_NAME, avroImage);
+        expectedImages.put(SchemaRegistryModel.SCHEMA_REGISTRY_PROXY_CONTAINER_NAME, schemaProxyImage);
 
         List<Container> containers = new SchemaRegistryModel(instance, imageConfig).getDeployment().getSpec().getTemplate()
                 .getSpec().getContainers();
@@ -225,9 +235,11 @@ public class SchemaRegistryModelTest {
     public void testOperatorImageOverride() {
         String schemaImage = "component-schema-image:latest";
         String avroImage = "component-avro-image:latest";
+        String proxyImage = "component-schema-proxy-image:latest";
 
         when(imageConfig.getSchemaRegistryImage()).thenReturn(Optional.of(schemaImage));
         when(imageConfig.getSchemaRegistryAvroImage()).thenReturn(Optional.of(avroImage));
+        when(imageConfig.getSchemaRegistryProxyImage()).thenReturn(Optional.of(proxyImage));
 
         SchemaRegistryModel model = createDefaultSchemaRegistryModel();
         List<Container> containers = model.getDeployment().getSpec().getTemplate()
@@ -236,6 +248,7 @@ public class SchemaRegistryModelTest {
         Map<String, String> expectedImages = new HashMap<>();
         expectedImages.put(SchemaRegistryModel.COMPONENT_NAME, schemaImage);
         expectedImages.put(SchemaRegistryModel.AVRO_SERVICE_CONTAINER_NAME, avroImage);
+        expectedImages.put(SchemaRegistryModel.SCHEMA_REGISTRY_PROXY_CONTAINER_NAME, proxyImage);
 
         ModelUtils.assertCorrectImageOverridesOnContainers(containers, expectedImages);
     }
@@ -244,13 +257,15 @@ public class SchemaRegistryModelTest {
     public void testOperatorImageOverrideTakesPrecedenceOverComponentLevelOverride() {
         String schemaImage = "component-schema-image:latest";
         String avroImage = "component-avro-image:latest";
+        String proxyImage = "component-proxy-image:latest";
 
         String schemaImageFromEnv = "env-schema-image:latest";
         String avroImageFromEnv = "env-avro-image:latest";
+        String proxyImageFromEnv = "env-proxy-image:latest";
 
         when(imageConfig.getSchemaRegistryImage()).thenReturn(Optional.of(schemaImageFromEnv));
         when(imageConfig.getSchemaRegistryAvroImage()).thenReturn(Optional.of(avroImageFromEnv));
-
+        when(imageConfig.getSchemaRegistryProxyImage()).thenReturn(Optional.of(proxyImageFromEnv));
         EventStreams instance = createDefaultEventStreams()
                 .editSpec()
                     .editSchemaRegistry()
@@ -258,6 +273,9 @@ public class SchemaRegistryModelTest {
                         .withNewAvro()
                             .withImage(avroImage)
                         .endAvro()
+                        .withNewProxy()
+                            .withImage(proxyImage)
+                        .endProxy()
                     .endSchemaRegistry()
                 .endSpec()
                 .build();
@@ -268,6 +286,7 @@ public class SchemaRegistryModelTest {
         Map<String, String> expectedImages = new HashMap<>();
         expectedImages.put(SchemaRegistryModel.COMPONENT_NAME, schemaImage);
         expectedImages.put(SchemaRegistryModel.AVRO_SERVICE_CONTAINER_NAME, avroImage);
+        expectedImages.put(SchemaRegistryModel.SCHEMA_REGISTRY_PROXY_CONTAINER_NAME, proxyImage);
 
         ModelUtils.assertCorrectImageOverridesOnContainers(containers, expectedImages);
     }
@@ -358,6 +377,21 @@ public class SchemaRegistryModelTest {
     }
 
     @Test
+    public void testSchemaRegistryProxyAuthenticationEnvVarsSet() {
+        EventStreams defaultEs = createDefaultEventStreams().build();
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig);
+
+        EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:IAM-BEARER;SCRAM-SHA-512,7080").build();
+        EnvVar endpoints = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7080").build();
+        EnvVar tlsVersion = new EnvVarBuilder().withName("TLS_VERSION").withValue("9443:TLSv1.2,7080").build();
+        EnvVar authEnabled  = new EnvVarBuilder().withName("AUTHENTICATION_ENABLED").withValue("true").build();
+
+        List<EnvVar> envVars = schemaRegistryModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().stream().filter(container -> SchemaRegistryModel.SCHEMA_REGISTRY_PROXY_CONTAINER_NAME.equals(container.getName())).findFirst().get().getEnv();
+
+        assertThat(envVars, hasItems(authentication, endpoints, tlsVersion, authEnabled));
+    }
+
+    @Test
     public void testDefaultLogging() {
         EventStreams defaultEs = createDefaultEventStreams().build();
         SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig);
@@ -367,14 +401,8 @@ public class SchemaRegistryModelTest {
                 .withValue("INFO")
                 .build();
         List<EnvVar> envVars = schemaRegistryModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().stream().filter(container -> SchemaRegistryModel.COMPONENT_NAME.equals(container.getName())).findFirst().get().getEnv();
-        EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:IAM-BEARER;SCRAM-SHA-512,7080").build();
-        EnvVar endpoints = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7080").build();
-        EnvVar tlsVersion = new EnvVarBuilder().withName("TLS_VERSION").withValue("9443:TLSv1.2,7080").build();
 
         assertThat(envVars, hasItem(expectedEnvVar));
-        assertThat(envVars, hasItem(authentication));
-        assertThat(envVars, hasItem(endpoints));
-        assertThat(envVars, hasItem(tlsVersion));
     }
 
     @Test

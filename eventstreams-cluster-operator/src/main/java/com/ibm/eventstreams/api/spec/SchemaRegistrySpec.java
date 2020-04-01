@@ -23,7 +23,7 @@ import lombok.EqualsAndHashCode;
 @JsonDeserialize(using = JsonDeserializer.None.class)
 @Buildable(editableEnabled = false, generateBuilderPackage = false, builderPackage = "io.fabric8.kubernetes.api.builder")
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({"storage", "avro"})
+@JsonPropertyOrder({"storage", "avro", "proxy"})
 @EqualsAndHashCode
 public class SchemaRegistrySpec extends SecurityComponentSpec {
 
@@ -31,6 +31,7 @@ public class SchemaRegistrySpec extends SecurityComponentSpec {
 
     private Storage storage;
     private ContainerSpec avro;
+    private ContainerSpec proxy;
 
     public Storage getStorage() {
         return storage;
@@ -46,5 +47,13 @@ public class SchemaRegistrySpec extends SecurityComponentSpec {
 
     public void setAvro(ContainerSpec avro) {
         this.avro = avro;
+    }
+
+    public ContainerSpec getProxy() {
+        return proxy;
+    }
+
+    public void setProxy(ContainerSpec proxy) {
+        this.proxy = proxy;
     }
 }

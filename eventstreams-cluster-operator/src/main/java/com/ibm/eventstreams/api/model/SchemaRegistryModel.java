@@ -63,6 +63,8 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
     // static variables
     public static final String COMPONENT_NAME = "schema-registry";
     public static final String AVRO_SERVICE_CONTAINER_NAME = "avro-service";
+    public static final String SCHEMA_REGISTRY_PROXY_CONTAINER_NAME = "schema-proxy";
+    public static final int SCHEMA_REGISTRY_PORT = 3000;
     public static final int AVRO_SERVICE_PORT = 3080;
     public static final int DEFAULT_REPLICAS = 1;
     public static final String TEMP_DIR_NAME = "tempdir";
@@ -73,6 +75,7 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
     private static final String DEFAULT_AVRO_LOG_STRING = "info";
     private static final String DEFAULT_IBMCOM_SCHEMA_REGISTRY_IMAGE = "ibmcom/schema-registry:latest";
     private static final String DEFAULT_IBMCOM_AVRO_IMAGE = "ibmcom/avro:latest";
+    private static final String DEFAULT_IBMCOM_SCHEMA_REGISTRY_PROXY_IMAGE = "ibmcom/schema-proxy:latest";
 
     private static final String CERTS_VOLUME_MOUNT_NAME = "certs";
 
@@ -89,6 +92,11 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
     private ResourceRequirements avroResourceRequirements;
     private io.strimzi.api.kafka.model.Probe avroLivenessProbe;
     private io.strimzi.api.kafka.model.Probe avroReadinessProbe;
+    private String schemaRegistryProxyImage;
+    private List<ContainerEnvVar> schemaRegistryProxyEnvVars;
+    private ResourceRequirements schemaRegistryProxyResourceRequirements;
+    private String defaultProxyTraceString = "info";
+
 
 
     private Storage storage;
@@ -151,7 +159,14 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
             avroReadinessProbe = avroSpec.map(ContainerSpec::getLivenessProbe)
                     .orElseGet(io.strimzi.api.kafka.model.Probe::new);
 
-            setCustomImages(imageConfig.getSchemaRegistryImage(), imageConfig.getSchemaRegistryAvroImage());
+            Optional<ContainerSpec> schemaProxySpec = schemaRegistrySpec.map(SchemaRegistrySpec::getProxy);
+            schemaRegistryProxyEnvVars = schemaProxySpec.map(ContainerSpec::getEnvVars).orElseGet(ArrayList::new);
+            schemaRegistryProxyImage = firstDefinedImage(
+                DEFAULT_IBMCOM_SCHEMA_REGISTRY_PROXY_IMAGE,
+                schemaProxySpec.map(ContainerSpec::getImage),
+                imageConfig.getSchemaRegistryProxyImage());
+            schemaRegistryProxyResourceRequirements = schemaProxySpec.map(ContainerSpec::getResources).orElseGet(ResourceRequirements::new);
+            setCustomImages(imageConfig.getSchemaRegistryImage(), imageConfig.getSchemaRegistryAvroImage(), imageConfig.getSchemaRegistryProxyImage());
 
             deployment = createDeployment(getContainers(), getVolumes());
 
@@ -170,10 +185,10 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
         }
     }
 
-    protected void setCustomImages(Optional<String> defaultEnvSchemaImage, Optional<String> defaultEnvAvroImage) {
+    protected void setCustomImages(Optional<String> defaultEnvSchemaImage, Optional<String> defaultEnvAvroImage, Optional<String> defaultEnvSchemaProxyImage) {
         List<String> defaultSchemaImages = new ArrayList<>();
         defaultSchemaImages.add(DEFAULT_IBMCOM_SCHEMA_REGISTRY_IMAGE);
-        defaultSchemaImages.add(defaultEnvSchemaImage.isPresent() ? defaultEnvSchemaImage.get() : "");
+        defaultSchemaImages.add(defaultEnvSchemaImage.orElse(""));
         boolean schemaCustomImage = defaultSchemaImages
                 .stream()
                 .filter(image -> this.image.equals(image))
@@ -181,13 +196,21 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
 
         List<String> defaultAvroImages = new ArrayList<>();
         defaultAvroImages.add(DEFAULT_IBMCOM_AVRO_IMAGE);
-        defaultAvroImages.add(defaultEnvAvroImage.isPresent() ? defaultEnvAvroImage.get() : "");
+        defaultAvroImages.add(defaultEnvAvroImage.orElse(""));
         boolean avroCustomImage = defaultAvroImages
                 .stream()
                 .filter(image -> avroImage.equals(image))
                 .findFirst().isPresent() ? false : true;
 
-        this.customImage = schemaCustomImage || avroCustomImage;
+        List<String> defaultSchemaProxyImages = new ArrayList<>();
+        defaultSchemaProxyImages.add(DEFAULT_IBMCOM_SCHEMA_REGISTRY_PROXY_IMAGE);
+        defaultSchemaProxyImages.add(defaultEnvSchemaProxyImage.orElse(""));
+        boolean schemaProxyCustomImage = defaultSchemaProxyImages
+            .stream()
+            .filter(image -> schemaRegistryProxyImage.equals(image))
+            .findFirst().isPresent() ? false : true;
+
+        this.customImage = schemaCustomImage || avroCustomImage || schemaProxyCustomImage;
     }
 
 
@@ -232,7 +255,7 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
      * @return A list of containers to put in the schema registry pod
      */
     private List<Container> getContainers() {
-        return Arrays.asList(getSchemaRegistryContainer(), getAvroServiceContainer());
+        return Arrays.asList(getSchemaRegistryContainer(), getAvroServiceContainer(), getSchemaRegistryProxyContainer());
     }
 
     /**
@@ -253,6 +276,7 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
             new EnvVarBuilder().withName("SCHEMA_TEMP_DIRECTORY").withValue("/var/lib/tmp").build(),
             new EnvVarBuilder().withName("ID").withValue("id").build(),
             new EnvVarBuilder().withName("ESFF_SECURITY_AUTHZ").withValue("false").build(),
+            new EnvVarBuilder().withName("ENDPOINTS").withValue(SCHEMA_REGISTRY_PORT + ":").build(),
             new EnvVarBuilder()
                 .withName("HMAC_SECRET")
                 .withNewValueFrom()
@@ -264,7 +288,6 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
                 .build()
         ));
 
-        configureSecurityEnvVars(envVarDefaults);
         List<EnvVar> envVars = combineEnvVarListsNoDuplicateKeys(envVarDefaults);
 
         ContainerBuilder builder = new ContainerBuilder()
@@ -296,8 +319,8 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
         Probe defaultLivenessProbe = new ProbeBuilder()
                 .withNewHttpGet()
                 .withPath("/live")
-                .withNewPort(Endpoint.getPodToPodPort(tlsEnabled()))
-                .withScheme(getHealthCheckProtocol())
+                .withNewPort(SCHEMA_REGISTRY_PORT)
+                .withScheme("HTTP")
                 .withHttpHeaders(new HTTPHeaderBuilder()
                         .withName("Accept")
                         .withValue("*/*")
@@ -320,8 +343,8 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
         Probe defaultReadinessProbe = new ProbeBuilder()
                 .withNewHttpGet()
                 .withPath("/ready")
-                .withNewPort(Endpoint.getPodToPodPort(tlsEnabled()))
-                .withScheme(getHealthCheckProtocol())
+                .withNewPort(SCHEMA_REGISTRY_PORT)
+                .withScheme("HTTP")
                 .withHttpHeaders(new HTTPHeaderBuilder()
                         .withName("Accept")
                         .withValue("*/*")
@@ -413,6 +436,108 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
                 .withFailureThreshold(2)
                 .build();
         return combineProbeDefinitions(defaultReadinessProbe, avroReadinessProbe);
+    }
+
+    /**
+     *
+     * @return The Schema Registry Proxy Container
+     */
+    private Container getSchemaRegistryProxyContainer() {
+
+        List<EnvVar> schemaProxyDefaultEnvVars = getSchemaRegistryProxyEnvVars();
+        List<EnvVar> envVars = combineEnvVarListsNoDuplicateKeys(schemaProxyDefaultEnvVars, schemaRegistryProxyEnvVars);
+
+        ContainerBuilder containerBuilder = new ContainerBuilder()
+            .withName(SCHEMA_REGISTRY_PROXY_CONTAINER_NAME)
+            .withImage(schemaRegistryProxyImage)
+            .withEnv(envVars)
+            .withSecurityContext(getSecurityContext(false))
+            .withResources(getResourceRequirements(schemaRegistryProxyResourceRequirements, DefaultResourceRequirements.ADMIN_API))
+            .withLivenessProbe(createProxyLivenessProbe())
+            .withReadinessProbe(createProxyReadinessProbe());
+
+        configureSecurityVolumeMounts(containerBuilder);
+
+        return containerBuilder.build();
+    }
+
+    /**
+     *
+     * @return A list of default EnvVars for the schema registry proxy container
+     */
+    private List<EnvVar> getSchemaRegistryProxyEnvVars() {
+
+        List<EnvVar> envVars = new ArrayList<>();
+        envVars.addAll(Arrays.asList(
+            new EnvVarBuilder().withName("RELEASE").withValue(getInstanceName()).build(),
+            new EnvVarBuilder().withName("LICENSE").withValue("accept").build(),
+            new EnvVarBuilder().withName("NAMESPACE").withValue(getNamespace()).build(),
+            new EnvVarBuilder().withName("AUTHENTICATION_ENABLED").withValue(endpoints.stream()
+                .allMatch(ep -> ep.getAuthenticationMechanisms().isEmpty()) ? "false" : "true").build(),
+            new EnvVarBuilder().withName("TRACE_SPEC").withValue(defaultProxyTraceString).build(),
+            new EnvVarBuilder()
+                .withName("HMAC_SECRET")
+                .withNewValueFrom()
+                .withNewSecretKeyRef()
+                .withName(MessageAuthenticationModel.getSecretName(getInstanceName()))
+                .withKey(MessageAuthenticationModel.HMAC_SECRET)
+                .endSecretKeyRef()
+                .endValueFrom()
+                .build()
+        ));
+
+
+        configureSecurityEnvVars(envVars);
+
+        return envVars;
+    }
+
+    /**
+     *
+     * @return The liveness probe for the schema registry proxy container
+     */
+    protected Probe createProxyLivenessProbe() {
+        Probe defaultLivenessProbe = new ProbeBuilder()
+            .withNewHttpGet()
+            .withPath("/liveness")
+            .withNewPort(Endpoint.getPodToPodPort(tlsEnabled()))
+            .withScheme(getHealthCheckProtocol())
+            .withHttpHeaders(new HTTPHeaderBuilder()
+                .withName("Accept")
+                .withValue("*/*")
+                .build())
+            .endHttpGet()
+            .withInitialDelaySeconds(10)
+            .withPeriodSeconds(30)
+            .withTimeoutSeconds(10)
+            .withSuccessThreshold(1)
+            .withFailureThreshold(3)
+            .build();
+        return combineProbeDefinitions(defaultLivenessProbe, super.getLivenessProbe());
+    }
+
+    /**
+     *
+     * @return The readiness probe for the schema registry proxy container
+     */
+    protected Probe createProxyReadinessProbe() {
+        Probe defaultReadinessProbe = new ProbeBuilder()
+            .withNewHttpGet()
+            .withPath("/liveness")
+            .withNewPort(Endpoint.getPodToPodPort(tlsEnabled()))
+            .withScheme(getHealthCheckProtocol())
+            .withHttpHeaders(new HTTPHeaderBuilder()
+                .withName("Accept")
+                .withValue("*/*")
+                .build())
+            .endHttpGet()
+            .withInitialDelaySeconds(10)
+            .withPeriodSeconds(60)
+            .withTimeoutSeconds(10)
+            .withSuccessThreshold(1)
+            .withFailureThreshold(2)
+            .build();
+        return combineProbeDefinitions(defaultReadinessProbe, super.getReadinessProbe());
     }
 
     /**

@@ -3379,6 +3379,99 @@ spec:
                           type: integer
                           minimum: 0
                           description: The timeout for each attempted health check.
+                proxy:
+                  type: object
+                  properties:
+                    image:
+                      type: string
+                    logging:
+                      type: object
+                      properties:
+                        loggers:
+                          type: object
+                          description: A Map from logger name to logger level.
+                        name:
+                          type: string
+                          description: The name of the `ConfigMap` from which to get
+                            the logging configuration.
+                        type:
+                          type: string
+                          enum:
+                          - inline
+                          - external
+                          description: Logging type, must be either 'inline' or 'external'.
+                      required:
+                      - type
+                    resources:
+                      type: object
+                      properties:
+                        limits:
+                          type: object
+                        requests:
+                          type: object
+                    envVars:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                            description: The environment variable key.
+                          value:
+                            type: string
+                            description: The environment variable value.
+                    livenessProbe:
+                      type: object
+                      properties:
+                        failureThreshold:
+                          type: integer
+                          description: Minimum consecutive failures for the probe
+                            to be considered failed after having succeeded. Defaults
+                            to 3. Minimum value is 1.
+                        initialDelaySeconds:
+                          type: integer
+                          minimum: 0
+                          description: The initial delay before first the health is
+                            first checked.
+                        periodSeconds:
+                          type: integer
+                          description: How often (in seconds) to perform the probe.
+                            Default to 10 seconds. Minimum value is 1.
+                        successThreshold:
+                          type: integer
+                          description: Minimum consecutive successes for the probe
+                            to be considered successful after having failed. Defaults
+                            to 1. Must be 1 for liveness. Minimum value is 1.
+                        timeoutSeconds:
+                          type: integer
+                          minimum: 0
+                          description: The timeout for each attempted health check.
+                    readinessProbe:
+                      type: object
+                      properties:
+                        failureThreshold:
+                          type: integer
+                          description: Minimum consecutive failures for the probe
+                            to be considered failed after having succeeded. Defaults
+                            to 3. Minimum value is 1.
+                        initialDelaySeconds:
+                          type: integer
+                          minimum: 0
+                          description: The initial delay before first the health is
+                            first checked.
+                        periodSeconds:
+                          type: integer
+                          description: How often (in seconds) to perform the probe.
+                            Default to 10 seconds. Minimum value is 1.
+                        successThreshold:
+                          type: integer
+                          description: Minimum consecutive successes for the probe
+                            to be considered successful after having failed. Defaults
+                            to 1. Must be 1 for liveness. Minimum value is 1.
+                        timeoutSeconds:
+                          type: integer
+                          minimum: 0
+                          description: The timeout for each attempted health check.
                 endpoints:
                   type: array
                   items:

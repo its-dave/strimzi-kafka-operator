@@ -112,7 +112,9 @@ spec:
             - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_IMAGE
               value: "{{ default .Values.schemaRegistry.image.repository .Values.imageRepositoryOverride }}/{{ .Values.schemaRegistry.image.name }}:{{ .Values.schemaRegistry.image.tag }}"
             - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_AVRO_IMAGE
-              value: "{{ default .Values.avro.image.repository .Values.imageRepositoryOverride }}/{{ .Values.avro.image.name }}:{{ .Values.avro.image.tag }}"
+              value: "{{ default .Values.schemaAvro.image.repository .Values.imageRepositoryOverride }}/{{ .Values.schemaAvro.image.name }}:{{ .Values.schemaAvro.image.tag }}"
+            - name: EVENTSTREAMS_DEFAULT_SCHEMA_PROXY_IMAGE
+              value: "{{ default .Values.schemaProxy.image.repository .Values.imageRepositoryOverride }}/{{ .Values.schemaProxy.image.name }}:{{ .Values.schemaProxy.image.tag }}"
             - name: EVENTSTREAMS_DEFAULT_ADMIN_UI_IMAGE
               value: "{{ default .Values.adminUi.image.repository .Values.imageRepositoryOverride }}/{{ .Values.adminUi.image.name }}:{{ .Values.adminUi.image.tag }}"
             - name: EVENTSTREAMS_DEFAULT_ADMIN_UI_REDIS_IMAGE
