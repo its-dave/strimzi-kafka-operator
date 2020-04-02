@@ -2,7 +2,7 @@
 EVENTSTREAMS_PROJECT_NAME=eventstreams-cluster-operator
 
 KAFKA_VERSION ?= 2.12-2.4.0
-KAFKA_TAG ?= 2020-02-05-17.15.32-78395e6
+KAFKA_TAG ?= 2020-04-01-14.45.58-7558c77
 JAVA_IMAGE_TAG_UBI7_OPENJDK8_JRE ?= latest
 B_REGISTRY ?= hyc-qp-stable-docker-local.artifactory.swg-devops.com
 B_PLATFORM ?= icp
