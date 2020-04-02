@@ -819,6 +819,7 @@ public class EventStreamsOperatorTest {
 
     @Test
     public void testSingleEndpointRouteCertificateSecretContentIsValid(VertxTestContext context) {
+        String componentName = "endpoint-component";
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(false, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
         Checkpoint async = context.checkpoint(1);
@@ -827,8 +828,8 @@ public class EventStreamsOperatorTest {
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
         reconciliationState.icpClusterData = Collections.emptyMap();
 
-        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, new SecurityComponentSpec(), "endpoint-component");
-        List<Endpoint> endpoints = endpointModel.createEndpoints(esCluster, new SecurityComponentSpec());
+        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, new SecurityComponentSpec(), componentName);
+        List<Endpoint> endpoints = endpointModel.createEndpoints(esCluster, new SecurityComponentSpec(), Collections.emptyList());
 
         Endpoint endpoint = endpoints.get(0);
         String routeName = endpointModel.getRouteName(endpoint.getName());
@@ -2787,7 +2788,7 @@ public class EventStreamsOperatorTest {
             .onComplete(context.succeeding(v -> context.verify(() -> {
                 Route route = routeOperator.get(NAMESPACE,  longRouteName);
 
-                assertThat(route.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_AUTHENTICATION_LABEL, "IAM-BEARER,SCRAM-SHA-512"));
+                assertThat(route.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_AUTHENTICATION_LABEL, "IAM-BEARER.SCRAM-SHA-512"));
                 assertThat(route.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_PROTOCOL_LABEL, "https"));
             })))
             .map(v -> {

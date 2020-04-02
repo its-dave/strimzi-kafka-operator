@@ -38,6 +38,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import static com.ibm.eventstreams.api.model.AbstractModel.KAFKA_USER_SECRET_VOLUME_NAME;
 import static org.hamcrest.CoreMatchers.is;
@@ -525,6 +526,22 @@ public class AbstractSecureEndpointsModelTest {
     }
 
     @Test
+    public void testRoutesHaveValidLabels() {
+        String openshiftLabelRegex = "(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?";
+        EventStreams instance = ModelUtils.createDefaultEventStreams(instanceName).build();
+        ComponentModel model = new ComponentModel(instance, new SecurityComponentSpec());
+
+        Map<String, Route> routes = model.createRoutesFromEndpoints();
+
+        assertThat(routes, aMapWithSize(1));
+
+        routes.forEach((key, route) -> {
+            assertThat(Pattern.matches(openshiftLabelRegex, route.getMetadata().getLabels().get(Labels.EVENTSTREAMS_AUTHENTICATION_LABEL)), is(true));
+            assertThat(Pattern.matches(openshiftLabelRegex, route.getMetadata().getLabels().get(Labels.EVENTSTREAMS_PROTOCOL_LABEL)), is(true));
+        });
+    }
+
+    @Test
     public void testCreateRoutesHasDefaultLabels() {
         EventStreams instance = ModelUtils.createDefaultEventStreams(instanceName).build();
         ComponentModel model = new ComponentModel(instance, new SecurityComponentSpec());
@@ -534,7 +551,7 @@ public class AbstractSecureEndpointsModelTest {
         assertThat(routes, aMapWithSize(1));
 
         routes.forEach((key, route) -> {
-            assertThat(route.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_AUTHENTICATION_LABEL, "IAM-BEARER,SCRAM-SHA-512"));
+            assertThat(route.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_AUTHENTICATION_LABEL, "IAM-BEARER.SCRAM-SHA-512"));
             assertThat(route.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_PROTOCOL_LABEL, "https"));
         });
     }

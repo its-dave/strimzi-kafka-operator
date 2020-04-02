@@ -381,7 +381,7 @@ public class SchemaRegistryModelTest {
         EventStreams defaultEs = createDefaultEventStreams().build();
         SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig);
 
-        EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:IAM-BEARER;SCRAM-SHA-512,7080").build();
+        EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:IAM-BEARER;SCRAM-SHA-512,7080:MAC;IAM-BEARER").build();
         EnvVar endpoints = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7080").build();
         EnvVar tlsVersion = new EnvVarBuilder().withName("TLS_VERSION").withValue("9443:TLSv1.2,7080").build();
         EnvVar authEnabled  = new EnvVarBuilder().withName("AUTHENTICATION_ENABLED").withValue("true").build();

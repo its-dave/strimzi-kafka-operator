@@ -81,8 +81,8 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
     public AbstractSecureEndpointsModel(EventStreams instance, SecurityComponentSpec spec, String componentName) {
         super(instance.getMetadata().getName(), instance.getMetadata().getNamespace(), componentName);
         this.certificateSecretModel = new CertificateSecretModel(instance, instance.getMetadata().getNamespace(), componentName);
-        this.endpoints = createEndpoints(instance, spec);
         this.routes = new HashMap<>();
+        this.endpoints = createEndpoints(instance, spec, getP2PAuthenticationMechanisms());
     }
 
     /**
@@ -93,11 +93,12 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
      * @param instance The spec of the Event Streams CR
      * @param spec The list of endpoints passed into the component. This needs to be passed in to determine which
      *             component's endpoint (schema registry, admin rest, or rest producer) to configure.
+     * @param podToPodAuthenticationMechanisms A list of pod to pod authentication mechanisms
      * @return list of secure endpoints
      */
-    public List<Endpoint> createEndpoints(EventStreams instance, SecurityComponentSpec spec) {
+    public List<Endpoint> createEndpoints(EventStreams instance, SecurityComponentSpec spec, List<String> podToPodAuthenticationMechanisms) {
         return Optional.ofNullable(spec)
-            .map(securityComponentSpec -> getEndpoints(instance, securityComponentSpec))
+            .map(securityComponentSpec -> getEndpoints(instance, securityComponentSpec, podToPodAuthenticationMechanisms))
             .orElse(Collections.emptyList());
     }
 
@@ -107,13 +108,13 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
      * @param spec the SecurityComponent which contains the endpoints to create
      * @return A list of endpoints
      */
-    private List<Endpoint> getEndpoints(EventStreams instance, SecurityComponentSpec spec) {
+    private List<Endpoint> getEndpoints(EventStreams instance, SecurityComponentSpec spec, List<String> podToPodAuth) {
         List<Endpoint> endpoints = Optional.ofNullable(spec)
             .map(SecurityComponentSpec::getEndpoints)
             .map(endpointSpecs -> endpointSpecs.stream().map(Endpoint.createEndpointFromSpec()).collect(Collectors.toList()))
             .orElse(new ArrayList<>(Collections.singletonList(Endpoint.createDefaultExternalEndpoint())));
 
-        endpoints.add(Endpoint.createP2PEndpoint(instance));
+        endpoints.add(Endpoint.createP2PEndpoint(instance, podToPodAuth));
 
         return endpoints;
     }
@@ -142,6 +143,10 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
      */
     public String getServiceName(EndpointServiceType type) {
         return getDefaultResourceNameWithSuffix(getServiceSuffix(type));
+    }
+
+    public List<String> getP2PAuthenticationMechanisms() {
+        return Collections.emptyList();
     }
 
     /**
@@ -399,6 +404,10 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
 
     public List<Endpoint> getEndpoints() {
         return endpoints;
+    }
+
+    public void setEndpoints(List<Endpoint> endpoints) {
+        this.endpoints = endpoints;
     }
 
     public List<Service> getSecurityServices() {

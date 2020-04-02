@@ -83,7 +83,7 @@ public class Endpoint {
      * @param instance
      * @return A Plain/TCP Pod To Pod endpoint based on the overall security configuration of the CR.
      */
-    public static Endpoint createP2PEndpoint(EventStreams instance) {
+    public static Endpoint createP2PEndpoint(EventStreams instance, List<String> podToPodAuth) {
         boolean isTls = isTls(instance);
 
         return new Endpoint(isTls ? DEFAULT_P2P_TLS_NAME : DEFAULT_P2P_PLAIN_NAME,
@@ -92,7 +92,7 @@ public class Endpoint {
                             EndpointServiceType.INTERNAL,
                             isTls ? DEFAULT_P2P_PATH : null,
                             null,
-                            Collections.emptyList());
+                            podToPodAuth);
     }
 
     /**

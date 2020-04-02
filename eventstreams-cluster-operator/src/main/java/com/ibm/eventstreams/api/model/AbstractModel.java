@@ -463,7 +463,7 @@ public abstract class AbstractModel {
 
     public Map<String, String> generateSecurityLabels(boolean isTls, List<String> authenticationMechanisms) {
         Map<String, String> labels = new HashMap<>();
-        labels.put(Labels.EVENTSTREAMS_AUTHENTICATION_LABEL, authenticationMechanisms.stream().collect(Collectors.joining(",")));
+        labels.put(Labels.EVENTSTREAMS_AUTHENTICATION_LABEL, authenticationMechanisms.stream().collect(Collectors.joining(".")));
         labels.put(Labels.EVENTSTREAMS_PROTOCOL_LABEL, isTls ? "https" : "http");
         return labels;
     }

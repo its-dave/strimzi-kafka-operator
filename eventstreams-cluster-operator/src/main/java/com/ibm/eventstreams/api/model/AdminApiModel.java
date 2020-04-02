@@ -52,6 +52,7 @@ import org.apache.logging.log4j.Logger;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -498,6 +499,11 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
                 .build();
         }
         return deployment;
+    }
+
+    @Override
+    public List<String> getP2PAuthenticationMechanisms() {
+        return Collections.singletonList("IAM-BEARER");
     }
 
     /**

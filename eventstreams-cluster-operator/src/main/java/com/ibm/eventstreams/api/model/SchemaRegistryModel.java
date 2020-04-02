@@ -599,6 +599,11 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
         return deployment;
     }
 
+    @Override
+    public List<String> getP2PAuthenticationMechanisms() {
+        return Arrays.asList("MAC", "IAM-BEARER");
+    }
+
     /**
      * @return Deployment return the deployment with an empty generation id
      */
