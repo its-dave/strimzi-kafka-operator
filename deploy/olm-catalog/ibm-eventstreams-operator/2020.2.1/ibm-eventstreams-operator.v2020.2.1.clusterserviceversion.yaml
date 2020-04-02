@@ -952,7 +952,7 @@ spec:
                 - name: EVENTSTREAMS_DEFAULT_REST_PRODUCER_IMAGE
                   value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-rest-producer-v2-icp-linux-amd64:2020-04-02-09.21.16-2315783
                 - name: EVENTSTREAMS_DEFAULT_ADMIN_API_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-admin-icp-linux-amd64:2020-03-26-17.04.49-c95c155
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-admin-icp-linux-amd64:2020-04-02-09.21.12-2315783
                 - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_IMAGE
                   value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-registry-icp-linux-amd64:2020-03-14-11.44.53-538a363-dev
                 - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_AVRO_IMAGE
@@ -960,7 +960,7 @@ spec:
                 - name: EVENTSTREAMS_DEFAULT_SCHEMA_PROXY_IMAGE
                   value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-schema-registry-v2-icp-linux-amd64:2020-03-30-10.05.01-08c581c
                 - name: EVENTSTREAMS_DEFAULT_ADMIN_UI_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-admin-ui-icp-linux-amd64:2020-03-27-10.15.01-9a0c070-exp
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-admin-ui-icp-linux-amd64:2020-03-31-16.14.20-ef190b2-dev
                 - name: EVENTSTREAMS_DEFAULT_ADMIN_UI_REDIS_IMAGE
                   value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-database-icp-linux-amd64:2020-02-11-13.40.39-0a99ddb-exp
                 - name: EVENTSTREAMS_DEFAULT_COLLECTOR_IMAGE
