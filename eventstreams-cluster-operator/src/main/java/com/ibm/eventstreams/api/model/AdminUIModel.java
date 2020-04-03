@@ -256,8 +256,15 @@ public class AdminUIModel extends AbstractModel {
      * @return The Admin UI container
      */
     private Container getUIContainer(EventStreams instance) {
-        String adminApiService = getUrlProtocol(crTlsVersionValue) + getInternalServiceName(getInstanceName(), AdminApiModel.COMPONENT_NAME) + "." +  getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.getPodToPodPort(tlsEnabled());
-        String schemaRegistryService = getUrlProtocol(crTlsVersionValue) + getInternalServiceName(getInstanceName(), SchemaRegistryModel.COMPONENT_NAME) + "." +  getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.getPodToPodPort(tlsEnabled());
+        boolean isSecurityEnabled = !Optional.ofNullable(instance)
+            .map(EventStreams::getSpec)
+            .map(EventStreamsSpec::getSecurity)
+            .map(SecuritySpec::getInternalTls)
+            .orElse(AbstractModel.DEFAULT_INTERNAL_TLS)
+            .equals(TlsVersion.NONE);
+
+        String adminApiService = getUrlProtocol(crTlsVersionValue) + getInternalServiceName(getInstanceName(), AdminApiModel.COMPONENT_NAME) + "." +  getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.getPodToPodPort(isSecurityEnabled);
+        String schemaRegistryService = getUrlProtocol(crTlsVersionValue) + getInternalServiceName(getInstanceName(), SchemaRegistryModel.COMPONENT_NAME) + "." +  getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.getPodToPodPort(isSecurityEnabled);
 
         List<EnvVar> envVarDefaults = new ArrayList<>();
 

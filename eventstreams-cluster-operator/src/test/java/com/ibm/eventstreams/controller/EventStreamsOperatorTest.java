@@ -17,6 +17,7 @@ import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.EndpointServiceType;
 import com.ibm.eventstreams.api.Labels;
 import com.ibm.eventstreams.api.TlsVersion;
+import com.ibm.eventstreams.api.model.AbstractModel;
 import com.ibm.eventstreams.api.model.AbstractSecureEndpointsModel;
 import com.ibm.eventstreams.api.model.AdminApiModel;
 import com.ibm.eventstreams.api.model.AdminUIModel;
@@ -144,6 +145,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static com.ibm.eventstreams.api.model.AbstractModel.APP_NAME;
+import static com.ibm.eventstreams.api.model.AbstractSecureEndpointsModel.getInternalServiceName;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
@@ -2259,6 +2261,41 @@ public class EventStreamsOperatorTest {
                 assertThat(adminUI.isPresent(), is(true));
                 Container uiContainer = adminUI.get().getSpec().getTemplate().getSpec().getContainers().get(0);
                 assertThat(uiContainer.getEnv(), hasItem(new EnvVarBuilder().withName(CP4I_ADMIN_UI_ENVAR_NAME).withValue("").build()));
+                async.flag();
+            })));
+    }
+
+    @Test
+    public void testDefaultEventStreamsUIEnvVars(VertxTestContext context) {
+        cp4iResourceOperator = mockCp4iServicesBinding("", true);
+        when(cp4iResourceOperator.waitForCp4iServicesBindingStatusAndMaybeGetUrl(anyString(), anyString(), anyLong(), anyLong(), any()))
+            .thenReturn(Future.succeededFuture(""));
+
+        boolean tlsEnabled = !AbstractModel.DEFAULT_INTERNAL_TLS.equals(TlsVersion.NONE);
+        String adminApiService =  "http://" + getInternalServiceName(CLUSTER_NAME, AdminApiModel.COMPONENT_NAME) + "." +  NAMESPACE + ".svc.cluster.local:" + Endpoint.getPodToPodPort(tlsEnabled);
+        String schemaRegistryService =  "http://" + getInternalServiceName(CLUSTER_NAME, SchemaRegistryModel.COMPONENT_NAME) + "." +  NAMESPACE + ".svc.cluster.local:" + Endpoint.getPodToPodPort(tlsEnabled);
+
+        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
+        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
+        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
+
+        Checkpoint async = context.checkpoint();
+        esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster)
+            .onComplete(context.succeeding(v -> context.verify(() -> {
+                Optional<Deployment> adminUI = Optional.ofNullable(mockClient.apps().deployments().inNamespace(NAMESPACE).list())
+                    .map(DeploymentList::getItems)
+                    .map(list -> list.stream()
+                        .filter(deploy -> deploy.getMetadata().getName().equals(CLUSTER_NAME + "-" + APP_NAME + "-" + AdminUIModel.COMPONENT_NAME))
+                        .findFirst())
+                    .map(deployment -> (Deployment) deployment.get());
+
+                assertThat(adminUI.isPresent(), is(true));
+                Container uiContainer = adminUI.get().getSpec().getTemplate().getSpec().getContainers().get(0);
+                EnvVar adminApiEnvVar = new EnvVarBuilder().withName("API_URL").withValue(adminApiService).build();
+                EnvVar schemaRegistryEnvVar = new EnvVarBuilder().withName("SCHEMA_REGISTRY_URL").withValue(schemaRegistryService).build();
+
+                assertThat(uiContainer.getEnv(), hasItem(adminApiEnvVar));
+                assertThat(uiContainer.getEnv(), hasItem(schemaRegistryEnvVar));
                 async.flag();
             })));
     }
