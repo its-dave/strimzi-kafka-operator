@@ -16,6 +16,7 @@ package com.ibm.eventstreams.controller;
 import com.ibm.eventstreams.api.model.utils.MockEventStreamsKube;
 import com.ibm.eventstreams.api.model.utils.ModelUtils;
 import com.ibm.eventstreams.api.spec.EventStreams;
+import com.ibm.eventstreams.controller.utils.ConditionUtils;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -23,8 +24,6 @@ import io.fabric8.kubernetes.client.dsl.base.OperationSupport;
 import io.strimzi.api.kafka.KafkaList;
 import io.strimzi.api.kafka.model.DoneableKafka;
 import io.strimzi.api.kafka.model.Kafka;
-import io.strimzi.api.kafka.model.status.Condition;
-import io.strimzi.api.kafka.model.status.ConditionBuilder;
 import io.strimzi.api.kafka.model.status.KafkaStatus;
 import io.strimzi.api.kafka.model.status.KafkaStatusBuilder;
 import io.strimzi.test.mockkube.MockKube;
@@ -45,11 +44,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 import java.net.URL;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
-import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -81,91 +76,91 @@ public class EventStreamsResourceOperatorTest {
 
 
     @Test
-    public void testNoStatusIsNotReady() {
+    public void testNoStatusIsStillDeploying() {
         KubernetesClient mockedKafkaClient = prepareKubeClient(null);
 
         EventStreamsResourceOperator operator = new EventStreamsResourceOperator(vertx, mockedKafkaClient);
-        assertThat(operator.isKafkaCRReady(NAMESPACE, CLUSTER_NAME), is(false));
+        assertThat(operator.hasKafkaCRStoppedDeploying(NAMESPACE, CLUSTER_NAME), is(false));
 
         mockedKafkaClient.close();
     }
 
     @Test
-    public void testNoStatusConditionsIsNotReady() {
+    public void testNoStatusConditionsIsStillDeploying() {
         KubernetesClient mockedKafkaClient = prepareKubeClient(new KafkaStatusBuilder().build());
 
         EventStreamsResourceOperator operator = new EventStreamsResourceOperator(vertx, mockedKafkaClient);
-        assertThat(operator.isKafkaCRReady(NAMESPACE, CLUSTER_NAME), is(false));
+        assertThat(operator.hasKafkaCRStoppedDeploying(NAMESPACE, CLUSTER_NAME), is(false));
 
         mockedKafkaClient.close();
     }
 
     @Test
-    public void testEmptyConditionsIsNotReady() {
-        KubernetesClient mockedKafkaClient = prepareKubeClient(new KafkaStatusBuilder().withConditions(getEmptyConditions()).build());
+    public void testEmptyConditionsIsNotStillDeploying() {
+        KubernetesClient mockedKafkaClient = prepareKubeClient(new KafkaStatusBuilder().withConditions(ConditionUtils.getEmptyConditions()).build());
 
         EventStreamsResourceOperator operator = new EventStreamsResourceOperator(vertx, mockedKafkaClient);
-        assertThat(operator.isKafkaCRReady(NAMESPACE, CLUSTER_NAME), is(false));
+        assertThat(operator.hasKafkaCRStoppedDeploying(NAMESPACE, CLUSTER_NAME), is(true));
 
         mockedKafkaClient.close();
     }
 
     @Test
-    public void testInitialConditionsIsNotReady() {
-        KubernetesClient mockedKafkaClient = prepareKubeClient(new KafkaStatusBuilder().withConditions(getInitialConditions()).build());
+    public void testInitialConditionsIsStillDeploying() {
+        KubernetesClient mockedKafkaClient = prepareKubeClient(new KafkaStatusBuilder().withConditions(ConditionUtils.getInitialConditions()).build());
 
         EventStreamsResourceOperator operator = new EventStreamsResourceOperator(vertx, mockedKafkaClient);
-        assertThat(operator.isKafkaCRReady(NAMESPACE, CLUSTER_NAME), is(false));
+        assertThat(operator.hasKafkaCRStoppedDeploying(NAMESPACE, CLUSTER_NAME), is(false));
 
         mockedKafkaClient.close();
     }
 
     @Test
-    public void testInitialConditionsWithWarningsIsNotReady() {
-        KubernetesClient mockedKafkaClient = prepareKubeClient(new KafkaStatusBuilder().withConditions(getInitialConditionsWithWarnings()).build());
+    public void testInitialConditionsWithWarningsIsStillDeploying() {
+        KubernetesClient mockedKafkaClient = prepareKubeClient(new KafkaStatusBuilder().withConditions(ConditionUtils.getInitialConditionsWithWarnings()).build());
 
         EventStreamsResourceOperator operator = new EventStreamsResourceOperator(vertx, mockedKafkaClient);
-        assertThat(operator.isKafkaCRReady(NAMESPACE, CLUSTER_NAME), is(false));
+        assertThat(operator.hasKafkaCRStoppedDeploying(NAMESPACE, CLUSTER_NAME), is(false));
 
         mockedKafkaClient.close();
     }
 
     @Test
-    public void testNotReadyIsNotReady() {
-        KubernetesClient mockedKafkaClient = prepareKubeClient(new KafkaStatusBuilder().withConditions(getNotReadyCondition()).build());
+    public void testFailureWithWarningsIsNotDeploying() {
+        KubernetesClient mockedKafkaClient = prepareKubeClient(new KafkaStatusBuilder().withConditions(ConditionUtils.getNotReadyConditionsWithWarnings()).build());
 
         EventStreamsResourceOperator operator = new EventStreamsResourceOperator(vertx, mockedKafkaClient);
-        assertThat(operator.isKafkaCRReady(NAMESPACE, CLUSTER_NAME), is(false));
+        assertThat(operator.hasKafkaCRStoppedDeploying(NAMESPACE, CLUSTER_NAME), is(true));
 
         mockedKafkaClient.close();
     }
 
     @Test
-    public void testNotReadyWithWarningsIsNotReady() {
-        KubernetesClient mockedKafkaClient = prepareKubeClient(new KafkaStatusBuilder().withConditions(getNotReadyConditionsWithWarnings()).build());
+    public void testFailureIsNotDeploying() {
+        KubernetesClient mockedKafkaClient = prepareKubeClient(new KafkaStatusBuilder().withConditions(ConditionUtils.getFailureCondition()).build());
 
         EventStreamsResourceOperator operator = new EventStreamsResourceOperator(vertx, mockedKafkaClient);
-        assertThat(operator.isKafkaCRReady(NAMESPACE, CLUSTER_NAME), is(false));
+        assertThat(operator.hasKafkaCRStoppedDeploying(NAMESPACE, CLUSTER_NAME), is(true));
 
         mockedKafkaClient.close();
     }
 
     @Test
-    public void testReadyWithWarningsIsReady() {
-        KubernetesClient mockedKafkaClient = prepareKubeClient(new KafkaStatusBuilder().withConditions(getReadyConditionsWithWarnings()).build());
+    public void testReadyWithWarningsIsNotDeploying() {
+        KubernetesClient mockedKafkaClient = prepareKubeClient(new KafkaStatusBuilder().withConditions(ConditionUtils.getReadyConditionsWithWarnings()).build());
 
         EventStreamsResourceOperator operator = new EventStreamsResourceOperator(vertx, mockedKafkaClient);
-        assertThat(operator.isKafkaCRReady(NAMESPACE, CLUSTER_NAME), is(true));
+        assertThat(operator.hasKafkaCRStoppedDeploying(NAMESPACE, CLUSTER_NAME), is(true));
 
         mockedKafkaClient.close();
     }
 
     @Test
-    public void testReadyIsReady() {
-        KubernetesClient mockedKafkaClient = prepareKubeClient(new KafkaStatusBuilder().withConditions(getReadyCondition()).build());
+    public void testReadyIsNotDeploying() {
+        KubernetesClient mockedKafkaClient = prepareKubeClient(new KafkaStatusBuilder().withConditions(ConditionUtils.getReadyCondition()).build());
 
         EventStreamsResourceOperator operator = new EventStreamsResourceOperator(vertx, mockedKafkaClient);
-        assertThat(operator.isKafkaCRReady(NAMESPACE, CLUSTER_NAME), is(true));
+        assertThat(operator.hasKafkaCRStoppedDeploying(NAMESPACE, CLUSTER_NAME), is(true));
 
         mockedKafkaClient.close();
     }
@@ -230,89 +225,5 @@ public class EventStreamsResourceOperatorTest {
         CustomResourceDefinition crd = mockClient.customResourceDefinitions().withName(Kafka.CRD_NAME).get();
         return new MockKube().withCustomResourceDefinition(crd, Kafka.class, KafkaList.class, DoneableKafka.class)
                 .withInitialInstances(Collections.singleton(mockKafka)).end().build();
-    }
-
-    private static Condition createCondition(String type, String status) {
-        return new ConditionBuilder()
-                .withNewLastTransitionTime(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ").format(new Date()))
-                .withNewType(type)
-                .withNewStatus(status)
-                .build();
-    }
-    private static Condition createConditionWithReason(String type, String status, String reason, String message) {
-        return new ConditionBuilder()
-                .withNewLastTransitionTime(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ").format(new Date()))
-                .withNewType(type)
-                .withNewStatus(status)
-                .withNewReason(reason)
-                .withNewMessage(message)
-                .build();
-    }
-
-
-    private static List<Condition> getInitialConditions() {
-        List<Condition> conditions = new ArrayList<>();
-        conditions.add(createConditionWithReason("NotReady", "True", "Creating", "Kafka cluster is being deployed"));
-        return conditions;
-    }
-
-    private static List<Condition> getInitialConditionsWithWarnings() {
-        List<Condition> conditions = new ArrayList<>();
-        conditions.add(createConditionWithReason(
-                "Warning",
-                "True",
-                "KafkaStorage",
-                "A Kafka cluster with a single replica and ephemeral storage will lose topic messages after any restart or rolling update."));
-        conditions.add(createConditionWithReason(
-                "Warning",
-                "True",
-                "ZooKeeperStorage",
-                "A ZooKeeper cluster with a single replica and ephemeral storage will be in a defective state after any restart or rolling update."));
-        conditions.add(createConditionWithReason("NotReady", "True", "Creating", "Kafka cluster is being deployed"));
-        return conditions;
-    }
-
-    private static List<Condition> getReadyConditionsWithWarnings() {
-        List<Condition> conditions = new ArrayList<>();
-        conditions.add(createConditionWithReason(
-            "Warning",
-            "True",
-            "KafkaStorage",
-            "A Kafka cluster with a single replica and ephemeral storage will lose topic messages after any restart or rolling update."));
-        conditions.add(createConditionWithReason(
-            "Warning",
-            "True",
-            "ZooKeeperStorage",
-            "A ZooKeeper cluster with a single replica and ephemeral storage will be in a defective state after any restart or rolling update."));
-        conditions.add(createCondition("Ready", "True"));
-        return conditions;
-    }
-
-    private static List<Condition> getNotReadyConditionsWithWarnings() {
-        List<Condition> conditions = new ArrayList<>();
-        conditions.add(createConditionWithReason(
-                "Warning",
-                "True",
-                "KafkaStorage",
-                "A Kafka cluster with a single replica and ephemeral storage will lose topic messages after any restart or rolling update."));
-        conditions.add(createConditionWithReason("NotReady", "True", "MockFailure", "Something went wrong"));
-        return conditions;
-    }
-
-    private static List<Condition> getReadyCondition() {
-        List<Condition> conditions = new ArrayList<>();
-        conditions.add(createCondition("Ready", "True"));
-        return conditions;
-    }
-
-    private static List<Condition> getNotReadyCondition() {
-        List<Condition> conditions = new ArrayList<>();
-        conditions.add(createConditionWithReason("NotReady", "True", "MockFailure", "Something went wrong"));
-        return conditions;
-    }
-
-    private static List<Condition> getEmptyConditions() {
-        List<Condition> conditions = new ArrayList<>();
-        return conditions;
     }
 }

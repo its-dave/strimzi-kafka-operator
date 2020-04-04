@@ -47,6 +47,7 @@ import com.ibm.eventstreams.api.status.EventStreamsEndpointBuilder;
 import com.ibm.eventstreams.api.status.EventStreamsStatus;
 import com.ibm.eventstreams.api.status.EventStreamsStatusBuilder;
 import com.ibm.eventstreams.api.status.EventStreamsVersions;
+import com.ibm.eventstreams.controller.utils.ConditionUtils;
 import com.ibm.eventstreams.controller.utils.ControllerUtils;
 import com.ibm.eventstreams.rest.PlainListenerValidation;
 import com.ibm.iam.api.controller.Cp4iServicesBindingResourceOperator;
@@ -96,8 +97,6 @@ import io.strimzi.api.kafka.model.listener.KafkaListenerExternalRouteBuilder;
 import io.strimzi.api.kafka.model.listener.KafkaListenerTlsBuilder;
 import io.strimzi.api.kafka.model.listener.KafkaListenersBuilder;
 import io.strimzi.api.kafka.model.listener.TlsListenerConfigurationBuilder;
-import io.strimzi.api.kafka.model.status.Condition;
-import io.strimzi.api.kafka.model.status.ConditionBuilder;
 import io.strimzi.api.kafka.model.status.KafkaStatusBuilder;
 import io.strimzi.api.kafka.model.status.ListenerAddressBuilder;
 import io.strimzi.api.kafka.model.status.ListenerStatus;
@@ -127,7 +126,6 @@ import org.mockito.ArgumentCaptor;
 
 import java.nio.charset.StandardCharsets;
 import java.security.cert.X509Certificate;
-import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -242,11 +240,11 @@ public class EventStreamsOperatorTest {
 
         Kafka mockKafka = new Kafka();
         mockKafka.setMetadata(new ObjectMetaBuilder().withName(CLUSTER_NAME).withNamespace(NAMESPACE).build());
-        mockKafka.setStatus(new KafkaStatusBuilder().build());
+        mockKafka.setStatus(new KafkaStatusBuilder().withConditions(ConditionUtils.getReadyCondition()).build());
         Optional<Kafka> mockKafkaInstance = Optional.of(mockKafka);
 
         esResourceOperator = mock(EventStreamsResourceOperator.class);
-        when(esResourceOperator.kafkaCRHasReadyStatus(anyString(), anyString(), anyLong(), anyLong())).thenReturn(Future.succeededFuture());
+        when(esResourceOperator.kafkaCRHasStoppedDeploying(anyString(), anyString(), anyLong(), anyLong())).thenReturn(Future.succeededFuture());
         when(esResourceOperator.createOrUpdate(any(EventStreams.class))).thenReturn(Future.succeededFuture());
         when(esResourceOperator.getKafkaInstance(anyString(), anyString())).thenReturn(mockKafkaInstance);
         when(esResourceOperator.getAsync(anyString(), anyString())).thenReturn(Future.succeededFuture(mockEventStreams));
@@ -393,6 +391,58 @@ public class EventStreamsOperatorTest {
     }
 
     @Test
+    public void testKafkaWarningsAreReported(VertxTestContext context) {
+        Kafka mockKafka = new Kafka();
+        mockKafka.setMetadata(new ObjectMetaBuilder().withName(CLUSTER_NAME).withNamespace(NAMESPACE).build());
+        mockKafka.setStatus(new KafkaStatusBuilder().withConditions(ConditionUtils.getReadyConditionsWithWarnings()).build());
+        Optional<Kafka> mockKafkaInstance = Optional.of(mockKafka);
+        when(esResourceOperator.getKafkaInstance(anyString(), anyString())).thenReturn(mockKafkaInstance);
+
+        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
+        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
+        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
+
+        Checkpoint async = context.checkpoint();
+        esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster)
+            .onComplete(context.succeeding(v -> context.verify(() -> {
+                ArgumentCaptor<EventStreams> argument = ArgumentCaptor.forClass(EventStreams.class);
+                verify(esResourceOperator, times(2)).updateEventStreamsStatus(argument.capture());
+
+                EventStreams val = argument.getValue();
+                assertThat(val.getStatus().getPhase(), is("Running"));
+                assertThat(val.getStatus().getConditions(), hasItem(hasProperty("reason", is("KafkaStorage"))));
+                assertThat(val.getStatus().getConditions(), hasItem(hasProperty("reason", is("ZooKeeperStorage"))));
+
+                async.flag();
+            })));
+    }
+
+    @Test
+    public void testKafkaFailuresAreReported(VertxTestContext context) {
+        Kafka mockKafka = new Kafka();
+        mockKafka.setMetadata(new ObjectMetaBuilder().withName(CLUSTER_NAME).withNamespace(NAMESPACE).build());
+        mockKafka.setStatus(new KafkaStatusBuilder().withConditions(ConditionUtils.getFailureCondition()).build());
+        Optional<Kafka> mockKafkaInstance = Optional.of(mockKafka);
+        when(esResourceOperator.getKafkaInstance(anyString(), anyString())).thenReturn(mockKafkaInstance);
+
+        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
+        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
+        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
+
+        Checkpoint async = context.checkpoint();
+        esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster)
+            .onComplete(context.failing(e -> context.verify(() -> {
+                ArgumentCaptor<EventStreams> argument = ArgumentCaptor.forClass(EventStreams.class);
+                verify(esResourceOperator, times(2)).updateEventStreamsStatus(argument.capture());
+                EventStreams val = argument.getValue();
+                assertThat(val.getStatus().getPhase(), is("Failed"));
+                assertThat(val.getStatus().getConditions(), hasItem(hasProperty("reason", is("MockFailure"))));
+
+                async.flag();
+            })));
+    }
+
+    @Test
     public void testDefaultClusterHasEndpointsInStatus(VertxTestContext context) {
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
@@ -448,7 +498,7 @@ public class EventStreamsOperatorTest {
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster)
             .onComplete(context.failing(e -> context.verify(() -> {
                 ArgumentCaptor<EventStreams> argument = ArgumentCaptor.forClass(EventStreams.class);
-                verify(esResourceOperator, times(2)).updateEventStreamsStatus(argument.capture());
+                verify(esResourceOperator, times(3)).updateEventStreamsStatus(argument.capture());
                 assertThat(argument.getValue().getStatus().getConditions(),
                         hasItem(hasProperty("message", is("Could not retrieve cloud pak resources"))));
                 async.flag();
@@ -472,7 +522,7 @@ public class EventStreamsOperatorTest {
                 assertThat(e.getMessage(), is("Exit Reconcile as IAM not present"));
 
                 ArgumentCaptor<EventStreams> argument = ArgumentCaptor.forClass(EventStreams.class);
-                verify(esResourceOperator, times(2)).updateEventStreamsStatus(argument.capture());
+                verify(esResourceOperator, times(3)).updateEventStreamsStatus(argument.capture());
                 assertThat(argument.getValue().getStatus().getConditions(),
                         hasItem(hasProperty("message", is("Could not retrieve cloud pak resources"))));
                 async.flag();
@@ -535,7 +585,7 @@ public class EventStreamsOperatorTest {
                 .onComplete(context.failing(e -> context.verify(() -> {
                     assertThat(e.getMessage(), is("Invalid Event Streams specification: further details in the status conditions"));
                     // check status
-                    verify(esResourceOperator).updateEventStreamsStatus(updatedEventStreams.capture());
+                    verify(esResourceOperator, times(2)).updateEventStreamsStatus(updatedEventStreams.capture());
                     assertThat("Status is incorrect, found status : " + updatedEventStreams.getValue().getStatus(), updatedEventStreams.getValue().getStatus().getConditions().get(0).getMessage(), is("Invalid custom resource: EventStreams metadata name too long. Maximum length is 16"));
                     async.flag();
                 })));
@@ -559,7 +609,7 @@ public class EventStreamsOperatorTest {
 
                 assertThat(e.getMessage(), is("Invalid Event Streams specification: further details in the status conditions"));
                 // check status
-                verify(esResourceOperator).updateEventStreamsStatus(updatedEventStreams.capture());
+                verify(esResourceOperator, times(2)).updateEventStreamsStatus(updatedEventStreams.capture());
                 assertThat("Status is incorrect, found status : " + updatedEventStreams.getValue().getStatus(),
                         updatedEventStreams.getValue().getStatus().getConditions().get(0).getMessage().equals("Invalid custom resource: Unsupported version. Supported versions are [2020.2.1, 2020.2]"));
                 async.flag();
@@ -601,7 +651,7 @@ public class EventStreamsOperatorTest {
             .onComplete(context.failing(e -> context.verify(() -> {
                 assertThat(e.getMessage(), is("Invalid Event Streams specification: further details in the status conditions"));
                 // check status
-                verify(esResourceOperator).updateEventStreamsStatus(updatedEventStreams.capture());
+                verify(esResourceOperator, times(2)).updateEventStreamsStatus(updatedEventStreams.capture());
                 assertThat("Status is incorrect, found status : " + updatedEventStreams.getValue().getStatus(),
                         updatedEventStreams.getValue().getStatus().getConditions().get(0).getMessage(),
                         is("Listener client authentication unsupported for Geo Replication. Supported versions are TLS and SCRAM"));
@@ -626,7 +676,7 @@ public class EventStreamsOperatorTest {
             .onComplete(context.failing(e -> context.verify(() -> {
                 assertThat(e.getMessage(), is("Invalid Event Streams specification: further details in the status conditions"));
                 // check status
-                verify(esResourceOperator).updateEventStreamsStatus(updatedEventStreams.capture());
+                verify(esResourceOperator, times(2)).updateEventStreamsStatus(updatedEventStreams.capture());
                 assertThat("Status is incorrect, found status : " + updatedEventStreams.getValue().getStatus(),
                     updatedEventStreams.getValue().getStatus().getConditions().get(0).getMessage(),
                     is(PlainListenerValidation.FAILURE_MISSING_PLAIN_LISTENER_REASON));
@@ -719,11 +769,6 @@ public class EventStreamsOperatorTest {
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
-        Condition condition = new ConditionBuilder()
-                .withNewLastTransitionTime(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ").format(new Date()))
-                .withNewType("Ready")
-                .withNewStatus("True")
-                .build();
 
         ListenerStatus internalListener = new ListenerStatusBuilder()
                 .withNewType(internalListenerType)
@@ -743,7 +788,7 @@ public class EventStreamsOperatorTest {
 
         EventStreamsStatus status = new EventStreamsStatusBuilder()
                 .addToKafkaListeners(internalListener, externalListener)
-                .addToConditions(condition)
+                .withConditions(ConditionUtils.getReadyCondition())
                 .build();
 
         esCluster.setStatus(status);
@@ -755,7 +800,7 @@ public class EventStreamsOperatorTest {
 
         Kafka mockKafka = new Kafka();
         mockKafka.setMetadata(new ObjectMetaBuilder().withName(CLUSTER_NAME).withNamespace(NAMESPACE).build());
-        mockKafka.setStatus(new KafkaStatusBuilder().withListeners(internalListener, externalListener).build());
+        mockKafka.setStatus(new KafkaStatusBuilder().withListeners(internalListener, externalListener).withConditions(ConditionUtils.getReadyCondition()).build());
         Optional<Kafka> mockKafkaInstance = Optional.of(mockKafka);
         when(esResourceOperator.getKafkaInstance(anyString(), anyString())).thenReturn(mockKafkaInstance);
 

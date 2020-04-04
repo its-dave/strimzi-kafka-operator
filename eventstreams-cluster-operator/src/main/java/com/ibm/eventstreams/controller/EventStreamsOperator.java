@@ -178,10 +178,9 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
     }
 
     private Future<Void> reconcile(ReconciliationState reconcileState) {
-        Promise<Void> chainPromise = Promise.promise();
         customImageCount =  0;
 
-        reconcileState.validateCustomResource()
+        return reconcileState.validateCustomResource()
                 .compose(state -> state.getCloudPakClusterData())
                 .compose(state -> state.getCloudPakClusterCert())
                 .compose(state -> state.createCloudPakClusterCertSecret())
@@ -201,11 +200,9 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 .compose(state -> state.createCollector())
                 .compose(state -> state.createOAuthClient())
                 .compose(state -> state.checkEventStreamsSpec(this::dateSupplier))
-                .compose(state -> state.finalStatusUpdate())
-                .onSuccess(state -> chainPromise.complete())
-                .onFailure(t -> chainPromise.fail(t));
-
-        return chainPromise.future();
+                .onSuccess(state -> state.finalStatusUpdate())
+                .onFailure(thr -> reconcileState.recordFailure(thr))
+                .map(t -> null);
     }
 
     @Override
@@ -466,7 +463,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         Future<ReconciliationState> waitForKafkaStatus() {
             String kafkaInstanceName = EventStreamsKafkaModel.getKafkaInstanceName(instance.getMetadata().getName());
 
-            return esResourceOperator.kafkaCRHasReadyStatus(namespace, kafkaInstanceName, defaultPollIntervalMs, kafkaStatusReadyTimeoutMs)
+            return esResourceOperator.kafkaCRHasStoppedDeploying(namespace, kafkaInstanceName, defaultPollIntervalMs, kafkaStatusReadyTimeoutMs)
                     .compose(v -> {
                         log.debug("Retrieve Kafka instances in namespace : " + namespace);
                         Optional<Kafka> kafkaInstance = esResourceOperator.getKafkaInstance(namespace, kafkaInstanceName);
@@ -475,15 +472,19 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                             KafkaStatus kafkaStatus = kafkaInstance.get().getStatus();
                             log.debug("{}: kafkaStatus: {}", reconciliation, kafkaStatus);
 
-                            Optional.ofNullable(kafkaStatus.getConditions())
-                                    .orElse(new ArrayList<>())
-                                    .stream()
-                                    // ignore Kafka readiness conditions as we want to set our own
-                                    .filter(c -> !"Ready".equals(c.getType()))
-                                    // copy any warnings or messages from the Kafka CR into the ES CR
-                                    .forEach(this::addToConditions);
+                            List<Condition> conditions = Optional.ofNullable(kafkaStatus.getConditions()).orElse(Collections.emptyList());
+
+                            conditions.stream()
+                                // ignore Kafka readiness conditions as we want to set our own
+                                .filter(c -> !"Ready".equals(c.getType()))
+                                // copy any warnings or messages from the Kafka CR into the ES CR
+                                .forEach(this::addToConditions);
 
                             status.withKafkaListeners(kafkaStatus.getListeners());
+
+                            if (conditions.stream().noneMatch(c -> "Ready".equals(c.getType()) && "True".equals(c.getStatus()))) {
+                                return Future.failedFuture("Kafka cluster is not ready");
+                            }
                         } else {
                             return Future.failedFuture("Failed to retrieve kafkaInstance");
                         }
@@ -790,6 +791,18 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             instance.setStatus(esStatus);
             return updateStatus(esStatus);
         }
+
+
+        void recordFailure(Throwable thr) {
+            log.error("Recording reconcile failure", thr);
+            addNotReadyCondition("DeploymentFailed", thr.getMessage());
+
+            EventStreamsStatus statusSubresource = status.withPhase("Failed").build();
+            instance.setStatus(statusSubresource);
+            updateStatus(statusSubresource);
+        }
+
+
 
         /**
          *

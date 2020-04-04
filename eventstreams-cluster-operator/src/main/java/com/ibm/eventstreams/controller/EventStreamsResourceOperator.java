@@ -24,6 +24,8 @@ import io.fabric8.kubernetes.client.dsl.Resource;
 import io.fabric8.kubernetes.client.dsl.base.OperationSupport;
 import io.fabric8.kubernetes.client.utils.Serialization;
 import io.strimzi.api.kafka.model.Kafka;
+import io.strimzi.api.kafka.model.status.Condition;
+import io.strimzi.api.kafka.model.status.ConditionBuilder;
 import io.strimzi.api.kafka.model.status.KafkaStatus;
 import io.strimzi.operator.common.operator.resource.AbstractWatchableResourceOperator;
 import io.vertx.core.Future;
@@ -62,7 +64,12 @@ public class EventStreamsResourceOperator extends
     }
 
     /**
-     * Succeeds when the Kafka Custom Resource is ready.
+     * Succeeds when the cluster operator verticle has finished deploying
+     * the Kafka Custom Resource.
+     *
+     * This can be because it is now in a successful ready state, or
+     * because the deploy has failed and is now in an irrecoverable error
+     * state.
      *
      * @param namespace     Namespace.
      * @param name          Name of the Kafka instance.
@@ -70,25 +77,52 @@ public class EventStreamsResourceOperator extends
      * @param timeoutMs     Timeout.
      * @return A future that succeeds when the Kafka Custom Resource is ready.
      */
-    public Future<Void> kafkaCRHasReadyStatus(String namespace, String name, long pollIntervalMs, long timeoutMs) {
-        return waitFor(namespace, name, pollIntervalMs, timeoutMs, this::isKafkaCRReady);
+    public Future<Void> kafkaCRHasStoppedDeploying(String namespace, String name, long pollIntervalMs, long timeoutMs) {
+        return waitFor(namespace, name, pollIntervalMs, timeoutMs, this::hasKafkaCRStoppedDeploying);
     }
 
     /**
-     * Checks if the Kafka Custom Resource is ready.
+     * Checks if the Kafka Custom Resource is still deploying.
+     *
+     * It may have stopped deploying because it has finished and
+     * is now in a healthy ready state, or because it has failed
+     * and is in an irrecoverable error state.
      *
      * @param namespace The namespace.
      * @param name The name of the Kafka instance.
-     * @return Whether the Kafka Custom Resource is ready.
+     * @return true if the Kafka Custom Resource is no longer being
+     *  deployed (either because it is ready or has failed), or
+     *  false if the deploy is still in progress.
      */
-    boolean isKafkaCRReady(String namespace, String name) {
+    boolean hasKafkaCRStoppedDeploying(String namespace, String name) {
+        final String deployingReason = "Creating";
+        final String deployingType = "NotReady";
+        final String deployingStatus = "True";
+
+        // while the Kafka CR is deploying, it will have a condition with
+        //  these attributes - the presence of this is an indicator that
+        //  we should continue to wait
+        Condition defaultDeploying = new ConditionBuilder()
+                .withReason(deployingReason)
+                .withType(deployingType)
+                .withStatus(deployingStatus)
+                .build();
+
         return getKafkaInstance(namespace, name)
                 .map(Kafka::getStatus)
                 .map(KafkaStatus::getConditions)
-                .orElse(Collections.emptyList())
+                // There is a small race condition when the CR is created that
+                // means there won't be a status, or a status with no conditions.
+                // We assume that we can treat no-conditions as indicating a
+                // start up state, and that it's safe to assume there will be an
+                // explicit error condition when in an error state.
+                .orElse(Collections.singletonList(defaultDeploying))
                 .stream()
-                .anyMatch(condition -> "Ready".equals(condition.getType()) &&
-                                       "True".equals(condition.getStatus()));
+                // if none of the conditions are a DEPLOYING condition, then
+                // we must have stopped deploying
+                .noneMatch(condition -> deployingReason.equals(condition.getReason()) &&
+                                        deployingType.equals(condition.getType()) &&
+                                        deployingStatus.equals(condition.getStatus()));
     }
 
     /**
