@@ -9085,10 +9085,10 @@ spec:
                   type:
                     type: string
                     enum:
-                    - api
-                    - ui
-                    description: 'The type of the endpoint: ''ui'' for a UI endpoint,
-                      ''api'' for an API endpoint.'
+                    - API
+                    - UI
+                    description: 'The type of the endpoint: ''UI'' for a UI endpoint,
+                      ''API'' for an API endpoint.'
                   uri:
                     type: string
               description: Addresses of the interfaces provided by the Event Streams

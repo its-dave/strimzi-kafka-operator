@@ -465,17 +465,17 @@ public class EventStreamsOperatorTest {
                 assertThat(endpoints, Matchers.hasItems(
                     new EventStreamsEndpointBuilder()
                         .withName("admin")
-                        .withType(EventStreamsEndpoint.EndpointType.api)
+                        .withType(EventStreamsEndpoint.EndpointType.API)
                         .withNewUri("https://" + ADMIN_API_ROUTE_NAME + "-" + Endpoint.DEFAULT_EXTERNAL_NAME + "." + ROUTE_HOST_POSTFIX)
                         .build(),
                     new EventStreamsEndpointBuilder()
                         .withName("ui")
-                        .withType(EventStreamsEndpoint.EndpointType.ui)
+                        .withType(EventStreamsEndpoint.EndpointType.UI)
                         .withNewUri("https://" + UI_ROUTE_NAME + "." + ROUTE_HOST_POSTFIX)
                         .build(),
                     new EventStreamsEndpointBuilder()
                         .withName("schemaregistry")
-                        .withType(EventStreamsEndpoint.EndpointType.api)
+                        .withType(EventStreamsEndpoint.EndpointType.API)
                         .withNewUri("https://" + SCHEMA_REGISTRY_ROUTE_NAME + "-" +  Endpoint.DEFAULT_EXTERNAL_NAME + "." + ROUTE_HOST_POSTFIX)
                         .build()));
                 async.flag();

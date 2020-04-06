@@ -602,7 +602,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                     .compose(routesHostMap -> {
                         for (String adminRouteHost : routesHostMap.values()) {
                             String adminRouteUri = "https://" + adminRouteHost;
-                            updateEndpoints(new EventStreamsEndpoint(EventStreamsEndpoint.ADMIN_KEY, EventStreamsEndpoint.EndpointType.api, adminRouteUri));
+                            updateEndpoints(new EventStreamsEndpoint(EventStreamsEndpoint.ADMIN_KEY, EventStreamsEndpoint.EndpointType.API, adminRouteUri));
                         }
                         return Future.succeededFuture(routesHostMap);
                     })
@@ -638,7 +638,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                     .compose(routesHostMap -> {
                         String schemaRouteHost = routesHostMap.get(schemaRegistry.getRouteName(Endpoint.DEFAULT_EXTERNAL_NAME));
                         String schemaRouteUri = "https://" + schemaRouteHost;
-                        updateEndpoints(new EventStreamsEndpoint(EventStreamsEndpoint.SCHEMA_REGISTRY_KEY, EventStreamsEndpoint.EndpointType.api, schemaRouteUri));
+                        updateEndpoints(new EventStreamsEndpoint(EventStreamsEndpoint.SCHEMA_REGISTRY_KEY, EventStreamsEndpoint.EndpointType.API, schemaRouteUri));
                         return Future.succeededFuture(routesHostMap);
                     })
                     .compose(res -> reconcileCerts(schemaRegistry, res, dateSupplier))
@@ -678,7 +678,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                         status.addToRoutes(AdminUIModel.COMPONENT_NAME, uiRouteHost);
                         status.withNewAdminUiUrl(uiRouteUri);
 
-                        updateEndpoints(new EventStreamsEndpoint("ui", EventStreamsEndpoint.EndpointType.ui, uiRouteUri));
+                        updateEndpoints(new EventStreamsEndpoint(EventStreamsEndpoint.UI_KEY, EventStreamsEndpoint.EndpointType.UI, uiRouteUri));
                     }
                     return Future.succeededFuture();
                 }));

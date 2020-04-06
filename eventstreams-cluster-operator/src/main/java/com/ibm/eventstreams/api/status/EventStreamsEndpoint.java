@@ -38,7 +38,7 @@ public class EventStreamsEndpoint implements Serializable {
     private String name;
 
     public enum EndpointType {
-        api, ui;
+        API, UI;
     }
 
     public static final String ADMIN_KEY = "admin";
@@ -61,7 +61,7 @@ public class EventStreamsEndpoint implements Serializable {
         this.uri = uri;
     }
 
-    @Description("The type of the endpoint: 'ui' for a UI endpoint, 'api' for an API endpoint.")
+    @Description("The type of the endpoint: 'UI' for a UI endpoint, 'API' for an API endpoint.")
     public EndpointType getType() {
         return type;
     }
