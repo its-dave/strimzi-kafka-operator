@@ -17,13 +17,13 @@ import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.EndpointServiceType;
 import com.ibm.eventstreams.api.TlsVersion;
 import com.ibm.eventstreams.api.model.utils.ModelUtils;
-import com.ibm.eventstreams.api.spec.AdminApiSpecBuilder;
 import com.ibm.eventstreams.api.spec.EndpointSpec;
 import com.ibm.eventstreams.api.spec.EndpointSpecBuilder;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.spec.EventStreamsSpecBuilder;
+import com.ibm.eventstreams.api.spec.SecurityComponentSpecBuilder;
 import com.ibm.eventstreams.api.spec.SecuritySpecBuilder;
 import com.ibm.eventstreams.controller.EventStreamsOperatorConfig;
 import io.fabric8.kubernetes.api.model.Container;
@@ -260,7 +260,7 @@ public class AdminApiModelTest {
         EventStreams eventStreams = createDefaultEventStreams()
                 .editSpec()
                 .withSecurity(new SecuritySpecBuilder().withInternalTls(TlsVersion.TLS_V1_2).build())
-                .withAdminApi(new AdminApiSpecBuilder()
+                .withAdminApi(new SecurityComponentSpecBuilder()
                     .withEndpoints(
                         new EndpointSpecBuilder()
                             .withName("first-endpoint")

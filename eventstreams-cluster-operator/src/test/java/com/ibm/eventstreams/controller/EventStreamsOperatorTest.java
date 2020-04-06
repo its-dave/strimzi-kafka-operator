@@ -32,7 +32,6 @@ import com.ibm.eventstreams.api.model.RestProducerModel;
 import com.ibm.eventstreams.api.model.SchemaRegistryModel;
 import com.ibm.eventstreams.api.model.utils.MockEventStreamsKube;
 import com.ibm.eventstreams.api.model.utils.ModelUtils;
-import com.ibm.eventstreams.api.spec.AdminApiSpecBuilder;
 import com.ibm.eventstreams.api.spec.EndpointSpec;
 import com.ibm.eventstreams.api.spec.EndpointSpecBuilder;
 import com.ibm.eventstreams.api.spec.EventStreams;
@@ -1657,7 +1656,7 @@ public class EventStreamsOperatorTest {
             .build();
 
         EventStreams beforeInstance = createMinimalESInstance();
-        beforeInstance.getSpec().setAdminApi(new AdminApiSpecBuilder()
+        beforeInstance.getSpec().setAdminApi(new SecurityComponentSpecBuilder()
             .withReplicas(1)
             .build());
 

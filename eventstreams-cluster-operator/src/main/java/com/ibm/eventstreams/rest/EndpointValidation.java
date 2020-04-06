@@ -19,7 +19,6 @@ import java.util.Set;
 
 import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.EndpointServiceType;
-import com.ibm.eventstreams.api.spec.AdminApiSpec;
 import com.ibm.eventstreams.api.spec.EndpointSpec;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
@@ -62,7 +61,7 @@ public class EndpointValidation extends AbstractValidation {
 
     public static ValidationResponsePayload validateEndpoints(EventStreams instance) {
         // get the spec that contain endpoints
-        Optional<List<EndpointSpec>> adminApiEndpoints = Optional.ofNullable(instance.getSpec()).map(EventStreamsSpec::getAdminApi).map(AdminApiSpec::getEndpoints);
+        Optional<List<EndpointSpec>> adminApiEndpoints = Optional.ofNullable(instance.getSpec()).map(EventStreamsSpec::getAdminApi).map(SecurityComponentSpec::getEndpoints);
         Optional<List<EndpointSpec>> restProdEndpoints = Optional.ofNullable(instance.getSpec()).map(EventStreamsSpec::getRestProducer).map(SecurityComponentSpec::getEndpoints);
         Optional<List<EndpointSpec>> schemaRegistryEndpoints = Optional.ofNullable(instance.getSpec()).map(EventStreamsSpec::getSchemaRegistry).map(SchemaRegistrySpec::getEndpoints);
         Optional<KafkaListeners> listeners = Optional.ofNullable(instance.getSpec()).map(EventStreamsSpec::getStrimziOverrides).map(KafkaSpec::getKafka).map(KafkaClusterSpec::getListeners);

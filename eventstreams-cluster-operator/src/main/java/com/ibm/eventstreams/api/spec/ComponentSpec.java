@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 import io.strimzi.crdgenerator.annotations.Description;
 import io.sundr.builder.annotations.Buildable;
+import io.vertx.core.cli.annotations.DefaultValue;
 import lombok.EqualsAndHashCode;
 
 @JsonDeserialize(using = JsonDeserializer.None.class)
@@ -45,6 +46,7 @@ public class ComponentSpec extends ContainerSpec implements Serializable {
     }
 
     @Description("The number of instances to deploy.")
+    @DefaultValue("1")
     public Integer getReplicas() {
         return replicas;
     }

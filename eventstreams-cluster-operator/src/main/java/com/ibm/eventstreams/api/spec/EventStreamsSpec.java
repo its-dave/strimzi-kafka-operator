@@ -36,7 +36,7 @@ public class EventStreamsSpec implements Serializable {
 
     private boolean licenseAccept;
     private String version;
-    private AdminApiSpec adminApi;
+    private SecurityComponentSpec adminApi;
     private SecurityComponentSpec restProducer;
     private AdminUISpec adminUI;
     private SchemaRegistrySpec schemaRegistry;
@@ -75,13 +75,12 @@ public class EventStreamsSpec implements Serializable {
         this.version = version;
     }
 
-    @JsonProperty(required = true)
     @Description("Configuration of the Event Streams administration API server")
-    public AdminApiSpec getAdminApi() {
+    public SecurityComponentSpec getAdminApi() {
         return adminApi;
     }
 
-    public void setAdminApi(AdminApiSpec adminApi) {
+    public void setAdminApi(SecurityComponentSpec adminApi) {
         this.adminApi = adminApi;
     }
 
@@ -148,5 +147,4 @@ public class EventStreamsSpec implements Serializable {
     public void setSecurity(SecuritySpec security) {
         this.security = security;
     }
-
 }
