@@ -213,6 +213,13 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
         this.customImage = schemaCustomImage || avroCustomImage || schemaProxyCustomImage;
     }
 
+    public static boolean isSchemaRegistryEnabled(EventStreams instance) {
+        return Optional.ofNullable(instance.getSpec())
+                .map(EventStreamsSpec::getSchemaRegistry)
+                .map(SchemaRegistrySpec::getReplicas)
+                .map(replicas -> replicas > 0)
+                .orElse(false);
+    }
 
     /**
      * 
