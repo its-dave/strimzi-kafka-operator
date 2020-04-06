@@ -280,7 +280,6 @@ spec:
         adminUI: {}
         collector: {}
         restProducer: {}
-        replicator: {}
         schemaRegistry:
             storage:
                 type: ephemeral

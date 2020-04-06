@@ -238,6 +238,8 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             this.certificateManager = new EventStreamsCertificateManager(secretOperator, reconciliation.namespace(), EventStreamsKafkaModel.getKafkaInstanceName(instance.getMetadata().getName()));
         }
 
+        // there are several checks, but keeping them all in one place is helpful, so overriding the checkstyle warning
+        @SuppressWarnings("checkstyle:NPathComplexity")
         Future<ReconciliationState> validateCustomResource() {
             String phase = Optional.ofNullable(status.getPhase()).orElse("Pending");
 
@@ -269,11 +271,23 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 addNotReadyCondition("UnsupportedAuthorization", "Listener client authentication unsupported for Geo Replication. Supported versions are TLS and SCRAM");
                 isValidCR = false;
             }
-
             if (PlainListenerValidation.shouldReject(instance)) {
                 addNotReadyCondition("InvalidSecurityConfiguration", PlainListenerValidation.getRejectionReason(instance));
                 isValidCR = false;
             }
+
+            boolean adminApiRequested = Optional.ofNullable(instance.getSpec()).map(EventStreamsSpec::getAdminApi).isPresent();
+            boolean uiRequested = Optional.ofNullable(instance.getSpec()).map(EventStreamsSpec::getAdminUI).isPresent();
+            boolean georeplicatorRequested = Optional.ofNullable(instance.getSpec()).map(EventStreamsSpec::getReplicator).isPresent();
+            if (uiRequested && !adminApiRequested) {
+                addNotReadyCondition("InvalidUiConfiguration", "adminApi is a required component to enable adminUi");
+                isValidCR = false;
+            }
+            if (georeplicatorRequested && !adminApiRequested) {
+                addNotReadyCondition("InvalidGeoreplicatorConfiguration", "adminApi is a required component to enable replicator");
+                isValidCR = false;
+            }
+
 
             if (isValidCR) {
                 addCondition(previousConditions

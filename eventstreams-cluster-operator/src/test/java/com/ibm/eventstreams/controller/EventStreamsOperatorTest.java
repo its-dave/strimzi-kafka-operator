@@ -647,6 +647,88 @@ public class EventStreamsOperatorTest {
     }
 
     @Test
+    public void testEventStreamsUIWithoutAPIThrows(VertxTestContext context) {
+        mockRoutes();
+        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
+
+        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
+
+        String clusterName = "instancename";
+        EventStreams esCluster = new EventStreamsBuilder()
+                .withMetadata(new ObjectMetaBuilder().withName(clusterName).withNamespace(NAMESPACE).build())
+                .withNewSpec()
+                    .withLicenseAccept(true)
+                    .withVersion(EventStreamsVersions.OPERAND_VERSION)
+                    .withNewAdminUI()
+                        .withReplicas(1)
+                    .endAdminUI()
+                    .withStrimziOverrides(new KafkaSpecBuilder()
+                            .withNewKafka()
+                                .withNewListeners()
+                                    .withNewPlain().endPlain()
+                                .endListeners()
+                            .endKafka()
+                            .build())
+                .endSpec()
+                .build();
+
+        ArgumentCaptor<EventStreams> updatedEventStreams = ArgumentCaptor.forClass(EventStreams.class);
+        Checkpoint async = context.checkpoint();
+
+        esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, clusterName), esCluster)
+                .onComplete(context.failing(e -> context.verify(() -> {
+                    assertThat(e.getMessage(), is("Invalid Event Streams specification: further details in the status conditions"));
+
+                    verify(esResourceOperator, times(2)).updateEventStreamsStatus(updatedEventStreams.capture());
+                    EventStreamsStatus status = updatedEventStreams.getValue().getStatus();
+                    assertThat(status.getPhase(), is("Failed"));
+                    assertThat(status.getConditions().get(0).getMessage(), is("adminApi is a required component to enable adminUi"));
+                    async.flag();
+                })));
+    }
+
+    @Test
+    public void testEventStreamsGeorepWithoutAPIThrows(VertxTestContext context) {
+        mockRoutes();
+        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
+
+        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
+
+        String clusterName = "instancename";
+        EventStreams esCluster = new EventStreamsBuilder()
+                .withMetadata(new ObjectMetaBuilder().withName(clusterName).withNamespace(NAMESPACE).build())
+                .withNewSpec()
+                    .withLicenseAccept(true)
+                    .withVersion(EventStreamsVersions.OPERAND_VERSION)
+                    .withNewReplicator()
+                        .withReplicas(1)
+                    .endReplicator()
+                    .withStrimziOverrides(new KafkaSpecBuilder()
+                        .withNewKafka()
+                            .withNewListeners()
+                                .withNewPlain().endPlain()
+                            .endListeners()
+                        .endKafka()
+                        .build())
+                .endSpec()
+                .build();
+
+        ArgumentCaptor<EventStreams> updatedEventStreams = ArgumentCaptor.forClass(EventStreams.class);
+        Checkpoint async = context.checkpoint();
+
+        esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, clusterName), esCluster)
+                .onComplete(context.failing(e -> context.verify(() -> {
+                    assertThat(e.getMessage(), is("Invalid Event Streams specification: further details in the status conditions"));
+
+                    verify(esResourceOperator, times(2)).updateEventStreamsStatus(updatedEventStreams.capture());
+                    EventStreamsStatus status = updatedEventStreams.getValue().getStatus();
+                    assertThat(status.getPhase(), is("Failed"));
+                    assertThat(status.getConditions().get(0).getMessage(), is("adminApi is a required component to enable replicator"));
+                    async.flag();
+                })));
+    }
+
+    @Test
     public void testEventStreamsInvalidListenerAuthenticationOauthThrows(VertxTestContext context) {
         mockRoutes();
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
@@ -1822,6 +1904,8 @@ public class EventStreamsOperatorTest {
                     .endCollector()
                     .withNewSchemaRegistry()
                     .endSchemaRegistry()
+                    .withNewAdminApi()
+                    .endAdminApi()
                     .withNewAdminUI()
                     .endAdminUI()
                 .endSpec()
@@ -1926,6 +2010,9 @@ public class EventStreamsOperatorTest {
 
         EventStreams instance = new EventStreamsBuilder(minimalInstance)
                 .editSpec()
+                    .withNewAdminApi().
+                            withReplicas(1)
+                    .endAdminApi()
                     .withNewAdminUI()
                         .withReplicas(1)
                     .endAdminUI()
@@ -2036,6 +2123,9 @@ public class EventStreamsOperatorTest {
 
                             .endKafka()
                             .build())
+                    .withNewAdminApi().
+                        withReplicas(1)
+                    .endAdminApi()
                     .withNewReplicator()
                         .withReplicas(1)
                     .endReplicator()
