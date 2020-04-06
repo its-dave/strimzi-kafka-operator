@@ -319,6 +319,7 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
             new EnvVarBuilder().withName("RELEASE").withValue(getInstanceName()).build(),
             new EnvVarBuilder().withName("LICENSE").withValue("accept").build(),
             new EnvVarBuilder().withName("NAMESPACE").withValue(getNamespace()).build(),
+            new EnvVarBuilder().withName("TRACE_SPEC").withValue(traceString).build(),
             new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_SERVERS").withValue(internalBootstrap).build(),
             new EnvVarBuilder().withName("RUNAS_KAFKA_BOOTSTRAP_SERVERS").withValue(runasBootstrap).build(),
             new EnvVarBuilder().withName("SSL_ENABLED").withValue(tlsEnabled().toString()).build(),
@@ -332,15 +333,15 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
             new EnvVarBuilder().withName("PROMETHEUS_HOST").withValue(prometheusHost).build(),
             new EnvVarBuilder().withName("PROMETHEUS_PORT").withValue(prometheusPort).build(),
             new EnvVarBuilder().withName("CLUSTER_CACERT").withValue(clusterCaCert).build(),
-            new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue("true").build(),
             new EnvVarBuilder().withName("KAFKA_STS_NAME").withValue(EventStreamsKafkaModel.getKafkaInstanceName(getInstanceName()) + "-" + EventStreamsKafkaModel.KAFKA_COMPONENT_NAME).build(),
             new EnvVarBuilder().withName("KAFKA_CONNECT_REST_API_ADDRESS").withValue(kafkaConnectRestEndpoint).build(),
+            new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue(Boolean.toString(ReplicatorModel.isReplicatorEnabled(instance))).build(),
             new EnvVarBuilder().withName("GEOREPLICATION_SECRET_NAME").withValue(getResourcePrefix() + "-" + ReplicatorModel.REPLICATOR_SECRET_NAME).build(),
-            new EnvVarBuilder().withName("TRACE_SPEC").withValue(traceString).build(),
             new EnvVarBuilder().withName("GEOREPLICATION_INTERNAL_CLIENT_AUTH_ENABLED").withValue(Boolean.toString(isReplicatorInternalClientAuthForConnectEnabled(instance))).build(),
             new EnvVarBuilder().withName("GEOREPLICATION_EXTERNAL_CLIENT_AUTH_ENABLED").withValue(Boolean.toString(isReplicatorExternalClientAuthForConnectEnabled(instance))).build(),
             new EnvVarBuilder().withName("GEOREPLICATION_INTERNAL_SERVER_AUTH_ENABLED").withValue(Boolean.toString(isReplicatorInternalServerAuthForConnectEnabled(instance))).build(),
             new EnvVarBuilder().withName("GEOREPLICATION_EXTERNAL_SERVER_AUTH_ENABLED").withValue(Boolean.toString(isReplicatorExternalServerAuthForConnectEnabled(instance))).build(),
+            new EnvVarBuilder().withName("GEOREPLICATION_INTERNAL_CLIENT_AUTH_TYPE").withValue(isReplicatorInternalClientAuthForConnectEnabled(instance) ? ReplicatorModel.getInternalTlsKafkaListenerAuthentication(instance).getType() : "NONE").build(),
             new EnvVarBuilder()
                 .withName("SSL_TRUSTSTORE_PASSWORD")
                 .withNewValueFrom()

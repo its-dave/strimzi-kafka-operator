@@ -22,6 +22,12 @@ rules:
   - ""
   resources:
   - pods
+  verbs:
+  - list
+  - patch
+- apiGroups:
+  - ""
+  resources:
   - services
   verbs:
   - list

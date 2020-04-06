@@ -29,6 +29,7 @@ import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.spec.ReplicatorSpec;
 
 import com.ibm.eventstreams.replicator.ReplicatorCredentials;
+import io.fabric8.kubernetes.api.model.SecretVolumeSourceBuilder;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicyIngressRuleBuilder;
 import io.strimzi.api.kafka.model.KafkaClusterSpec;
 import io.strimzi.api.kafka.model.KafkaMirrorMaker2ClusterSpec;
@@ -37,6 +38,9 @@ import io.strimzi.api.kafka.model.KafkaMirrorMaker2Spec;
 import io.strimzi.api.kafka.model.KafkaMirrorMaker2Tls;
 import io.strimzi.api.kafka.model.KafkaSpec;
 import io.strimzi.api.kafka.model.authentication.KafkaClientAuthentication;
+import io.strimzi.api.kafka.model.connect.ExternalConfiguration;
+import io.strimzi.api.kafka.model.connect.ExternalConfigurationBuilder;
+import io.strimzi.api.kafka.model.connect.ExternalConfigurationVolumeSourceBuilder;
 import io.strimzi.api.kafka.model.listener.KafkaListenerAuthentication;
 import io.strimzi.api.kafka.model.listener.KafkaListenerExternal;
 import io.strimzi.api.kafka.model.listener.KafkaListenerTls;
@@ -182,6 +186,15 @@ public class ReplicatorModel extends AbstractModel {
                 .withConfig(kafkaMirrorMaker2Config)
                 .build();
 
+        ExternalConfiguration externalConfiguration = new ExternalConfigurationBuilder()
+                .withVolumes(new ExternalConfigurationVolumeSourceBuilder()
+                        .withName(REPLICATOR_SECRET_NAME)
+                        .withSecret(new SecretVolumeSourceBuilder()
+                                .withSecretName(getDefaultResourceName(getInstanceName(),  REPLICATOR_SECRET_NAME))
+                                .build())
+                        .build())
+                .build();
+
         return new KafkaMirrorMaker2Builder()
                 .withApiVersion(KafkaMirrorMaker2.RESOURCE_GROUP + "/" + KafkaMirrorMaker2.V1ALPHA1)
                 .editOrNewMetadata()
@@ -196,6 +209,7 @@ public class ReplicatorModel extends AbstractModel {
                     .withTemplate(kafkaMirrorMaker2Template)
                     .withConnectCluster(connectClusterName)
                     .withClusters(kafkaMirrorMaker2ClusterSpec)
+                    .withExternalConfiguration(externalConfiguration)
                 .endSpec()
                 .build();
     }

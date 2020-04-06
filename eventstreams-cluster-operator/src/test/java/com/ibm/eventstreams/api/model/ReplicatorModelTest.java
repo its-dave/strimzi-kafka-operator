@@ -28,6 +28,7 @@ import java.nio.charset.StandardCharsets;
 import io.strimzi.api.kafka.model.KafkaMirrorMaker2ClusterSpecBuilder;
 import io.strimzi.api.kafka.model.KafkaMirrorMaker2Spec;
 import io.strimzi.api.kafka.model.KafkaMirrorMaker2SpecBuilder;
+import io.strimzi.api.kafka.model.connect.ExternalConfiguration;
 import io.strimzi.operator.cluster.model.Ca;
 
 
@@ -236,6 +237,15 @@ public class ReplicatorModelTest {
 
     }
 
+    @Test
+    public void testDefaultReplicatorExternalConfiguration() {
+        ExternalConfiguration externalConfiguration = createDefaultReplicatorModel().getReplicator().getSpec().getExternalConfiguration();
+
+        assertThat(externalConfiguration.getVolumes().size(), is(1));
+        assertThat(externalConfiguration.getVolumes().get(0).getName(), is(ReplicatorModel.REPLICATOR_SECRET_NAME));
+        assertThat(externalConfiguration.getVolumes().get(0).getSecret().getSecretName(), is(instanceName + "-" + AbstractModel.APP_NAME + "-"  + ReplicatorModel.REPLICATOR_SECRET_NAME));
+        assertThat(externalConfiguration.getVolumes().get(0).getName(), is(ReplicatorModel.REPLICATOR_SECRET_NAME));
+    }
 
     private EventStreamsBuilder createDefaultEventStreams() {
 

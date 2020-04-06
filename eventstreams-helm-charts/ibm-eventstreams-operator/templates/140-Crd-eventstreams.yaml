@@ -1972,6 +1972,7 @@ spec:
               properties:
                 replicas:
                   type: integer
+                  minimum: 1
                   description: The number of connect replicas to start for Event Streams
                     replication.
                 mirrorMaker2Spec:

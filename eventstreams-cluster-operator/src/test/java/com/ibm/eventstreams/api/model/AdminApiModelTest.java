@@ -166,14 +166,19 @@ public class AdminApiModelTest {
         EnvVar kafkaBootstrapUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_SERVERS").withValue(kafkaBootstrap).build();
         EnvVar schemaRegistryUrlEnv = new EnvVarBuilder().withName("SCHEMA_REGISTRY_URL").withValue(schemaRegistryEndpoint).build();
         EnvVar zkConnectEnv = new EnvVarBuilder().withName("ZOOKEEPER_CONNECT").withValue(zookeeperEndpoint).build();
-        EnvVar geoRepEnabledEnv = new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue("true").build();
         EnvVar kafkaStsEnv = new EnvVarBuilder().withName("KAFKA_STS_NAME").withValue(instanceName + "-" + EventStreamsKafkaModel.KAFKA_COMPONENT_NAME).build();
-        EnvVar kafkaConnectRestApiEnv = new EnvVarBuilder().withName("KAFKA_CONNECT_REST_API_ADDRESS").withValue(kafkaConnectRestEndpoint).build();
-        EnvVar geoRepSecretNameEnv = new EnvVarBuilder().withName("GEOREPLICATION_SECRET_NAME").withValue(instanceName  + "-" + AbstractModel.APP_NAME + "-" + ReplicatorModel.REPLICATOR_SECRET_NAME).build();
         EnvVar clientCaCertPath = new EnvVarBuilder().withName("CLIENT_CA_PATH").withValue("/certs/client/ca.crt").build();
         EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:IAM-BEARER;SCRAM-SHA-512,7080:IAM-BEARER").build();
         EnvVar endpoints = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7080").build();
         EnvVar tlsVersion = new EnvVarBuilder().withName("TLS_VERSION").withValue("9443:TLSv1.2,7080").build();
+        EnvVar kafkaConnectRestApiEnv = new EnvVarBuilder().withName("KAFKA_CONNECT_REST_API_ADDRESS").withValue(kafkaConnectRestEndpoint).build();
+        EnvVar geoRepEnabledEnv = new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue("false").build();
+        EnvVar geoRepSecretNameEnv = new EnvVarBuilder().withName("GEOREPLICATION_SECRET_NAME").withValue(instanceName  + "-" + AbstractModel.APP_NAME + "-" + ReplicatorModel.REPLICATOR_SECRET_NAME).build();
+        EnvVar geoRepInternalClientAuthEnv = new EnvVarBuilder().withName("GEOREPLICATION_INTERNAL_CLIENT_AUTH_ENABLED").withValue("false").build();
+        EnvVar geoRepExternalClientAuthEnv = new EnvVarBuilder().withName("GEOREPLICATION_EXTERNAL_CLIENT_AUTH_ENABLED").withValue("false").build();
+        EnvVar geoRepInternalServerAuthEnv = new EnvVarBuilder().withName("GEOREPLICATION_INTERNAL_SERVER_AUTH_ENABLED").withValue("false").build();
+        EnvVar geoRepExternalServerAuthEnv = new EnvVarBuilder().withName("GEOREPLICATION_EXTERNAL_SERVER_AUTH_ENABLED").withValue("false").build();
+        EnvVar geoRepInternalClientAuthTypeEnv = new EnvVarBuilder().withName("GEOREPLICATION_INTERNAL_CLIENT_AUTH_TYPE").withValue("NONE").build();
 
         EnvVarSource esCaCertEnvVarSource = new EnvVarSourceBuilder().withSecretKeyRef(new SecretKeySelector("ca.crt", instanceName + "-cluster-ca-cert", true)).build();
         EnvVar esCaCertEnv = new EnvVarBuilder().withName("ES_CACERT").withValueFrom(esCaCertEnvVarSource).build();
@@ -182,16 +187,21 @@ public class AdminApiModelTest {
         List<EnvVar> defaultEnvVars = adminApiContainer.getEnv();
         assertThat(defaultEnvVars, hasItem(kafkaBootstrapUrlEnv));
         assertThat(defaultEnvVars, hasItem(zkConnectEnv));
-        assertThat(defaultEnvVars, hasItem(geoRepEnabledEnv));
         assertThat(defaultEnvVars, hasItem(schemaRegistryUrlEnv));
         assertThat(defaultEnvVars, hasItem(kafkaStsEnv));
-        assertThat(defaultEnvVars, hasItem(kafkaConnectRestApiEnv));
-        assertThat(defaultEnvVars, hasItem(geoRepSecretNameEnv));
         assertThat(defaultEnvVars, hasItem(clientCaCertPath));
         assertThat(defaultEnvVars, hasItem(authentication));
         assertThat(defaultEnvVars, hasItem(endpoints));
         assertThat(defaultEnvVars, hasItem(esCaCertEnv));
         assertThat(defaultEnvVars, hasItem(tlsVersion));
+        assertThat(defaultEnvVars, hasItem(kafkaConnectRestApiEnv));
+        assertThat(defaultEnvVars, hasItem(geoRepEnabledEnv));
+        assertThat(defaultEnvVars, hasItem(geoRepSecretNameEnv));
+        assertThat(defaultEnvVars, hasItem(geoRepInternalClientAuthEnv));
+        assertThat(defaultEnvVars, hasItem(geoRepExternalClientAuthEnv));
+        assertThat(defaultEnvVars, hasItem(geoRepInternalServerAuthEnv));
+        assertThat(defaultEnvVars, hasItem(geoRepInternalServerAuthEnv));
+        assertThat(defaultEnvVars, hasItem(geoRepInternalClientAuthTypeEnv));
     }
 
     @Test
