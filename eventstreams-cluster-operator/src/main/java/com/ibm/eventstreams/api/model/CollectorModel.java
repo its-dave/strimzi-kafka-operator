@@ -59,6 +59,8 @@ public class CollectorModel extends AbstractModel {
     private static final String DEFAULT_IBMCOM_IMAGE = "ibmcom/collector:latest";
     private String traceLevel = "0";
 
+    public static final String DEFAULT_CIPHER_SUITES_NODE = "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_RSA_WITH_AES_128_GCM_SHA256";
+
     private ServiceAccount serviceAccount;
     private Deployment deployment;
     private Service service;
@@ -147,6 +149,7 @@ public class CollectorModel extends AbstractModel {
             new EnvVarBuilder().withName("TLS_CERT").withValue("/etc/ssl/certs/podtls.crt").build(),
             new EnvVarBuilder().withName("TLS_KEY").withValue("/etc/ssl/certs/podtls.key").build(),
             new EnvVarBuilder().withName("LICENSE").withValue("accept").build(),
+            new EnvVarBuilder().withName("CIPHER_SUITES").withValue(DEFAULT_CIPHER_SUITES_NODE).build(),
             // following env vars used only for label-pod-with-zone-name.sh script // TODO do we need this script
             new EnvVarBuilder().withName("NAMESPACE").withValue(getNamespace()).build(),
             new EnvVarBuilder().withName("CONFIGMAP").withValue("configmap").build(),

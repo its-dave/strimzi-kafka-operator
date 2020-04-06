@@ -945,7 +945,7 @@ public abstract class AbstractModel {
             .map(EventStreams::getSpec)
             .map(EventStreamsSpec::getSecurity)
             .map(SecuritySpec::getInternalTls)
-            .map(TlsVersion::toString)
+            .map(TlsVersion::toValue)
             .orElse(DEFAULT_TLS_VERSION.toValue());
     }
 }
