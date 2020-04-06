@@ -109,6 +109,8 @@ public abstract class AbstractModel {
     protected static final String TLS_VERSION_ENV_KEY = "TLS_VERSION";
     public static final TlsVersion DEFAULT_INTERNAL_TLS = TlsVersion.NONE;
     protected static final TlsVersion DEFAULT_TLS_VERSION = TlsVersion.TLS_V1_2;
+    public static final String AUTHENTICATION_LABEL_SEPARATOR = "-";
+    public static final String AUTHENTICATION_LABEL_NO_AUTH = "NO-AUTHENTICATION";
 
     private static final String PRODUCT_ID = "ID";
     private static final String PRODUCT_NAME = "eventstreams";
@@ -463,7 +465,13 @@ public abstract class AbstractModel {
 
     public Map<String, String> generateSecurityLabels(boolean isTls, List<String> authenticationMechanisms) {
         Map<String, String> labels = new HashMap<>();
-        labels.put(Labels.EVENTSTREAMS_AUTHENTICATION_LABEL, authenticationMechanisms.stream().collect(Collectors.joining(".")));
+        if (authenticationMechanisms.size() > 0) {
+            authenticationMechanisms.forEach(auth -> {
+                labels.put(Labels.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + auth, "true");
+            });
+        } else {
+            labels.put(Labels.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + AUTHENTICATION_LABEL_NO_AUTH, "true");
+        }
         labels.put(Labels.EVENTSTREAMS_PROTOCOL_LABEL, isTls ? "https" : "http");
         return labels;
     }

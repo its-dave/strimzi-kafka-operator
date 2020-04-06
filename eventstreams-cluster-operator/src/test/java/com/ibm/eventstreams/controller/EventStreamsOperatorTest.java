@@ -143,6 +143,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static com.ibm.eventstreams.api.model.AbstractModel.APP_NAME;
+import static com.ibm.eventstreams.api.model.AbstractModel.AUTHENTICATION_LABEL_SEPARATOR;
 import static com.ibm.eventstreams.api.model.AbstractSecureEndpointsModel.getInternalServiceName;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
@@ -187,6 +188,9 @@ public class EventStreamsOperatorTest {
     private static final int TWO_YEARS_PLUS_IN_SECONDS = 70000000;
     private static final String CP4I_TEST_HEADER_URL = "https://icp4i-services-demo.my-ns.svc.cluster.local:3000";
     private static final String CP4I_ADMIN_UI_ENVAR_NAME = "ICP4I_PLATFORM_SERVICES_URL";
+    private static final String IAM_BEARER_LABEL = "IAM-BEARER";
+    private static final String SCRAM_SHA_512_LABEL = "SCRAM-SHA-512";
+    private static final String TLS_LABEL = "TLS";
 
     private static Vertx vertx;
     private KubernetesClient mockClient;
@@ -2855,7 +2859,7 @@ public class EventStreamsOperatorTest {
             .withAccessPort(9999)
             .withTlsVersion(TlsVersion.TLS_V1_2)
             .withType(EndpointServiceType.ROUTE)
-            .withAuthenticationMechanisms(Collections.singletonList("MUTUAL_TLS"))
+            .withAuthenticationMechanisms(Collections.singletonList(TLS_LABEL))
             .build();
 
         String shortRouteName = AdminApiModel.COMPONENT_NAME + "-" + Endpoint.DEFAULT_EXTERNAL_NAME;
@@ -2870,7 +2874,8 @@ public class EventStreamsOperatorTest {
             .onComplete(context.succeeding(v -> context.verify(() -> {
                 Route route = routeOperator.get(NAMESPACE,  longRouteName);
 
-                assertThat(route.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_AUTHENTICATION_LABEL, "IAM-BEARER.SCRAM-SHA-512"));
+                assertThat(route.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + IAM_BEARER_LABEL, "true"));
+                assertThat(route.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + SCRAM_SHA_512_LABEL, "true"));
                 assertThat(route.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_PROTOCOL_LABEL, "https"));
             })))
             .map(v -> {
@@ -2894,7 +2899,7 @@ public class EventStreamsOperatorTest {
             .onComplete(context.succeeding(v -> context.verify(() -> {
                 Route route = routeOperator.get(NAMESPACE, expectedLongRouteName);
 
-                assertThat(route.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_AUTHENTICATION_LABEL, "MUTUAL_TLS"));
+                assertThat(route.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + TLS_LABEL, "true"));
                 assertThat(route.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_PROTOCOL_LABEL, "https"));
                 async.flag();
             })));
@@ -2910,7 +2915,7 @@ public class EventStreamsOperatorTest {
             .withAccessPort(9999)
             .withType(EndpointServiceType.ROUTE)
             .withTlsVersion(TlsVersion.TLS_V1_2)
-            .withAuthenticationMechanisms(Collections.singletonList("BEARER"))
+            .withAuthenticationMechanisms(Collections.singletonList(IAM_BEARER_LABEL))
             .build();
 
         EndpointSpec secureRouteMutualTls = new EndpointSpecBuilder()
@@ -2918,7 +2923,7 @@ public class EventStreamsOperatorTest {
             .withAccessPort(9998)
             .withTlsVersion(TlsVersion.TLS_V1_2)
             .withType(EndpointServiceType.ROUTE)
-            .withAuthenticationMechanisms(Collections.singletonList("MUTUAL_TLS"))
+            .withAuthenticationMechanisms(Collections.singletonList(TLS_LABEL))
             .build();
 
         EndpointSpec insecureRouteMutualTls = new EndpointSpecBuilder()
@@ -2926,7 +2931,7 @@ public class EventStreamsOperatorTest {
             .withAccessPort(9999)
             .withTlsVersion(TlsVersion.NONE)
             .withType(EndpointServiceType.ROUTE)
-            .withAuthenticationMechanisms(Collections.singletonList("MUTUAL_TLS"))
+            .withAuthenticationMechanisms(Collections.singletonList(TLS_LABEL))
             .build();
 
         EndpointSpec insecureRouteBearer = new EndpointSpecBuilder()
@@ -2934,7 +2939,7 @@ public class EventStreamsOperatorTest {
             .withAccessPort(9998)
             .withTlsVersion(TlsVersion.NONE)
             .withType(EndpointServiceType.ROUTE)
-            .withAuthenticationMechanisms(Collections.singletonList("BEARER"))
+            .withAuthenticationMechanisms(Collections.singletonList(IAM_BEARER_LABEL))
             .build();
 
         EventStreams secureInstance = new EventStreamsBuilder()
@@ -2981,9 +2986,9 @@ public class EventStreamsOperatorTest {
                 Route secureMutualTlsRoute = routeOperator.get(NAMESPACE, secureMutualTlsRouteLongName);
                 Route secureBearerRoute = routeOperator.get(NAMESPACE, secureBearerRouteLongName);
 
-                assertThat(secureMutualTlsRoute.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_AUTHENTICATION_LABEL, "MUTUAL_TLS"));
+                assertThat(secureMutualTlsRoute.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + TLS_LABEL, "true"));
                 assertThat(secureMutualTlsRoute.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_PROTOCOL_LABEL, "https"));
-                assertThat(secureBearerRoute.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_AUTHENTICATION_LABEL, "BEARER"));
+                assertThat(secureBearerRoute.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + IAM_BEARER_LABEL, "true"));
                 assertThat(secureBearerRoute.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_PROTOCOL_LABEL, "https"));
             })))
             .map(v -> {
@@ -3027,9 +3032,9 @@ public class EventStreamsOperatorTest {
                 Route insecureMutualTlsRoute = routeOperator.get(NAMESPACE, insecureMutualTlsRouteLongName);
                 Route insecureBearerRoute = routeOperator.get(NAMESPACE, insecureBearerRouteLongName);
 
-                assertThat(insecureMutualTlsRoute.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_AUTHENTICATION_LABEL, "MUTUAL_TLS"));
+                assertThat(insecureMutualTlsRoute.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + TLS_LABEL, "true"));
                 assertThat(insecureMutualTlsRoute.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_PROTOCOL_LABEL, "http"));
-                assertThat(insecureBearerRoute.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_AUTHENTICATION_LABEL, "BEARER"));
+                assertThat(insecureBearerRoute.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + IAM_BEARER_LABEL, "true"));
                 assertThat(insecureBearerRoute.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_PROTOCOL_LABEL, "http"));
 
                 ArgumentCaptor<EventStreams> updatedEventStreams = ArgumentCaptor.forClass(EventStreams.class);
