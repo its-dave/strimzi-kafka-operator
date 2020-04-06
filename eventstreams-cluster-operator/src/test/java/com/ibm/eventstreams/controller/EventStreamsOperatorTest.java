@@ -589,11 +589,38 @@ public class EventStreamsOperatorTest {
                     assertThat(e.getMessage(), is("Invalid Event Streams specification: further details in the status conditions"));
                     // check status
                     verify(esResourceOperator, times(2)).updateEventStreamsStatus(updatedEventStreams.capture());
-                    assertThat("Status is incorrect, found status : " + updatedEventStreams.getValue().getStatus(), updatedEventStreams.getValue().getStatus().getConditions().get(0).getMessage(), is("Invalid custom resource: EventStreams metadata name too long. Maximum length is 16"));
+                    assertThat("Status is incorrect, found status : " + updatedEventStreams.getValue().getStatus(),
+                            updatedEventStreams.getValue().getStatus().getConditions().get(0).getMessage(),
+                            is("Invalid custom resource: EventStreams metadata name not accepted"));
                     async.flag();
                 })));
     }
 
+    @Test
+    public void testEventStreamsInvalidNameThrows(VertxTestContext context) {
+        mockRoutes();
+        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
+
+        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
+
+        String clusterName = "bad.char";
+
+        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, clusterName);
+        ArgumentCaptor<EventStreams> updatedEventStreams = ArgumentCaptor.forClass(EventStreams.class);
+        Checkpoint async = context.checkpoint();
+
+        esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, clusterName), esCluster)
+                .onComplete(context.failing(e -> context.verify(() -> {
+                    assertThat(e.getMessage(), is("Invalid Event Streams specification: further details in the status conditions"));
+                    // check status
+                    verify(esResourceOperator, times(2)).updateEventStreamsStatus(updatedEventStreams.capture());
+                    assertThat("Status is incorrect, found status : " + updatedEventStreams.getValue().getStatus(),
+                            updatedEventStreams.getValue().getStatus().getConditions().get(0).getMessage(),
+                            is("Invalid custom resource: EventStreams metadata name not accepted"));
+                    async.flag();
+                })));
+    }
+    
     @Test
     public void testEventStreamsUnsupportedVersionThrows(VertxTestContext context) {
         mockRoutes();

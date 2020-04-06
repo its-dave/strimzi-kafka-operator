@@ -66,7 +66,7 @@ public class PlainListenerValidationTest extends RestApiTest {
         payload.put("request", request);
         Checkpoint async = context.checkpoint();
 
-        WebClient.wrap(httpClient).post(EventStreamsVerticle.API_SERVER_PORT, "localhost", "/admissionwebhook/rejectinvalidplainlistenerconfiguration").sendJson(payload, context.succeeding(resp -> context.verify(() -> {
+        WebClient.wrap(httpClient).post(EventStreamsVerticle.API_SERVER_PORT, "localhost", "/admissionwebhook/rejectinvalidlisteners").sendJson(payload, context.succeeding(resp -> context.verify(() -> {
             JsonObject responseObj = resp.bodyAsJsonObject();
             assertThat(responseObj.getJsonObject("response").getBoolean("allowed"), is(true));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("status"), is("Success"));
@@ -100,7 +100,7 @@ public class PlainListenerValidationTest extends RestApiTest {
         payload.put("request", request);
         Checkpoint async = context.checkpoint();
 
-        WebClient.wrap(httpClient).post(EventStreamsVerticle.API_SERVER_PORT, "localhost", "/admissionwebhook/rejectinvalidplainlistenerconfiguration").sendJson(payload, context.succeeding(resp -> context.verify(() -> {
+        WebClient.wrap(httpClient).post(EventStreamsVerticle.API_SERVER_PORT, "localhost", "/admissionwebhook/rejectinvalidlisteners").sendJson(payload, context.succeeding(resp -> context.verify(() -> {
             JsonObject responseObj = resp.bodyAsJsonObject();
             assertThat(responseObj.getJsonObject("response").getBoolean("allowed"), is(true));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("status"), is("Success"));
@@ -133,7 +133,7 @@ public class PlainListenerValidationTest extends RestApiTest {
         payload.put("request", request);
         Checkpoint async = context.checkpoint();
 
-        WebClient.wrap(httpClient).post(EventStreamsVerticle.API_SERVER_PORT, "localhost", "/admissionwebhook/rejectinvalidplainlistenerconfiguration").sendJson(payload, context.succeeding(resp -> context.verify(() -> {
+        WebClient.wrap(httpClient).post(EventStreamsVerticle.API_SERVER_PORT, "localhost", "/admissionwebhook/rejectinvalidlisteners").sendJson(payload, context.succeeding(resp -> context.verify(() -> {
             JsonObject responseObj = resp.bodyAsJsonObject();
             assertThat(responseObj.getJsonObject("response").getBoolean("allowed"), is(false));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("status"), is("Failure"));
@@ -170,7 +170,7 @@ public class PlainListenerValidationTest extends RestApiTest {
         payload.put("request", request);
         Checkpoint async = context.checkpoint();
 
-        WebClient.wrap(httpClient).post(EventStreamsVerticle.API_SERVER_PORT, "localhost", "/admissionwebhook/rejectinvalidplainlistenerconfiguration").sendJson(payload, context.succeeding(resp -> context.verify(() -> {
+        WebClient.wrap(httpClient).post(EventStreamsVerticle.API_SERVER_PORT, "localhost", "/admissionwebhook/rejectinvalidlisteners").sendJson(payload, context.succeeding(resp -> context.verify(() -> {
             JsonObject responseObj = resp.bodyAsJsonObject();
             assertThat(responseObj.getJsonObject("response").getBoolean("allowed"), is(false));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("status"), is("Failure"));

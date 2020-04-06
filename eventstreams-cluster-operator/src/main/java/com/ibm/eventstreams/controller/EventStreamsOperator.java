@@ -253,7 +253,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 isValidCR = false;
             }
             if (NameValidation.shouldReject(instance)) {
-                addNotReadyCondition("NameTooLong", "Invalid custom resource: EventStreams metadata name too long. Maximum length is " + NameValidation.MAX_NAME_LENGTH);
+                addNotReadyCondition("InvalidName", "Invalid custom resource: EventStreams metadata name not accepted");
                 isValidCR = false;
             }
             if (VersionValidation.shouldReject(instance)) {

@@ -152,7 +152,7 @@ webhooks:
         name: eventstreams-cluster-operator
         path: /admissionwebhook/rejectlicensenotaccepted
       caBundle: "$cabundle"
-  - name: eventstreams.ibm.com.rejectlongnames
+  - name: eventstreams.ibm.com.rejectinvalidnames
     rules:
       - apiGroups: ["eventstreams.ibm.com"]
         apiVersions: ["v1beta1"]
@@ -163,7 +163,7 @@ webhooks:
       service:
         namespace: $EVENTSTREAMS_OPERATOR_NAMESPACE
         name: eventstreams-cluster-operator
-        path: /admissionwebhook/rejectlongnames
+        path: /admissionwebhook/rejectinvalidnames
       caBundle: "$cabundle"
   - name: eventstreams.ibm.com.rejectinvalidversions
     rules:
@@ -178,7 +178,7 @@ webhooks:
         name: eventstreams-cluster-operator
         path: /admissionwebhook/rejectinvalidversions
       caBundle: "$cabundle"
-  - name: eventstreams.ibm.com.rejectmissingtopiclabels
+  - name: eventstreams.ibm.com.rejectinvalidtopics
     rules:
       - apiGroups: ["eventstreams.ibm.com"]
         apiVersions: ["v1beta1"]
@@ -189,9 +189,9 @@ webhooks:
       service:
         namespace: $EVENTSTREAMS_OPERATOR_NAMESPACE
         name: eventstreams-cluster-operator
-        path: /admissionwebhook/rejectmissingtopiclabels
+        path: /admissionwebhook/rejectinvalidtopics
       caBundle: "$cabundle"
-  - name: eventstreams.ibm.com.rejectmissinguserlabels
+  - name: eventstreams.ibm.com.rejectinvalidusers
     rules:
       - apiGroups: ["eventstreams.ibm.com"]
         apiVersions: ["v1beta1"]
@@ -202,9 +202,9 @@ webhooks:
       service:
         namespace: $EVENTSTREAMS_OPERATOR_NAMESPACE
         name: eventstreams-cluster-operator
-        path: /admissionwebhook/rejectmissinguserlabels
+        path: /admissionwebhook/rejectinvalidusers
       caBundle: "$cabundle"
-  - name: eventstreams.ibm.com.rejectinvalidplainlistenerconfiguration
+  - name: eventstreams.ibm.com.rejectinvalidlisteners
     rules:
       - apiGroups: ["eventstreams.ibm.com"]
         apiVersions: ["v1beta1"]
@@ -215,7 +215,7 @@ webhooks:
       service:
         namespace: $EVENTSTREAMS_OPERATOR_NAMESPACE
         name: eventstreams-cluster-operator
-        path: /admissionwebhook/rejectinvalidplainlistenerconfiguration
+        path: /admissionwebhook/rejectinvalidlisteners
       caBundle: "$cabundle"
   - name: eventstreams.ibm.com.rejectinvalidendpoints
     rules:

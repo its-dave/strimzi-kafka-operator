@@ -50,11 +50,11 @@ public class EntityLabelValidationTest extends RestApiTest {
         KafkaUser test = createKafkaUser();
         test.getMetadata().getLabels().put("eventstreams.ibm.com/cluster", "mycluster");
 
-        testValidEntity(context, test, "/admissionwebhook/rejectmissinguserlabels");
+        testValidEntity(context, test, "/admissionwebhook/rejectinvalidusers");
     }
     @Test
     public void testInvalidUser(VertxTestContext context) {
-        testInvalidEntity(context, createKafkaUser(), "/admissionwebhook/rejectmissinguserlabels");
+        testInvalidEntity(context, createKafkaUser(), "/admissionwebhook/rejectinvalidusers");
     }
 
     @Test
@@ -62,11 +62,11 @@ public class EntityLabelValidationTest extends RestApiTest {
         KafkaTopic test = createKafkaTopic();
         test.getMetadata().getLabels().put("eventstreams.ibm.com/cluster", "mycluster");
 
-        testValidEntity(context, test, "/admissionwebhook/rejectmissingtopiclabels");
+        testValidEntity(context, test, "/admissionwebhook/rejectinvalidtopics");
     }
     @Test
     public void testInvalidTopic(VertxTestContext context) {
-        testInvalidEntity(context, createKafkaTopic(), "/admissionwebhook/rejectmissingtopiclabels");
+        testInvalidEntity(context, createKafkaTopic(), "/admissionwebhook/rejectinvalidtopics");
     }
 
 

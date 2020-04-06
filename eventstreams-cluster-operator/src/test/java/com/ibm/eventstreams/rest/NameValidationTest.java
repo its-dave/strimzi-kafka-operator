@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -39,7 +40,7 @@ public class NameValidationTest extends RestApiTest {
     private static final Logger log = LogManager.getLogger(NameValidationTest.class.getName());
 
     @Test
-    public void testInvalidName(VertxTestContext context) {
+    public void testLongName(VertxTestContext context) {
         EventStreams test = ModelUtils.createDefaultEventStreams("this-is-a-very-long-name-that-exceeds-limits").build();
         Map<String, Object> request = new HashMap<String, Object>();
         request.put("object", test);
@@ -47,7 +48,7 @@ public class NameValidationTest extends RestApiTest {
         Map<String, Object> payload = new HashMap<String, Object>();
         payload.put("request", request);
 
-        WebClient.wrap(httpClient).post(EventStreamsVerticle.API_SERVER_PORT, "localhost", "/admissionwebhook/rejectlongnames").sendJson(payload, resp -> {
+        WebClient.wrap(httpClient).post(EventStreamsVerticle.API_SERVER_PORT, "localhost", "/admissionwebhook/rejectinvalidnames").sendJson(payload, resp -> {
             if (resp.succeeded()) {
                 JsonObject responseObj = resp.result().bodyAsJsonObject();
                 assertThat(responseObj.getJsonObject("response").getBoolean("allowed"), is(false));
@@ -56,6 +57,31 @@ public class NameValidationTest extends RestApiTest {
                 assertThat(responseObj.getJsonObject("response").getJsonObject("status").getInteger("code"), is(400));
                 assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("message"),
                            is("Names should not be longer than 16 characters"));
+            } else {
+                fail("Failed to post webhook request");
+            }
+            context.completeNow();
+        });
+    }
+
+    @Test
+    public void testInvalidName(VertxTestContext context) {
+        EventStreams test = ModelUtils.createDefaultEventStreams("invalid.chars").build();
+        Map<String, Object> request = new HashMap<String, Object>();
+        request.put("object", test);
+
+        Map<String, Object> payload = new HashMap<String, Object>();
+        payload.put("request", request);
+
+        WebClient.wrap(httpClient).post(EventStreamsVerticle.API_SERVER_PORT, "localhost", "/admissionwebhook/rejectinvalidnames").sendJson(payload, resp -> {
+            if (resp.succeeded()) {
+                JsonObject responseObj = resp.result().bodyAsJsonObject();
+                assertThat(responseObj.getJsonObject("response").getBoolean("allowed"), is(false));
+                assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("status"), is("Failure"));
+                assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is("Invalid name"));
+                assertThat(responseObj.getJsonObject("response").getJsonObject("status").getInteger("code"), is(400));
+                assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("message"),
+                        startsWith("Invalid metadata.name. Names must consist of lower case alphanumeric characters "));
             } else {
                 fail("Failed to post webhook request");
             }
@@ -73,7 +99,7 @@ public class NameValidationTest extends RestApiTest {
         Map<String, Object> payload = new HashMap<String, Object>();
         payload.put("request", request);
 
-        WebClient.wrap(httpClient).post(EventStreamsVerticle.API_SERVER_PORT, "localhost", "/admissionwebhook/rejectlongnames").sendJson(payload, resp -> {
+        WebClient.wrap(httpClient).post(EventStreamsVerticle.API_SERVER_PORT, "localhost", "/admissionwebhook/rejectinvalidnames").sendJson(payload, resp -> {
             if (resp.succeeded()) {
                 JsonObject responseObj = resp.result().bodyAsJsonObject();
                 assertThat(responseObj.getJsonObject("response").getBoolean("allowed"), is(true));

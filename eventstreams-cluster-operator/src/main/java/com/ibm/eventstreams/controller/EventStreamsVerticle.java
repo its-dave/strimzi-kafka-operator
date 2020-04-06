@@ -148,11 +148,11 @@ public class EventStreamsVerticle extends AbstractVerticle {
         router.route().handler(bodyHandler);
 
         router.route(HttpMethod.POST, "/admissionwebhook/rejectlicensenotaccepted").handler(LicenseValidation::rejectLicenseIfNotAccepted);
-        router.route(HttpMethod.POST, "/admissionwebhook/rejectlongnames").handler(NameValidation::rejectLongNames);
+        router.route(HttpMethod.POST, "/admissionwebhook/rejectinvalidnames").handler(NameValidation::rejectInvalidNames);
         router.route(HttpMethod.POST, "/admissionwebhook/rejectinvalidversions").handler(VersionValidation::rejectInvalidVersions);
-        router.route(HttpMethod.POST, "/admissionwebhook/rejectmissingtopiclabels").handler(EntityLabelValidation::rejectInvalidKafkaTopics);
-        router.route(HttpMethod.POST, "/admissionwebhook/rejectmissinguserlabels").handler(EntityLabelValidation::rejectInvalidKafkaUsers);
-        router.route(HttpMethod.POST, "/admissionwebhook/rejectinvalidplainlistenerconfiguration").handler(PlainListenerValidation::rejectInvalidPlainListenerConfiguration);
+        router.route(HttpMethod.POST, "/admissionwebhook/rejectinvalidtopics").handler(EntityLabelValidation::rejectInvalidKafkaTopics);
+        router.route(HttpMethod.POST, "/admissionwebhook/rejectinvalidusers").handler(EntityLabelValidation::rejectInvalidKafkaUsers);
+        router.route(HttpMethod.POST, "/admissionwebhook/rejectinvalidlisteners").handler(PlainListenerValidation::rejectInvalidPlainListeners);
         router.route(HttpMethod.POST, "/admissionwebhook/rejectinvalidendpoints").handler(EndpointValidation::rejectInvalidEndpoint);
 
         router.errorHandler(500, rc -> {

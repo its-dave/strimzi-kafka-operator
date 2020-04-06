@@ -70,7 +70,7 @@ public class PlainListenerValidation extends AbstractValidation {
         return authentication.isPresent() ? FAILURE_CONFIGURED_PLAIN_LISTENER_AUTHENTICATION_REASON : "";
     }
 
-    public static void rejectInvalidPlainListenerConfiguration(RoutingContext routingContext) {
+    public static void rejectInvalidPlainListeners(RoutingContext routingContext) {
         log.traceEntry();
 
         EventStreams customResourceSpec = getSpecFromRequest(routingContext);
