@@ -192,7 +192,7 @@ public class RestProducerModel extends AbstractSecureEndpointsModel {
             new EnvVarBuilder().withName("SKIP_SSL_VALIDATION_SCHEMA_REGISTRY").withValue("true").build(),
             new EnvVarBuilder().withName("CLIENT_CA_PATH").withValue(CLIENT_CA_CERTIFICATE_PATH + File.separator + CA_CERT).build(),
             new EnvVarBuilder().withName("TRACE_SPEC").withValue(traceString).build(),
-            new EnvVarBuilder().withName("SSL_TRUSTSTORE_PATH").withValue(CLUSTER_CERTIFICATE_PATH + File.separator + "podtls.p12").build(),
+            new EnvVarBuilder().withName("SSL_TRUSTSTORE_PATH").withValue(CLUSTER_CERTIFICATE_PATH + File.separator + CA_P12).build(),
             new EnvVarBuilder()
                 .withName("SSL_TRUSTSTORE_PASSWORD")
                 .withNewValueFrom()
@@ -212,15 +212,6 @@ public class RestProducerModel extends AbstractSecureEndpointsModel {
                     .withNewSecretKeyRef()
                         .withName(InternalKafkaUserModel.getInternalKafkaUserSecretName(getInstanceName()))
                         .withKey(USER_P12_PASS)
-                    .endSecretKeyRef()
-                .endValueFrom()
-                .build(),
-            new EnvVarBuilder()
-                .withName("CLIENT_P12_PASSWORD")
-                .withNewValueFrom()
-                    .withNewSecretKeyRef()
-                        .withName(EventStreamsKafkaModel.getKafkaClientCaCertName(getInstanceName()))
-                        .withKey(CA_P12_PASS)
                     .endSecretKeyRef()
                 .endValueFrom()
                 .build(),
