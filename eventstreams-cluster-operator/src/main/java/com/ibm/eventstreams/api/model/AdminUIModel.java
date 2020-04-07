@@ -26,6 +26,7 @@ import com.ibm.eventstreams.api.spec.ExternalAccess;
 import com.ibm.eventstreams.api.spec.ExternalAccessBuilder;
 import com.ibm.eventstreams.api.spec.ImagesSpec;
 import com.ibm.eventstreams.api.spec.SecuritySpec;
+import com.ibm.eventstreams.api.status.EventStreamsVersions;
 import com.ibm.eventstreams.controller.EventStreamsOperatorConfig;
 import com.ibm.iam.api.model.ClientModel;
 import io.fabric8.kubernetes.api.model.Container;
@@ -292,11 +293,29 @@ public class AdminUIModel extends AbstractModel {
         envVarDefaults.add(new EnvVarBuilder().withName("TLS_ENABLED").withValue(String.valueOf(tlsEnabled())).build());
         envVarDefaults.add(new EnvVarBuilder().withName("ID").withValue(getInstanceName()).build());
         envVarDefaults.add(new EnvVarBuilder().withName("NAMESPACE").withValue(getNamespace()).build());
-        envVarDefaults.add(new EnvVarBuilder().withName("CONFIGMAP").withValue("releaseConfigMap").build()); // FILL OUT
-        envVarDefaults.add(new EnvVarBuilder().withName("EVENT_STREAMS_EDITION").withValue("").build()); // FILL OUT
-        envVarDefaults.add(new EnvVarBuilder().withName("EVENT_STREAMS_VERSION").withValue("").build()); // FILL OUT
-        envVarDefaults.add(new EnvVarBuilder().withName("KAFKA_VERSION").withValue("").build()); // FILL OUT
-        envVarDefaults.add(new EnvVarBuilder().withName("EVENT_STREAMS_CHART_VERSION").withValue("").build()); // FILL OUT
+        envVarDefaults.add(
+                new EnvVarBuilder()
+                        .withName("EVENT_STREAMS_VERSION")
+                        .withValue(Optional.ofNullable(instance.getSpec())
+                                .map(EventStreamsSpec::getVersion)
+                                .orElse(EventStreamsVersions.OPERAND_VERSION))
+                        .build());
+        envVarDefaults.add(
+                new EnvVarBuilder()
+                        .withName("KAFKA_VERSION")
+                        .withValue(Optional.ofNullable(instance.getSpec())
+                                .map(EventStreamsSpec::getStrimziOverrides)
+                                .map(KafkaSpec::getKafka)
+                                .map(KafkaClusterSpec::getVersion)
+                                .orElse("2.4.0"))
+                        .build());
+        envVarDefaults.add(
+                new EnvVarBuilder()
+                        .withName("EVENT_STREAMS_CHART_VERSION")
+                        .withValue(Optional.ofNullable(instance.getSpec())
+                                .map(EventStreamsSpec::getVersion)
+                                .orElse(EventStreamsVersions.OPERAND_VERSION))
+                        .build());
         envVarDefaults.add(new EnvVarBuilder().withName("API_URL").withValue(adminApiService).build());
         envVarDefaults.add(new EnvVarBuilder().withName("PRODUCER_METRICS_ENABLED").withValue(enableProducerMetricsPanels).build());
         envVarDefaults.add(new EnvVarBuilder().withName("METRICS_ENABLED").withValue(enableMetricsPanels).build());
@@ -314,8 +333,6 @@ public class AdminUIModel extends AbstractModel {
                 .withValue(traceString)
                 .build()
         );
-        envVarDefaults.add(new EnvVarBuilder().withName("ESFF_SECURITY_AUTHZ").withValue("true").build());
-        envVarDefaults.add(new EnvVarBuilder().withName("ESFF_SECURITY_AUTH").withValue("true").build());
 
         envVarDefaults.add(new EnvVarBuilder().withName("ICP_USER_MGMT_IP").withValue("icp-management-ingress.kube-system").build());
         envVarDefaults.add(new EnvVarBuilder().withName("ICP_USER_MGMT_PORT").withValue("443").build());

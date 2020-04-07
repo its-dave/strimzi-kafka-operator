@@ -154,8 +154,6 @@ public class AdminUIModelTest {
 
         assertThat(uiContainers.get(0).getEnv(), hasItems(
                 new EnvVarBuilder().withName("ID").withValue(instanceName).build(),
-                new EnvVarBuilder().withName("ESFF_SECURITY_AUTH").withValue("true").build(),
-                new EnvVarBuilder().withName("ESFF_SECURITY_AUTHZ").withValue("true").build(),
                 new EnvVarBuilder().withName("API_URL").withValue(adminApiService).build(),
                 new EnvVarBuilder().withName("ICP_USER_MGMT_IP").withValue("icp-management-ingress.kube-system").build(),
                 new EnvVarBuilder().withName("ICP_USER_MGMT_PORT").withValue("443").build(),

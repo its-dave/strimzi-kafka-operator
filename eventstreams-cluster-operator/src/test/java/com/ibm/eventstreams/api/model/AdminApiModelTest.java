@@ -725,12 +725,10 @@ public class AdminApiModelTest {
 
         EnvVar expectedEnvVarPrometheusHost = new EnvVarBuilder().withName("PROMETHEUS_HOST").withValue(clusterAddress).build();
         EnvVar expectedEnvVarPrometheusPort = new EnvVarBuilder().withName("PROMETHEUS_PORT").withValue(clusterPort).build();
-        EnvVar expectedEnvVarPrometheusClusterCaCert = new EnvVarBuilder().withName("CLUSTER_CACERT").withValue(caCert).build();
         EnvVar expectedEnvVarIAMClusterName = new EnvVarBuilder().withName("IAM_CLUSTER_NAME").withValue(clusterName).build();
         List<EnvVar> actualEnvVars = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getEnv();
         assertThat(actualEnvVars, hasItem(expectedEnvVarPrometheusHost));
         assertThat(actualEnvVars, hasItem(expectedEnvVarPrometheusPort));
-        assertThat(actualEnvVars, hasItem(expectedEnvVarPrometheusClusterCaCert));
         List<EnvVar> actualAdminAPIEnvVars = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getEnv();
         assertThat(actualAdminAPIEnvVars, hasItem(expectedEnvVarIAMClusterName));
 

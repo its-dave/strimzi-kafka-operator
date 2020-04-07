@@ -85,7 +85,6 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
     private String traceString = "info";
     private final String prometheusHost;
     private final String prometheusPort;
-    private final String clusterCaCert;
     private final String icpClusterName;
     private final String iamServerURL;
     private final String ibmcloudCASecretName;
@@ -114,7 +113,6 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
 
         this.prometheusHost = icpClusterData.getOrDefault("cluster_address", "null");
         this.prometheusPort = icpClusterData.getOrDefault("cluster_router_https_port", "null");
-        this.clusterCaCert = icpClusterData.getOrDefault("icp_public_cacert", "null");
         this.icpClusterName = icpClusterData.getOrDefault("cluster_name", "null");
         this.iamServerURL = icpClusterData.getOrDefault("cluster_endpoint", "null");
 
@@ -334,7 +332,6 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
             new EnvVarBuilder().withName("ZOOKEEPER_CONNECT").withValue(zookeeperEndpoint).build(),
             new EnvVarBuilder().withName("PROMETHEUS_HOST").withValue(prometheusHost).build(),
             new EnvVarBuilder().withName("PROMETHEUS_PORT").withValue(prometheusPort).build(),
-            new EnvVarBuilder().withName("CLUSTER_CACERT").withValue(clusterCaCert).build(),
             new EnvVarBuilder().withName("KAFKA_STS_NAME").withValue(EventStreamsKafkaModel.getKafkaInstanceName(getInstanceName()) + "-" + EventStreamsKafkaModel.KAFKA_COMPONENT_NAME).build(),
             new EnvVarBuilder().withName("KAFKA_CONNECT_REST_API_ADDRESS").withValue(kafkaConnectRestEndpoint).build(),
             new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue(Boolean.toString(ReplicatorModel.isReplicatorEnabled(instance))).build(),
@@ -363,15 +360,6 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
                 .withNewSecretKeyRef()
                 .withName(InternalKafkaUserModel.getInternalKafkaUserSecretName(getInstanceName()))
                 .withKey(USER_P12_PASS)
-                .endSecretKeyRef()
-                .endValueFrom()
-                .build(),
-            new EnvVarBuilder()
-                .withName("CLIENT_P12_PASSWORD")
-                .withNewValueFrom()
-                .withNewSecretKeyRef()
-                .withName(EventStreamsKafkaModel.getKafkaClientCaCertName(getInstanceName()))
-                .withKey(CA_P12_PASS)
                 .endSecretKeyRef()
                 .endValueFrom()
                 .build(),
