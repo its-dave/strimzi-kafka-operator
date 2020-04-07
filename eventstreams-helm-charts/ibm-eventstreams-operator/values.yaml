@@ -80,8 +80,8 @@ adminUiDatabase:
 collector:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
-    name: eventstreams-collector-icp-linux-amd64
-    tag: 2020-01-16-16.08.11-b264a4e-exp
+    name: eventstreams-metrics-collector-icp-linux-amd64
+    tag: 2020-04-07-11.33.43-d52da8b
 
 
 zookeeper:

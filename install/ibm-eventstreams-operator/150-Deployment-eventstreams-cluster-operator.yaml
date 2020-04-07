@@ -126,7 +126,7 @@ spec:
         - name: EVENTSTREAMS_DEFAULT_ADMIN_UI_REDIS_IMAGE
           value: "hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-database-icp-linux-amd64:2020-02-11-13.40.39-0a99ddb-exp"
         - name: EVENTSTREAMS_DEFAULT_COLLECTOR_IMAGE
-          value: "hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-collector-icp-linux-amd64:2020-01-16-16.08.11-b264a4e-exp"
+          value: "hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-metrics-collector-icp-linux-amd64:2020-04-07-11.33.43-d52da8b"
         livenessProbe:
           httpGet:
             path: /healthy
