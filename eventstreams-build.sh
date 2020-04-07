@@ -30,8 +30,9 @@ make eventstreams_build
 echo "Transfer Strimzi artifact to Artifactory..."
 mvn deploy -s ./eventstreams-settings.xml -DskipTests
 
+. ./eventstreams-kafka-get-versions.sh
 KAFKA_IMAGE="${destination_registry}/strimzi/kafka-${B_ARCH}:${TAG}"
-KAFKA_IMAGE_LATEST="${destination_registry}/strimzi/kafka-${B_ARCH}:latest-kafka-2.4.0"
+KAFKA_IMAGE_LATEST="${destination_registry}/strimzi/kafka-${B_ARCH}:latest-kafka-$(get_kafka_versions)"
 
 OPERATOR_IMAGE="${destination_registry}/strimzi/operator-${B_ARCH}:${TAG}"
 OPERATOR_IMAGE_LATEST="${destination_registry}/strimzi/operator-${B_ARCH}:latest"
