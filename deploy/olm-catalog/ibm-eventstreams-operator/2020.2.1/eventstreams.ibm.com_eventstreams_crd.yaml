@@ -9007,6 +9007,7 @@ spec:
           required:
           - licenseAccept
           - version
+          - adminApi
           - strimziOverrides
         status:
           type: object

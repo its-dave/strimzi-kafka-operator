@@ -75,6 +75,7 @@ public class EventStreamsSpec implements Serializable {
         this.version = version;
     }
 
+    @JsonProperty(required = true)
     @Description("Configuration of the Event Streams administration API server")
     public SecurityComponentSpec getAdminApi() {
         return adminApi;

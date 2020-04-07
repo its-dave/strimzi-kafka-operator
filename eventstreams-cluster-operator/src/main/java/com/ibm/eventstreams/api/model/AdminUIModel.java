@@ -124,9 +124,11 @@ public class AdminUIModel extends AbstractModel {
             .ofNullable(instance.getSpec())
             .map(EventStreamsSpec::getAdminUI);
 
+        // needed to support the route created below
+        setOwnerReference(instance);
+
         if (userInterfaceSpec.isPresent()) {
             setReplicas(userInterfaceSpec.map(ComponentSpec::getReplicas).orElse(DEFAULT_REPLICAS));
-            setOwnerReference(instance);
             setEnvVars(userInterfaceSpec.map(ContainerSpec::getEnvVars).orElseGet(ArrayList::new));
             setResourceRequirements(userInterfaceSpec.map(ContainerSpec::getResources).orElseGet(ResourceRequirements::new));
             setPodTemplate(userInterfaceSpec.map(ComponentSpec::getTemplate)
@@ -189,14 +191,16 @@ public class AdminUIModel extends AbstractModel {
 
             service = createService();
             networkPolicy = createNetworkPolicy();
-
-            // AdminUI uses OpenShift-generated certificate with TLM `reencrypt` method.
-            // It does not use spec.security.encryption setting from from CR
-            TLSConfig tlsConfig = new TLSConfigBuilder()
-                    .withNewTermination("reencrypt")
-                    .build();
-            route = createRoute(getRouteName(), getDefaultResourceName(), UI_SERVICE_PORT, tlsConfig, new HashMap<>());
         }
+
+        // The route is created regardless of whether a UI deployment is created,
+        //  because it is required for OIDC registration. (The OIDC client that
+        //  creates is required for other components, like admin-api).
+
+        TLSConfig tlsConfig = new TLSConfigBuilder()
+                .withNewTermination("reencrypt")
+                .build();
+        route = createRoute(getRouteName(), getDefaultResourceName(), UI_SERVICE_PORT, tlsConfig, new HashMap<>());
     }
 
     /**
@@ -522,6 +526,13 @@ public class AdminUIModel extends AbstractModel {
                 .withName("eventstreams-ui-clusterrole")
                 .withApiGroup("rbac.authorization.k8s.io")
                 .build());
+    }
+
+    public static boolean isUIEnabled(EventStreams instance) {
+        return Optional.ofNullable(instance.getSpec().getAdminUI())
+                .map(AdminUISpec::getReplicas)
+                .map(replicas -> replicas > 0)
+                .orElse(false);
     }
 
     /**

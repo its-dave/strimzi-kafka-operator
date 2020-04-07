@@ -651,8 +651,12 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                     .compose(v -> reconcileRoutes(schemaRegistry, schemaRegistry.getRoutes()))
                     .compose(routesHostMap -> {
                         String schemaRouteHost = routesHostMap.get(schemaRegistry.getRouteName(Endpoint.DEFAULT_EXTERNAL_NAME));
-                        String schemaRouteUri = "https://" + schemaRouteHost;
-                        updateEndpoints(new EventStreamsEndpoint(EventStreamsEndpoint.SCHEMA_REGISTRY_KEY, EventStreamsEndpoint.EndpointType.API, schemaRouteUri));
+                        if (schemaRouteHost != null) {
+                            String schemaRouteUri = "https://" + schemaRouteHost;
+                            updateEndpoints(new EventStreamsEndpoint(EventStreamsEndpoint.SCHEMA_REGISTRY_KEY,
+                                                                     EventStreamsEndpoint.EndpointType.API,
+                                                                     schemaRouteUri));
+                        }
                         return Future.succeededFuture(routesHostMap);
                     })
                     .compose(res -> reconcileCerts(schemaRegistry, res, dateSupplier))
@@ -690,9 +694,13 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                         String uiRouteUri = "https://" + uiRouteHost;
 
                         status.addToRoutes(AdminUIModel.COMPONENT_NAME, uiRouteHost);
-                        status.withNewAdminUiUrl(uiRouteUri);
 
-                        updateEndpoints(new EventStreamsEndpoint(EventStreamsEndpoint.UI_KEY, EventStreamsEndpoint.EndpointType.UI, uiRouteUri));
+                        if (AdminUIModel.isUIEnabled(instance)) {
+                            status.withNewAdminUiUrl(uiRouteUri);
+                            updateEndpoints(new EventStreamsEndpoint(EventStreamsEndpoint.UI_KEY,
+                                                                     EventStreamsEndpoint.EndpointType.UI,
+                                                                     uiRouteUri));
+                        }
                     }
                     return Future.succeededFuture();
                 }));
@@ -717,12 +725,12 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
 
         Future<ReconciliationState> createOAuthClient() {
 
-            String uiRouteHost = status.getAdminUiUrl();
+            String uiRoute = status.getRoutes().get(AdminUIModel.COMPONENT_NAME);
 
-            log.debug("Found route host '{}'", uiRouteHost);
+            log.debug("Found route '{}'", uiRoute);
 
-            if (uiRouteHost != null) {
-                ClientModel clientModel = new ClientModel(instance, uiRouteHost);
+            if (uiRoute != null) {
+                ClientModel clientModel = new ClientModel(instance, "https://" + uiRoute);
                 Client oidcclient = clientModel.getClient();
                 String clientName = oidcclient.getMetadata().getName();
 

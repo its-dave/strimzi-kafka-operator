@@ -2035,7 +2035,7 @@ public class EventStreamsOperatorTest {
                     verifyContainsResource(context, networkPolicyName, KubeResourceType.NETWORK_POLICYS, false);
                     verifyContainsResource(context, deploymentName, KubeResourceType.DEPLOYMENTS, false);
                     verifyContainsResource(context, serviceName, KubeResourceType.SERVICES, false);
-                    verifyContainsResource(context, routeName, KubeResourceType.ROUTES, false);
+                    verifyContainsResource(context, routeName, KubeResourceType.ROUTES, true);
                     async.flag();
                 }))
                 .compose(v -> esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), instance))
@@ -2053,7 +2053,7 @@ public class EventStreamsOperatorTest {
                     verifyContainsResource(context, networkPolicyName, KubeResourceType.NETWORK_POLICYS, false);
                     verifyContainsResource(context, deploymentName, KubeResourceType.DEPLOYMENTS, false);
                     verifyContainsResource(context, serviceName, KubeResourceType.SERVICES, false);
-                    verifyContainsResource(context, routeName, KubeResourceType.ROUTES, false);
+                    verifyContainsResource(context, routeName, KubeResourceType.ROUTES, true);
                     async.flag();
                 }));
     }
