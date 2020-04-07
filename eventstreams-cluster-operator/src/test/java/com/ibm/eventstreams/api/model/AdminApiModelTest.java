@@ -93,13 +93,16 @@ public class AdminApiModelTest {
     private final Map<String, String> mockIcpClusterDataMap = new HashMap<>();
     private final String instanceName = "test-instance";
     private final String componentPrefix = instanceName + "-" + AbstractModel.APP_NAME + "-" + AdminApiModel.COMPONENT_NAME;
+    private final String apiVersion = "apiVersion";
     private final int defaultReplicas = 1;
+
     @Mock
     private EventStreamsOperatorConfig.ImageLookup imageConfig;
     private List<ListenerStatus> listeners = new ArrayList<>();
 
     private EventStreamsBuilder createDefaultEventStreams() {
         return ModelUtils.createDefaultEventStreams(instanceName)
+                .withApiVersion(apiVersion)
                 .editSpec()
                     .withNewAdminApi()
                         .withReplicas(defaultReplicas)
@@ -172,6 +175,7 @@ public class AdminApiModelTest {
         EnvVar endpoints = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7080").build();
         EnvVar tlsVersion = new EnvVarBuilder().withName("TLS_VERSION").withValue("9443:TLSv1.2,7080").build();
         EnvVar kafkaConnectRestApiEnv = new EnvVarBuilder().withName("KAFKA_CONNECT_REST_API_ADDRESS").withValue(kafkaConnectRestEndpoint).build();
+        EnvVar apiVersionEnv = new EnvVarBuilder().withName("EVENTSTREAMS_API_GROUP").withValue(apiVersion).build();
         EnvVar geoRepEnabledEnv = new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue("false").build();
         EnvVar geoRepSecretNameEnv = new EnvVarBuilder().withName("GEOREPLICATION_SECRET_NAME").withValue(instanceName  + "-" + AbstractModel.APP_NAME + "-" + ReplicatorModel.REPLICATOR_SECRET_NAME).build();
         EnvVar geoRepInternalClientAuthEnv = new EnvVarBuilder().withName("GEOREPLICATION_INTERNAL_CLIENT_AUTH_ENABLED").withValue("false").build();
@@ -195,6 +199,7 @@ public class AdminApiModelTest {
         assertThat(defaultEnvVars, hasItem(esCaCertEnv));
         assertThat(defaultEnvVars, hasItem(tlsVersion));
         assertThat(defaultEnvVars, hasItem(kafkaConnectRestApiEnv));
+        assertThat(defaultEnvVars, hasItem(apiVersionEnv));
         assertThat(defaultEnvVars, hasItem(geoRepEnabledEnv));
         assertThat(defaultEnvVars, hasItem(geoRepSecretNameEnv));
         assertThat(defaultEnvVars, hasItem(geoRepInternalClientAuthEnv));
