@@ -60,17 +60,23 @@ import io.fabric8.kubernetes.api.model.rbac.RoleBinding;
 import io.fabric8.kubernetes.api.model.rbac.RoleBindingBuilder;
 import io.fabric8.kubernetes.api.model.rbac.RoleRef;
 import io.fabric8.kubernetes.api.model.rbac.Subject;
+import io.fabric8.kubernetes.client.CustomResource;
 import io.fabric8.openshift.api.model.Route;
 import io.fabric8.openshift.api.model.RouteBuilder;
 import io.fabric8.openshift.api.model.TLSConfig;
 import io.fabric8.openshift.api.model.TLSConfigBuilder;
+import io.strimzi.api.kafka.model.AclRule;
 import io.strimzi.api.kafka.model.ContainerEnvVar;
 import io.strimzi.api.kafka.model.KafkaClusterSpec;
 import io.strimzi.api.kafka.model.KafkaSpec;
 import io.strimzi.api.kafka.model.KafkaUser;
 import io.strimzi.api.kafka.model.KafkaUserBuilder;
+import io.strimzi.api.kafka.model.KafkaUserScramSha512ClientAuthentication;
 import io.strimzi.api.kafka.model.KafkaUserSpec;
+import io.strimzi.api.kafka.model.KafkaUserTlsClientAuthentication;
 import io.strimzi.api.kafka.model.listener.KafkaListenerAuthentication;
+import io.strimzi.api.kafka.model.listener.KafkaListenerAuthenticationScramSha512;
+import io.strimzi.api.kafka.model.listener.KafkaListenerAuthenticationTls;
 import io.strimzi.api.kafka.model.listener.KafkaListenerExternal;
 import io.strimzi.api.kafka.model.listener.KafkaListenerTls;
 import io.strimzi.api.kafka.model.listener.KafkaListeners;
@@ -79,6 +85,7 @@ import io.strimzi.api.kafka.model.status.ListenerStatus;
 import io.strimzi.api.kafka.model.template.PodTemplate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import io.strimzi.api.kafka.model.KafkaUserSpecBuilder;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -298,7 +305,7 @@ public abstract class AbstractModel {
             .build();
     }
 
-    protected void setOwnerReference(EventStreams instance) {
+    protected void setOwnerReference(CustomResource instance) {
         this.apiVersion = instance.getApiVersion();
         this.kind = instance.getKind();
         this.uid = instance.getMetadata().getUid();
@@ -956,4 +963,44 @@ public abstract class AbstractModel {
             .map(TlsVersion::toValue)
             .orElse(DEFAULT_TLS_VERSION.toValue());
     }
+
+    // Checks whether the presented KafkaListenerAuthentication is one of the supported authentication types of the replicator
+    protected static boolean isSupportedAuthType(KafkaListenerAuthentication auth) {
+        return auth instanceof KafkaListenerAuthenticationTls ||
+                auth instanceof KafkaListenerAuthenticationScramSha512;
+
+    }
+
+    protected KafkaUser createKafkaUser(List<AclRule> aclList, String kafkaUserName, KafkaListenerAuthentication kafkaAuth) {
+        KafkaUserSpecBuilder kafkaUserSpec = new KafkaUserSpecBuilder()
+                .withNewKafkaUserAuthorizationSimple()
+                .withAcls(aclList)
+                .endKafkaUserAuthorizationSimple();
+
+        if (kafkaAuth instanceof KafkaListenerAuthenticationTls) {
+            kafkaUserSpec.withAuthentication(new KafkaUserTlsClientAuthentication());
+        } else if (kafkaAuth instanceof KafkaListenerAuthenticationScramSha512) {
+            kafkaUserSpec.withAuthentication(new KafkaUserScramSha512ClientAuthentication());
+        }
+
+        return createKafkaUser(kafkaUserName, kafkaUserSpec.build());
+    }
+
+
+    public static boolean isValidReplicatorInstance(EventStreams instance) {
+        boolean validInstance = true;
+
+        KafkaListenerAuthentication internalClientAuth = ReplicatorModel.getInternalTlsKafkaListenerAuthentication(instance);
+        if (internalClientAuth != null && !isSupportedAuthType(internalClientAuth)) {
+            validInstance = false;
+        }
+
+        KafkaListenerAuthentication externalClientAuth = ReplicatorModel.getExternalKafkaListenerAuthentication(instance);
+        if (externalClientAuth != null && !isSupportedAuthType(externalClientAuth)) {
+            validInstance = false;
+        }
+
+        return validInstance;
+    }
+
 }

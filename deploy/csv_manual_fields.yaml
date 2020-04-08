@@ -33,6 +33,12 @@ metadata:
         vpc: '37'
         cpu: '40'
         memory: '78 GB'
+    georeplicator-quickstart:
+      name: georeplicator
+      resources:
+        vpc: '1'
+        cpu: '1'
+        memory: '1.5 GB'
   version: 2020.2.1
 spec:
   customresourcedefinitions:

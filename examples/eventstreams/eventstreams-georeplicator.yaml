@@ -1,0 +1,10 @@
+apiVersion: eventstreams.ibm.com/v1beta1
+kind: EventStreamsGeoReplicator
+metadata:
+  # The name needs to match the metadata.name of your EventStreams cluster
+  name: quickstart
+  labels:
+    # The value of this label needs to match the metadata.name of your EventStreams cluster
+    eventstreams.ibm.com/cluster: quickstart
+spec:
+  replicas: 1

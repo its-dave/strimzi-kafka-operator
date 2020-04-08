@@ -13,24 +13,19 @@
 package com.ibm.eventstreams.api.model;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Base64.Encoder;
-import java.util.Base64;
-import java.nio.charset.StandardCharsets;
 
 import com.ibm.eventstreams.Main;
 import com.ibm.eventstreams.api.Labels;
 import com.ibm.eventstreams.api.spec.EventStreams;
+import com.ibm.eventstreams.api.spec.EventStreamsReplicator;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.spec.ReplicatorSpec;
-
 import com.ibm.eventstreams.replicator.ReplicatorCredentials;
 import io.fabric8.kubernetes.api.model.SecretVolumeSourceBuilder;
-import io.fabric8.kubernetes.api.model.networking.NetworkPolicyIngressRuleBuilder;
 import io.strimzi.api.kafka.model.KafkaClusterSpec;
 import io.strimzi.api.kafka.model.KafkaMirrorMaker2ClusterSpec;
 import io.strimzi.api.kafka.model.KafkaMirrorMaker2ClusterSpecBuilder;
@@ -54,7 +49,7 @@ import io.strimzi.api.kafka.model.KafkaMirrorMaker2Builder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import io.fabric8.kubernetes.api.model.Secret;
+import io.fabric8.kubernetes.api.model.networking.NetworkPolicyIngressRuleBuilder;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicy;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicyEgressRule;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicyIngressRule;
@@ -63,86 +58,70 @@ public class ReplicatorModel extends AbstractModel {
 
     public static final String COMPONENT_NAME = "replicator";
     public static final int REPLICATOR_PORT = 8083;
-
-    public static final String REPLICATOR_SECRET_NAME = "replicator-secret";
     public static final String REPLICATOR_CLUSTER_NAME = "replicator-cluster";
-
-    public static final String REPLICATOR_TARGET_CLUSTERS_SECRET_KEY_NAME = "georeplicationdestinationclusters";
-
     protected static final String CONFIG_STORAGE_TOPIC_NAME = "__eventstreams_georeplicator_configs";
     protected static final String OFFSET_STORAGE_TOPIC_NAME = "__eventstreams_georeplicator_offsets";
     protected static final String STATUS_STORAGE_TOPIC_NAME = "__eventstreams_georeplicator_status";
-
     public static final String BYTE_ARRAY_CONVERTER_NAME = "org.apache.kafka.connect.converters.ByteArrayConverter";
-
     public static final String REPLICATOR_SECRET_MOUNT_PATH = "/etc/georeplication";
-    public static final String CONNECT_SECRET_MOUNT_PATH = "/etc/georeplication/connectCreds";
-    public static final String TARGET_CONNECTOR_SECRET_MOUNT_PATH = "/etc/georeplication/connectTargetCreds";
-    public static final String SOURCE_CONNECTOR_SECRET_MOUNT_PATH = "/etc/georeplication/connectSourceCreds";
 
     private NetworkPolicy networkPolicy;
-    private Secret secret;
     private KafkaMirrorMaker2 kafkaMirrorMaker2;
-
-//    private KafkaClientAuthentication clientAuthentication;
-//    private KafkaMirrorMaker2Tls caCert;
 
     private static final Logger log = LogManager.getLogger(ReplicatorModel.class.getName());
 
     /**
      * This class is used to model a KafkaMirrorMaker2 custom resource used by the strimzi cluster operator,
      * it is also used to create the kube resources required to correctly deploy the replicator
-     * @param instance
+     * @param replicatorInstance
      * @param replicatorCredentials
      */
-    public ReplicatorModel(EventStreams instance, ReplicatorCredentials replicatorCredentials) {
+    public ReplicatorModel(EventStreamsReplicator replicatorInstance, EventStreams instance, ReplicatorCredentials replicatorCredentials) {
+        //always set the namespace to be that of the owning EventStreams instance
         super(instance.getMetadata().getName(), instance.getMetadata().getNamespace(), COMPONENT_NAME);
-                
-        setOwnerReference(instance);
+
+        setOwnerReference(replicatorInstance);
         
-        if (isReplicatorEnabled(instance)) {
-            kafkaMirrorMaker2 = createMirrorMaker2(instance, replicatorCredentials);
+        if (isReplicatorEnabled(replicatorInstance)) {
+            kafkaMirrorMaker2 = createMirrorMaker2(replicatorInstance, instance, replicatorCredentials);
             networkPolicy = createNetworkPolicy();
         } else {
             kafkaMirrorMaker2 = null;
             networkPolicy = null;
         }
 
-        Encoder encoder = Base64.getEncoder();
-        Map<String, String> data = Collections.singletonMap(REPLICATOR_TARGET_CLUSTERS_SECRET_KEY_NAME, encoder.encodeToString("[]".getBytes(StandardCharsets.UTF_8)));
-        // Secret is always created as it is used by AdminApi to know details about replication even if not enabled
-        this.secret = createSecret(getDefaultResourceName(getInstanceName(),  REPLICATOR_SECRET_NAME), data);
     }
 
-    private KafkaMirrorMaker2 createMirrorMaker2(EventStreams instance, ReplicatorCredentials replicatorCredentials) {
+    private KafkaMirrorMaker2 createMirrorMaker2(EventStreamsReplicator replicatorInstance, EventStreams instance,  ReplicatorCredentials replicatorCredentials) {
 
-        Optional<ReplicatorSpec> replicatorSpec = Optional.ofNullable(instance.getSpec())
-                .map(EventStreamsSpec::getReplicator);
+        Optional<ReplicatorSpec> eventStreamsreplicatorSpec = Optional.ofNullable(replicatorInstance.getSpec());
 
-        int replicas = replicatorSpec.map(ReplicatorSpec::getReplicas)
+
+        int replicas = eventStreamsreplicatorSpec.map(ReplicatorSpec::getReplicas)
                 .orElse(0);
 
         KafkaMirrorMaker2Tls caCert = replicatorCredentials.getReplicatorConnectTrustStore();
         KafkaClientAuthentication clientAuthentication = replicatorCredentials.getReplicatorConnectClientAuth();
-
         KafkaListenerTls internalTlsKafkaListener = getInternalTlsKafkaListener(instance);
 
-        KafkaMirrorMaker2Spec mm2Overrides = Optional
-                .ofNullable(instance)
-                .map(EventStreams::getSpec)
-                .map(EventStreamsSpec::getReplicator)
+
+        KafkaMirrorMaker2Spec mm2Spec = Optional
+                .ofNullable(replicatorInstance)
+                .map(EventStreamsReplicator::getSpec)
                 .map(ReplicatorSpec::getMirrorMaker2Spec)
                 .orElse(new KafkaMirrorMaker2Spec());
 
-        String connectClusterName = Optional.ofNullable(mm2Overrides.getConnectCluster())
+        String connectClusterName = Optional.ofNullable(mm2Spec.getConnectCluster())
                 .orElse(ReplicatorModel.getDefaultReplicatorClusterName(getInstanceName()));
 
 
-        // User set bootstrap address
-        String bootstrap = Optional.ofNullable(mm2Overrides.getClusters())
+        String bootstrap = Optional.ofNullable(mm2Spec.getClusters())
                 .filter(list -> !list.isEmpty())
-                .map(list -> list.get(0))
-                .map(KafkaMirrorMaker2ClusterSpec::getBootstrapServers)
+                .flatMap(populatedList -> populatedList
+                        .stream()
+                        .filter(item -> connectClusterName.equals(item.getAlias()))
+                        .findFirst()
+                        .map(KafkaMirrorMaker2ClusterSpec::getBootstrapServers))
                 .orElse(getDefaultBootstrap(internalTlsKafkaListener));
 
 
@@ -188,9 +167,9 @@ public class ReplicatorModel extends AbstractModel {
 
         ExternalConfiguration externalConfiguration = new ExternalConfigurationBuilder()
                 .withVolumes(new ExternalConfigurationVolumeSourceBuilder()
-                        .withName(REPLICATOR_SECRET_NAME)
+                        .withName(ReplicatorSecretModel.REPLICATOR_SECRET_NAME)
                         .withSecret(new SecretVolumeSourceBuilder()
-                                .withSecretName(getDefaultResourceName(getInstanceName(),  REPLICATOR_SECRET_NAME))
+                                .withSecretName(getDefaultResourceName(getInstanceName(),  ReplicatorSecretModel.REPLICATOR_SECRET_NAME))
                                 .build())
                         .build())
                 .build();
@@ -204,7 +183,7 @@ public class ReplicatorModel extends AbstractModel {
                     .addToLabels(getServiceSelectorLabel(COMPONENT_NAME))
                     .addToLabels(labels)
                 .endMetadata()
-                .withNewSpecLike(mm2Overrides)
+                .withNewSpecLike(mm2Spec)
                     .withReplicas(replicas)
                     .withTemplate(kafkaMirrorMaker2Template)
                     .withConnectCluster(connectClusterName)
@@ -229,9 +208,8 @@ public class ReplicatorModel extends AbstractModel {
         return bootstrap;
     }
 
-    public static boolean isReplicatorEnabled(EventStreams instance) {
-        return Optional.ofNullable(instance.getSpec().getReplicator())
-                .map(ReplicatorSpec::getReplicas)
+    public static boolean isReplicatorEnabled(EventStreamsReplicator replicatorInstance) {
+        return Optional.ofNullable(replicatorInstance.getSpec().getReplicas())
                 .map(replicas -> replicas > 0)
                 .orElse(false);
     }
@@ -242,16 +220,8 @@ public class ReplicatorModel extends AbstractModel {
 
     private NetworkPolicy createNetworkPolicy() {
         List<NetworkPolicyIngressRule> ingressRules = new ArrayList<>(1);
-
-        //TODO need to add in promethus port when we enable metrics issue 4493
-        // ingressRules.add(new NetworkPolicyIngressRuleBuilder()
-        //     .addNewPort().withNewPort(Integer.parseInt(ReplicatorModel.DEFAULT_PROMETHEUS_PORT)).endPort()
-        //     .build());
-
         ingressRules.add(createCustomReplicatorConnectIngressRule());
-
         List<NetworkPolicyEgressRule> egressRules = new ArrayList<>(0);
-
         return super.createNetworkPolicy(createLabelSelector(COMPONENT_NAME), ingressRules, egressRules);
     }
 
@@ -326,19 +296,5 @@ public class ReplicatorModel extends AbstractModel {
     public NetworkPolicy getNetworkPolicy() {
         return this.networkPolicy;
     }
-
-    /**
-     * @return Secret return the replicators secret
-     */
-    public Secret getSecret() {
-        return this.secret;
-    }
-    /**
-     * @return String return the replicators secret name
-     */
-    public String getSecretName() {
-        return getDefaultResourceName(getInstanceName(), REPLICATOR_SECRET_NAME);
-    }
-
 
 }

@@ -14,6 +14,7 @@ package com.ibm.eventstreams.api;
 
 import com.ibm.eventstreams.api.spec.EventStreams;
 
+import com.ibm.eventstreams.api.spec.EventStreamsReplicator;
 import com.ibm.iam.api.spec.Client;
 import com.ibm.iam.api.spec.Cp4iServicesBinding;
 import com.ibm.iam.api.spec.Cp4iServicesBindingDoneable;
@@ -73,7 +74,18 @@ public class Crds {
             kind = Cp4iServicesBinding.RESOURCE_KIND;
             listKind = Cp4iServicesBinding.RESOURCE_LIST_KIND;
             shortName = Cp4iServicesBinding.SHORT_NAME;
-            status = new CustomResourceSubresourceStatus(); 
+            status = new CustomResourceSubresourceStatus();
+        } else if (cls.equals(EventStreamsReplicator.class)) {
+            version = EventStreamsReplicator.V1BETA1;
+            scope = EventStreamsReplicator.SCOPE;
+            crdApiVersion = EventStreamsReplicator.CRD_API_VERSION;
+            plural = EventStreamsReplicator.RESOURCE_PLURAL;
+            singular = EventStreamsReplicator.RESOURCE_SINGULAR;
+            group = EventStreamsReplicator.RESOURCE_GROUP;
+            kind = EventStreamsReplicator.RESOURCE_KIND;
+            listKind = EventStreamsReplicator.RESOURCE_LIST_KIND;
+            shortName = EventStreamsReplicator.SHORT_NAME;
+            status = new CustomResourceSubresourceStatus();
         } else {
             throw new RuntimeException();
         }

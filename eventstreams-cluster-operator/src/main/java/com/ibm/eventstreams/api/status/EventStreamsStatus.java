@@ -12,7 +12,6 @@
  */
 package com.ibm.eventstreams.api.status;
 
-import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
@@ -24,7 +23,6 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 
-import io.strimzi.api.kafka.model.status.Condition;
 import io.strimzi.api.kafka.model.status.ListenerStatus;
 import io.strimzi.crdgenerator.annotations.Description;
 import io.sundr.builder.annotations.Buildable;
@@ -36,7 +34,7 @@ import lombok.EqualsAndHashCode;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({"phase", "conditions", "versions", "endpoints", "adminUiUrl", "kafkaListeners", "routes", "customImages", "cp4iPresent"})
 @EqualsAndHashCode
-public class EventStreamsStatus implements Serializable {
+public class EventStreamsStatus extends EventStreamsAbstractStatus {
 
     private static final long serialVersionUID = 1L;
 
@@ -45,9 +43,6 @@ public class EventStreamsStatus implements Serializable {
     private String adminUiUrl;
     private Map<String, String> routes;
     private List<EventStreamsEndpoint> endpoints;
-    private boolean customImages;
-    private EventStreamsVersions versions;
-    private List<Condition> conditions;
     private boolean cp4iPresent;
 
 
@@ -78,33 +73,6 @@ public class EventStreamsStatus implements Serializable {
         this.endpoints = endpoints;
     }
 
-    @Description("Identifies whether any of the Docker images have been modified from the defaults for this version of Event Streams")
-    public boolean isCustomImages() {
-        return customImages;
-    }
-
-    public void setCustomImages(boolean customImages) {
-        this.customImages = customImages;
-    }
-
-    @Description("Information about the version of this instance and it's upgradable versions")
-    public EventStreamsVersions getVersions() {
-        return versions;
-    }
-
-    public void setVersions(EventStreamsVersions versions) {
-        this.versions = versions;
-    }
-
-    @Description("Current state of the Event Streams cluster")
-    public List<Condition> getConditions() {
-        return conditions;
-    }
-
-    public void setConditions(List<Condition> conditions) {
-        this.conditions = conditions;
-    }
-
     @Description("Identifies the current status of the Event Streams instance. This will be 'Pending', 'Running', or 'Failed'")
     public String getPhase() {
         return phase;
@@ -122,6 +90,7 @@ public class EventStreamsStatus implements Serializable {
     public void setAdminUiUrl(String adminUiUrl) {
         this.adminUiUrl = adminUiUrl;
     }
+
 
     @Description("Identifies whether IBM Cloud Pak for Integration Services Binding is present")
     public boolean isCp4iPresent() {

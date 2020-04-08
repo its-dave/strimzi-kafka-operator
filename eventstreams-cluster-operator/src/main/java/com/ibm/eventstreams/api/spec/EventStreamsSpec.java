@@ -42,7 +42,6 @@ public class EventStreamsSpec implements Serializable {
     private SchemaRegistrySpec schemaRegistry;
     private ComponentSpec collector;
     private KafkaSpec strimziOverrides;
-    private ReplicatorSpec replicator;
     private SecuritySpec security;
     private ImagesSpec images;
 
@@ -121,14 +120,6 @@ public class EventStreamsSpec implements Serializable {
         this.collector = collector;
     }
 
-    @Description("Configuration of the geo-replicator service")
-    public ReplicatorSpec getReplicator() {
-        return replicator;
-    }
-
-    public void setReplicator(ReplicatorSpec replicator) {
-        this.replicator = replicator;
-    }
 
     @JsonProperty(required = true)
     @Description("Configuration of the Kafka and ZooKeeper clusters")

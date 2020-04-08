@@ -304,9 +304,12 @@
                         <argument>--label</argument><argument>app:eventstreams</argument>
                         <argument>--yaml</argument>
                         <argument>com.ibm.eventstreams.api.spec.EventStreams=${pom.basedir}/../eventstreams-helm-charts/ibm-eventstreams-operator/templates/140-Crd-eventstreams.yaml</argument>
+                        <argument>com.ibm.eventstreams.api.spec.EventStreamsReplicator=${pom.basedir}/../eventstreams-helm-charts/ibm-eventstreams-operator/templates/143-Crd-eventstreamsreplicator.yaml</argument>
                     </arguments>
                 </configuration>
             </plugin>
+
+
 
             <!-- ************************************************* -->
             <!-- Plugin to get code coverage reports on unit tests -->

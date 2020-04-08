@@ -41,7 +41,6 @@ import io.fabric8.kubernetes.api.model.ResourceRequirementsBuilder;
 import io.fabric8.kubernetes.api.model.SecretKeySelector;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.VolumeMount;
-import io.fabric8.kubernetes.api.model.VolumeMountBuilder;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicy;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicyPeer;
@@ -54,7 +53,6 @@ import io.strimzi.api.kafka.model.KafkaSpecBuilder;
 import io.strimzi.api.kafka.model.status.ListenerStatus;
 import io.strimzi.api.kafka.model.status.ListenerStatusBuilder;
 import io.strimzi.api.kafka.model.template.PodTemplateBuilder;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -125,9 +123,6 @@ public class AdminApiModelTest {
             .withNewAdminApi()
             .withReplicas(defaultReplicas)
             .endAdminApi()
-            .withNewReplicator()
-                .withReplicas(defaultReplicas)
-            .endReplicator()
             .endSpec();
     }
 
@@ -176,8 +171,8 @@ public class AdminApiModelTest {
         EnvVar tlsVersion = new EnvVarBuilder().withName("TLS_VERSION").withValue("9443:TLSv1.2,7080").build();
         EnvVar kafkaConnectRestApiEnv = new EnvVarBuilder().withName("KAFKA_CONNECT_REST_API_ADDRESS").withValue(kafkaConnectRestEndpoint).build();
         EnvVar apiVersionEnv = new EnvVarBuilder().withName("EVENTSTREAMS_API_GROUP").withValue(apiVersion).build();
-        EnvVar geoRepEnabledEnv = new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue("false").build();
-        EnvVar geoRepSecretNameEnv = new EnvVarBuilder().withName("GEOREPLICATION_SECRET_NAME").withValue(instanceName  + "-" + AbstractModel.APP_NAME + "-" + ReplicatorModel.REPLICATOR_SECRET_NAME).build();
+   //   EnvVar geoRepEnabledEnv = new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue("false").build();
+        EnvVar geoRepSecretNameEnv = new EnvVarBuilder().withName("GEOREPLICATION_SECRET_NAME").withValue(instanceName  + "-" + AbstractModel.APP_NAME + "-" + ReplicatorSecretModel.REPLICATOR_SECRET_NAME).build();
         EnvVar geoRepInternalClientAuthEnv = new EnvVarBuilder().withName("GEOREPLICATION_INTERNAL_CLIENT_AUTH_ENABLED").withValue("false").build();
         EnvVar geoRepExternalClientAuthEnv = new EnvVarBuilder().withName("GEOREPLICATION_EXTERNAL_CLIENT_AUTH_ENABLED").withValue("false").build();
         EnvVar geoRepInternalServerAuthEnv = new EnvVarBuilder().withName("GEOREPLICATION_INTERNAL_SERVER_AUTH_ENABLED").withValue("false").build();
@@ -200,7 +195,7 @@ public class AdminApiModelTest {
         assertThat(defaultEnvVars, hasItem(tlsVersion));
         assertThat(defaultEnvVars, hasItem(kafkaConnectRestApiEnv));
         assertThat(defaultEnvVars, hasItem(apiVersionEnv));
-        assertThat(defaultEnvVars, hasItem(geoRepEnabledEnv));
+    //  assertThat(defaultEnvVars, hasItem(geoRepEnabledEnv));
         assertThat(defaultEnvVars, hasItem(geoRepSecretNameEnv));
         assertThat(defaultEnvVars, hasItem(geoRepInternalClientAuthEnv));
         assertThat(defaultEnvVars, hasItem(geoRepExternalClientAuthEnv));
@@ -795,7 +790,7 @@ public class AdminApiModelTest {
 
         assertThat(volumeMounts.size(), is(7));
 
-        assertThat(volumeMounts.get(0).getName(), is(ReplicatorModel.REPLICATOR_SECRET_NAME));
+        assertThat(volumeMounts.get(0).getName(), is(ReplicatorSecretModel.REPLICATOR_SECRET_NAME));
         assertThat(volumeMounts.get(0).getReadOnly(), is(true));
         assertThat(volumeMounts.get(0).getMountPath(), is(ReplicatorModel.REPLICATOR_SECRET_MOUNT_PATH));
 
@@ -824,62 +819,6 @@ public class AdminApiModelTest {
         assertThat(volumeMounts.get(6).getMountPath(), is(AdminApiModel.KAFKA_USER_CERTIFICATE_PATH));
     }
 
-    @Test
-    public void testVolumeMountsWhenClientAuthEnabledWithoutReplication() {
-        EventStreamsSpec spec = createStrimziOverrides();
-
-        EventStreams eventStreams = createEventStreams(spec).build();
-        AdminApiModel adminApiModel = new AdminApiModel(eventStreams, imageConfig, null, mockIcpClusterDataMap);
-
-        List<VolumeMount> volumeMounts = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getVolumeMounts();
-
-        assertThat(volumeMounts.size(), is(8));
-
-        VolumeMount sourceConnectorVolume = new VolumeMountBuilder()
-                .withMountPath(ReplicatorModel.SOURCE_CONNECTOR_SECRET_MOUNT_PATH)
-                .withReadOnly(true)
-                .withName(ReplicatorUsersModel.SOURCE_CONNECTOR_KAFKA_USER_NAME)
-                .build();
-
-        assertThat(volumeMounts, Matchers.hasItem(sourceConnectorVolume));
-
-    }
-
-    @Test
-    public void testVolumeMountsWhenClientAuthEnabledWithReplication() {
-        EventStreamsSpec spec = createStrimziOverrides();
-
-        EventStreams eventStreams = createEventStreamsWithReplicator(spec).build();
-        AdminApiModel adminApiModel = new AdminApiModel(eventStreams, imageConfig, null, mockIcpClusterDataMap);
-
-        List<VolumeMount> volumeMounts = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getVolumeMounts();
-
-        assertThat(volumeMounts.size(), is(10));
-
-        VolumeMount sourceConnectorVolume = new VolumeMountBuilder()
-            .withMountPath(ReplicatorModel.SOURCE_CONNECTOR_SECRET_MOUNT_PATH)
-            .withReadOnly(true)
-            .withName(ReplicatorUsersModel.SOURCE_CONNECTOR_KAFKA_USER_NAME)
-            .build();
-
-        VolumeMount connectVolume = new VolumeMountBuilder()
-                .withMountPath(ReplicatorModel.CONNECT_SECRET_MOUNT_PATH)
-                .withReadOnly(true)
-                .withName(ReplicatorUsersModel.CONNECT_KAFKA_USER_NAME)
-                .build();
-
-        VolumeMount targetConnectorVolume = new VolumeMountBuilder()
-                .withMountPath(ReplicatorModel.TARGET_CONNECTOR_SECRET_MOUNT_PATH)
-                .withReadOnly(true)
-                .withName(ReplicatorUsersModel.TARGET_CONNECTOR_KAFKA_USER_NAME)
-                .build();
-
-
-        assertThat(volumeMounts, Matchers.hasItem(sourceConnectorVolume));
-        assertThat(volumeMounts, Matchers.hasItem(connectVolume));
-        assertThat(volumeMounts, Matchers.hasItem(targetConnectorVolume));
-
-    }
 
     @Test
     public void testOwnerReferenceCorrectForRoutes() {

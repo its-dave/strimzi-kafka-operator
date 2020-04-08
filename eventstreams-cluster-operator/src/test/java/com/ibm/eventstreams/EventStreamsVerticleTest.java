@@ -43,7 +43,7 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -57,6 +57,8 @@ public class EventStreamsVerticleTest {
     private Vertx vertx;
 
     private KubernetesClient mockClient;
+
+    private static final int NUMBER_OF_VERTICLES = 2;
 
     @BeforeEach
     public void before() {
@@ -106,8 +108,8 @@ public class EventStreamsVerticleTest {
         LOGGER.info("Number of watchers: " + numberOfWatchersCreated.get());
         int finalNumberOfWatchers = numberOfWatchersCreated.get();
 
-        context.verify(() -> assertEquals(expectedNamespaceAsList(namespaces).size(), vertx.deploymentIDs().size(), "Verticles not equal to supplied namespace"));
-        context.verify(() -> assertEquals(expectedNamespaceAsList(namespaces).size(), finalNumberOfWatchers, "Watches not equal to namespaces supplied"));
+        context.verify(() -> assertThat(expectedNamespaceAsList(namespaces), hasSize(vertx.deploymentIDs().size() / NUMBER_OF_VERTICLES)));
+        context.verify(() -> assertThat(expectedNamespaceAsList(namespaces), hasSize(finalNumberOfWatchers / NUMBER_OF_VERTICLES)));
         context.completeNow();
     }
 
@@ -181,8 +183,8 @@ public class EventStreamsVerticleTest {
         LOGGER.info("Number of watchers: " + numberOfWatchersCreated.get());
         int finalNumberOfWatchers = numberOfWatchersCreated.get();
 
-        context.verify(() -> assertEquals(vertx.deploymentIDs().size(), expectedNamespaceAsList(namespaces).size(), "Verticles not equal to supplied namespace"));
+        context.verify(() -> assertThat(vertx.deploymentIDs(), hasSize(NUMBER_OF_VERTICLES * expectedNamespaceAsList(namespaces).size())));
         context.verify(() -> assertThat("Watch does not match the namesapce", actualWatchedNamespaces, is(expectedNamespaceAsList(namespaces))));
-        context.verify(() -> assertEquals(expectedNamespaceAsList(namespaces).size(), finalNumberOfWatchers, "Watches not equal to namespaces supplied"));
+        context.verify(() -> assertThat(expectedNamespaceAsList(namespaces), hasSize(finalNumberOfWatchers / NUMBER_OF_VERTICLES)));
     }
 }

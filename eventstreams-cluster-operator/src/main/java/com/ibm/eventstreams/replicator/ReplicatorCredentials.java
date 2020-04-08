@@ -14,7 +14,7 @@
 package com.ibm.eventstreams.replicator;
 
 import com.ibm.eventstreams.api.model.ReplicatorModel;
-import com.ibm.eventstreams.api.model.ReplicatorUsersModel;
+import com.ibm.eventstreams.api.model.ReplicatorDestinationUsersModel;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.strimzi.api.kafka.model.CertAndKeySecretSource;
@@ -90,7 +90,7 @@ public class ReplicatorCredentials {
                             .withSecretName(connectUserSecret.getMetadata().getName())
                             .withPassword(ReplicatorModel.SCRAM_PASSWORD)
                             .build())
-                        .withNewUsername(ReplicatorUsersModel.getConnectKafkaUserName(instance.getMetadata().getName()))
+                        .withNewUsername(ReplicatorDestinationUsersModel.getConnectKafkaUserName(instance.getMetadata().getName()))
                         .build();
             }
         }

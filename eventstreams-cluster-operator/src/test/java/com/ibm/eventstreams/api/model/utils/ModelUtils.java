@@ -17,9 +17,10 @@ import com.ibm.eventstreams.api.EndpointServiceType;
 import com.ibm.eventstreams.api.TlsVersion;
 import com.ibm.eventstreams.api.model.AbstractSecureEndpointsModel;
 import com.ibm.eventstreams.api.model.EventStreamsKafkaModel;
-import com.ibm.eventstreams.api.model.ReplicatorUsersModel;
+import com.ibm.eventstreams.api.model.ReplicatorSourceUsersModel;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
+import com.ibm.eventstreams.api.spec.EventStreamsReplicatorBuilder;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.spec.SecurityComponentSpec;
 import io.fabric8.kubernetes.api.model.Container;
@@ -58,6 +59,14 @@ public class ModelUtils {
                 .withNewSpecLike(eventStreamsSpec)
                 .endSpec();
 
+    }
+
+    public static EventStreamsReplicatorBuilder createDefaultEventStreamsReplicator(String instanceName) {
+        return new EventStreamsReplicatorBuilder()
+                .withMetadata(new ObjectMetaBuilder().withName(instanceName).build())
+                .withNewSpec()
+                .withReplicas(1)
+                .endSpec();
     }
 
     public static void assertCorrectImageOverridesOnContainers(List<Container> containers, Map<String, String> imageOverrides) {
@@ -133,36 +142,9 @@ public class ModelUtils {
     public static Set<Secret> generateReplicatorConnectSecrets(String namespace, String clusterName, String appName, Certificates cert, Keys key) {
 
         Map<String, String> labels = Labels.forStrimziCluster(EventStreamsKafkaModel.getKafkaInstanceName(clusterName)).withStrimziKind(Kafka.RESOURCE_KIND).toMap();
-
-        Secret replicatorConnect = new SecretBuilder()
-            .withNewMetadata()
-                .withName(clusterName + "-" + appName + "-" + ReplicatorUsersModel.CONNECT_KAFKA_USER_NAME)
-                .withNamespace(namespace)
-                .addToAnnotations(Ca.ANNO_STRIMZI_IO_CA_KEY_GENERATION, "0")
-                .withLabels(labels)
-            .endMetadata()
-            .addToData("user.key", key.toString())
-            .addToData("user.crt", cert.toString())
-            .addToData("user.password", "password")
-            .build();
-
-
-        Secret replicatorConnectorDest = new SecretBuilder()
-            .withNewMetadata()
-                .withName(clusterName + "-" + appName + "-" + ReplicatorUsersModel.TARGET_CONNECTOR_KAFKA_USER_NAME)
-                .withNamespace(namespace)
-                .addToAnnotations(Ca.ANNO_STRIMZI_IO_CA_KEY_GENERATION, "0")
-                .withLabels(labels)
-            .endMetadata()
-            .addToData("user.key", key.toString())
-            .addToData("user.crt", cert.toString())
-            .addToData("user.password", "password1")
-            .build();
-
-
         Secret replicatorConnectorSource = new SecretBuilder()
             .withNewMetadata()
-                .withName(clusterName + "-" + appName + "-" + ReplicatorUsersModel.SOURCE_CONNECTOR_KAFKA_USER_NAME)
+                .withName(clusterName + "-" + appName + "-" + ReplicatorSourceUsersModel.SOURCE_CONNECTOR_KAFKA_USER_NAME)
                 .withNamespace(namespace)
                 .addToAnnotations(Ca.ANNO_STRIMZI_IO_CA_KEY_GENERATION, "0")
                 .withLabels(labels)
@@ -173,8 +155,6 @@ public class ModelUtils {
             .build();
 
         Set<Secret> replicatorConnectSecrets = new HashSet<>();
-        replicatorConnectSecrets.add(replicatorConnect);
-        replicatorConnectSecrets.add(replicatorConnectorDest);
         replicatorConnectSecrets.add(replicatorConnectorSource);
 
         return replicatorConnectSecrets;

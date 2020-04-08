@@ -26,8 +26,8 @@ import com.ibm.eventstreams.api.model.ClusterSecretsModel;
 import com.ibm.eventstreams.api.model.CollectorModel;
 import com.ibm.eventstreams.api.model.InternalKafkaUserModel;
 import com.ibm.eventstreams.api.model.MessageAuthenticationModel;
-import com.ibm.eventstreams.api.model.ReplicatorModel;
-import com.ibm.eventstreams.api.model.ReplicatorUsersModel;
+import com.ibm.eventstreams.api.model.ReplicatorSecretModel;
+import com.ibm.eventstreams.api.model.ReplicatorSourceUsersModel;
 import com.ibm.eventstreams.api.model.RestProducerModel;
 import com.ibm.eventstreams.api.model.SchemaRegistryModel;
 import com.ibm.eventstreams.api.model.utils.MockEventStreamsKube;
@@ -79,15 +79,12 @@ import io.fabric8.openshift.api.model.Route;
 import io.fabric8.openshift.api.model.RouteBuilder;
 import io.fabric8.openshift.client.OpenShiftClient;
 import io.strimzi.api.kafka.KafkaList;
-import io.strimzi.api.kafka.KafkaMirrorMaker2List;
 import io.strimzi.api.kafka.KafkaUserList;
 import io.strimzi.api.kafka.model.CertAndKeySecretSource;
 import io.strimzi.api.kafka.model.CertAndKeySecretSourceBuilder;
 import io.strimzi.api.kafka.model.DoneableKafka;
-import io.strimzi.api.kafka.model.DoneableKafkaMirrorMaker2;
 import io.strimzi.api.kafka.model.DoneableKafkaUser;
 import io.strimzi.api.kafka.model.Kafka;
-import io.strimzi.api.kafka.model.KafkaMirrorMaker2;
 import io.strimzi.api.kafka.model.KafkaSpec;
 import io.strimzi.api.kafka.model.KafkaSpecBuilder;
 import io.strimzi.api.kafka.model.KafkaUser;
@@ -212,7 +209,6 @@ public class EventStreamsOperatorTest {
         NETWORK_POLICYS,
         KAFKAS,
         KAFKA_USERS,
-        KAFKA_MIRROR_MAKER_2S
     };
 
     @BeforeAll
@@ -620,7 +616,7 @@ public class EventStreamsOperatorTest {
                     async.flag();
                 })));
     }
-    
+
     @Test
     public void testEventStreamsUnsupportedVersionThrows(VertxTestContext context) {
         mockRoutes();
@@ -687,46 +683,6 @@ public class EventStreamsOperatorTest {
                 })));
     }
 
-    @Test
-    public void testEventStreamsGeorepWithoutAPIThrows(VertxTestContext context) {
-        mockRoutes();
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
-
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
-
-        String clusterName = "instancename";
-        EventStreams esCluster = new EventStreamsBuilder()
-                .withMetadata(new ObjectMetaBuilder().withName(clusterName).withNamespace(NAMESPACE).build())
-                .withNewSpec()
-                    .withLicenseAccept(true)
-                    .withVersion(EventStreamsVersions.OPERAND_VERSION)
-                    .withNewReplicator()
-                        .withReplicas(1)
-                    .endReplicator()
-                    .withStrimziOverrides(new KafkaSpecBuilder()
-                        .withNewKafka()
-                            .withNewListeners()
-                                .withNewPlain().endPlain()
-                            .endListeners()
-                        .endKafka()
-                        .build())
-                .endSpec()
-                .build();
-
-        ArgumentCaptor<EventStreams> updatedEventStreams = ArgumentCaptor.forClass(EventStreams.class);
-        Checkpoint async = context.checkpoint();
-
-        esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, clusterName), esCluster)
-                .onComplete(context.failing(e -> context.verify(() -> {
-                    assertThat(e.getMessage(), is("Invalid Event Streams specification: further details in the status conditions"));
-
-                    verify(esResourceOperator, times(2)).updateEventStreamsStatus(updatedEventStreams.capture());
-                    EventStreamsStatus status = updatedEventStreams.getValue().getStatus();
-                    assertThat(status.getPhase(), is("Failed"));
-                    assertThat(status.getConditions().get(0).getMessage(), is("adminApi is a required component to enable replicator"));
-                    async.flag();
-                })));
-    }
 
     @Test
     public void testEventStreamsInvalidListenerAuthenticationOauthThrows(VertxTestContext context) {
@@ -996,7 +952,7 @@ public class EventStreamsOperatorTest {
 
         reconciliationState.reconcileCerts(endpointModel, additionalHosts, Date::new)
             .onComplete(context.succeeding(ar -> context.verify(() -> {
-                assertThat("Number of secrets do not match " + mockClient.secrets().list().getItems(), mockClient.secrets().list().getItems().size(), is(6));
+                assertThat("Number of secrets do not match " + mockClient.secrets().list().getItems(), mockClient.secrets().list().getItems().size(), is(4));
                 Secret secret = mockClient.secrets().withName(endpointModel.getCertificateSecretName()).get();
                 assertThat("The expected secret is created", secret, is(notNullValue()));
                 assertThat("There is a key file of length greater than 0", secret.getData().get(endpointModel.getCertSecretKeyID(endpoint.getName())).length(), greaterThan(0));
@@ -1032,7 +988,7 @@ public class EventStreamsOperatorTest {
         ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, spec, "endpoint-component");
 
         reconciliationState.reconcileCerts(endpointModel, Collections.emptyMap(), Date::new).setHandler(ar -> {
-            assertThat("Number of secrets do not match " + mockClient.secrets().list().getItems(), mockClient.secrets().list().getItems().size(), is(6));
+            assertThat("Number of secrets do not match " + mockClient.secrets().list().getItems(), mockClient.secrets().list().getItems().size(), is(4));
             Secret secret = mockClient.secrets().withName(endpointModel.getCertificateSecretName()).get();
             assertThat("The expected secret is created", secret, is(notNullValue()));
             CertAndKey certAndKey = reconciliationState.certificateManager.certificateAndKey(secret, endpointModel.getCertSecretCertID(internal.getName()), endpointModel.getCertSecretKeyID(internal.getName()));
@@ -1073,7 +1029,7 @@ public class EventStreamsOperatorTest {
         ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, spec, "endpoint-component");
 
         reconciliationState.reconcileCerts(endpointModel, Collections.emptyMap(), Date::new).setHandler(ar -> {
-            assertThat("Number of secrets do not match " + mockClient.secrets().list().getItems(), mockClient.secrets().list().getItems().size(), is(6));
+            assertThat("Number of secrets do not match " + mockClient.secrets().list().getItems(), mockClient.secrets().list().getItems().size(), is(4));
             Secret secret = mockClient.secrets().withName(endpointModel.getCertificateSecretName()).get();
             assertThat("The expected secret is created", secret, is(notNullValue()));
             assertThat("The secret has no data", secret.getData().size(), is(0));
@@ -1114,7 +1070,7 @@ public class EventStreamsOperatorTest {
         ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, spec, "endpoint-component");
 
         reconciliationState.reconcileCerts(endpointModel, Collections.emptyMap(), Date::new).setHandler(ar -> {
-            assertThat("The number of secrets does not match", mockClient.secrets().list().getItems(), hasSize(6));
+            assertThat("The number of secrets does not match", mockClient.secrets().list().getItems(), hasSize(4));
             Secret secret = mockClient.secrets().withName(endpointModel.getCertificateSecretName()).get();
             assertThat("The certificate secret should be created", secret, is(notNullValue()));
             assertThat("The secret does not contain cert key ID for plain node port", secret.getData().containsKey(endpointModel.getCertSecretKeyID(plainInternal.getName())), is(false));
@@ -1164,7 +1120,7 @@ public class EventStreamsOperatorTest {
         ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, spec, "endpoint-component");
 
         reconciliationState.reconcileCerts(endpointModel, Collections.singletonMap(endpointModel.getRouteName(route.getName()), "additional.hosts"), Date::new).setHandler(ar -> {
-            assertThat("The number of secrets does not match", mockClient.secrets().list().getItems(), hasSize(6));
+            assertThat("The number of secrets does not match", mockClient.secrets().list().getItems(), hasSize(4));
             Secret secret = mockClient.secrets().withName(endpointModel.getCertificateSecretName()).get();
             assertThat("The certificate secret should be created", secret, is(notNullValue()));
             assertThat("The secret does not contain cert key ID for tls route", secret.getData().get(endpointModel.getCertSecretKeyID(route.getName())).length(), greaterThan(0));
@@ -1205,10 +1161,10 @@ public class EventStreamsOperatorTest {
         Map<String, String> additionalHosts = Collections.singletonMap(tlsInternal.getName(), "extra.host.name");
 
         reconciliationState.reconcileCerts(endpointModel, additionalHosts, Date::new).setHandler(ar -> {
-            assertThat("The number of secrets does match", mockClient.secrets().list().getItems().size(), is(6));
+            assertThat("The number of secrets does match", mockClient.secrets().list().getItems().size(), is(4));
             Secret firstSecret = mockClient.secrets().withName(endpointModel.getCertificateSecretName()).get();
             reconciliationState.reconcileCerts(endpointModel, additionalHosts,  Date::new).setHandler(ar2 -> {
-                assertThat("The number of secrets does match", mockClient.secrets().list().getItems().size(), is(6));
+                assertThat("The number of secrets does match", mockClient.secrets().list().getItems().size(), is(4));
                 Secret secondSecret = mockClient.secrets().withName(endpointModel.getCertificateSecretName()).get();
                 assertThat("The secret has not changed", secondSecret, is(firstSecret));
                 async.flag();
@@ -1243,10 +1199,10 @@ public class EventStreamsOperatorTest {
         Map<String, String> additionalHosts = Collections.singletonMap(tlsInternal.getName(), "extra.host.name");
 
         reconciliationState.reconcileCerts(endpointModel, additionalHosts, Date::new).setHandler(ar -> {
-            assertThat("The number of secrets does not match", mockClient.secrets().list().getItems().size(), is(6));
+            assertThat("The number of secrets does not match", mockClient.secrets().list().getItems().size(), is(4));
             Secret firstSecret = mockClient.secrets().withName(endpointModel.getCertificateSecretName()).get();
             reconciliationState.reconcileCerts(endpointModel, additionalHosts, () -> Date.from(Instant.now().plusSeconds(TWO_YEARS_PLUS_IN_SECONDS))).setHandler(ar2 -> {
-                assertThat("The number of secrets does not match", mockClient.secrets().list().getItems().size(), is(6));
+                assertThat("The number of secrets does not match", mockClient.secrets().list().getItems().size(), is(4));
                 Secret secondSecret = mockClient.secrets().withName(endpointModel.getCertificateSecretName()).get();
                 assertThat("The secret has changed", secondSecret, not(firstSecret));
                 async.flag();
@@ -1281,13 +1237,13 @@ public class EventStreamsOperatorTest {
         Map<String, String> additionalHosts = Collections.singletonMap(tlsInternal.getName(), "extra.host.name");
 
         reconciliationState.reconcileCerts(endpointModel, additionalHosts, Date::new).setHandler(ar -> {
-            assertThat("The number of secrets does not match", mockClient.secrets().list().getItems().size(), is(6));
+            assertThat("The number of secrets does not match", mockClient.secrets().list().getItems().size(), is(4));
             Secret firstSecret = mockClient.secrets().withName(endpointModel.getCertificateSecretName()).get();
             List<Secret> newClusterCA = new ArrayList<>(ModelUtils.generateClusterCa(NAMESPACE, CLUSTER_NAME, APP_NAME, ModelUtils.Certificates.NEW_CLUSTER_CA, ModelUtils.Keys.NEW_CLUSTER_CA_KEY));
             mockClient.secrets().createOrReplace(newClusterCA.get(0));
             mockClient.secrets().createOrReplace(newClusterCA.get(1));
             reconciliationState.reconcileCerts(endpointModel, additionalHosts, Date::new).setHandler(ar2 -> {
-                assertThat("The number of secrets does not match", mockClient.secrets().list().getItems().size(), is(6));
+                assertThat("The number of secrets does not match", mockClient.secrets().list().getItems().size(), is(4));
                 Secret secondSecret = mockClient.secrets().withName(endpointModel.getCertificateSecretName()).get();
                 assertThat("The secret has changed", secondSecret, not(firstSecret));
                 async.flag();
@@ -1329,14 +1285,14 @@ public class EventStreamsOperatorTest {
         Map<String, String> additionalHosts = Collections.singletonMap(endpointModel.getRouteName(tlsRoute.getName()), "extra.host.name");
 
         reconciliationState.reconcileCerts(endpointModel, additionalHosts, Date::new).setHandler(ar -> {
-            assertThat("The number of secrets does not match", mockClient.secrets().list().getItems().size(), is(6));
+            assertThat("The number of secrets does not match", mockClient.secrets().list().getItems().size(), is(4));
             Secret firstSecret = mockClient.secrets().withName(endpointModel.getCertificateSecretName()).get();
             CertAndKey originalInternalTlsCertAndKey = reconciliationState.certificateManager.certificateAndKey(firstSecret, endpointModel.getCertSecretCertID(tlsInternal.getName()), endpointModel.getCertSecretKeyID(tlsInternal.getName()));
             CertAndKey originalTlsRouteCertAndKey = reconciliationState.certificateManager.certificateAndKey(firstSecret, endpointModel.getCertSecretCertID(tlsRoute.getName()), endpointModel.getCertSecretKeyID(tlsRoute.getName()));
 
             Map<String, String> newHosts = Collections.singletonMap(endpointModel.getRouteName(tlsRoute.getName()), "extra.host.name.2");
             reconciliationState.reconcileCerts(endpointModel, newHosts, Date::new).setHandler(ar2 -> {
-                assertThat("The number of secrets does match", mockClient.secrets().list().getItems().size(), is(6));
+                assertThat("The number of secrets does match", mockClient.secrets().list().getItems().size(), is(4));
                 Secret secondSecret = mockClient.secrets().withName(endpointModel.getCertificateSecretName()).get();
                 assertThat("The secret has changed", secondSecret, not(firstSecret));
                 CertAndKey newInternalTlsCertAndKey = reconciliationState.certificateManager.certificateAndKey(secondSecret, endpointModel.getCertSecretCertID(tlsInternal.getName()), endpointModel.getCertSecretKeyID(tlsInternal.getName()));
@@ -1402,7 +1358,7 @@ public class EventStreamsOperatorTest {
         Map<String, String> additionalHosts = Collections.singletonMap(tlsInternal.getName(), "extra.host.name");
 
         reconciliationState.reconcileCerts(endpointModel, additionalHosts, Date::new).setHandler(ar -> {
-            assertThat("The number of secrets does not match", mockClient.secrets().list().getItems().size(), is(7));
+            assertThat("The number of secrets does not match", mockClient.secrets().list().getItems().size(), is(5));
             Secret secret = mockClient.secrets().withName(endpointModel.getCertificateSecretName()).get();
             assertThat("The admin api cert secret has been populated with the internal provided cert", secret.getData().get(endpointModel.getCertSecretCertID(tlsInternal.getName())), is(providedSecret.getData().get(secretCertificate)));
             assertThat("The admin api cert secret has been populated with the internal provided key", secret.getData().get(endpointModel.getCertSecretKeyID(tlsInternal.getName())), is(providedSecret.getData().get(secretKey)));
@@ -1460,7 +1416,7 @@ public class EventStreamsOperatorTest {
         Map<String, String> additionalHosts = Collections.singletonMap(tlsInternal.getName(), "extra.host.name");
 
         reconciliationState.reconcileCerts(endpointModel, additionalHosts, Date::new).setHandler(ar -> {
-            assertThat("The number of secrets does not match", mockClient.secrets().list().getItems().size(), is(7));
+            assertThat("The number of secrets does not match", mockClient.secrets().list().getItems().size(), is(5));
             Secret secret = mockClient.secrets().withName(endpointModel.getCertificateSecretName()).get();
             assertThat("The admin api cert secret has been populated with the internal provided cert", secret.getData().get(endpointModel.getCertSecretCertID(tlsInternal.getName())), is(firstProvidedSecret.getData().get(secretCertificate)));
             assertThat("The admin api cert secret has been populated with the internal provided key", secret.getData().get(endpointModel.getCertSecretKeyID(tlsInternal.getName())), is(firstProvidedSecret.getData().get(secretKey)));
@@ -2109,76 +2065,6 @@ public class EventStreamsOperatorTest {
     }
 
     @Test
-    public void testReplicatorComponentCreatedAndDeletedWhenAddedAndRemovedFromCR(VertxTestContext context) {
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
-
-        EventStreams minimalInstance = createMinimalESInstance();
-
-        EventStreams instance = new EventStreamsBuilder(minimalInstance)
-                .editSpec()
-                    .withStrimziOverrides(new KafkaSpecBuilder(minimalInstance.getSpec().getStrimziOverrides())
-                            .editOrNewKafka()
-                                .withListeners(ModelUtils.getMutualTLSOnBothInternalAndExternalListenerSpec())
-
-                            .endKafka()
-                            .build())
-                    .withNewAdminApi().
-                        withReplicas(1)
-                    .endAdminApi()
-                    .withNewReplicator()
-                        .withReplicas(1)
-                    .endReplicator()
-                .endSpec()
-                .build();
-
-        String defaultComponentResourceName = CLUSTER_NAME + "-" + APP_NAME + "-" + ReplicatorModel.COMPONENT_NAME;
-
-        String kafkaMirrorMaker2Name = defaultComponentResourceName;
-        String networkPolicyName = defaultComponentResourceName;
-
-        String secretName = defaultComponentResourceName + "-secret";
-        String replicatorConnectUserName = CLUSTER_NAME + "-" + APP_NAME + "-rep-connect-user";
-        String replicatorTargetConnectorUser = CLUSTER_NAME + "-" + APP_NAME + "-rep-target-user";
-        String replicatorSourceConnectorUser = CLUSTER_NAME + "-" + APP_NAME + "-rep-source-user";
-
-        Set<String> kafkaUserNames = new HashSet<>();
-        kafkaUserNames.add(replicatorConnectUserName);
-        kafkaUserNames.add(replicatorTargetConnectorUser);
-        kafkaUserNames.add(replicatorSourceConnectorUser);
-
-
-        Boolean secretNotOptional = true;
-
-        Checkpoint async = context.checkpoint(3);
-
-        esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), minimalInstance)
-                .onComplete(context.succeeding(v -> {
-                    verifyContainsResource(context, kafkaMirrorMaker2Name, KubeResourceType.KAFKA_MIRROR_MAKER_2S, false);
-                    verifyContainsResource(context, networkPolicyName, KubeResourceType.NETWORK_POLICYS, false);
-                    verifyContainsResources(context, kafkaUserNames, KubeResourceType.KAFKA_USERS, false);
-                    verifyContainsResource(context, secretName, KubeResourceType.SECRETS, secretNotOptional);
-                    async.flag();
-                }))
-                .compose(v -> esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), instance))
-                .onComplete(context.succeeding(v -> {
-                    verifyContainsResource(context, kafkaMirrorMaker2Name, KubeResourceType.KAFKA_MIRROR_MAKER_2S, true);
-                    verifyContainsResource(context, networkPolicyName, KubeResourceType.NETWORK_POLICYS, true);
-                    verifyContainsResources(context, kafkaUserNames, KubeResourceType.KAFKA_USERS, true);
-                    verifyContainsResource(context, secretName, KubeResourceType.SECRETS, secretNotOptional);
-                    async.flag();
-                }))
-                .compose(v -> esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), minimalInstance))
-                .onComplete(context.succeeding(v -> {
-                    verifyContainsResource(context, kafkaMirrorMaker2Name, KubeResourceType.KAFKA_MIRROR_MAKER_2S, false);
-                    verifyContainsResource(context, networkPolicyName, KubeResourceType.NETWORK_POLICYS, false);
-                    verifyContainsResources(context, kafkaUserNames, KubeResourceType.KAFKA_USERS, false);
-                    verifyContainsResource(context, secretName, KubeResourceType.SECRETS, secretNotOptional);
-                    async.flag();
-                }));
-    }
-
-    @Test
     public void testSchemaRegistryComponentCreatedAndDeletedWhenAddedAndRemovedFromCR(VertxTestContext context) {
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMs);
@@ -2470,10 +2356,10 @@ public class EventStreamsOperatorTest {
             if (item instanceof Secret) {
                 Secret replicatorSecret = (Secret) item;
 
-                if (replicatorSecret.getMetadata().getName().contains(ReplicatorModel.REPLICATOR_SECRET_NAME)) {
+                if (replicatorSecret.getMetadata().getName().contains(ReplicatorSecretModel.REPLICATOR_SECRET_NAME)) {
                     Encoder encoder = Base64.getEncoder();
                     String newSecretString = encoder.encodeToString(REPLICATOR_DATA.getBytes(StandardCharsets.UTF_8));
-                    Map<String, String> newSecretData = Collections.singletonMap(ReplicatorModel.REPLICATOR_TARGET_CLUSTERS_SECRET_KEY_NAME, newSecretString);
+                    Map<String, String> newSecretData = Collections.singletonMap(ReplicatorSecretModel.REPLICATOR_TARGET_CLUSTERS_SECRET_KEY_NAME, newSecretString);
                     replicatorSecret.setData(newSecretData);
                 } else {
                     LOGGER.debug("Replicator secret not found to set data");
@@ -2486,7 +2372,7 @@ public class EventStreamsOperatorTest {
         List<Secret> replicatorSecrets = actualResourcesList.stream()
                 .filter(Secret.class::isInstance)
                 .map(Secret.class::cast)
-                .filter(secret -> secret.getMetadata().getName().contains(ReplicatorModel.REPLICATOR_SECRET_NAME))
+                .filter(secret -> secret.getMetadata().getName().contains(ReplicatorSecretModel.REPLICATOR_SECRET_NAME))
                 .collect(Collectors.toList()
                 );
         assertEquals(1, replicatorSecrets.size(), "Replicator secret Not Found");
@@ -2494,7 +2380,7 @@ public class EventStreamsOperatorTest {
         Encoder encoder = Base64.getEncoder();
         String newSecretString = encoder.encodeToString(REPLICATOR_DATA.getBytes(StandardCharsets.UTF_8));
         context.verify(() -> assertThat(
-                replicatorSecret.getData().get(ReplicatorModel.REPLICATOR_TARGET_CLUSTERS_SECRET_KEY_NAME), is(newSecretString)));
+                replicatorSecret.getData().get(ReplicatorSecretModel.REPLICATOR_TARGET_CLUSTERS_SECRET_KEY_NAME), is(newSecretString)));
     }
 
     private void verifyKafkaBootstrapUrl(String namespace, String deploymentName, String expectedKafkaBootstrap) {
@@ -2650,7 +2536,6 @@ public class EventStreamsOperatorTest {
         expectedRoutes.add(clusterName + "-" + APP_NAME + "-" + AdminApiModel.COMPONENT_NAME);
         expectedRoutes.add(clusterName + "-" + APP_NAME + "-" + CollectorModel.COMPONENT_NAME);
         expectedRoutes.add(clusterName + "-" + APP_NAME + "-" + AdminUIModel.COMPONENT_NAME);
-        expectedRoutes.add(clusterName + "-" + APP_NAME + "-" + ReplicatorModel.COMPONENT_NAME);
         expectedRoutes.add(clusterName + "-" + APP_NAME + "-" + "kafka"); // TODO reference KafkaCluster.APPLICATION_NAME
         return expectedRoutes;
     }
@@ -2658,14 +2543,12 @@ public class EventStreamsOperatorTest {
     private Set<String> getExpectedSecretNames(String clusterName) {
         Set<String> expectedSecrets = new HashSet<>();
         expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + MessageAuthenticationModel.SECRET_SUFFIX);
-        expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + ReplicatorModel.REPLICATOR_SECRET_NAME);
+        expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + ReplicatorSecretModel.REPLICATOR_SECRET_NAME);
         expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + RestProducerModel.COMPONENT_NAME + "-" + CertificateSecretModel.CERT_SECRET_NAME_POSTFIX);
         expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME + "-" + CertificateSecretModel.CERT_SECRET_NAME_POSTFIX);
         expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + AdminApiModel.COMPONENT_NAME + "-" + CertificateSecretModel.CERT_SECRET_NAME_POSTFIX);
         expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + ClusterSecretsModel.COMPONENT_NAME);
-        expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + ReplicatorUsersModel.CONNECT_KAFKA_USER_NAME);
-        expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + ReplicatorUsersModel.SOURCE_CONNECTOR_KAFKA_USER_NAME);
-        expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + ReplicatorUsersModel.TARGET_CONNECTOR_KAFKA_USER_NAME);
+        expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + ReplicatorSourceUsersModel.SOURCE_CONNECTOR_KAFKA_USER_NAME);
 
         expectedSecrets.add(clusterName + "-cluster-ca");
         expectedSecrets.add(clusterName + "-cluster-ca-cert");
@@ -2681,9 +2564,7 @@ public class EventStreamsOperatorTest {
 
     private Set<String> getExpectedKafkaUsers(String clusterName) {
         Set<String> expectedKafkaUsers = new HashSet<>();
-        expectedKafkaUsers.add(clusterName + "-" + APP_NAME + "-" + ReplicatorUsersModel.CONNECT_KAFKA_USER_NAME);
-        expectedKafkaUsers.add(clusterName + "-" + APP_NAME + "-" + ReplicatorUsersModel.SOURCE_CONNECTOR_KAFKA_USER_NAME);
-        expectedKafkaUsers.add(clusterName + "-" + APP_NAME + "-" + ReplicatorUsersModel.TARGET_CONNECTOR_KAFKA_USER_NAME);
+        expectedKafkaUsers.add(clusterName + "-" + APP_NAME + "-" + ReplicatorSourceUsersModel.SOURCE_CONNECTOR_KAFKA_USER_NAME);
         expectedKafkaUsers.add(clusterName + "-" + APP_NAME + "-" + InternalKafkaUserModel.COMPONENT_NAME);
 
         return expectedKafkaUsers;
@@ -2718,9 +2599,6 @@ public class EventStreamsOperatorTest {
                 break;
             case KAFKAS:
                 result = new HashSet<>(mockClient.customResources(io.strimzi.api.kafka.Crds.kafka(), Kafka.class, KafkaList.class, DoneableKafka.class).inNamespace(namespace).list().getItems());
-                break;
-            case KAFKA_MIRROR_MAKER_2S:
-                result = new HashSet<>(mockClient.customResources(io.strimzi.api.kafka.Crds.kafkaMirrorMaker2(), KafkaMirrorMaker2.class, KafkaMirrorMaker2List.class, DoneableKafkaMirrorMaker2.class).inNamespace(namespace).list().getItems());
                 break;
             default:
                 System.out.println("Unexpected type " + type);
@@ -2867,9 +2745,6 @@ public class EventStreamsOperatorTest {
                     .withNewCollector()
                         .withReplicas(1)
                     .endCollector()
-                    .withNewReplicator()
-                        .withReplicas(1)
-                    .endReplicator()
                     .withStrimziOverrides(kafka)
                     .withVersion(DEFAULT_VERSION)
                 .endSpec()

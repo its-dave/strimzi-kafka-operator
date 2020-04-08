@@ -40,9 +40,6 @@ public class Cp4iServicesBindingTest {
             .withNewSecurity()
                 .withInternalTls(TlsVersion.TLS_V1_2)
             .endSecurity()
-            .withNewReplicator()
-            .withReplicas(defaultReplicas)
-            .endReplicator()
             .endSpec();
     }
 

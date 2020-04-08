@@ -18,50 +18,40 @@ import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.CoreMatchers.startsWith;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
-import java.util.Base64.Encoder;
-import java.util.Base64;
-import java.nio.charset.StandardCharsets;
 
+import io.fabric8.kubernetes.api.model.networking.NetworkPolicy;
 import io.strimzi.api.kafka.model.KafkaMirrorMaker2ClusterSpecBuilder;
 import io.strimzi.api.kafka.model.KafkaMirrorMaker2Spec;
 import io.strimzi.api.kafka.model.KafkaMirrorMaker2SpecBuilder;
 import io.strimzi.api.kafka.model.connect.ExternalConfiguration;
 import io.strimzi.operator.cluster.model.Ca;
-
-
-import com.ibm.eventstreams.Main;
-import com.ibm.eventstreams.api.model.utils.ModelUtils;
-
-import com.ibm.eventstreams.api.Labels;
-import com.ibm.eventstreams.api.spec.EventStreams;
-import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
-import com.ibm.eventstreams.api.spec.ReplicatorSpec;
-import com.ibm.eventstreams.api.spec.ReplicatorSpecBuilder;
-
-import com.ibm.eventstreams.replicator.ReplicatorCredentials;
-import io.fabric8.kubernetes.api.model.SecretBuilder;
-
 import io.strimzi.api.kafka.model.KafkaMirrorMaker2;
-
 import io.strimzi.api.kafka.model.KafkaMirrorMaker2ClusterSpec;
-
 import io.strimzi.api.kafka.model.KafkaMirrorMaker2Tls;
 import io.strimzi.api.kafka.model.KafkaMirrorMaker2TlsBuilder;
 import io.strimzi.api.kafka.model.KafkaSpecBuilder;
-
 import io.strimzi.api.kafka.model.authentication.KafkaClientAuthentication;
 import io.strimzi.api.kafka.model.authentication.KafkaClientAuthenticationTlsBuilder;
 
+import com.ibm.eventstreams.api.spec.EventStreamsReplicator;
+import com.ibm.eventstreams.api.spec.EventStreamsReplicatorBuilder;
+import com.ibm.eventstreams.Main;
+import com.ibm.eventstreams.api.model.utils.ModelUtils;
+import com.ibm.eventstreams.api.Labels;
+import com.ibm.eventstreams.api.spec.EventStreams;
+import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
+import com.ibm.eventstreams.replicator.ReplicatorCredentials;
 
-
+import io.fabric8.kubernetes.api.model.SecretBuilder;
 
 import org.junit.jupiter.api.Test;
 
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
-import io.fabric8.kubernetes.api.model.networking.NetworkPolicy;
 import io.fabric8.kubernetes.api.model.Secret;
 
 public class ReplicatorModelTest {
@@ -147,9 +137,9 @@ public class ReplicatorModelTest {
         assertThat(clusterSpec.getConfig().get("key.converter"), is(ReplicatorModel.BYTE_ARRAY_CONVERTER_NAME));
         assertThat(clusterSpec.getConfig().get("value.converter"), is(ReplicatorModel.BYTE_ARRAY_CONVERTER_NAME));
 
-        assertThat(replicator.getSpec().getConnectCluster(), is(ReplicatorModel.getDefaultReplicatorClusterName(nonDefaultConnectClusterName)));
+        assertThat(replicator.getSpec().getConnectCluster(), is(nonDefaultConnectClusterName));
 
-        assertThat(clusterSpec.getAlias(), is(ReplicatorModel.getDefaultReplicatorClusterName(nonDefaultConnectClusterName)));
+        assertThat(clusterSpec.getAlias(), is(nonDefaultConnectClusterName));
         assertThat(clusterSpec.getBootstrapServers(), is(nonDefaultBootstrap));
         assertThat(clusterSpec.getAuthentication().getType(), is("tls"));
         assertThat(clusterSpec.getTls().getTrustedCertificates().size(), is(1));
@@ -176,6 +166,8 @@ public class ReplicatorModelTest {
 
     @Test
     public void testDefaultReplicatorHasRequiredMeteringAnnotations() {
+
+
         KafkaMirrorMaker2 replicator = createDefaultReplicator();
 
         Map<String, String> replicatorPodAnnotations = replicator.getSpec().getTemplate().getPod()
@@ -191,6 +183,7 @@ public class ReplicatorModelTest {
 
     @Test
     public void testDefaultReplicatorNetworkPolicy() {
+
 
         ReplicatorModel replicator = createDefaultReplicatorModel();
         NetworkPolicy networkPolicy = replicator.getNetworkPolicy();
@@ -219,17 +212,17 @@ public class ReplicatorModelTest {
     @Test
     public void testDefaultReplicatorSecret() {
 
-        ReplicatorModel replicator = createDefaultReplicatorModel();
-        Secret replicatorSecret = replicator.getSecret();
+        ReplicatorSecretModel replicatorSecretModel = createDefaultReplicatorSecretModel();
+        Secret replicatorSecret = replicatorSecretModel.getSecret();
 
-        assertThat(replicatorSecret.getMetadata().getName(), is(instanceName + "-" + AbstractModel.APP_NAME + "-"  + ReplicatorModel.REPLICATOR_SECRET_NAME));
+        assertThat(replicatorSecret.getMetadata().getName(), is(instanceName + "-" + AbstractModel.APP_NAME + "-"  + ReplicatorSecretModel.REPLICATOR_SECRET_NAME));
         assertThat(replicatorSecret.getKind(), is("Secret"));
         assertThat(replicatorSecret.getMetadata().getNamespace(), is(namespace));
 
-        Encoder encoder = Base64.getEncoder();
-        assertThat(replicatorSecret.getData().get(ReplicatorModel.REPLICATOR_TARGET_CLUSTERS_SECRET_KEY_NAME), is(encoder.encodeToString("[]".getBytes(StandardCharsets.UTF_8))));
+        Base64.Encoder encoder = Base64.getEncoder();
+        assertThat(replicatorSecret.getData().get(ReplicatorSecretModel.REPLICATOR_TARGET_CLUSTERS_SECRET_KEY_NAME), is(encoder.encodeToString("[]".getBytes(StandardCharsets.UTF_8))));
 
-        Map<String, String> replicatorSecretLabels = replicator.getSecret().getMetadata().getLabels();
+        Map<String, String> replicatorSecretLabels = replicatorSecretModel.getSecret().getMetadata().getLabels();
 
         assertThat(replicatorSecretLabels.get(Labels.APP_LABEL),  is(AbstractModel.APP_NAME));
         assertThat(replicatorSecretLabels.get(Labels.INSTANCE_LABEL),  is(instanceName));
@@ -237,14 +230,18 @@ public class ReplicatorModelTest {
 
     }
 
+    private EventStreamsReplicatorBuilder createDefaultEventStreamsReplicator() {
+        return ModelUtils.createDefaultEventStreamsReplicator(instanceName);
+    }
+
     @Test
     public void testDefaultReplicatorExternalConfiguration() {
         ExternalConfiguration externalConfiguration = createDefaultReplicatorModel().getReplicator().getSpec().getExternalConfiguration();
 
         assertThat(externalConfiguration.getVolumes().size(), is(1));
-        assertThat(externalConfiguration.getVolumes().get(0).getName(), is(ReplicatorModel.REPLICATOR_SECRET_NAME));
-        assertThat(externalConfiguration.getVolumes().get(0).getSecret().getSecretName(), is(instanceName + "-" + AbstractModel.APP_NAME + "-"  + ReplicatorModel.REPLICATOR_SECRET_NAME));
-        assertThat(externalConfiguration.getVolumes().get(0).getName(), is(ReplicatorModel.REPLICATOR_SECRET_NAME));
+        assertThat(externalConfiguration.getVolumes().get(0).getName(), is(ReplicatorSecretModel.REPLICATOR_SECRET_NAME));
+        assertThat(externalConfiguration.getVolumes().get(0).getSecret().getSecretName(), is(instanceName + "-" + AbstractModel.APP_NAME + "-"  + ReplicatorSecretModel.REPLICATOR_SECRET_NAME));
+        assertThat(externalConfiguration.getVolumes().get(0).getName(), is(ReplicatorSecretModel.REPLICATOR_SECRET_NAME));
     }
 
     private EventStreamsBuilder createDefaultEventStreams() {
@@ -262,14 +259,10 @@ public class ReplicatorModelTest {
                         .endListeners()
                         .endKafka()
                         .build())
-                .withNewReplicator()
-                .withReplicas(defaultReplicas)
-                .endReplicator()
                 .endSpec();
     }
 
-
-    private EventStreamsBuilder createNonDefaultEventStreams() {
+    private EventStreamsReplicatorBuilder createNonDefaultEventStreamsReplicator() {
 
         KafkaClientAuthentication replicatorConnectClientAuth = new KafkaClientAuthenticationTlsBuilder()
                 .build();
@@ -278,7 +271,7 @@ public class ReplicatorModelTest {
 
         List<KafkaMirrorMaker2ClusterSpec> clusterSpecs = new ArrayList<>();
         KafkaMirrorMaker2ClusterSpec mm2ClusterSpec = new KafkaMirrorMaker2ClusterSpecBuilder()
-                .withAlias(nonDefaultClusterAlias)
+                .withAlias(nonDefaultConnectClusterName)
                 .withAuthentication(replicatorConnectClientAuth)
                 .withTls(serverCert)
                 .withBootstrapServers(nonDefaultBootstrap)
@@ -287,13 +280,24 @@ public class ReplicatorModelTest {
 
         KafkaMirrorMaker2Spec mm2Spec = new KafkaMirrorMaker2SpecBuilder()
                 .withClusters(clusterSpecs)
-                .withNewConnectCluster(ReplicatorModel.getDefaultReplicatorClusterName(nonDefaultConnectClusterName))
+                .withNewConnectCluster(nonDefaultConnectClusterName)
                 .build();
 
-        ReplicatorSpec replicatorSpec = new ReplicatorSpecBuilder()
-                .withReplicas(nonDefaultReplicas)
-                .withMirrorMaker2Spec(mm2Spec)
-                .build();
+        return ModelUtils.createDefaultEventStreamsReplicator(instanceName)
+                .withMetadata(new ObjectMetaBuilder()
+                        .withNewName(instanceName)
+                        .withNewNamespace(namespace)
+                        .build())
+                .editSpec()
+                     .withReplicas(nonDefaultReplicas)
+                     .withMirrorMaker2Spec(mm2Spec)
+                .endSpec();
+
+    }
+
+    private EventStreamsBuilder createNonDefaultEventStreams() {
+
+
 
         return ModelUtils.createDefaultEventStreams(instanceName)
                 .withMetadata(new ObjectMetaBuilder()
@@ -307,9 +311,6 @@ public class ReplicatorModelTest {
                         .withListeners(ModelUtils.getMutualTLSOnBothInternalAndExternalListenerSpec())
                         .endKafka()
                         .build())
-                .withNewReplicatorLike(replicatorSpec)
-                    .withReplicas(nonDefaultReplicas)
-                .endReplicator()
                 .endSpec();
     }
 
@@ -328,11 +329,13 @@ public class ReplicatorModelTest {
     private ReplicatorModel createReplicatorModel(boolean defaults) {
         EventStreams instance = defaults ? createDefaultEventStreams().build() : createNonDefaultEventStreams().build();
 
+        EventStreamsReplicator replicatorInstance = defaults ? createDefaultEventStreamsReplicator().build() : createNonDefaultEventStreamsReplicator().build();
+
         replicatorCredentials = new ReplicatorCredentials(instance);
 
         Secret replicatorConnectSecret = new SecretBuilder()
                 .withNewMetadata()
-                .withName(instanceName + "-ibm-es-" + ReplicatorUsersModel.CONNECT_KAFKA_USER_NAME)
+                .withName(instanceName + "-ibm-es-" + ReplicatorDestinationUsersModel.CONNECT_KAFKA_USER_NAME)
                 .withNamespace(namespace)
                 .addToAnnotations(Ca.ANNO_STRIMZI_IO_CA_KEY_GENERATION, "0")
                 .endMetadata()
@@ -343,7 +346,12 @@ public class ReplicatorModelTest {
 
         replicatorCredentials.setReplicatorClientAuth(replicatorConnectSecret);
         replicatorCredentials.setReplicatorTrustStore(replicatorConnectSecret);
-        return new ReplicatorModel(instance, replicatorCredentials);
+        return new ReplicatorModel(replicatorInstance, instance, replicatorCredentials);
+    }
+
+    private ReplicatorSecretModel createDefaultReplicatorSecretModel() {
+        EventStreams instance = createDefaultEventStreams().build();
+        return new ReplicatorSecretModel(instance);
     }
 
 

@@ -23,8 +23,8 @@ import com.ibm.eventstreams.api.model.EventStreamsKafkaModel;
 import com.ibm.eventstreams.api.model.InternalKafkaUserModel;
 import com.ibm.eventstreams.api.model.KafkaNetworkPolicyExtensionModel;
 import com.ibm.eventstreams.api.model.MessageAuthenticationModel;
-import com.ibm.eventstreams.api.model.ReplicatorModel;
-import com.ibm.eventstreams.api.model.ReplicatorUsersModel;
+import com.ibm.eventstreams.api.model.ReplicatorSecretModel;
+import com.ibm.eventstreams.api.model.ReplicatorSourceUsersModel;
 import com.ibm.eventstreams.api.model.RestProducerModel;
 import com.ibm.eventstreams.api.model.SchemaRegistryModel;
 import com.ibm.eventstreams.api.spec.EventStreams;
@@ -35,7 +35,6 @@ import com.ibm.eventstreams.api.status.EventStreamsStatus;
 import com.ibm.eventstreams.api.status.EventStreamsStatusBuilder;
 import com.ibm.eventstreams.controller.certificates.EventStreamsCertificateException;
 import com.ibm.eventstreams.controller.certificates.EventStreamsCertificateManager;
-import com.ibm.eventstreams.replicator.ReplicatorCredentials;
 import com.ibm.eventstreams.rest.EndpointValidation;
 import com.ibm.eventstreams.rest.LicenseValidation;
 import com.ibm.eventstreams.rest.NameValidation;
@@ -62,11 +61,6 @@ import io.fabric8.openshift.api.model.Route;
 import io.fabric8.openshift.api.model.RouteSpec;
 import io.strimzi.api.kafka.Crds;
 import io.strimzi.api.kafka.model.Kafka;
-import io.strimzi.api.kafka.model.KafkaClusterSpec;
-import io.strimzi.api.kafka.model.KafkaSpec;
-import io.strimzi.api.kafka.model.listener.KafkaListenerAuthentication;
-import io.strimzi.api.kafka.model.listener.KafkaListenerTls;
-import io.strimzi.api.kafka.model.listener.KafkaListeners;
 import io.strimzi.api.kafka.model.status.Condition;
 import io.strimzi.api.kafka.model.status.ConditionBuilder;
 import io.strimzi.api.kafka.model.status.KafkaStatus;
@@ -193,7 +187,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 .compose(state -> state.createInternalKafkaUser())
                 .compose(state -> state.createMessageAuthenticationSecret())
                 .compose(state -> state.createRestProducer(this::dateSupplier))
-                .compose(state -> state.createReplicator())
+                .compose(state -> state.createReplicatorSecret())
                 .compose(state -> state.createAdminApi(this::dateSupplier))
                 .compose(state -> state.createSchemaRegistry(this::dateSupplier))
                 .compose(state -> state.createAdminUI())
@@ -267,7 +261,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 addNotReadyCondition(EndpointValidation.FAILURE_REASON, response.getStatus().getMessage());
                 isValidCR = false;
             }
-            if (!ReplicatorUsersModel.isValidInstance(instance)) {
+            if (!ReplicatorSourceUsersModel.isValidInstance(instance)) {
                 addNotReadyCondition("UnsupportedAuthorization", "Listener client authentication unsupported for Geo Replication. Supported versions are TLS and SCRAM");
                 isValidCR = false;
             }
@@ -278,16 +272,10 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
 
             boolean adminApiRequested = Optional.ofNullable(instance.getSpec()).map(EventStreamsSpec::getAdminApi).isPresent();
             boolean uiRequested = Optional.ofNullable(instance.getSpec()).map(EventStreamsSpec::getAdminUI).isPresent();
-            boolean georeplicatorRequested = Optional.ofNullable(instance.getSpec()).map(EventStreamsSpec::getReplicator).isPresent();
             if (uiRequested && !adminApiRequested) {
                 addNotReadyCondition("InvalidUiConfiguration", "adminApi is a required component to enable adminUi");
                 isValidCR = false;
             }
-            if (georeplicatorRequested && !adminApiRequested) {
-                addNotReadyCondition("InvalidGeoreplicatorConfiguration", "adminApi is a required component to enable replicator");
-                isValidCR = false;
-            }
-
 
             if (isValidCR) {
                 addCondition(previousConditions
@@ -515,56 +503,29 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
 
         Future<ReconciliationState> createReplicatorUsers() {
 
-            List<Future> usersCreated = new ArrayList<>();
+            ReplicatorSourceUsersModel replicatorSourceUsersModel = new ReplicatorSourceUsersModel(instance);
 
-            ReplicatorUsersModel replicatorUsersModel = new ReplicatorUsersModel(instance);
+            return kafkaUserOperator.reconcile(namespace,
+                    replicatorSourceUsersModel.getSourceConnectorKafkaUserName(),
+                    replicatorSourceUsersModel.getSourceConnectorKafkaUser()).map(v -> this);
 
-            usersCreated.add(kafkaUserOperator.reconcile(namespace,
-                    replicatorUsersModel.getConnectKafkaUserName(),
-                    replicatorUsersModel.getConnectKafkaUser()));
-
-            usersCreated.add(kafkaUserOperator.reconcile(namespace,
-                    replicatorUsersModel.getSourceConnectorKafkaUserName(),
-                    replicatorUsersModel.getSourceConnectorKafkaUser()));
-
-            usersCreated.add(kafkaUserOperator.reconcile(namespace,
-                    replicatorUsersModel.getTargetConnectorKafkaUserName(),
-                    replicatorUsersModel.getTargetConnectorKafkaUser()));
-
-            return CompositeFuture.join(usersCreated)
-                    .map(v -> this);
         }
 
+        Future<ReconciliationState> createReplicatorSecret() {
 
-        Future<ReconciliationState> createReplicator() {
+            ReplicatorSecretModel replicatorSecretModel = new ReplicatorSecretModel(instance);
+            String secretName = replicatorSecretModel.getSecretName();
 
-            ReplicatorCredentials replicatorCredentials = new ReplicatorCredentials(instance);
+            return secretOperator.getAsync(namespace, secretName)
+                    .compose(secret -> {
+                        // Secret should only be created once
+                        if (secret == null) {
+                            log.debug("Creating replicator secret {} as not found", secretName);
+                            return secretOperator.reconcile(namespace, secretName, replicatorSecretModel.getSecret());
+                        }
+                        return Future.succeededFuture(ReconcileResult.noop(secret));
+                    }).map(res -> this);
 
-            return setTrustStoreForReplicator(replicatorCredentials)
-                .compose(v -> setClientAuthForReplicator(replicatorCredentials))
-
-                //Can't make the ReplicatorModel until after setTrustStoreForReplicator and setClientAuthForReplicator have completed
-                .compose(v -> {
-                    ReplicatorModel replicatorModel = new ReplicatorModel(instance, replicatorCredentials);
-                    String secretName = replicatorModel.getSecretName();
-
-                    List<Future> replicatorFutures = new ArrayList<>();
-
-                    replicatorFutures.add(secretOperator.getAsync(namespace, secretName)
-                            .compose(secret -> {
-                                // Secret should only be created once
-                                if (secret == null) {
-                                    log.debug("Reconciling replicator secret {}", secretName);
-                                    return secretOperator.reconcile(namespace, secretName, replicatorModel.getSecret());
-                                }
-                                return Future.succeededFuture(ReconcileResult.noop(secret));
-                            }));
-                    replicatorFutures.add(networkPolicyOperator.reconcile(namespace, replicatorModel.getDefaultResourceName(), replicatorModel.getNetworkPolicy()));
-
-                    replicatorFutures.add(kafkaMirrorMaker2Operator.reconcile(namespace, replicatorModel.getReplicatorName(), replicatorModel.getReplicator()));
-                    return CompositeFuture.join(replicatorFutures);
-                })
-                .map(cf -> this);
         }
 
         Future<ReconciliationState> createInternalKafkaUser() {
@@ -920,79 +881,6 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             CertAndKey currentCertAndKey = certificateManager.certificateAndKey(certSecret.get(), model.getCertSecretCertID(endpoint.getName()), model.getCertSecretKeyID(endpoint.getName()));
             model.setCertAndKey(endpoint.getName(), currentCertAndKey);
             return false;
-        }
-
-        private Future<Void> setTrustStoreForReplicator(ReplicatorCredentials replicatorCredentials) {
-
-            Promise<Void> setAuthSet = Promise.promise();
-
-            Optional<KafkaListenerTls> internalServerAuth =
-                    Optional.ofNullable(instance.getSpec())
-                            .map(EventStreamsSpec::getStrimziOverrides)
-                            .map(KafkaSpec::getKafka)
-                            .map(KafkaClusterSpec::getListeners)
-                            .map(KafkaListeners::getTls);
-
-            if (internalServerAuth.isPresent()) {
-                //get the truststore from the cluster
-                String resourceNameCA = instance.getMetadata().getName() + "-" + CLUSTER_CA_CERT_SECRET_NAME;
-                secretOperator.getAsync(namespace, resourceNameCA).setHandler(getRes -> {
-
-                    if (getRes.succeeded()) {
-                        if (getRes.result() != null) {
-                            replicatorCredentials.setReplicatorTrustStore(getRes.result());
-                            setAuthSet.complete();
-                        } else {
-                            log.info("Setting up Replicator TrustStore - CA cert " + resourceNameCA + " does not exist");
-                            setAuthSet.fail("Setting up Replicator TrustStore - CA cert " + resourceNameCA + " does not exist");
-                        }
-                    } else {
-                        log.error("Failed to query for the  Replicator TrustStore - CA cert " + resourceNameCA, getRes.cause());
-                        setAuthSet.fail("Failed to query for the  Replicator TrustStore - CA cert " + resourceNameCA);
-                    }
-                });
-            } else {
-                setAuthSet.complete();
-            }
-            return setAuthSet.future();
-        }
-
-        private Future<Void> setClientAuthForReplicator(ReplicatorCredentials replicatorCredentials) {
-
-            Promise<Void> setAuthSet = Promise.promise();
-
-            String connectKafkaUserName = ReplicatorUsersModel.getConnectKafkaUserName(instance.getMetadata().getName());
-
-            Optional<KafkaListenerAuthentication> internalClientAuth =
-                Optional.ofNullable(instance.getSpec())
-                    .map(EventStreamsSpec::getStrimziOverrides)
-                    .map(KafkaSpec::getKafka)
-                    .map(KafkaClusterSpec::getListeners)
-                    .map(KafkaListeners::getTls)
-                    .map(KafkaListenerTls::getAuth);
-
-            //need to null check on getTls first
-            if (internalClientAuth.isPresent() && ReplicatorModel.isReplicatorEnabled(instance)) {
-
-                // get the secret created by the KafkaUser
-                secretOperator.getAsync(namespace, connectKafkaUserName).setHandler(getRes -> {
-                    if (getRes.succeeded()) {
-                        if (getRes.result() != null) {
-                            replicatorCredentials.setReplicatorClientAuth(getRes.result());
-                            setAuthSet.complete();
-                        } else {
-                            log.info("Replicator Connect User secret " + connectKafkaUserName + " doesn't exist");
-                            setAuthSet.fail("Replicator Connect User secret " + connectKafkaUserName + " doesn't exist");
-                        }
-                    } else {
-                        log.error("Failed to query for the Replicator Connect User Secret" + connectKafkaUserName + " " + getRes.cause().toString());
-                        setAuthSet.fail("Failed to query for the Replicator Connect User Secret" + connectKafkaUserName + " " + getRes.cause().toString());
-                    }
-                });
-            } else {
-                setAuthSet.complete();
-            }
-            return setAuthSet.future();
         }
 
         protected Future<Map<String, String>> reconcileRoutes(AbstractSecureEndpointsModel model, Map<String, Route> routes) {

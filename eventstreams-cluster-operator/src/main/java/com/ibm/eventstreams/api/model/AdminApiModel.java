@@ -169,38 +169,14 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
 
         List<Volume> volumes = new ArrayList<>();
         volumes.add(new VolumeBuilder()
-            .withNewName(ReplicatorModel.REPLICATOR_SECRET_NAME)
+            .withNewName(ReplicatorSecretModel.REPLICATOR_SECRET_NAME)
             .withNewSecret()
-                .withNewSecretName(getResourcePrefix() + "-" + ReplicatorModel.REPLICATOR_SECRET_NAME)
-                .addNewItem().withNewKey(ReplicatorModel.REPLICATOR_TARGET_CLUSTERS_SECRET_KEY_NAME)
-                .withNewPath(ReplicatorModel.REPLICATOR_TARGET_CLUSTERS_SECRET_KEY_NAME)
+                .withNewSecretName(getResourcePrefix() + "-" + ReplicatorSecretModel.REPLICATOR_SECRET_NAME)
+                .addNewItem().withNewKey(ReplicatorSecretModel.REPLICATOR_TARGET_CLUSTERS_SECRET_KEY_NAME)
+                .withNewPath(ReplicatorSecretModel.REPLICATOR_TARGET_CLUSTERS_SECRET_KEY_NAME)
             .endItem()
             .endSecret()
             .build());
-
-        if (isReplicatorExternalClientAuthForConnectEnabled(instance)) {
-            volumes.add(new VolumeBuilder()
-                    .withNewName(ReplicatorUsersModel.SOURCE_CONNECTOR_KAFKA_USER_NAME)
-                    .withNewSecret()
-                    .withNewSecretName(ReplicatorUsersModel.getSourceConnectorKafkaUserName(getInstanceName())) //mount everything in the secret into this volume
-                    .endSecret()
-                    .build());
-        }
-
-        if (isReplicatorInternalClientAuthForConnectEnabled(instance) && ReplicatorModel.isReplicatorEnabled(instance)) {
-            volumes.add(new VolumeBuilder()
-                    .withNewName(ReplicatorUsersModel.CONNECT_KAFKA_USER_NAME)
-                    .withNewSecret()
-                    .withNewSecretName(ReplicatorUsersModel.getConnectKafkaUserName(getInstanceName())) //mount everything in the secret into this volume
-                    .endSecret()
-                    .build());
-            volumes.add(new VolumeBuilder()
-                    .withNewName(ReplicatorUsersModel.TARGET_CONNECTOR_KAFKA_USER_NAME)
-                    .withNewSecret()
-                    .withNewSecretName(ReplicatorUsersModel.getTargetConnectorKafkaUserName(getInstanceName())) //mount everything in the secret into this volume
-                    .endSecret()
-                    .build());
-        }
 
         volumes.addAll(getSecurityVolumes());
 
@@ -249,7 +225,7 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
             .withEnv(envVars)
             .withSecurityContext(getSecurityContext(false))
             .addNewVolumeMount()
-                .withNewName(ReplicatorModel.REPLICATOR_SECRET_NAME)
+                .withNewName(ReplicatorSecretModel.REPLICATOR_SECRET_NAME)
                 .withMountPath(ReplicatorModel.REPLICATOR_SECRET_MOUNT_PATH)
                 .withNewReadOnly(true)
             .endVolumeMount()
@@ -262,27 +238,6 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
             .withResources(getResourceRequirements(DefaultResourceRequirements.ADMIN_API))
             .withLivenessProbe(createLivenessProbe())
             .withReadinessProbe(createReadinessProbe());
-
-        //only add the replicator secret volume mounts if client auth enabled
-        if (isReplicatorExternalClientAuthForConnectEnabled(instance)) {
-            containerBuilder.addNewVolumeMount()
-                .withNewName(ReplicatorUsersModel.SOURCE_CONNECTOR_KAFKA_USER_NAME)
-                    .withMountPath(ReplicatorModel.SOURCE_CONNECTOR_SECRET_MOUNT_PATH)
-                    .withNewReadOnly(true)
-                .endVolumeMount();
-        }
-        if (isReplicatorInternalClientAuthForConnectEnabled(instance) && ReplicatorModel.isReplicatorEnabled(instance)) {
-            containerBuilder.addNewVolumeMount()
-                .withNewName(ReplicatorUsersModel.CONNECT_KAFKA_USER_NAME)
-                .withMountPath(ReplicatorModel.CONNECT_SECRET_MOUNT_PATH)
-                .withNewReadOnly(true)
-            .endVolumeMount()
-            .addNewVolumeMount()
-                .withNewName(ReplicatorUsersModel.TARGET_CONNECTOR_KAFKA_USER_NAME)
-                .withMountPath(ReplicatorModel.TARGET_CONNECTOR_SECRET_MOUNT_PATH)
-                .withNewReadOnly(true)
-                .endVolumeMount();
-        }
 
         // Add The IAM Specific Volume mount. If we need to build without IAM Support we can put a variable check
         // here.
@@ -334,8 +289,8 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
             new EnvVarBuilder().withName("PROMETHEUS_PORT").withValue(prometheusPort).build(),
             new EnvVarBuilder().withName("KAFKA_STS_NAME").withValue(EventStreamsKafkaModel.getKafkaInstanceName(getInstanceName()) + "-" + EventStreamsKafkaModel.KAFKA_COMPONENT_NAME).build(),
             new EnvVarBuilder().withName("KAFKA_CONNECT_REST_API_ADDRESS").withValue(kafkaConnectRestEndpoint).build(),
-            new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue(Boolean.toString(ReplicatorModel.isReplicatorEnabled(instance))).build(),
-            new EnvVarBuilder().withName("GEOREPLICATION_SECRET_NAME").withValue(getResourcePrefix() + "-" + ReplicatorModel.REPLICATOR_SECRET_NAME).build(),
+            //new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue(Boolean.toString(ReplicatorModel.isReplicatorEnabled(instance))).build(),
+            new EnvVarBuilder().withName("GEOREPLICATION_SECRET_NAME").withValue(getResourcePrefix() + "-" + ReplicatorSecretModel.REPLICATOR_SECRET_NAME).build(),
             new EnvVarBuilder().withName("GEOREPLICATION_INTERNAL_CLIENT_AUTH_ENABLED").withValue(Boolean.toString(isReplicatorInternalClientAuthForConnectEnabled(instance))).build(),
             new EnvVarBuilder().withName("GEOREPLICATION_EXTERNAL_CLIENT_AUTH_ENABLED").withValue(Boolean.toString(isReplicatorExternalClientAuthForConnectEnabled(instance))).build(),
             new EnvVarBuilder().withName("GEOREPLICATION_INTERNAL_SERVER_AUTH_ENABLED").withValue(Boolean.toString(isReplicatorInternalServerAuthForConnectEnabled(instance))).build(),

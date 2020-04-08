@@ -12,6 +12,7 @@
  */
 package com.ibm.eventstreams;
 
+import com.ibm.eventstreams.controller.EventStreamsReplicatorVerticle;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.fabric8.kubernetes.api.model.rbac.ClusterRole;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
@@ -136,7 +137,9 @@ public class Main {
         logOperatorEnvVars();
         for (String namespace : config.getNamespaces()) {
             Promise<String> promise = Promise.promise();
+            Promise<String> replicatorPromise = Promise.promise();
             futures.add(promise.future());
+            futures.add(replicatorPromise.future());
 
             EventStreamsVerticle eventStreamsVerticle = new EventStreamsVerticle(vertx,
                 client,
@@ -153,6 +156,23 @@ public class Main {
                         System.exit(1);
                     }
                     promise.handle(result);
+                });
+
+            EventStreamsReplicatorVerticle eventSteamsReplicatorVerticle = new EventStreamsReplicatorVerticle(vertx,
+                    client,
+                    namespace,
+                    pfa,
+                    config);
+
+            vertx.deployVerticle(eventSteamsReplicatorVerticle,
+                result -> {
+                    if (result.succeeded()) {
+                        log.info("EventStreams Replicator Operator verticle started in namespace {}", namespace);
+                    } else {
+                        log.error("EventStreams Replicator Operator verticle in namespace {} failed to start", namespace, result.cause());
+                        System.exit(1);
+                    }
+                    replicatorPromise.handle(result);
                 });
         }
         return CompositeFuture.join(futures);
