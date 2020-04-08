@@ -663,7 +663,7 @@ public class AdminApiModelTest {
                 .build();
         AdminApiModel adminApiModel = new AdminApiModel(eventStreams, imageConfig, null, mockIcpClusterDataMap);
 
-        EnvVar expectedTraceSpecEnvVar = new EnvVarBuilder().withName("TRACE_SPEC").withValue("info").build();
+        EnvVar expectedTraceSpecEnvVar = new EnvVarBuilder().withName("TRACE_SPEC").withValue("logger.one:info,logger.two:debug").build();
         List<EnvVar> actualEnvVars = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getEnv();
 
         assertThat(actualEnvVars, hasItem(expectedTraceSpecEnvVar));

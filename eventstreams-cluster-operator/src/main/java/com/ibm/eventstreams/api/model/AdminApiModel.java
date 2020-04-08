@@ -491,12 +491,13 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
     private void setTraceString(Logging logging) {
         if (logging != null && InlineLogging.TYPE_INLINE.equals(logging.getType())) {
             Map<String, String> loggers = ((InlineLogging) logging).getLoggers();
-            loggers.keySet().stream().findFirst().ifPresent(firstKey -> {
-                String loggingLevel = loggers.get(firstKey);
-                this.traceString = loggingLevel;
-                log.debug("API Admin logging level set to {}", loggingLevel);
+            List<String> loggersArray = new ArrayList();
+            loggers.forEach((k, v) -> {
+                loggersArray.add(k + ":" + v);
             });
+            traceString = String.join(",", loggersArray);
         }
     }
+
 
 }
