@@ -18,6 +18,8 @@ spec:
     plural: eventstreamsgeoreplicators
     shortNames:
     - esgr
+  subresources:
+    status: {}
   validation:
     openAPIV3Schema:
       type: object
@@ -27,6 +29,7 @@ spec:
           properties:
             replicas:
               type: integer
+              minimum: 1
               description: The number of connect replicas to start for Event Streams
                 replication.
             mirrorMaker2Spec:
@@ -1238,8 +1241,6 @@ spec:
                     description: Human-readable message indicating details about the
                       condition's last transition.
               description: Current state of the Event Streams cluster.
-            message:
-              type: string
             versions:
               type: object
               properties:

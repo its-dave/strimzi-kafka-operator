@@ -12,6 +12,7 @@ TEMP_DIR := $(WORKING_DIR)/temp
 
 CRD_DIR := $(WORKING_DIR)/crds
 EVENTSTREAMS_CRD_FILE := $(CRD_DIR)/eventstreams.ibm.com_eventstreams_crd.yaml
+EVENTSTREAMS_GEOREP_CRD_FILE := $(CRD_DIR)/eventstreams.ibm.com_georeplicator_crd.yaml
 KAFKA_CRD_FILE := $(CRD_DIR)/eventstreams.ibm.com_kafka_crd.yaml
 KAFKA_CONNECT_CRD_FILE := $(CRD_DIR)/eventstreams.ibm.com_kafkaconnect_crd.yaml
 KAFKA_CONNECT_S2I_CRD_FILE := $(CRD_DIR)/eventstreams.ibm.com_kafkaconnects2i_crd.yaml
@@ -88,6 +89,7 @@ build_scorecard:
 	$(CP) ${INSTALL_DIR}/122-ClusterRole-eventstreams-ui.yaml ${CRD_DIR}
 	$(CP) ${INSTALL_DIR}/123-ClusterRole-eventstreams-admin.yaml ${CRD_DIR}
 	$(CP) ${INSTALL_DIR}/140-Crd-eventstreams.yaml $(CRD_DIR)
+	$(CP) ${INSTALL_DIR}/143-Crd-eventstreamsreplicator.yaml $(CRD_DIR)
 
 	# mandatory files in order for scorecard to work
 	$(CP) ${INSTALL_DIR}/020-ClusterRole-strimzi-cluster-operator-role.yaml $(SCORECARD_ROLE_FILE)
@@ -111,7 +113,9 @@ build_csv: clean
 	$(CP) ${INSTALL_DIR}/047-Crd-kafkaconnector.yaml $(KAFKA_CONNECTOR_CRD_FILE)
 	$(CP) ${INSTALL_DIR}/048-Crd-kafkamirrormaker2.yaml $(KAFKA_MIRROR_MAKER_2_CRD_FILE)
 	$(CP) ${INSTALL_DIR}/140-Crd-eventstreams.yaml $(EVENTSTREAMS_CRD_FILE)
+	$(CP) ${INSTALL_DIR}/143-Crd-eventstreamsreplicator.yaml $(EVENTSTREAMS_GEOREP_CRD_FILE)
 	yq w -i $(EVENTSTREAMS_CRD_FILE) spec.version v1beta1
+	yq w -i $(EVENTSTREAMS_GEOREP_CRD_FILE) spec.version v1beta1
 	$(CP) ../examples/eventstreams/*.yaml $(CRD_DIR)
 	$(eval LAST_CREATED_DATE:=$(shell yq r $(GENERATED_CSV) metadata.annotations.createdAt))
 	$(CP) ${INSTALL_DIR}/020-ClusterRole-strimzi-cluster-operator-role.yaml $(ROLE_FILE)

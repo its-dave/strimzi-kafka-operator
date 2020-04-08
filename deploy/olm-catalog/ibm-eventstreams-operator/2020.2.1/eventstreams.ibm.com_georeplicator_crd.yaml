@@ -1276,3 +1276,4 @@ spec:
                 upgradable versions.
       required:
       - spec
+  version: v1beta1
