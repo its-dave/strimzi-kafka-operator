@@ -273,7 +273,6 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
         ArrayList<EnvVar> envVarDefaults = new ArrayList<>(Arrays.asList(
             new EnvVarBuilder().withName("LICENSE").withValue("accept").build(),
             new EnvVarBuilder().withName("NAMESPACE").withValue(getNamespace()).build(),
-            new EnvVarBuilder().withName("CONFIGMAP").withValue("releaseConfigMap").build(),
             new EnvVarBuilder().withName("CLUSTER_NAME").withValue(Main.CLUSTER_NAME).build(),
             new EnvVarBuilder().withName("TRACE_LEVEL").withValue(logString).build(),
             new EnvVarBuilder().withName("NODE_ENV").withValue("production").build(),
@@ -281,7 +280,6 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
             new EnvVarBuilder().withName("AVRO_CONTAINER_PORT").withValue(Integer.toString(AVRO_SERVICE_PORT)).build(),
             new EnvVarBuilder().withName("SCHEMA_DATA_DIRECTORY").withValue("/var/lib/schemas").build(),
             new EnvVarBuilder().withName("SCHEMA_TEMP_DIRECTORY").withValue("/var/lib/tmp").build(),
-            new EnvVarBuilder().withName("ID").withValue("id").build(),
             new EnvVarBuilder().withName("ESFF_SECURITY_AUTHZ").withValue("false").build(),
             new EnvVarBuilder().withName("ENDPOINTS").withValue(SCHEMA_REGISTRY_PORT + ":").build(),
             new EnvVarBuilder()

@@ -150,9 +150,7 @@ public class CollectorModel extends AbstractModel {
             new EnvVarBuilder().withName("TLS_KEY").withValue("/etc/ssl/certs/podtls.key").build(),
             new EnvVarBuilder().withName("LICENSE").withValue("accept").build(),
             new EnvVarBuilder().withName("CIPHER_SUITES").withValue(DEFAULT_CIPHER_SUITES_NODE).build(),
-            // following env vars used only for label-pod-with-zone-name.sh script // TODO do we need this script
             new EnvVarBuilder().withName("NAMESPACE").withValue(getNamespace()).build(),
-            new EnvVarBuilder().withName("CONFIGMAP").withValue("configmap").build(),
             new EnvVarBuilder().withName(TLS_VERSION_ENV_KEY).withValue(getTlsVersionEnvValue(instance)).build()
         );
 

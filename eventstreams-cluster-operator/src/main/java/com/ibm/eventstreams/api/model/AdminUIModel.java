@@ -379,6 +379,9 @@ public class AdminUIModel extends AbstractModel {
             envVarDefaults.add(new EnvVarBuilder().withName("CLUSTER_EXTERNAL_PORT").withValue("").build());
         }
 
+        envVarDefaults.add(new EnvVarBuilder().withName("ESFF_SECURITY_AUTH").withValue("true").build());
+        envVarDefaults.add(new EnvVarBuilder().withName("ESFF_SECURITY_AUTHZ").withValue("true").build());
+
         List<EnvVar> envVars = combineEnvVarListsNoDuplicateKeys(envVarDefaults);
 
         return new ContainerBuilder()

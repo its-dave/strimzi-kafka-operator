@@ -55,8 +55,8 @@ adminApi:
 schemaRegistry:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
-    name: eventstreams-registry-icp-linux-amd64
-    tag: 2020-03-14-11.44.53-538a363-dev
+    name: eventstreams-schema-registry-icp-linux-amd64
+    tag: 2020-04-08-10.53.04-a549b6c-dev
 schemaAvro:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
@@ -81,7 +81,7 @@ collector:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: eventstreams-metrics-collector-icp-linux-amd64
-    tag: 2020-04-07-11.33.43-d52da8b
+    tag: 2020-04-08-11.08.41-3cb71d9
 
 
 zookeeper:
