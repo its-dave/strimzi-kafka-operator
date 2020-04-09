@@ -138,6 +138,9 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                                 RouteOperator routeOperator,
                                 long kafkaStatusReadyTimeoutMs) {
         super(vertx, kind, esResourceOperator);
+        log.traceEntry(() -> vertx, () -> client, () -> kind, () -> pfa, () -> esResourceOperator, 
+            () -> cp4iResourceOperator, () -> imageConfig, () -> routeOperator,
+            () -> kafkaStatusReadyTimeoutMs);
         log.info("Creating EventStreamsOperator");
         this.esResourceOperator = esResourceOperator;
         this.cp4iResourceOperator = cp4iResourceOperator;
@@ -157,14 +160,16 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         this.networkPolicyOperator = new NetworkPolicyOperator(vertx, client);
 
         this.kafkaStatusReadyTimeoutMs = kafkaStatusReadyTimeoutMs;
+
+        log.traceExit();
     }
 
     @Override
     protected Future<Void> createOrUpdate(Reconciliation reconciliation, EventStreams instance) {
-        log.debug("createOrUpdate reconciliation {} for instance {}", reconciliation, instance);
+        log.traceEntry(() -> reconciliation, () -> instance);
         ReconciliationState reconcileState = new ReconciliationState(reconciliation, instance, imageConfig);
 
-        return reconcile(reconcileState);
+        return log.traceExit(reconcile(reconcileState));
     }
 
     Date dateSupplier() {
@@ -172,9 +177,10 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
     }
 
     private Future<Void> reconcile(ReconciliationState reconcileState) {
+        log.traceEntry(() -> reconcileState);
         customImageCount =  0;
 
-        return reconcileState.validateCustomResource()
+        return log.traceExit(reconcileState.validateCustomResource()
                 .compose(state -> state.getCloudPakClusterData())
                 .compose(state -> state.getCloudPakClusterCert())
                 .compose(state -> state.createCloudPakClusterCertSecret())
@@ -196,12 +202,13 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 .compose(state -> state.checkEventStreamsSpec(this::dateSupplier))
                 .onSuccess(state -> state.finalStatusUpdate())
                 .onFailure(thr -> reconcileState.recordFailure(thr))
-                .map(t -> null);
+                .map(t -> null));
     }
 
     @Override
     protected Future<Boolean> delete(Reconciliation reconciliation) {
-        return Future.succeededFuture(Boolean.FALSE);
+        log.traceEntry(() -> reconciliation);
+        return log.traceExit(Future.succeededFuture(Boolean.FALSE));
     }
 
     @SuppressWarnings("checkstyle:ClassDataAbstractionCoupling")
@@ -216,6 +223,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         Map<String, String> icpClusterData = null;
 
         ReconciliationState(Reconciliation reconciliation, EventStreams instance, EventStreamsOperatorConfig.ImageLookup imageConfig) {
+            log.traceEntry(() -> reconciliation, () -> instance, () -> imageConfig);
             this.reconciliation = reconciliation;
             this.instance = instance;
             this.namespace = instance.getMetadata().getNamespace();
@@ -230,16 +238,19 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 : new EventStreamsStatusBuilder(instance.getStatus()).withConditions(new ArrayList<>());
             this.imageConfig = imageConfig;
             this.certificateManager = new EventStreamsCertificateManager(secretOperator, reconciliation.namespace(), EventStreamsKafkaModel.getKafkaInstanceName(instance.getMetadata().getName()));
+            log.traceExit();
         }
 
         // there are several checks, but keeping them all in one place is helpful, so overriding the checkstyle warning
         @SuppressWarnings("checkstyle:NPathComplexity")
         Future<ReconciliationState> validateCustomResource() {
+            log.traceEntry();
             String phase = Optional.ofNullable(status.getPhase()).orElse("Pending");
 
             // fail straight away if the CR previously had errored conditions
             if (previousConditions.stream().anyMatch(c -> "Errored".equals(c.getReason()))) {
-                return Future.failedFuture("Error");
+                log.error("CR has previously had errored conditions");
+                return log.traceExit(Future.failedFuture("Error"));
             }
 
             boolean isValidCR = true;
@@ -307,14 +318,16 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             }
 
             if (isValidCR) {
-                return Future.succeededFuture(this);
+                return log.traceExit(Future.succeededFuture(this));
             } else {
                 // we don't want the reconcile loop to continue any further if the CR is not valid
-                return Future.failedFuture("Invalid Event Streams specification: further details in the status conditions");
+                log.debug("Invalid Event Streams specification: further details in the status conditions");
+                return log.traceExit(Future.failedFuture("Invalid Event Streams specification: further details in the status conditions"));
             }
         }
 
         Future<ReconciliationState> getCloudPakClusterData() {
+            log.traceEntry();
             String namespace = "kube-public";
             String icpConfigMapName = "ibmcloud-cluster-info";
             boolean iamPresent = false;
@@ -339,14 +352,15 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                     log.info("IAM not present : " + f.succeeded());
                     failReconcile.fail("Exit Reconcile as IAM not present");
                 });
-                return failReconcile.future();
+                return log.traceExit(failReconcile.future());
             }
             icpClusterData = icpConfigMap.getData();
 
-            return Future.succeededFuture(this);
+            return log.traceExit(Future.succeededFuture(this));
         }
 
         Future<ReconciliationState> getCloudPakClusterCert() {
+            log.traceEntry();
             Promise<Void> clusterCaSecretPromise = Promise.promise();
             // get common services info for prometheus metrics
             secretOperator.getAsync("kube-public", "ibmcloud-cluster-ca-cert").setHandler(getRes -> {
@@ -358,7 +372,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                         icpClusterData.put("icp_public_cacert", new String(clusterCaCertArray, "US-ASCII"));
                         clusterCaSecretPromise.complete();
                     } catch (UnsupportedEncodingException e) {
-                        log.error("unable to decode icp public cert", e);
+                        log.error("unable to decode icp public cert: {}", e);
                         clusterCaSecretPromise.fail(e);
                     }
                 } else {
@@ -368,16 +382,17 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                     instance.setStatus(statusSubresource);
 
                     updateStatus(statusSubresource).onComplete(f -> {
-                        log.info("'ibmcloud-cluster-ca-cert' not present : " + f.succeeded());
+                        log.info("'ibmcloud-cluster-ca-cert' not present : {}", f.succeeded());
                         clusterCaSecretPromise.fail("could not get secret 'ibmcloud-cluster-ca-cert' in namespace 'kube-public'");
                     });
                 }
             });
 
-            return clusterCaSecretPromise.future().map(v -> this);
+            return log.traceExit(clusterCaSecretPromise.future().map(v -> this));
         }
 
         Future<ReconciliationState> createCloudPakClusterCertSecret() {
+            log.traceEntry();
             Promise<Void> clusterCaSecretPromise = Promise.promise();
             ClusterSecretsModel clusterSecrets = new ClusterSecretsModel(instance, secretOperator);
             // get common services info for prometheus metrics
@@ -394,7 +409,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                         instance.setStatus(statusSubresource);
 
                         updateStatus(statusSubresource).onComplete(f -> {
-                            log.info("Failure to create ICP Cluster CA Cert secret " + f.succeeded());
+                            log.info("Failure to create ICP Cluster CA Cert secret {}", f.succeeded());
                             clusterCaSecretPromise.fail(err);
                         });
                     });
@@ -405,19 +420,21 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 instance.setStatus(statusSubresource);
 
                 updateStatus(statusSubresource).onComplete(f -> {
-                    log.info("Encoded ICP CA Cert not in ICPClusterData: " + f.succeeded());
+                    log.info("Encoded ICP CA Cert not in ICPClusterData: {}", f.succeeded());
                     clusterCaSecretPromise.fail("Encoded ICP CA Cert not in ICPClusterData");
                 });
             }
 
-            return clusterCaSecretPromise.future().map(v -> this);
+            return log.traceExit(clusterCaSecretPromise.future().map(v -> this));
         }
 
 
         Future<ReconciliationState> createCp4iServicesBinding() {
+            log.traceEntry();
             if (!isCrdPresent(CP4I_SERVICES_BINDING_NAME)) {
                 status.withCp4iPresent(false);
-                return Future.succeededFuture(this);
+                log.debug("CP4I Services Binding CRD is not present, unable to create");
+                return log.traceExit(Future.succeededFuture(this));
             }
             status.withCp4iPresent(true);
 
@@ -428,18 +445,19 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             // Create an operation that can be invoked to retrieve or create the required Custom Resource
             cp4iResourceOperator.reconcile(namespace, cp4iServicesBindingName, cp4iServicesBinding);
 
-            return Future.succeededFuture(this);
+            return log.traceExit(Future.succeededFuture(this));
         }
 
         Future<ReconciliationState> waitForCp4iServicesBindingStatus() {
+            log.traceEntry();
             if (!status.isCp4iPresent()) {
-                log.debug("CP4I is not present");
-                return Future.succeededFuture(this);
+                log.debug("CP4I is not present, no longer waiting for CP4I Services Binding Status");
+                return log.traceExit(Future.succeededFuture(this));
             }
 
             String cp4iInstanceName = Cp4iServicesBindingModel.getCp4iInstanceName(instance.getMetadata().getName());
 
-            return cp4iResourceOperator.waitForCp4iServicesBindingStatusAndMaybeGetUrl(namespace, cp4iInstanceName, defaultPollIntervalMs, 10000, reconciliation)
+            return log.traceExit(cp4iResourceOperator.waitForCp4iServicesBindingStatusAndMaybeGetUrl(namespace, cp4iInstanceName, defaultPollIntervalMs, 10000, reconciliation)
                 .setHandler(res -> {
                     if (res.succeeded()) {
                         log.debug("Putting the header URL " + res.result() + " into the Admin UI");
@@ -450,27 +468,29 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                     }
                 }).compose(v -> {
                     return Future.succeededFuture(this);
-                });
+                }));
         }
 
         Future<ReconciliationState> createKafkaCustomResource() {
+            log.traceEntry();
             EventStreamsKafkaModel kafka = new EventStreamsKafkaModel(instance);
             Future<Kafka> createdKafka = toFuture(() -> Crds.kafkaOperation(client)
                 .inNamespace(namespace)
                 .createOrReplace(kafka.getKafka()));
 
-            return createdKafka.map(v -> this);
+            return log.traceExit(createdKafka.map(v -> this));
         }
 
         Future<ReconciliationState> waitForKafkaStatus() {
+            log.traceEntry();
             String kafkaInstanceName = EventStreamsKafkaModel.getKafkaInstanceName(instance.getMetadata().getName());
 
-            return esResourceOperator.kafkaCRHasStoppedDeploying(namespace, kafkaInstanceName, defaultPollIntervalMs, kafkaStatusReadyTimeoutMs)
+            return log.traceExit(esResourceOperator.kafkaCRHasStoppedDeploying(namespace, kafkaInstanceName, defaultPollIntervalMs, kafkaStatusReadyTimeoutMs)
                     .compose(v -> {
-                        log.debug("Retrieve Kafka instances in namespace : " + namespace);
+                        log.debug("Retrieve Kafka instances in namespace: {}", namespace);
                         Optional<Kafka> kafkaInstance = esResourceOperator.getKafkaInstance(namespace, kafkaInstanceName);
                         if (kafkaInstance.isPresent()) {
-                            log.debug("Found Kafka instance with name : " + kafkaInstance.get().getMetadata().getName());
+                            log.debug("Found Kafka instance with name: {}", kafkaInstance.get().getMetadata().getName());
                             KafkaStatus kafkaStatus = kafkaInstance.get().getStatus();
                             log.debug("{}: kafkaStatus: {}", reconciliation, kafkaStatus);
 
@@ -488,35 +508,34 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                                 return Future.failedFuture("Kafka cluster is not ready");
                             }
                         } else {
-                            return Future.failedFuture("Failed to retrieve kafkaInstance");
+                            return log.traceExit(Future.failedFuture("Failed to retrieve kafkaInstance"));
                         }
-                        return Future.succeededFuture(this);
-                    });
+                        return log.traceExit(Future.succeededFuture(this));
+                    }));
         }
 
         Future<ReconciliationState> createKafkaNetworkPolicyExtension() {
+            log.traceEntry();
             KafkaNetworkPolicyExtensionModel kafkaNetworkPolicyExtensionModel = new KafkaNetworkPolicyExtensionModel(instance);
-            return networkPolicyOperator
+            return log.traceExit(networkPolicyOperator
                 .reconcile(namespace, kafkaNetworkPolicyExtensionModel.getDefaultResourceName(), kafkaNetworkPolicyExtensionModel.getNetworkPolicy())
-                .map(v -> this);
+                .map(v -> this));
         }
 
         Future<ReconciliationState> createReplicatorUsers() {
-
+            log.traceEntry();
             ReplicatorSourceUsersModel replicatorSourceUsersModel = new ReplicatorSourceUsersModel(instance);
-
-            return kafkaUserOperator.reconcile(namespace,
+            return log.traceExit(kafkaUserOperator.reconcile(namespace,
                     replicatorSourceUsersModel.getSourceConnectorKafkaUserName(),
-                    replicatorSourceUsersModel.getSourceConnectorKafkaUser()).map(v -> this);
-
+                    replicatorSourceUsersModel.getSourceConnectorKafkaUser()).map(v -> this));
         }
 
         Future<ReconciliationState> createReplicatorSecret() {
-
+            log.traceEntry();
             ReplicatorSecretModel replicatorSecretModel = new ReplicatorSecretModel(instance);
             String secretName = replicatorSecretModel.getSecretName();
 
-            return secretOperator.getAsync(namespace, secretName)
+            return log.traceExit(secretOperator.getAsync(namespace, secretName)
                     .compose(secret -> {
                         // Secret should only be created once
                         if (secret == null) {
@@ -524,18 +543,18 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                             return secretOperator.reconcile(namespace, secretName, replicatorSecretModel.getSecret());
                         }
                         return Future.succeededFuture(ReconcileResult.noop(secret));
-                    }).map(res -> this);
-
+                    }).map(res -> this));
         }
 
         Future<ReconciliationState> createInternalKafkaUser() {
+            log.traceEntry();
             InternalKafkaUserModel internalKafkaUserModel = new InternalKafkaUserModel(instance);
-            return kafkaUserOperator.reconcile(namespace, internalKafkaUserModel.getInternalKafkaUserName(), internalKafkaUserModel.getKafkaUser())
-                    .map(this);
+            return log.traceExit(kafkaUserOperator.reconcile(namespace, internalKafkaUserModel.getInternalKafkaUserName(), internalKafkaUserModel.getKafkaUser())
+                    .map(this));
         }
 
         Future<ReconciliationState> createRestProducer(Supplier<Date> dateSupplier) {
-            log.info("Starting rest producer reconcile");
+            log.traceEntry(() -> dateSupplier);
             List<Future> restProducerFutures = new ArrayList<>();
             RestProducerModel restProducer = new RestProducerModel(instance, imageConfig, status.getKafkaListeners(), icpClusterData);
             if (restProducer.getCustomImage()) {
@@ -546,7 +565,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 restProducerFutures.add(serviceOperator.reconcile(namespace, restProducer.getServiceName(type), restProducer.getSecurityService(type)));
             }
             restProducerFutures.add(networkPolicyOperator.reconcile(namespace, restProducer.getDefaultResourceName(), restProducer.getNetworkPolicy()));
-            return CompositeFuture.join(restProducerFutures)
+            return log.traceExit(CompositeFuture.join(restProducerFutures)
                 .compose(v -> reconcileRoutes(restProducer, restProducer.getRoutes()))
                 .compose(routesMap -> reconcileCerts(restProducer, routesMap, dateSupplier))
                 .compose(secretResult -> {
@@ -555,10 +574,11 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                         certGenerationID = secretResult.resource().getMetadata().getResourceVersion();
                     }
                     return deploymentOperator.reconcile(namespace, restProducer.getDefaultResourceName(), restProducer.getDeployment(certGenerationID));
-                }).map(this);
+                }).map(this));
         }
 
         Future<ReconciliationState> createAdminApi(Supplier<Date> dateSupplier) {
+            log.traceEntry(() -> dateSupplier);
             List<Future> adminApiFutures = new ArrayList<>();
             AdminApiModel adminApi = new AdminApiModel(instance, imageConfig, status.getKafkaListeners(), icpClusterData);
             if (adminApi.getCustomImage()) {
@@ -572,11 +592,12 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
 
             adminApiFutures.add(networkPolicyOperator.createOrUpdate(adminApi.getNetworkPolicy()));
             adminApiFutures.add(roleBindingOperator.createOrUpdate(adminApi.getRoleBinding()));
-            return CompositeFuture.join(adminApiFutures)
+            return log.traceExit(CompositeFuture.join(adminApiFutures)
                     .compose(v -> reconcileRoutes(adminApi, adminApi.getRoutes()))
                     .compose(routesHostMap -> {
                         for (String adminRouteHost : routesHostMap.values()) {
                             String adminRouteUri = "https://" + adminRouteHost;
+                            log.info("adminRouteHost: {} adminRouteUri: {}", adminRouteHost, adminRouteUri);
                             updateEndpoints(new EventStreamsEndpoint(EventStreamsEndpoint.ADMIN_KEY, EventStreamsEndpoint.EndpointType.API, adminRouteUri));
                         }
                         return Future.succeededFuture(routesHostMap);
@@ -589,10 +610,11 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                             .orElse(null);
                         return deploymentOperator.reconcile(namespace, adminApi.getDefaultResourceName(), adminApi.getDeployment(certGenerationID));
                     })
-                    .map(this);
+                    .map(this));
         }
 
         Future<ReconciliationState> createSchemaRegistry(Supplier<Date> dateSupplier) {
+            log.traceEntry(() -> dateSupplier);
             List<Future> schemaRegistryFutures = new ArrayList<>();
             SchemaRegistryModel schemaRegistry = new SchemaRegistryModel(instance, imageConfig);
             if (schemaRegistry.getCustomImage()) {
@@ -608,12 +630,13 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             }
             schemaRegistryFutures.add(networkPolicyOperator.reconcile(namespace, schemaRegistry.getDefaultResourceName(), schemaRegistry.getNetworkPolicy()));
 
-            return CompositeFuture.join(schemaRegistryFutures)
+            return log.traceExit(CompositeFuture.join(schemaRegistryFutures)
                     .compose(v -> reconcileRoutes(schemaRegistry, schemaRegistry.getRoutes()))
                     .compose(routesHostMap -> {
                         String schemaRouteHost = routesHostMap.get(schemaRegistry.getRouteName(Endpoint.DEFAULT_EXTERNAL_NAME));
                         if (schemaRouteHost != null) {
                             String schemaRouteUri = "https://" + schemaRouteHost;
+                            log.info("schemaRouteHost: {} schemaRouteUri: {}", schemaRouteHost, schemaRouteUri);
                             updateEndpoints(new EventStreamsEndpoint(EventStreamsEndpoint.SCHEMA_REGISTRY_KEY,
                                                                      EventStreamsEndpoint.EndpointType.API,
                                                                      schemaRouteUri));
@@ -627,16 +650,18 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                             certGenerationID = secretResult.resource().getMetadata().getResourceVersion();
                         }
                         return deploymentOperator.reconcile(namespace, schemaRegistry.getDefaultResourceName(), schemaRegistry.getDeployment(certGenerationID));
-                    }).map(this);
+                    }).map(this));
         }
 
         Future<ReconciliationState> createMessageAuthenticationSecret() {
-            log.debug("Creating message authentication secret");
+            log.traceEntry();
             MessageAuthenticationModel messageAuthenticationModel = new MessageAuthenticationModel(instance);
-            return secretOperator.reconcile(instance.getMetadata().getNamespace(), messageAuthenticationModel.getSecretName(instance.getMetadata().getName()), messageAuthenticationModel.getSecret()).map(v -> this);
+            return log.traceExit(secretOperator.reconcile(instance.getMetadata().getNamespace(), messageAuthenticationModel.getSecretName(instance.getMetadata().getName()), messageAuthenticationModel.getSecret())
+                    .map(v -> this));
         }
 
         Future<ReconciliationState> createAdminUI() {
+            log.traceEntry();
             List<Future> adminUIFutures = new ArrayList<>();
             AdminUIModel ui = new AdminUIModel(instance, imageConfig, pfa.hasRoutes(), icpClusterData);
             if (ui.getCustomImage()) {
@@ -653,7 +678,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                     if (route.resourceOpt().isPresent()) {
                         String uiRouteHost = route.resource().getSpec().getHost();
                         String uiRouteUri = "https://" + uiRouteHost;
-
+                        log.info("uiRouteHost: {} uiRouteUri: {}", uiRouteHost, uiRouteUri);
                         status.addToRoutes(AdminUIModel.COMPONENT_NAME, uiRouteHost);
 
                         if (AdminUIModel.isUIEnabled(instance)) {
@@ -663,14 +688,15 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                                                                      uiRouteUri));
                         }
                     }
-                    return Future.succeededFuture();
+                    return log.traceExit(Future.succeededFuture());
                 }));
             }
-            return CompositeFuture.join(adminUIFutures)
-                    .map(v -> this);
+            return log.traceExit(CompositeFuture.join(adminUIFutures)
+                    .map(v -> this));
         }
 
         Future<ReconciliationState> createCollector() {
+            log.traceEntry();
             List<Future> collectorFutures = new ArrayList<>();
             CollectorModel collector = new CollectorModel(instance, imageConfig);
             if (collector.getCustomImage()) {
@@ -680,14 +706,14 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             collectorFutures.add(serviceAccountOperator.reconcile(namespace, collector.getDefaultResourceName(), collector.getServiceAccount()));
             collectorFutures.add(serviceOperator.reconcile(namespace, collector.getDefaultResourceName(), collector.getService()));
             collectorFutures.add(networkPolicyOperator.reconcile(namespace, collector.getDefaultResourceName(), collector.getNetworkPolicy()));
-            return CompositeFuture.join(collectorFutures)
-                    .map(v -> this);
+            return log.traceExit(CompositeFuture.join(collectorFutures)
+                    .map(v -> this));
         }
 
         Future<ReconciliationState> createOAuthClient() {
+            log.traceEntry();
 
             String uiRoute = status.getRoutes().get(AdminUIModel.COMPONENT_NAME);
-
             log.debug("Found route '{}'", uiRoute);
 
             if (uiRoute != null) {
@@ -714,25 +740,27 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                     Future<Client> createdClient = toFuture(() -> clientcr
                             .inNamespace(namespace)
                             .createOrReplace(oidcclient));
-                    return createdClient.map(v -> this);
+                    return log.traceExit(createdClient.map(v -> this));
 
                 }
             }
 
-            return Future.succeededFuture(this);
+            return log.traceExit(Future.succeededFuture(this));
         }
 
         Future<ReconciliationState> checkEventStreamsSpec(Supplier<Date> dateSupplier) {
+            log.traceEntry(() -> dateSupplier);
             EventStreamsSpecChecker checker = new EventStreamsSpecChecker(dateSupplier, instance.getSpec());
             List<Condition> warnings = checker.run();
             for (Condition warning : warnings) {
                 addToConditions(warning);
             }
-            return Future.succeededFuture(this);
+            return log.traceExit(Future.succeededFuture(this));
         }
 
 
         Future<ReconciliationState> updateStatus(EventStreamsStatus newStatus) {
+            log.traceEntry(() -> newStatus);
             Promise<ReconciliationState> updateStatusPromise = Promise.promise();
 
             esResourceOperator.getAsync(namespace, instance.getMetadata().getName()).setHandler(getRes -> {
@@ -759,12 +787,13 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 }
             });
 
-            return updateStatusPromise.future();
+            return log.traceExit(updateStatusPromise.future());
         }
 
 
 
         Future<ReconciliationState> finalStatusUpdate() {
+            log.traceEntry();
             status.withCustomImages(customImageCount > 0);
             status.withPhase("Running");
             addReadyCondition();
@@ -772,17 +801,19 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             log.info("Updating status");
             EventStreamsStatus esStatus = status.build();
             instance.setStatus(esStatus);
-            return updateStatus(esStatus);
+            return log.traceExit(updateStatus(esStatus));
         }
 
 
         void recordFailure(Throwable thr) {
+            log.traceEntry(() -> thr);
             log.error("Recording reconcile failure", thr);
             addNotReadyCondition("DeploymentFailed", thr.getMessage());
 
             EventStreamsStatus statusSubresource = status.withPhase("Failed").build();
             instance.setStatus(statusSubresource);
             updateStatus(statusSubresource);
+            log.traceExit();
         }
 
 
@@ -797,7 +828,8 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
          */
 
         private <T> Future<T> toFuture(Supplier<T> createResource) {
-            return Future.future(blockingFuture -> {
+            log.traceEntry(() -> createResource);
+            return log.traceExit(Future.future(blockingFuture -> {
                 vertx.executeBlocking(blocking -> {
                     try {
                         blocking.complete(createResource.get());
@@ -805,7 +837,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                         blocking.fail(e);
                     }
                 }, blockingFuture);
-            });
+            }));
         }
 
         /**
@@ -817,7 +849,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
          * @return
          */
         Future<ReconcileResult<Secret>> reconcileCerts(AbstractSecureEndpointsModel model, Map<String, String> additionalHosts, Supplier<Date> dateSupplier) {
-            log.info("Starting certificate reconciliation for: " + model.getComponentName());
+            log.traceEntry(() -> model, () -> additionalHosts, () -> dateSupplier);
             try {
                 boolean regenSecret = false;
                 Optional<Secret> certSecret = certificateManager.getSecret(model.getCertificateSecretName());
@@ -834,11 +866,11 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                     model.createCertificateSecretModelSecret();
                 }
 
-                return secretOperator.reconcile(namespace, model.getCertificateSecretName(), model.getCertificateSecretModelSecret());
+                return log.traceExit(secretOperator.reconcile(namespace, model.getCertificateSecretName(), model.getCertificateSecretModelSecret()));
 
             } catch (EventStreamsCertificateException e) {
-                log.error(e);
-                return Future.failedFuture(e);
+                log.error("Error whilst doing certificate reconciliation for {}:", model.getComponentName(), e);
+                return log.traceExit(Future.failedFuture(e));
             }
         }
 
@@ -854,6 +886,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
          * @throws EventStreamsCertificateException
          */
         private boolean updateCertAndKeyInModel(Optional<Secret> certSecret, AbstractSecureEndpointsModel model, Endpoint endpoint, Map<String, String> additionalHosts, Supplier<Date> dateSupplier) throws EventStreamsCertificateException {
+            log.traceEntry(() -> certSecret, () -> model, () -> endpoint, () -> additionalHosts, () -> dateSupplier);
             String host = endpoint.isRoute() ? additionalHosts.getOrDefault(model.getRouteName(endpoint.getName()), "") : "";
             List<String> hosts = host.isEmpty() ? Collections.emptyList() : Collections.singletonList(host);
             Service service = endpoint.isRoute() ? null : model.getSecurityService(endpoint.getType());
@@ -867,30 +900,36 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                     CertAndKey currentCertAndKey = certificateManager.certificateAndKey(certSecret.get(), model.getCertSecretCertID(endpoint.getName()), model.getCertSecretKeyID(endpoint.getName()));
                     boolean hasCertOverridesChanged = certificateManager.sameCertAndKey(currentCertAndKey, providedCertAndKey.get());
                     model.setCertAndKey(endpoint.getName(), hasCertOverridesChanged ? providedCertAndKey.get() : currentCertAndKey);
-                    return hasCertOverridesChanged;
+                    return log.traceExit(hasCertOverridesChanged);
                 }
                 // The secret hasn't been generated yet so create a new entry with the provided cert and key
                 model.setCertAndKey(endpoint.getName(), providedCertAndKey.get());
-                return true;
+                log.debug("Finished Updating Cert and Key in Model for {}, secret needs to be generated", model.getComponentName());
+                return log.traceExit(true);
             } else if (!certSecret.isPresent() || certificateManager.shouldGenerateOrRenewCertificate(certSecret.get(), endpoint.getName(), dateSupplier, service, hosts)) {
                 CertAndKey certAndKey = certificateManager.generateCertificateAndKey(service, hosts);
                 model.setCertAndKey(endpoint.getName(), certAndKey);
-                return true;
+                log.debug("Finished Updating Cert and Key in Model for {}, secret needs to be regenerated", model.getComponentName());
+                return log.traceExit(true);
             }
             // even if we don't need to regenerate the secret, we need to set the key and cert in case of future reconciliation
             CertAndKey currentCertAndKey = certificateManager.certificateAndKey(certSecret.get(), model.getCertSecretCertID(endpoint.getName()), model.getCertSecretKeyID(endpoint.getName()));
             model.setCertAndKey(endpoint.getName(), currentCertAndKey);
-            return false;
+            log.info("Finished Updating Cert and Key in Model for {}, secret does not need to be regenerated", model.getComponentName());
+            return log.traceExit(false);
         }
 
         protected Future<Map<String, String>> reconcileRoutes(AbstractSecureEndpointsModel model, Map<String, Route> routes) {
-            return deleteUnspecifiedRoutes(model, routes)
-                .compose(res -> createRoutes(model, routes));
+            log.traceEntry(() -> model, () -> routes);
+            return log.traceExit(deleteUnspecifiedRoutes(model, routes)
+                .compose(res -> createRoutes(model, routes)));
         }
 
         protected Future<Map<String, String>> createRoutes(AbstractSecureEndpointsModel model, Map<String, Route> routes) {
+            log.traceEntry(() -> model, () -> routes);
             if (!pfa.hasRoutes() || routeOperator == null) {
-                return Future.succeededFuture(Collections.emptyMap());
+                log.debug("Finished attempting to create Routes for {}, no Routes to create", model.getComponentName());
+                return log.traceExit(Future.succeededFuture(Collections.emptyMap()));
             }
 
             List<Future> routeFutures = routes.entrySet()
@@ -911,7 +950,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                     }))
                 .collect(Collectors.toList());
 
-            return CompositeFuture.join(routeFutures)
+            return log.traceExit(CompositeFuture.join(routeFutures)
                 .compose(ar -> {
                     List<Map<String, String>> allRoutesMaps = ar.list();
                     Map<String, String> routesMap = allRoutesMaps
@@ -922,7 +961,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                         })
                         .orElse(Collections.emptyMap());
                     return Future.succeededFuture(routesMap);
-                });
+                }));
         }
 
         /**
@@ -932,12 +971,15 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
          * @return A list of futures of whether the routes have been deleted.
          */
         Future<List<ReconcileResult<Route>>> deleteUnspecifiedRoutes(AbstractSecureEndpointsModel model, Map<String, Route> routes) {
+            log.traceEntry(() -> model, () -> routes);
             if (!pfa.hasRoutes() || routeOperator == null) {
-                return Future.succeededFuture(Collections.emptyList());
+                log.debug("Finished Attempting to delete unspecified Routes for {}, no routes to delete", model.getComponentName());
+                return log.traceExit(Future.succeededFuture(Collections.emptyList()));
             }
 
             if (status.getRoutes() == null) {
-                return Future.succeededFuture(Collections.emptyList());
+                log.debug("Finished Attempting to delete unspecified Routes for {}, no routes to delete", model.getComponentName());
+                return log.traceExit(Future.succeededFuture(Collections.emptyList()));
             }
 
             List<String> removedKeys = new ArrayList<>();
@@ -956,22 +998,26 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             // Done to avoid ConcurrentModificationException
             removedKeys.forEach(status::removeFromRoutes);
 
-            return CompositeFuture.join(routeDeletionFutures)
-                .compose(ar -> Future.succeededFuture(ar.list()));
+            return log.traceExit(CompositeFuture.join(routeDeletionFutures)
+                .compose(ar -> Future.succeededFuture(ar.list())));
         }
 
         private String getRouteShortName(AbstractSecureEndpointsModel model, String routeName) {
-            return routeName.replaceFirst(model.getResourcePrefix() + "-", "");
+            log.traceEntry(() -> model, () -> routeName);
+            return log.traceExit(routeName.replaceFirst(model.getResourcePrefix() + "-", ""));
         }
 
         private String getRouteLongName(AbstractSecureEndpointsModel model, String routeName) {
-            return model.getResourcePrefix() + "-" + routeName;
+            log.traceEntry(() -> model, () -> routeName);
+            return log.traceExit(model.getResourcePrefix() + "-" + routeName);
         }
 
         protected void updateEndpoints(EventStreamsEndpoint newEndpoint) {
+            log.traceEntry(() -> newEndpoint);
             // replace any existing endpoint with the same name
             status.removeMatchingFromEndpoints(item -> newEndpoint.getName().equals(item.getName()));
             status.addToEndpoints(newEndpoint);
+            log.traceExit();
         }
 
         /**
@@ -984,6 +1030,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
          * @param condition Condition to add to the status conditions list.
          */
         private void addToConditions(Condition condition) {
+            log.traceEntry(() -> condition);
             // restore the equivalent previous condition if found, otherwise
             //  add the new condition to the status
             addCondition(previousConditions
@@ -991,6 +1038,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                     .filter(c -> condition.getReason().equals(c.getReason()))
                     .findFirst()
                     .orElse(condition));
+            log.traceExit();
         }
 
         /**
@@ -999,6 +1047,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
          *  a previous reconcile.
          */
         private void addReadyCondition() {
+            log.traceEntry();
             boolean needsReadyCondition = status.getMatchingCondition(cond -> "Ready".equals(cond.getType())) == null;
             if (needsReadyCondition) {
                 addCondition(new ConditionBuilder()
@@ -1007,6 +1056,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                         .withStatus("True")
                         .build());
             }
+            log.traceExit();
         }
 
         /**
@@ -1017,6 +1067,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
          * @param message A human-readable message indicating why the operand is not ready.
          */
         private void addNotReadyCondition(String reason, String message) {
+            log.traceEntry(() -> reason, () -> message);
             addToConditions(
                     new ConditionBuilder()
                         .withLastTransitionTime(ModelUtils.formatTimestamp(dateSupplier()))
@@ -1025,6 +1076,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                         .withReason(reason)
                         .withMessage(message)
                         .build());
+            log.traceExit();
         }
 
         /**
@@ -1032,19 +1084,22 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
          * that they are maintained in order of timestamp.
          */
         private void addCondition(Condition condition) {
+            log.traceEntry(() -> condition);
             status.addToConditions(condition);
             status.getConditions().sort(Comparator.comparing(Condition::getLastTransitionTime)
                                             .thenComparing(Condition::getType, Comparator.reverseOrder()));
+            log.traceExit();
         }
     }
 
     Boolean isCrdPresent(String crdName) {
-        return Optional.ofNullable(client.customResourceDefinitions().list())
+        log.traceEntry(() -> crdName);
+        return log.traceExit(Optional.ofNullable(client.customResourceDefinitions().list())
             .map(CustomResourceDefinitionList::getItems)
             .map(list -> list.stream()
                 .filter(crd -> crd.getMetadata().getName().equals(crdName))
                 .findAny()
                 .isPresent())
-            .orElse(false);
+            .orElse(false));
     }
 }
