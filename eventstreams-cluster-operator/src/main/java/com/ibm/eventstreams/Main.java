@@ -21,11 +21,9 @@ import io.strimzi.api.kafka.Crds;
 import io.strimzi.certs.OpenSslCertManager;
 import io.strimzi.operator.PlatformFeaturesAvailability;
 import io.strimzi.operator.cluster.operator.assembly.KafkaAssemblyOperator;
-import io.strimzi.operator.cluster.operator.assembly.KafkaBridgeAssemblyOperator;
 import io.strimzi.operator.cluster.operator.assembly.KafkaConnectAssemblyOperator;
 import io.strimzi.operator.cluster.operator.assembly.KafkaConnectS2IAssemblyOperator;
 import io.strimzi.operator.cluster.operator.assembly.KafkaMirrorMaker2AssemblyOperator;
-import io.strimzi.operator.cluster.operator.assembly.KafkaMirrorMakerAssemblyOperator;
 import io.strimzi.operator.cluster.operator.resource.ResourceOperatorSupplier;
 import io.strimzi.operator.common.PasswordGenerator;
 import io.strimzi.operator.common.operator.resource.ClusterRoleOperator;
@@ -216,12 +214,6 @@ public class Main {
         KafkaMirrorMaker2AssemblyOperator kafkaMirrorMaker2AssemblyOperator =
                 new KafkaMirrorMaker2AssemblyOperator(vertx, pfa, resourceOperatorSupplier, config);
 
-        KafkaMirrorMakerAssemblyOperator kafkaMirrorMakerAssemblyOperator =
-                new KafkaMirrorMakerAssemblyOperator(vertx, pfa, certManager, passwordGenerator, resourceOperatorSupplier, config);
-
-        KafkaBridgeAssemblyOperator kafkaBridgeAssemblyOperator =
-                new KafkaBridgeAssemblyOperator(vertx, pfa, certManager, passwordGenerator, resourceOperatorSupplier, config);
-
         List<Future> futures = new ArrayList<>();
         for (String namespace : config.getNamespaces()) {
             Promise<String> prom = Promise.promise();
@@ -232,9 +224,9 @@ public class Main {
                     kafkaClusterOperations,
                     kafkaConnectClusterOperations,
                     kafkaConnectS2IClusterOperations,
-                    kafkaMirrorMakerAssemblyOperator,
+                    null,
                     kafkaMirrorMaker2AssemblyOperator,
-                    kafkaBridgeAssemblyOperator);
+                    null);
             vertx.deployVerticle(operator,
                 res -> {
                     if (res.succeeded()) {

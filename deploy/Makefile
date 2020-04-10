@@ -65,7 +65,7 @@ build_scorecard:
 
 	mkdir ${CRD_DIR}
 
-	# populate the crds fodler with the contents of the install folder
+	# populate the crds folder with the contents of the install folder
 	$(CP) ${INSTALL_DIR}/010-ServiceAccount-strimzi-cluster-operator.yaml ${CRD_DIR}
 	$(CP) ${INSTALL_DIR}/020-ClusterRole-strimzi-cluster-operator-role.yaml ${CRD_DIR}
 	$(CP) ${INSTALL_DIR}/020-RoleBinding-strimzi-cluster-operator.yaml ${CRD_DIR}
@@ -81,8 +81,9 @@ build_scorecard:
 	$(CP) ${INSTALL_DIR}/042-Crd-kafkaconnects2i.yaml $(CRD_DIR)
 	$(CP) ${INSTALL_DIR}/043-Crd-kafkatopic.yaml $(CRD_DIR)
 	$(CP) ${INSTALL_DIR}/044-Crd-kafkauser.yaml $(CRD_DIR)
-	$(CP) ${INSTALL_DIR}/045-Crd-kafkamirrormaker.yaml $(CRD_DIR)
-	$(CP) ${INSTALL_DIR}/046-Crd-kafkabridge.yaml $(CRD_DIR)
+	# ignoring Mirror Maker and Bridge CRDs as we don't use them in Event Streams
+	# $(CP) ${INSTALL_DIR}/045-Crd-kafkamirrormaker.yaml $(CRD_DIR)
+	# $(CP) ${INSTALL_DIR}/046-Crd-kafkabridge.yaml $(CRD_DIR)
 	$(CP) ${INSTALL_DIR}/047-Crd-kafkaconnector.yaml $(CRD_DIR)
 	$(CP) ${INSTALL_DIR}/048-Crd-kafkamirrormaker2.yaml $(CRD_DIR)
 	$(CP) ${INSTALL_DIR}/100-SecurityContextConstraints-eventstreams.yaml ${CRD_DIR}
@@ -108,8 +109,9 @@ build_csv: clean
 	$(CP) ${INSTALL_DIR}/042-Crd-kafkaconnects2i.yaml $(KAFKA_CONNECT_S2I_CRD_FILE)
 	$(CP) ${INSTALL_DIR}/043-Crd-kafkatopic.yaml $(KAFKA_TOPIC_CRD_FILE)
 	$(CP) ${INSTALL_DIR}/044-Crd-kafkauser.yaml $(KAFKA_USER_CRD_FILE)
-	$(CP) ${INSTALL_DIR}/045-Crd-kafkamirrormaker.yaml $(KAFKA_MIRROR_MAKER_CRD_FILE)
-	$(CP) ${INSTALL_DIR}/046-Crd-kafkabridge.yaml $(KAFKA_BRIDGE_CRD_FILE)
+	# ignoring Mirror Maker and Bridge CRDs as we don't use them in Event Streams
+	# $(CP) ${INSTALL_DIR}/045-Crd-kafkamirrormaker.yaml $(KAFKA_MIRROR_MAKER_CRD_FILE)
+	# $(CP) ${INSTALL_DIR}/046-Crd-kafkabridge.yaml $(KAFKA_BRIDGE_CRD_FILE)
 	$(CP) ${INSTALL_DIR}/047-Crd-kafkaconnector.yaml $(KAFKA_CONNECTOR_CRD_FILE)
 	$(CP) ${INSTALL_DIR}/048-Crd-kafkamirrormaker2.yaml $(KAFKA_MIRROR_MAKER_2_CRD_FILE)
 	$(CP) ${INSTALL_DIR}/140-Crd-eventstreams.yaml $(EVENTSTREAMS_CRD_FILE)

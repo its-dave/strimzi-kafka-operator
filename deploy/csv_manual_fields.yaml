@@ -5,6 +5,7 @@ metadata:
     description: Kafka-based messaging platform for handling real-time data feeds.
     support: IBM
     containerImage: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-operator-icp-linux-amd64:latest
+    operators.operatorframework.io/internal-objects: '["kafkas.eventstreams.ibm.com","kafkamirrormaker2s.eventstreams.ibm.com"]'
   alm-examples-metadata:
     quickstart:
       name: quickstart
@@ -144,31 +145,71 @@ spec:
           path: adminUiUrl
           x-descriptors:
             - 'urn:alm:descriptor:org.w3:link'
-    - description: A framework provided by IBM Event Streams for connecting Kafka to external systems, providing a standard way of writing and running connectors.
-      version: v1beta1
-      displayName: Kafka Connect
-      kind: KafkaConnect
-      name: kafkaconnects.eventstreams.ibm.com
-    - description: Represents a topic which is a named stream of messages.
-      version: v1beta1
-      displayName: Kafka Topic
-      kind: KafkaTopic
-      name: kafkatopics.eventstreams.ibm.com
     - description: Represents a user who's permissions are defined via Access Control Lists (ACLs).
       version: v1beta1
       displayName: Kafka User
       kind: KafkaUser
       name: kafkausers.eventstreams.ibm.com
+      resources:
+      - kind: Secret
+        version: v1
+    - description: Represents a topic which is a named stream of messages.
+      version: v1beta1
+      displayName: Kafka Topic
+      kind: KafkaTopic
+      name: kafkatopics.eventstreams.ibm.com
+    - description: A framework provided by IBM Event Streams for connecting Kafka to external systems, providing a standard way of writing and running connectors.
+      version: v1beta1
+      displayName: Kafka Connect
+      kind: KafkaConnect
+      name: kafkaconnects.eventstreams.ibm.com
+      resources:
+      - kind: Service
+        version: v1
+      - kind: Deployment
+        version: v1
+      - kind: ReplicaSet
+        version: v1
+      - kind: Pod
+        version: v1
     - description: Used by Kafka Connect, Source and Sink Connectors are used to retrieve data from and deliver data to secondary databases.
       version: v1alpha1
       displayName: Kafka Connector
       kind: KafkaConnector
       name: kafkaconnectors.eventstreams.ibm.com
+    - description: Represents a Kafka Connect cluster with Source 2 Image support
+      version: v1beta1
+      displayName: Kafka Connect Source to Image
+      kind: KafkaConnectS2I
+      name: kafkaconnects2is.eventstreams.ibm.com
+      resources:
+      - kind: Service
+        version: v1
+      - kind: DeploymentConfig
+        version: apps.openshift.io/v1
+      - kind: ReplicationController
+        version: v1
+      - kind: Pod
+        version: v1
+      - kind: BuildConfig
+        version: build.openshift.io/v1
+      - kind: ImageStream
+        version: image.openshift.io/v1
+    - description: Synchronizes data between clusters and aids in disaster recovery.
+      version: v1beta1
+      displayName: Geo-Replicator
+      kind: EventStreamsGeoReplicator
+      name: eventstreamsgeoreplicators.eventstreams.ibm.com
     - description: Used to enable IBM Event Stream's Geo-replication feature to synchronize data between clusters and aid in disaster recovery.
       version: v1alpha1
       displayName: Kafka Mirror Maker 2
       kind: KafkaMirrorMaker2
       name: kafkamirrormaker2s.eventstreams.ibm.com
+    - description: Used internally to manage Kafka and ZooKeeper
+      version: v1beta1
+      displayName: Kafka
+      kind: Kafka
+      name: kafkas.eventstreams.ibm.com
 
 
   description: "Built on the open-source [Apache Kafka](https://kafka.apache.org),\

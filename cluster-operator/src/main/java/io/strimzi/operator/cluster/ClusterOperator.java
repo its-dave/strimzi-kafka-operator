@@ -110,8 +110,14 @@ public class ClusterOperator extends AbstractVerticle {
 
         List<Future> watchFutures = new ArrayList<>(8);
         List<AbstractOperator<?, ?>> operators = new ArrayList<>(asList(
-                kafkaAssemblyOperator, kafkaMirrorMakerAssemblyOperator,
-                kafkaConnectAssemblyOperator, kafkaBridgeAssemblyOperator, kafkaMirrorMaker2AssemblyOperator));
+                kafkaAssemblyOperator,
+                kafkaConnectAssemblyOperator, kafkaMirrorMaker2AssemblyOperator));
+        if (kafkaMirrorMakerAssemblyOperator != null) {
+            operators.add(kafkaMirrorMakerAssemblyOperator);
+        }
+        if (kafkaBridgeAssemblyOperator != null) {
+            operators.add(kafkaBridgeAssemblyOperator);
+        }
         if (kafkaConnectS2IAssemblyOperator != null) {
             operators.add(kafkaConnectS2IAssemblyOperator);
         }
@@ -160,10 +166,14 @@ public class ClusterOperator extends AbstractVerticle {
     private void reconcileAll(String trigger) {
         Handler<AsyncResult<Void>> ignore = ignored -> { };
         kafkaAssemblyOperator.reconcileAll(trigger, namespace, ignore);
-        kafkaMirrorMakerAssemblyOperator.reconcileAll(trigger, namespace, ignore);
+        if (kafkaMirrorMakerAssemblyOperator != null) {
+            kafkaMirrorMakerAssemblyOperator.reconcileAll(trigger, namespace, ignore);
+        }
         kafkaConnectAssemblyOperator.reconcileAll(trigger, namespace, ignore);
         kafkaMirrorMaker2AssemblyOperator.reconcileAll(trigger, namespace, ignore);
-        kafkaBridgeAssemblyOperator.reconcileAll(trigger, namespace, ignore);
+        if (kafkaBridgeAssemblyOperator != null) {
+            kafkaBridgeAssemblyOperator.reconcileAll(trigger, namespace, ignore);
+        }
         kafkaRebalanceAssemblyOperator.reconcileAll(trigger, namespace, ignore);
 
         if (kafkaConnectS2IAssemblyOperator != null) {
