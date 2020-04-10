@@ -115,7 +115,7 @@ public class AdminUIModel extends AbstractModel {
                         Boolean hasRoutes,
                         Map<String, String> icpClusterData) {
 
-        super(instance.getMetadata().getName(), instance.getMetadata().getNamespace(), COMPONENT_NAME);
+        super(instance, COMPONENT_NAME);
 
         this.icpClusterData = icpClusterData;
         this.oidcSecretName = ClientModel.getSecretName(instance);

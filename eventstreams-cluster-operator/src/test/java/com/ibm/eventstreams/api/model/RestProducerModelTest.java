@@ -15,7 +15,6 @@ package com.ibm.eventstreams.api.model;
 import com.ibm.eventstreams.Main;
 import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.EndpointServiceType;
-import com.ibm.eventstreams.api.Labels;
 import com.ibm.eventstreams.api.TlsVersion;
 import com.ibm.eventstreams.api.model.utils.ModelUtils;
 import com.ibm.eventstreams.api.spec.EventStreams;
@@ -39,6 +38,7 @@ import io.fabric8.openshift.api.model.Route;
 import io.strimzi.api.kafka.model.status.ListenerStatus;
 import io.strimzi.api.kafka.model.status.ListenerStatusBuilder;
 import io.strimzi.api.kafka.model.template.PodTemplateBuilder;
+import io.strimzi.operator.common.model.Labels;
 import org.hamcrest.collection.IsMapWithSize;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -57,9 +57,12 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.aMapWithSize;
+import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.emptyIterableOf;
+import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasItem;
 import static org.mockito.Mockito.when;
 
@@ -205,12 +208,11 @@ public class RestProducerModelTest {
             assertThat(endpointPorts, hasItem(ingress.getPorts().get(0).getPort().getIntVal()));
         });
 
-        assertThat(restProducerNetworkPolicy.getSpec().getPodSelector().getMatchLabels().size(), is(1));
-        assertThat(restProducerNetworkPolicy
-            .getSpec()
-            .getPodSelector()
-            .getMatchLabels()
-            .get(Labels.COMPONENT_LABEL), is(RestProducerModel.COMPONENT_NAME));
+        assertThat(restProducerNetworkPolicy.getSpec().getPodSelector().getMatchLabels(), allOf(
+                aMapWithSize(2),
+                hasEntry(Labels.KUBERNETES_NAME_LABEL, RestProducerModel.COMPONENT_NAME),
+                hasEntry(Labels.KUBERNETES_INSTANCE_LABEL, instanceName)
+                ));
     }
 
     @Test

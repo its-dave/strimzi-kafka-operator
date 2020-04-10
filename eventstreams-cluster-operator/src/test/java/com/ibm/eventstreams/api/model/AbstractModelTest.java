@@ -12,24 +12,26 @@
  */
 package com.ibm.eventstreams.api.model;
 
+import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.aMapWithSize;
+import static org.hamcrest.Matchers.hasEntry;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.ibm.eventstreams.api.Labels;
 import com.ibm.eventstreams.api.model.utils.ModelUtils;
 import com.ibm.eventstreams.api.spec.EventStreams;
 
 import io.strimzi.api.kafka.model.KafkaUser;
 import io.strimzi.api.kafka.model.KafkaUserSpec;
 import io.strimzi.api.kafka.model.KafkaUserSpecBuilder;
+import io.strimzi.operator.common.model.Labels;
 import org.junit.jupiter.api.Test;
 
 import io.fabric8.kubernetes.api.model.Container;
@@ -53,7 +55,7 @@ public class AbstractModelTest {
         private static final String COMPONENT_NAME = "test";
 
         public ComponentModel(EventStreams instance) {
-            super(instance.getMetadata().getName(), instance.getMetadata().getNamespace(), COMPONENT_NAME);
+            super(instance, COMPONENT_NAME);
             setOwnerReference(instance);
         }
     }
@@ -86,20 +88,19 @@ public class AbstractModelTest {
         EventStreams instance = ModelUtils.createDefaultEventStreams(instanceName).build();
         ComponentModel model = new ComponentModel(instance);
 
-        Map<String, String> expectedLabels = new HashMap<>();
-        expectedLabels.put(Labels.APP_LABEL, AbstractModel.APP_NAME);
-        expectedLabels.put(Labels.COMPONENT_LABEL, ComponentModel.COMPONENT_NAME);
-        expectedLabels.put(Labels.INSTANCE_LABEL, instanceName);
-        expectedLabels.put(Labels.RELEASE_LABEL, instanceName);
-        expectedLabels.put(Labels.KUBERNETES_NAME_LABEL, Labels.KUBERNETES_NAME);
-        expectedLabels.put(Labels.KUBERNETES_INSTANCE_LABEL, instanceName);
-        expectedLabels.put(Labels.KUBERNETES_PART_OF_LABEL, instanceName);
-        expectedLabels.put(Labels.KUBERNETES_MANAGED_BY_LABEL, Labels.KUBERNETES_MANAGED_BY);
-        expectedLabels.put(Labels.NAME_LABEL, instanceName + "-" + AbstractModel.APP_NAME + "-" + ComponentModel.COMPONENT_NAME);
-        expectedLabels.put(Labels.SERVICE_SELECTOR_LABEL, ComponentModel.COMPONENT_NAME);
-
         Deployment deployment = model.createDeployment(new ArrayList<>(), null);
-        assertThat(deployment.getSpec().getTemplate().getMetadata().getLabels(), is(expectedLabels));
+        assertThat(deployment.getSpec().getTemplate().getMetadata().getLabels(),
+                allOf(
+                    aMapWithSize(7),
+                    hasEntry(Labels.KUBERNETES_NAME_LABEL, ComponentModel.COMPONENT_NAME),
+                    hasEntry(Labels.KUBERNETES_INSTANCE_LABEL, instanceName),
+                    hasEntry(Labels.KUBERNETES_PART_OF_LABEL, "eventstreams-" + instanceName),
+                    hasEntry(Labels.KUBERNETES_MANAGED_BY_LABEL, AbstractModel.OPERATOR_NAME),
+                    hasEntry(Labels.STRIMZI_NAME_LABEL, instanceName + "-" + AbstractModel.APP_NAME + "-" + ComponentModel.COMPONENT_NAME),
+                    hasEntry(Labels.STRIMZI_CLUSTER_LABEL, instanceName),
+                    hasEntry(Labels.STRIMZI_KIND_LABEL, "EventStreams")
+                ));
+
     }
 
     @Test
@@ -152,8 +153,8 @@ public class AbstractModelTest {
 
         Map<String, String> labels = kafkaUser.getMetadata().getLabels();
         for (Map.Entry<String, String> label : labels.entrySet()) {
-            if (!label.getKey().equals(io.strimzi.operator.common.model.Labels.STRIMZI_CLUSTER_LABEL)) {
-                assertThat(label.getKey(), not(containsString(io.strimzi.operator.common.model.Labels.STRIMZI_DOMAIN)));
+            if (!label.getKey().equals(Labels.STRIMZI_CLUSTER_LABEL)) {
+                assertThat(label.getKey(), not(containsString(Labels.STRIMZI_DOMAIN)));
             }
         }
     }

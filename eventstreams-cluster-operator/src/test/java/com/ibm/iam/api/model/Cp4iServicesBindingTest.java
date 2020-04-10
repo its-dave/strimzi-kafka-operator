@@ -53,7 +53,7 @@ public class Cp4iServicesBindingTest {
         Cp4iServicesBinding cp4iServicesBinding = cp4iModel.getCp4iServicesBinding();
         ObjectMeta objMeta = cp4iServicesBinding.getMetadata();
         assertThat(objMeta, notNullValue());
-        assertThat(objMeta.getName(), is("test-ibm-es-cp4i-services-binding"));
+        assertThat(objMeta.getName(), is("test-ibm-es-eventstreams"));
         assertThat(objMeta.getNamespace(), is(namespace));
         assertThat(objMeta.getOwnerReferences(), notNullValue());
         assertThat(objMeta.getLabels(), notNullValue());

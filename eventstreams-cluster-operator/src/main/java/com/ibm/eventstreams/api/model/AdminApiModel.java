@@ -433,14 +433,14 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
         if (certGenerationID != null && deployment != null) {
             return new DeploymentBuilder(deployment)
                 .editOrNewMetadata()
-                .addToLabels(CERT_GENERATION_KEY, certGenerationID)
+                    .addToLabels(CERT_GENERATION_KEY, certGenerationID)
                 .endMetadata()
                 .editOrNewSpec()
-                .editOrNewTemplate()
-                .editOrNewMetadata()
-                .addToLabels(CERT_GENERATION_KEY, certGenerationID)
-                .endMetadata()
-                .endTemplate()
+                    .editOrNewTemplate()
+                        .editOrNewMetadata()
+                            .addToLabels(CERT_GENERATION_KEY, certGenerationID)
+                        .endMetadata()
+                    .endTemplate()
                 .endSpec()
                 .build();
         }

@@ -21,7 +21,6 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 
 import com.ibm.eventstreams.api.DefaultResourceRequirements;
-import com.ibm.eventstreams.api.Labels;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.spec.KafkaMetricsJMXRule;
@@ -52,12 +51,14 @@ import io.strimzi.api.kafka.model.template.EntityOperatorTemplate;
 import io.strimzi.api.kafka.model.template.KafkaClusterTemplate;
 import io.strimzi.api.kafka.model.template.PodTemplate;
 import io.strimzi.api.kafka.model.template.ZookeeperClusterTemplate;
+import io.strimzi.operator.common.model.Labels;
 
 public class EventStreamsKafkaModel extends AbstractModel {
 
-    private static final String KAFKA_SERVICE_SELECTOR = "kafka-sts";
-    private static final String ZOOKEEPER_SERVICE_SELECTOR = "zookeeper-sts";
-    private static final String ENTITY_OPERATOR_SERVICE_SELECTOR = "entity-operator";
+    // Keeping hard coded as currently these fields are protected
+    private static final String KAFKA_SERVICE_SELECTOR = "kafka"; // KafkaCluster.APPLICATION_NAME
+    private static final String ZOOKEEPER_SERVICE_SELECTOR = "zookeeper"; // ZookeeperCluster.APPLICATION_NAME
+    private static final String ENTITY_OPERATOR_SERVICE_SELECTOR = "entity-operator"; // EntityOperator.APPLICATION_NAME
 
     private static final String STRIMZI_COMPONENT_NAME = "strimzi";
     public static final String KAFKA_COMPONENT_NAME = "kafka";
@@ -80,7 +81,7 @@ public class EventStreamsKafkaModel extends AbstractModel {
      */
     @SuppressWarnings({"checkstyle:MethodLength"})
     public EventStreamsKafkaModel(EventStreams instance) {
-        super(instance.getMetadata().getName(), instance.getMetadata().getNamespace(), STRIMZI_COMPONENT_NAME);
+        super(instance, STRIMZI_COMPONENT_NAME);
 
         setOwnerReference(instance);
         setTlsVersion(Optional.ofNullable(instance.getSpec())
@@ -130,9 +131,7 @@ public class EventStreamsKafkaModel extends AbstractModel {
                         .map(ContainerTemplate::getEnv)
                         .orElseGet(ArrayList::new));
 
-        Map<String, String> strimziComponentLabels = getComponentLabels();
-        // Remove as forbidden by Strimzi.
-        strimziComponentLabels.remove(Labels.NAME_LABEL);
+        Labels strimziComponentLabels = labelsWithoutResourceGroup();
 
         KafkaBuilder builder = new KafkaBuilder()
             .withApiVersion(Kafka.RESOURCE_GROUP + "/" + Kafka.V1BETA1)
@@ -140,7 +139,7 @@ public class EventStreamsKafkaModel extends AbstractModel {
                 .withNamespace(getNamespace())
                 .withName(getKafkaInstanceName(getInstanceName()))
                 .withOwnerReferences(getEventStreamsOwnerReference())
-                .addToLabels(strimziComponentLabels)
+                .addToLabels(strimziComponentLabels.toMap())
             .endMetadata()
             .withNewSpecLike(strimziOverrides)
                 .editOrNewKafka()
@@ -157,9 +156,7 @@ public class EventStreamsKafkaModel extends AbstractModel {
                             .editOrNewMetadata()
                                 .addToAnnotations(getEventStreamsMeteringAnnotations("kafka"))
                                 .addToAnnotations(getPrometheusAnnotations())
-                                .addToLabels(strimziComponentLabels)
-                                .addToLabels(Labels.COMPONENT_LABEL, KAFKA_COMPONENT_NAME)
-                                .addToLabels(getServiceSelectorLabel(KAFKA_SERVICE_SELECTOR))
+                                .addToLabels(strimziComponentLabels.toMap())
                             .endMetadata()
                             .withSecurityContext(getPodSecurityContext())
                             // Equivalent to editOrNew
@@ -182,9 +179,7 @@ public class EventStreamsKafkaModel extends AbstractModel {
                         .editOrNewPod()
                             .editOrNewMetadata()
                                 .addToAnnotations(getEventStreamsMeteringAnnotations())
-                                .addToLabels(strimziComponentLabels)
-                                .addToLabels(Labels.COMPONENT_LABEL, ZOOKEEPER_COMPONENT_NAME)
-                                .addToLabels(getServiceSelectorLabel(ZOOKEEPER_SERVICE_SELECTOR))
+                                .addToLabels(strimziComponentLabels.toMap())
                             .endMetadata()
                             .withSecurityContext(getPodSecurityContext())
                             .withAffinity(new AffinityBuilder(getZookeeperAffinity())
@@ -209,9 +204,7 @@ public class EventStreamsKafkaModel extends AbstractModel {
                         .editOrNewPod()
                             .editOrNewMetadata()
                                 .addToAnnotations(getEventStreamsMeteringAnnotations())
-                                .addToLabels(strimziComponentLabels)
-                                .addToLabels(Labels.COMPONENT_LABEL, ENTITY_OPERATOR_COMPONENT_NAME)
-                                .addToLabels(getServiceSelectorLabel(ENTITY_OPERATOR_SERVICE_SELECTOR))
+                                .addToLabels(strimziComponentLabels.toMap())
                             .endMetadata()
                         .withAffinity(new AffinityBuilder(getEntityOperatorAffinity())
                                 .build())
@@ -279,7 +272,7 @@ public class EventStreamsKafkaModel extends AbstractModel {
     }
 
 
-    private WeightedPodAffinityTerm preferredWeightedPodAntiAffinityTermForSelector(String serviceSelector, Integer affinityWeight) {
+    private WeightedPodAffinityTerm preferredWeightedPodAntiAffinityTermForSelector(String kubernetesName, Integer affinityWeight) {
 
         return new WeightedPodAffinityTermBuilder()
             .withWeight(affinityWeight)
@@ -287,14 +280,14 @@ public class EventStreamsKafkaModel extends AbstractModel {
                 .withTopologyKey("kubernetes.io/hostname")
                 .withNewLabelSelector()
                     .addNewMatchExpression()
-                        .withKey(Labels.INSTANCE_LABEL)
+                        .withKey(Labels.KUBERNETES_INSTANCE_LABEL)
                         .withNewOperator("In")
                         .withValues(getInstanceName())
                     .endMatchExpression()
                     .addNewMatchExpression()
-                        .withKey(Labels.SERVICE_SELECTOR_LABEL)
+                        .withKey(Labels.KUBERNETES_NAME_LABEL)
                         .withNewOperator("In")
-                        .withValues(serviceSelector)
+                        .withValues(kubernetesName)
                     .endMatchExpression()
                 .endLabelSelector()
             .endPodAffinityTerm()

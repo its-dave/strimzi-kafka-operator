@@ -14,7 +14,6 @@ package com.ibm.eventstreams.api.model;
 
 import com.ibm.eventstreams.Main;
 import com.ibm.eventstreams.api.Endpoint;
-import com.ibm.eventstreams.api.Labels;
 import com.ibm.eventstreams.api.model.utils.ModelUtils;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
@@ -44,6 +43,7 @@ import io.strimzi.api.kafka.model.ExternalLogging;
 import io.strimzi.api.kafka.model.InlineLogging;
 import io.strimzi.api.kafka.model.KafkaSpecBuilder;
 import io.strimzi.api.kafka.model.template.PodTemplateBuilder;
+import io.strimzi.operator.common.model.Labels;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -61,9 +61,13 @@ import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.aMapWithSize;
+import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.emptyIterableOf;
+import static org.hamcrest.Matchers.hasEntry;
+import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
@@ -131,7 +135,7 @@ public class AdminUIModelTest {
 
         final RoleBinding createdRoleBinding = adminUIModel.getRoleBinding();
 
-        assertThat(createdRoleBinding.getSubjects().size(), is(1));
+        assertThat(createdRoleBinding.getSubjects(), hasSize(1));
         assertThat(createdRoleBinding.getMetadata().getName(), is(componentPrefix));
 
         final Subject createdSubject = createdRoleBinding.getSubjects().get(0);
@@ -144,11 +148,11 @@ public class AdminUIModelTest {
         assertThat(createdRoleRef.getName(), is("eventstreams-ui-clusterrole"));
         assertThat(createdRoleRef.getApiGroup(), is("rbac.authorization.k8s.io"));
 
-        // confirm label 'release' present - so the UI can discover it for status
-        assertThat(uiPodMetadata.getLabels().get("release"), is(instanceName));
+        // confirm Kubernetes name and instance labels present, so the UI can discover it for status
+        assertThat(uiPodMetadata.getLabels(), hasEntry(Labels.KUBERNETES_NAME_LABEL, "admin-ui"));
+        assertThat(uiPodMetadata.getLabels(), hasEntry(Labels.KUBERNETES_INSTANCE_LABEL, instanceName));
 
         // confirm ui container has required envars
-
         String adminApiService = "http://" + instanceName + "-" + AbstractModel.APP_NAME + "-" + AdminApiModel.COMPONENT_NAME + "-" + INTERNAL_SERVICE_SUFFIX + "." +  namespace + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.DEFAULT_P2P_PLAIN_PORT;
         String schemaRegistryService = "http://" + instanceName + "-" + AbstractModel.APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME + "-" + INTERNAL_SERVICE_SUFFIX + "." +  namespace + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.DEFAULT_P2P_PLAIN_PORT;
 
@@ -198,12 +202,10 @@ public class AdminUIModelTest {
         assertThat(userInterfaceNetworkPolicy.getMetadata().getName(), is(componentPrefix));
         assertThat(userInterfaceNetworkPolicy.getKind(), is("NetworkPolicy"));
 
-        assertThat(userInterfaceNetworkPolicy.getSpec().getPodSelector().getMatchLabels().size(), is(1));
-        assertThat(userInterfaceNetworkPolicy
-            .getSpec()
-            .getPodSelector()
-            .getMatchLabels()
-            .get(Labels.COMPONENT_LABEL), is(AdminUIModel.COMPONENT_NAME));
+        assertThat(userInterfaceNetworkPolicy.getSpec().getPodSelector().getMatchLabels(), allOf(
+                aMapWithSize(2),
+                hasEntry(Labels.KUBERNETES_NAME_LABEL, AdminUIModel.COMPONENT_NAME),
+                hasEntry(Labels.KUBERNETES_INSTANCE_LABEL, instanceName)));
 
         assertThat(userInterfaceNetworkPolicy.getSpec().getIngress().size(), is(1));
         assertThat(userInterfaceNetworkPolicy.getSpec().getIngress().get(0).getFrom(), is(emptyIterableOf(NetworkPolicyPeer.class)));
@@ -621,7 +623,7 @@ public class AdminUIModelTest {
             .getTo()
             .get(0)
             .getPodSelector()
-            .getMatchLabels()
-            .get(Labels.COMPONENT_LABEL), is(expectedComponentName));
+            .getMatchLabels(),
+                is(Collections.singletonMap(Labels.KUBERNETES_NAME_LABEL, expectedComponentName)));
     }
 }

@@ -58,7 +58,7 @@ public class ClientModelTest {
         Client oidcClient = cm.getClient();
         ObjectMeta objMeta = oidcClient.getMetadata();
         assertThat(objMeta, notNullValue());
-        assertThat(objMeta.getName(), is("test-ibm-es-oidc-client"));
+        assertThat(objMeta.getName(), is("test-ibm-es-eventstreams"));
         assertThat(objMeta.getNamespace(), is(namespace));
         assertThat(objMeta.getOwnerReferences(), notNullValue());
         ClientSpec spec = oidcClient.getSpec();

@@ -79,8 +79,8 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
 
 
     public AbstractSecureEndpointsModel(EventStreams instance, SecurityComponentSpec spec, String componentName) {
-        super(instance.getMetadata().getName(), instance.getMetadata().getNamespace(), componentName);
-        this.certificateSecretModel = new CertificateSecretModel(instance, instance.getMetadata().getNamespace(), componentName);
+        super(instance, componentName);
+        this.certificateSecretModel = new CertificateSecretModel(instance, componentName);
         this.routes = new HashMap<>();
         this.endpoints = createEndpoints(instance, spec, getP2PAuthenticationMechanisms());
     }
@@ -230,7 +230,7 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
                     getRouteName(endpoint.getName()),
                 endpoint -> {
                     TLSConfig tlsConfig = endpoint.isTls() ? getDefaultTlsConfig() : null;
-                    return createRoute(getRouteName(endpoint.getName()), getServiceName(endpoint.getType()), endpoint.getPort(), tlsConfig, generateSecurityLabels(endpoint.isTls(), endpoint.getAuthenticationMechanisms()));
+                    return createRoute(getRouteName(endpoint.getName()), getServiceName(endpoint.getType()), endpoint.getPort(), tlsConfig, securityLabels(endpoint.isTls(), endpoint.getAuthenticationMechanisms()));
                 }));
     }
 

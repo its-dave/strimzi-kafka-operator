@@ -34,7 +34,7 @@ public class ReplicatorSourceUsersModel extends AbstractModel {
     private static final Logger log = LogManager.getLogger(ReplicatorSourceUsersModel.class.getName());
 
     public ReplicatorSourceUsersModel(EventStreams instance) {
-        super(instance.getMetadata().getName(), instance.getMetadata().getNamespace(), ReplicatorModel.COMPONENT_NAME);
+        super(instance, ReplicatorModel.COMPONENT_NAME);
 
         setOwnerReference(instance);
 

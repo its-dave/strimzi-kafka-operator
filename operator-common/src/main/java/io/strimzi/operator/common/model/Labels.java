@@ -80,7 +80,7 @@ public class Labels {
      * https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/#labels
      */
     public static final String KUBERNETES_PART_OF_LABEL = KUBERNETES_DOMAIN + "part-of";
-    public static final String APPLICATION_NAME = "strimzi";
+    public static final String APPLICATION_NAME = "eventstreams";
 
     /**
      * The tool being used to manage the operation of an application

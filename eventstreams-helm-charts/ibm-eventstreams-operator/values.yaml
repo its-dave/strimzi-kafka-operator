@@ -57,12 +57,12 @@ schemaRegistry:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: eventstreams-schema-registry-icp-linux-amd64
     tag: 2020-04-08-10.53.04-a549b6c-dev
-schemaAvro:
+schemaRegistryAvro:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: eventstreams-avro-icp-linux-amd64
     tag: 2020-01-16-15.39.43-165fd5b-exp
-schemaProxy:
+schemaRegistryProxy:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: eventstreams-schema-registry-v2-icp-linux-amd64
@@ -71,7 +71,7 @@ adminUi:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: eventstreams-admin-ui-icp-linux-amd64
-    tag: 2020-04-07-20.08.00-c8c2d5d-dev
+    tag: 2020-04-09-08.37.08-36fa778-dev
 adminUiDatabase:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com

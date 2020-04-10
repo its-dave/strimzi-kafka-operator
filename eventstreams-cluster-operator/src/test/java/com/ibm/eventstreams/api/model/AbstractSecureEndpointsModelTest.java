@@ -14,7 +14,6 @@ package com.ibm.eventstreams.api.model;
 
 import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.EndpointServiceType;
-import com.ibm.eventstreams.api.Labels;
 import com.ibm.eventstreams.api.TlsVersion;
 import com.ibm.eventstreams.api.model.utils.ModelUtils;
 import com.ibm.eventstreams.api.spec.EndpointSpec;
@@ -539,7 +538,7 @@ public class AbstractSecureEndpointsModelTest {
         assertThat(routes, aMapWithSize(1));
         routes.forEach((key, route) -> {
             Set<String> labelKeys = route.getMetadata().getLabels().keySet();
-            labelKeys.stream().filter(k -> k.contains(Labels.EVENTSTREAMS_AUTHENTICATION_LABEL)).forEach(label -> {
+            labelKeys.stream().filter(k -> k.contains(AbstractModel.EVENTSTREAMS_AUTHENTICATION_LABEL)).forEach(label -> {
                 assertThat(label, Pattern.matches(openshiftLabelRegex, label), is(true));
             });
         });
@@ -555,9 +554,9 @@ public class AbstractSecureEndpointsModelTest {
         assertThat(routes, aMapWithSize(1));
 
         routes.forEach((key, route) -> {
-            assertThat(route.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + "IAM-BEARER", "true"));
-            assertThat(route.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + "SCRAM-SHA-512", "true"));
-            assertThat(route.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_PROTOCOL_LABEL, "https"));
+            assertThat(route.getMetadata().getLabels(), hasEntry(AbstractModel.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + "IAM-BEARER", "true"));
+            assertThat(route.getMetadata().getLabels(), hasEntry(AbstractModel.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + "SCRAM-SHA-512", "true"));
+            assertThat(route.getMetadata().getLabels(), hasEntry(AbstractModel.EVENTSTREAMS_PROTOCOL_LABEL, "https"));
         });
     }
 
@@ -588,8 +587,8 @@ public class AbstractSecureEndpointsModelTest {
 
         assertThat(routes, aMapWithSize(1));
         routes.forEach((key, route) -> {
-            assertThat(route.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + "TLS", "true"));
-            assertThat(route.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_PROTOCOL_LABEL, "https"));
+            assertThat(route.getMetadata().getLabels(), hasEntry(AbstractModel.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + "TLS", "true"));
+            assertThat(route.getMetadata().getLabels(), hasEntry(AbstractModel.EVENTSTREAMS_PROTOCOL_LABEL, "https"));
         });
     }
 
@@ -620,8 +619,8 @@ public class AbstractSecureEndpointsModelTest {
 
         assertThat(routes, aMapWithSize(1));
         routes.forEach((key, route) -> {
-            assertThat(route.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + "TLS", "true"));
-            assertThat(route.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_PROTOCOL_LABEL, "http"));
+            assertThat(route.getMetadata().getLabels(), hasEntry(AbstractModel.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + "TLS", "true"));
+            assertThat(route.getMetadata().getLabels(), hasEntry(AbstractModel.EVENTSTREAMS_PROTOCOL_LABEL, "http"));
         });
     }
 
@@ -651,8 +650,8 @@ public class AbstractSecureEndpointsModelTest {
 
         assertThat(routes, aMapWithSize(1));
         routes.forEach((key, route) -> {
-            assertThat(route.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + AUTHENTICATION_LABEL_NO_AUTH, "true"));
-            assertThat(route.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_PROTOCOL_LABEL, "http"));
+            assertThat(route.getMetadata().getLabels(), hasEntry(AbstractModel.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + AUTHENTICATION_LABEL_NO_AUTH, "true"));
+            assertThat(route.getMetadata().getLabels(), hasEntry(AbstractModel.EVENTSTREAMS_PROTOCOL_LABEL, "http"));
         });
     }
 

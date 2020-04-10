@@ -45,7 +45,7 @@ public class ReplicatorDestinationUsersModel extends AbstractModel {
      * @param instance The Event Streams instance is used to get the security information from the main install
      */
     public ReplicatorDestinationUsersModel(EventStreamsReplicator replicatorInstance, EventStreams instance) {
-        super(replicatorInstance.getMetadata().getName(), instance.getMetadata().getNamespace(), ReplicatorModel.COMPONENT_NAME);
+        super(instance, ReplicatorModel.COMPONENT_NAME);
 
         setOwnerReference(replicatorInstance);
 

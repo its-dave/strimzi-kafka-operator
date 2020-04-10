@@ -33,7 +33,7 @@ public class MessageAuthenticationModel extends AbstractModel {
     Secret secret;
 
     public MessageAuthenticationModel(EventStreams instance) {
-        super(instance.getMetadata().getName(), instance.getMetadata().getNamespace(), DEFAULT_COMPONENT_NAME);
+        super(instance, DEFAULT_COMPONENT_NAME);
         setOwnerReference(instance);
         secret = createSecret();
     }
@@ -47,7 +47,7 @@ public class MessageAuthenticationModel extends AbstractModel {
     }
 
     public Secret createSecret() {
-        return createSecret(getNamespace(), getSecretName(getInstanceName()), createSecretData(), getComponentLabels(), null);
+        return createSecret(getNamespace(), getSecretName(getInstanceName()), createSecretData(), labels(), null);
     }
 
     private Map<String, String> createSecretData() {

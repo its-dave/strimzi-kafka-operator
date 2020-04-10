@@ -159,13 +159,13 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
             avroReadinessProbe = avroSpec.map(ContainerSpec::getLivenessProbe)
                     .orElseGet(io.strimzi.api.kafka.model.Probe::new);
 
-            Optional<ContainerSpec> schemaProxySpec = schemaRegistrySpec.map(SchemaRegistrySpec::getProxy);
-            schemaRegistryProxyEnvVars = schemaProxySpec.map(ContainerSpec::getEnvVars).orElseGet(ArrayList::new);
+            Optional<ContainerSpec> schemaRegistryProxySpec = schemaRegistrySpec.map(SchemaRegistrySpec::getProxy);
+            schemaRegistryProxyEnvVars = schemaRegistryProxySpec.map(ContainerSpec::getEnvVars).orElseGet(ArrayList::new);
             schemaRegistryProxyImage = firstDefinedImage(
                 DEFAULT_IBMCOM_SCHEMA_REGISTRY_PROXY_IMAGE,
-                schemaProxySpec.map(ContainerSpec::getImage),
+                schemaRegistryProxySpec.map(ContainerSpec::getImage),
                 imageConfig.getSchemaRegistryProxyImage());
-            schemaRegistryProxyResourceRequirements = schemaProxySpec.map(ContainerSpec::getResources).orElseGet(ResourceRequirements::new);
+            schemaRegistryProxyResourceRequirements = schemaRegistryProxySpec.map(ContainerSpec::getResources).orElseGet(ResourceRequirements::new);
             setCustomImages(imageConfig.getSchemaRegistryImage(), imageConfig.getSchemaRegistryAvroImage(), imageConfig.getSchemaRegistryProxyImage());
 
             deployment = createDeployment(getContainers(), getVolumes());
@@ -205,12 +205,12 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
         List<String> defaultSchemaProxyImages = new ArrayList<>();
         defaultSchemaProxyImages.add(DEFAULT_IBMCOM_SCHEMA_REGISTRY_PROXY_IMAGE);
         defaultSchemaProxyImages.add(defaultEnvSchemaProxyImage.orElse(""));
-        boolean schemaProxyCustomImage = defaultSchemaProxyImages
+        boolean schemaRegistryProxyCustomImage = defaultSchemaProxyImages
             .stream()
             .filter(image -> schemaRegistryProxyImage.equals(image))
             .findFirst().isPresent() ? false : true;
 
-        this.customImage = schemaCustomImage || avroCustomImage || schemaProxyCustomImage;
+        this.customImage = schemaCustomImage || avroCustomImage || schemaRegistryProxyCustomImage;
     }
 
     public static boolean isSchemaRegistryEnabled(EventStreams instance) {
@@ -449,8 +449,8 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
      */
     private Container getSchemaRegistryProxyContainer() {
 
-        List<EnvVar> schemaProxyDefaultEnvVars = getSchemaRegistryProxyEnvVars();
-        List<EnvVar> envVars = combineEnvVarListsNoDuplicateKeys(schemaProxyDefaultEnvVars, schemaRegistryProxyEnvVars);
+        List<EnvVar> schemaRegistryProxyDefaultEnvVars = getSchemaRegistryProxyEnvVars();
+        List<EnvVar> envVars = combineEnvVarListsNoDuplicateKeys(schemaRegistryProxyDefaultEnvVars, schemaRegistryProxyEnvVars);
 
         ContainerBuilder containerBuilder = new ContainerBuilder()
             .withName(SCHEMA_REGISTRY_PROXY_CONTAINER_NAME)
@@ -572,7 +572,7 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
                 .withNewMetadata()
                     .withName(getDefaultResourceName())
                     .withNamespace(namespace)
-                    .addToLabels(getComponentLabels())
+                    .addToLabels(labels().toMap())
                 .endMetadata()
                 .withNewSpec()
                     .withAccessModes(accessMode)

@@ -21,8 +21,8 @@ import java.util.Base64;
 
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasLength;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.hamcrest.CoreMatchers.is;
 
 public class MessageAuthenticationModelTest {
     private final String instanceName = "test-instance";
@@ -50,6 +50,6 @@ public class MessageAuthenticationModelTest {
         String secretData = new String(Base64.getDecoder().decode(secret.getData().get(MessageAuthenticationModel.HMAC_SECRET)));
         String regex = "([0-9a-fA-F]{8}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{12}){" + MessageAuthenticationModel.NUM_OF_UUID_GEN + "}";
         assertTrue(secretData.matches(regex));
-        assertThat(secretData.length(), is(MessageAuthenticationModel.NUM_OF_UUID_GEN * UUID_LENGTH));
+        assertThat(secretData, hasLength(MessageAuthenticationModel.NUM_OF_UUID_GEN * UUID_LENGTH));
     }
 }

@@ -17,6 +17,9 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.CoreMatchers.startsWith;
+import static org.hamcrest.Matchers.aMapWithSize;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.hasEntry;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -30,6 +33,16 @@ import io.strimzi.api.kafka.model.KafkaMirrorMaker2Spec;
 import io.strimzi.api.kafka.model.KafkaMirrorMaker2SpecBuilder;
 import io.strimzi.api.kafka.model.connect.ExternalConfiguration;
 import io.strimzi.operator.cluster.model.Ca;
+
+import com.ibm.eventstreams.Main;
+import com.ibm.eventstreams.api.model.utils.ModelUtils;
+
+import com.ibm.eventstreams.api.spec.EventStreams;
+import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
+
+import com.ibm.eventstreams.replicator.ReplicatorCredentials;
+import io.fabric8.kubernetes.api.model.SecretBuilder;
+
 import io.strimzi.api.kafka.model.KafkaMirrorMaker2;
 import io.strimzi.api.kafka.model.KafkaMirrorMaker2ClusterSpec;
 import io.strimzi.api.kafka.model.KafkaMirrorMaker2Tls;
@@ -40,14 +53,8 @@ import io.strimzi.api.kafka.model.authentication.KafkaClientAuthenticationTlsBui
 
 import com.ibm.eventstreams.api.spec.EventStreamsReplicator;
 import com.ibm.eventstreams.api.spec.EventStreamsReplicatorBuilder;
-import com.ibm.eventstreams.Main;
-import com.ibm.eventstreams.api.model.utils.ModelUtils;
-import com.ibm.eventstreams.api.Labels;
-import com.ibm.eventstreams.api.spec.EventStreams;
-import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
-import com.ibm.eventstreams.replicator.ReplicatorCredentials;
 
-import io.fabric8.kubernetes.api.model.SecretBuilder;
+import io.strimzi.operator.common.model.Labels;
 
 import org.junit.jupiter.api.Test;
 
@@ -157,10 +164,7 @@ public class ReplicatorModelTest {
                 .getMetadata()
                 .getLabels();
 
-        assertThat(replicatorPodLabels.get(Labels.APP_LABEL),  is(AbstractModel.APP_NAME));
-        assertThat(replicatorPodLabels.get(Labels.SERVICE_SELECTOR_LABEL),  is(ReplicatorModel.COMPONENT_NAME));
-        assertThat(replicatorPodLabels.get(Labels.INSTANCE_LABEL),  is(instanceName));
-        assertThat(replicatorPodLabels.get(Labels.RELEASE_LABEL),  is(instanceName));
+        assertThat(replicatorPodLabels, hasEntry(Labels.KUBERNETES_NAME_LABEL, ReplicatorModel.COMPONENT_NAME));
     }
 
 
@@ -188,7 +192,7 @@ public class ReplicatorModelTest {
         ReplicatorModel replicator = createDefaultReplicatorModel();
         NetworkPolicy networkPolicy = replicator.getNetworkPolicy();
 
-        String expectedClusterOperatorName = "cluster-operator";
+        String expectedClusterOperatorName = "eventstreams-cluster-operator";
 
         assertThat(networkPolicy.getMetadata().getName(), is(componentPrefix));
         assertThat(networkPolicy.getKind(), is("NetworkPolicy"));
@@ -201,10 +205,10 @@ public class ReplicatorModelTest {
         assertThat(networkPolicy.getSpec().getIngress().get(0).getFrom().size(), is(2));
         assertThat(networkPolicy.getSpec().getIngress().get(0).getFrom().get(0).getPodSelector().getMatchLabels().size(), is(1));
 
-        assertThat(networkPolicy.getSpec().getIngress().get(0).getFrom().get(0).getPodSelector().getMatchLabels().get(Labels.COMPONENT_LABEL), is(AdminApiModel.COMPONENT_NAME));
+        assertThat(networkPolicy.getSpec().getIngress().get(0).getFrom().get(0).getPodSelector().getMatchLabels(), hasEntry(Labels.KUBERNETES_NAME_LABEL, AdminApiModel.COMPONENT_NAME));
         assertThat(networkPolicy.getSpec().getIngress().get(0).getFrom().get(1).getPodSelector().getMatchLabels().size(), is(1));
 
-        assertThat(networkPolicy.getSpec().getIngress().get(0).getFrom().get(1).getPodSelector().getMatchLabels().get(io.strimzi.operator.common.model.Labels.STRIMZI_KIND_LABEL), is(expectedClusterOperatorName));
+        assertThat(networkPolicy.getSpec().getIngress().get(0).getFrom().get(1).getPodSelector().getMatchLabels().get(Labels.STRIMZI_KIND_LABEL), is(expectedClusterOperatorName));
         assertThat(networkPolicy.getSpec().getIngress().get(0).getFrom().get(1).getNamespaceSelector().getMatchExpressions().size(), is(0));
 
     }
@@ -224,10 +228,15 @@ public class ReplicatorModelTest {
 
         Map<String, String> replicatorSecretLabels = replicatorSecretModel.getSecret().getMetadata().getLabels();
 
-        assertThat(replicatorSecretLabels.get(Labels.APP_LABEL),  is(AbstractModel.APP_NAME));
-        assertThat(replicatorSecretLabels.get(Labels.INSTANCE_LABEL),  is(instanceName));
-        assertThat(replicatorSecretLabels.get(Labels.RELEASE_LABEL),  is(instanceName));
-
+        assertThat(replicatorSecretLabels,  allOf(
+                aMapWithSize(7),
+                hasEntry(Labels.KUBERNETES_NAME_LABEL, "replicator"),
+                hasEntry(Labels.KUBERNETES_INSTANCE_LABEL, instanceName),
+                hasEntry(Labels.KUBERNETES_MANAGED_BY_LABEL, "eventstreams-cluster-operator"),
+                hasEntry(Labels.KUBERNETES_PART_OF_LABEL, "eventstreams-" + instanceName),
+                hasEntry(Labels.STRIMZI_NAME_LABEL, "test-ibm-es-replicator"),
+                hasEntry(Labels.STRIMZI_CLUSTER_LABEL, instanceName),
+                hasEntry(Labels.STRIMZI_KIND_LABEL, "EventStreams")));
     }
 
     private EventStreamsReplicatorBuilder createDefaultEventStreamsReplicator() {

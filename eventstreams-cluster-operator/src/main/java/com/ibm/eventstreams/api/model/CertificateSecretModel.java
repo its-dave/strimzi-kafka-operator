@@ -27,8 +27,8 @@ public class CertificateSecretModel extends AbstractModel {
     private Map<String, CertAndKey> certificates = new HashMap<>();
     private Secret secret;
 
-    public CertificateSecretModel(EventStreams instance, String namespace, String componentName) {
-        super(instance.getMetadata().getName(), namespace, componentName);
+    public CertificateSecretModel(EventStreams instance, String componentName) {
+        super(instance, componentName);
         setOwnerReference(instance);
     }
 
@@ -57,7 +57,7 @@ public class CertificateSecretModel extends AbstractModel {
     }
 
     public void createSecret() {
-        secret = createSecret(getNamespace(), getSecretName(), formSecretData(), getComponentLabels(), null);
+        secret = createSecret(getNamespace(), getSecretName(), formSecretData(), labels(), null);
     }
 
     public void setCertAndKey(String id, CertAndKey certAndKey) {

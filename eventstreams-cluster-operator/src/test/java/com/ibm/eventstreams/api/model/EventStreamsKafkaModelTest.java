@@ -15,6 +15,7 @@ package com.ibm.eventstreams.api.model;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.nullValue;
 
 import java.util.ArrayList;
@@ -23,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import com.ibm.eventstreams.api.Labels;
 import com.ibm.eventstreams.api.model.utils.ModelUtils;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
@@ -66,37 +66,6 @@ public class EventStreamsKafkaModelTest {
 
         assertThat(kafka.getKind(), is("Kafka"));
         assertThat(kafka.getApiVersion(), is("eventstreams.ibm.com/v1beta1"));
-    }
-
-    @Test
-    public void testDefaultKafkaHasRequiredLabels() {
-        Kafka kafka = createDefaultKafkaModel().getKafka();
-
-        Map<String, String> kafkaPodLabels = kafka.getSpec()
-                .getKafka()
-                .getTemplate()
-                .getPod()
-                .getMetadata()
-                .getLabels();
-
-        Map<String, String> zkPodLabels = kafka.getSpec()
-                .getZookeeper()
-                .getTemplate()
-                .getPod()
-                .getMetadata()
-                .getLabels();
-
-        assertThat(kafkaPodLabels.get(Labels.APP_LABEL),  is("ibm-es"));
-        assertThat(kafkaPodLabels.get(Labels.SERVICE_SELECTOR_LABEL),  is("kafka-sts"));
-        assertThat(kafkaPodLabels.get(Labels.INSTANCE_LABEL),  is(instanceName));
-        assertThat(kafkaPodLabels.get(Labels.RELEASE_LABEL),  is(instanceName));
-        assertThat(kafkaPodLabels.get(Labels.COMPONENT_LABEL), is(EventStreamsKafkaModel.KAFKA_COMPONENT_NAME));
-
-        assertThat(zkPodLabels.get(Labels.APP_LABEL),  is("ibm-es"));
-        assertThat(zkPodLabels.get(Labels.SERVICE_SELECTOR_LABEL),  is("zookeeper-sts"));
-        assertThat(zkPodLabels.get(Labels.INSTANCE_LABEL),  is(instanceName));
-        assertThat(zkPodLabels.get(Labels.RELEASE_LABEL),  is(instanceName));
-        assertThat(zkPodLabels.get(Labels.COMPONENT_LABEL), is(EventStreamsKafkaModel.ZOOKEEPER_COMPONENT_NAME));
     }
 
     @Test
@@ -143,10 +112,7 @@ public class EventStreamsKafkaModelTest {
         EventStreamsKafkaModel kafka = new EventStreamsKafkaModel(instance);
 
         Map<String, String> kafkaPodLabels = kafka.getKafka().getSpec().getKafka().getTemplate().getPod().getMetadata().getLabels();
-        assertThat(kafkaPodLabels.get(Labels.APP_LABEL),  is("ibm-es"));
-        assertThat(kafkaPodLabels.get(Labels.SERVICE_SELECTOR_LABEL),  is("kafka-sts"));
-        assertThat(kafkaPodLabels.get(Labels.INSTANCE_LABEL),  is(instanceName));
-        assertThat(kafkaPodLabels.get(customLabelKey),  is(customLabelValue));
+        assertThat(kafkaPodLabels, hasEntry(customLabelKey, customLabelValue));
     }
 
     @Test

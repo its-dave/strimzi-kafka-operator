@@ -35,7 +35,7 @@ public class ClusterSecretsModel extends AbstractModel {
      * @param secretOperator - A SecretOperator instance
      */
     public ClusterSecretsModel(EventStreams instance, SecretOperator secretOperator) {
-        super(instance.getMetadata().getName(), instance.getMetadata().getNamespace(), COMPONENT_NAME);
+        super(instance, COMPONENT_NAME);
         setOwnerReference(instance);
         this.secretOperator = secretOperator;
         this.instance = instance;

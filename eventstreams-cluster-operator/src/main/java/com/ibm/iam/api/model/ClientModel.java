@@ -18,43 +18,43 @@ import com.ibm.iam.api.spec.Client;
 import com.ibm.iam.api.spec.ClientBuilder;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
-import java.util.Map;
+import io.strimzi.operator.common.model.Labels;
 
 public class ClientModel extends AbstractModel {
-    private static final String COMPONENT_NAME = "oidc-client";
     private static final String SECRET_POSTFIX = "oidc-secret";
     private Client client;
 
     public ClientModel(EventStreams instance, String routeHost) {
-        super(instance.getMetadata().getName(), instance.getMetadata().getNamespace(), COMPONENT_NAME);
+        super(instance, DEFAULT_COMPONENT_NAME);
 
         setOwnerReference(instance);
         
-        Map<String, String> labels = getComponentLabels();
+        Labels labels = labels();
 
-        String trustgedURIPrefixes = routeHost;
+        String trustedURIPrefixes = routeHost;
         String redirectURIs = routeHost + "/oauth/callback";
         String postLogoutRedirectURIs = routeHost + "/console/logout";
 
-        ObjectMeta meta = new ObjectMetaBuilder().withName(getDefaultResourceName())
+        ObjectMeta meta = new ObjectMetaBuilder()
+                .withName(getDefaultResourceName())
                 .withOwnerReferences(getEventStreamsOwnerReference())
                 .withNamespace(getNamespace())
-                .withLabels(labels).build();
+                .withLabels(labels.toMap())
+                .build();
 
         client = new ClientBuilder()
-        .withApiVersion(Client.RESOURCE_GROUP + "/" + Client.V1)
-
-        .withMetadata(meta)
-        .withNewSpec()
-           .withClientId("")
-           .withNewOidcLibertyClient()
-              .withPostLogoutRedirectURIs(postLogoutRedirectURIs)
-              .withRedirectURIs(redirectURIs)
-              .withTrustedURIPrefixes(trustgedURIPrefixes)
-           .endOidcLibertyClient()
-           .withSecret(getSecretName(instance))
-        .endSpec()
-        .build();
+            .withApiVersion(Client.RESOURCE_GROUP + "/" + Client.V1)
+            .withMetadata(meta)
+            .withNewSpec()
+               .withClientId("")
+               .withNewOidcLibertyClient()
+                  .withPostLogoutRedirectURIs(postLogoutRedirectURIs)
+                  .withRedirectURIs(redirectURIs)
+                  .withTrustedURIPrefixes(trustedURIPrefixes)
+               .endOidcLibertyClient()
+               .withSecret(getSecretName(instance))
+            .endSpec()
+            .build();
     }
 
     public Client getClient() {

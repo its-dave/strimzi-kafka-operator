@@ -15,7 +15,6 @@ package com.ibm.eventstreams.controller;
 
 import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.EndpointServiceType;
-import com.ibm.eventstreams.api.Labels;
 import com.ibm.eventstreams.api.TlsVersion;
 import com.ibm.eventstreams.api.model.AbstractModel;
 import com.ibm.eventstreams.api.model.AbstractSecureEndpointsModel;
@@ -101,6 +100,7 @@ import io.strimzi.certs.CertAndKey;
 import io.strimzi.operator.KubernetesVersion;
 import io.strimzi.operator.PlatformFeaturesAvailability;
 import io.strimzi.operator.common.Reconciliation;
+import io.strimzi.operator.common.model.Labels;
 import io.strimzi.operator.common.operator.resource.ReconcileResult;
 import io.strimzi.operator.common.operator.resource.RouteOperator;
 import io.vertx.core.CompositeFuture;
@@ -1450,7 +1450,7 @@ public class EventStreamsOperatorTest {
             state.createSchemaRegistry(Date::new),
             state.createAdminApi(Date::new))
             .onComplete(context.succeeding(v -> context.verify(() -> {
-                List<Secret> secrets = mockClient.secrets().withLabel(Labels.INSTANCE_LABEL, CLUSTER_NAME).list().getItems();
+                List<Secret> secrets = mockClient.secrets().withLabel(Labels.KUBERNETES_INSTANCE_LABEL, CLUSTER_NAME).list().getItems();
                 secrets.forEach(secret -> {
                     if (secret.getMetadata().getName().endsWith("-cert")) {
                         Optional<Service> serviceOpt = mockClient.services().list().getItems()
@@ -1458,14 +1458,15 @@ public class EventStreamsOperatorTest {
                                 .filter(service -> service.getMetadata().getName().contains("external"))
                                 .filter(service -> service.getMetadata().getName().startsWith(secret.getMetadata().getName().replace("-cert", "")))
                                 .findAny();
+                        assertThat("We should find the service for the secret " + secret.getMetadata().getName() + "services found " + mockClient.services().list().getItems(),
+                                serviceOpt.isPresent(), is(true));
 
                         Optional<Route> routeOpt = mockClient.adapt(OpenShiftClient.class).routes().list().getItems()
                                 .stream()
                                 .filter(route -> route.getMetadata().getName().endsWith(Endpoint.DEFAULT_EXTERNAL_NAME))
                                 .filter(route -> route.getMetadata().getName().startsWith(secret.getMetadata().getName().replace("-cert", "")))
                                 .findAny();
-                        assertThat("We found the service for the secret " + secret.getMetadata().getName(), serviceOpt.isPresent(), is(true));
-                        assertThat("We found the route for the secret " + secret.getMetadata().getName(), routeOpt.isPresent(), is(true));
+                        assertThat("We should find the route for the secret " + secret.getMetadata().getName(), routeOpt.isPresent(), is(true));
                         String certID = secret.getData().keySet().stream().filter(string -> string.endsWith(CertificateSecretModel.formatCertID(Endpoint.DEFAULT_EXTERNAL_NAME))).findAny().get();
                         String keyID = secret.getData().keySet().stream().filter(string -> string.endsWith(CertificateSecretModel.formatKeyID(Endpoint.DEFAULT_EXTERNAL_NAME))).findAny().get();
                         CertAndKey certAndKey = state.certificateManager.certificateAndKey(secret, certID, keyID);
@@ -2865,9 +2866,9 @@ public class EventStreamsOperatorTest {
             .onComplete(context.succeeding(v -> context.verify(() -> {
                 Route route = routeOperator.get(NAMESPACE,  longRouteName);
 
-                assertThat(route.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + IAM_BEARER_LABEL, "true"));
-                assertThat(route.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + SCRAM_SHA_512_LABEL, "true"));
-                assertThat(route.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_PROTOCOL_LABEL, "https"));
+                assertThat(route.getMetadata().getLabels(), hasEntry(AbstractModel.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + IAM_BEARER_LABEL, "true"));
+                assertThat(route.getMetadata().getLabels(), hasEntry(AbstractModel.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + SCRAM_SHA_512_LABEL, "true"));
+                assertThat(route.getMetadata().getLabels(), hasEntry(AbstractModel.EVENTSTREAMS_PROTOCOL_LABEL, "https"));
             })))
             .map(v -> {
                 ArgumentCaptor<EventStreams> updatedEventStreams = ArgumentCaptor.forClass(EventStreams.class);
@@ -2890,8 +2891,8 @@ public class EventStreamsOperatorTest {
             .onComplete(context.succeeding(v -> context.verify(() -> {
                 Route route = routeOperator.get(NAMESPACE, expectedLongRouteName);
 
-                assertThat(route.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + TLS_LABEL, "true"));
-                assertThat(route.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_PROTOCOL_LABEL, "https"));
+                assertThat(route.getMetadata().getLabels(), hasEntry(AbstractModel.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + TLS_LABEL, "true"));
+                assertThat(route.getMetadata().getLabels(), hasEntry(AbstractModel.EVENTSTREAMS_PROTOCOL_LABEL, "https"));
                 async.flag();
             })));
     }
@@ -2977,10 +2978,10 @@ public class EventStreamsOperatorTest {
                 Route secureMutualTlsRoute = routeOperator.get(NAMESPACE, secureMutualTlsRouteLongName);
                 Route secureBearerRoute = routeOperator.get(NAMESPACE, secureBearerRouteLongName);
 
-                assertThat(secureMutualTlsRoute.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + TLS_LABEL, "true"));
-                assertThat(secureMutualTlsRoute.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_PROTOCOL_LABEL, "https"));
-                assertThat(secureBearerRoute.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + IAM_BEARER_LABEL, "true"));
-                assertThat(secureBearerRoute.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_PROTOCOL_LABEL, "https"));
+                assertThat(secureMutualTlsRoute.getMetadata().getLabels(), hasEntry(AbstractModel.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + TLS_LABEL, "true"));
+                assertThat(secureMutualTlsRoute.getMetadata().getLabels(), hasEntry(AbstractModel.EVENTSTREAMS_PROTOCOL_LABEL, "https"));
+                assertThat(secureBearerRoute.getMetadata().getLabels(), hasEntry(AbstractModel.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + IAM_BEARER_LABEL, "true"));
+                assertThat(secureBearerRoute.getMetadata().getLabels(), hasEntry(AbstractModel.EVENTSTREAMS_PROTOCOL_LABEL, "https"));
             })))
             .map(v -> {
                 ArgumentCaptor<EventStreams> updatedEventStreams = ArgumentCaptor.forClass(EventStreams.class);
@@ -3023,10 +3024,10 @@ public class EventStreamsOperatorTest {
                 Route insecureMutualTlsRoute = routeOperator.get(NAMESPACE, insecureMutualTlsRouteLongName);
                 Route insecureBearerRoute = routeOperator.get(NAMESPACE, insecureBearerRouteLongName);
 
-                assertThat(insecureMutualTlsRoute.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + TLS_LABEL, "true"));
-                assertThat(insecureMutualTlsRoute.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_PROTOCOL_LABEL, "http"));
-                assertThat(insecureBearerRoute.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + IAM_BEARER_LABEL, "true"));
-                assertThat(insecureBearerRoute.getMetadata().getLabels(), hasEntry(Labels.EVENTSTREAMS_PROTOCOL_LABEL, "http"));
+                assertThat(insecureMutualTlsRoute.getMetadata().getLabels(), hasEntry(AbstractModel.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + TLS_LABEL, "true"));
+                assertThat(insecureMutualTlsRoute.getMetadata().getLabels(), hasEntry(AbstractModel.EVENTSTREAMS_PROTOCOL_LABEL, "http"));
+                assertThat(insecureBearerRoute.getMetadata().getLabels(), hasEntry(AbstractModel.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + IAM_BEARER_LABEL, "true"));
+                assertThat(insecureBearerRoute.getMetadata().getLabels(), hasEntry(AbstractModel.EVENTSTREAMS_PROTOCOL_LABEL, "http"));
 
                 ArgumentCaptor<EventStreams> updatedEventStreams = ArgumentCaptor.forClass(EventStreams.class);
                 verify(esResourceOperator, times(3)).updateEventStreamsStatus(updatedEventStreams.capture());

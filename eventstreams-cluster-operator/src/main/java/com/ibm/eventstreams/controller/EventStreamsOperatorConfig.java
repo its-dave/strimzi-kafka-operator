@@ -43,7 +43,7 @@ public class EventStreamsOperatorConfig {
     public static final String EVENTSTREAMS_DEFAULT_ADMIN_API_IMAGE = "EVENTSTREAMS_DEFAULT_ADMIN_API_IMAGE";
     public static final String EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_IMAGE = "EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_IMAGE";
     public static final String EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_AVRO_IMAGE = "EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_AVRO_IMAGE";
-    public static final String EVENTSTREAMS_DEFAULT_SCHEMA_PROXY_IMAGE = "EVENTSTREAMS_DEFAULT_SCHEMA_PROXY_IMAGE";
+    public static final String EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_PROXY_IMAGE = "EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_PROXY_IMAGE";
     public static final String EVENTSTREAMS_DEFAULT_ADMIN_UI_IMAGE = "EVENTSTREAMS_DEFAULT_ADMIN_UI_IMAGE";
     public static final String EVENTSTREAMS_DEFAULT_ADMIN_UI_REDIS_IMAGE = "EVENTSTREAMS_DEFAULT_ADMIN_UI_REDIS_IMAGE";
     public static final String EVENTSTREAMS_DEFAULT_COLLECTOR_IMAGE = "EVENTSTREAMS_DEFAULT_COLLECTOR_IMAGE";
@@ -184,7 +184,7 @@ public class EventStreamsOperatorConfig {
         }
 
         public Optional<String> getSchemaRegistryProxyImage() {
-            return Optional.ofNullable(images.get(EVENTSTREAMS_DEFAULT_SCHEMA_PROXY_IMAGE));
+            return Optional.ofNullable(images.get(EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_PROXY_IMAGE));
         }
 
         public Optional<String> getRestProducerImage() {

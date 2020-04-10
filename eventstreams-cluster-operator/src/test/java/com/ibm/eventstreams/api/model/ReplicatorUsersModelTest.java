@@ -13,7 +13,6 @@
 
 package com.ibm.eventstreams.api.model;
 
-import com.ibm.eventstreams.api.Labels;
 import com.ibm.eventstreams.api.model.utils.ModelUtils;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
@@ -33,6 +32,8 @@ import io.strimzi.api.kafka.model.KafkaUserAuthorizationSimple;
 import io.strimzi.api.kafka.model.KafkaUserScramSha512ClientAuthentication;
 import io.strimzi.api.kafka.model.KafkaUserTlsClientAuthentication;
 import io.strimzi.api.kafka.model.listener.KafkaListeners;
+import io.strimzi.operator.common.model.Labels;
+import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -44,6 +45,9 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.aMapWithSize;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.hasEntry;
 
 @SuppressWarnings({"checkstyle:JavaNCSS", "checkstyle:MethodLength"})
 
@@ -161,20 +165,25 @@ public class ReplicatorUsersModelTest {
         assertThat(targetConnectorKafkaUser.getMetadata().getNamespace(), is(namespace));
         assertThat(sourceConnectorKafkaUser.getMetadata().getNamespace(), is(namespace));
 
+
+        Matcher hasCorrectLabels = allOf(
+                aMapWithSize(7),
+                hasEntry(Labels.KUBERNETES_NAME_LABEL, "replicator"),
+                hasEntry(Labels.KUBERNETES_INSTANCE_LABEL, instanceName),
+                hasEntry(Labels.KUBERNETES_MANAGED_BY_LABEL, "eventstreams-cluster-operator"),
+                hasEntry(Labels.KUBERNETES_PART_OF_LABEL, "eventstreams-" + instanceName),
+                hasEntry(Labels.STRIMZI_NAME_LABEL, "test-ibm-es-replicator"),
+                hasEntry(Labels.STRIMZI_CLUSTER_LABEL, instanceName),
+                hasEntry(Labels.STRIMZI_KIND_LABEL, "EventStreams"));
+
         Map<String, String> replicatorConnectUserSecretLabels = replicator.getSecret().getMetadata().getLabels();
-        assertThat(replicatorConnectUserSecretLabels.get(Labels.APP_LABEL), is(AbstractModel.APP_NAME));
-        assertThat(replicatorConnectUserSecretLabels.get(Labels.INSTANCE_LABEL), is(instanceName));
-        assertThat(replicatorConnectUserSecretLabels.get(Labels.RELEASE_LABEL), is(instanceName));
+        assertThat(replicatorConnectUserSecretLabels, hasCorrectLabels);
 
         Map<String, String> replicatorDestinationConnectorSecretUserLabels = replicator.getSecret().getMetadata().getLabels();
-        assertThat(replicatorDestinationConnectorSecretUserLabels.get(Labels.APP_LABEL), is(AbstractModel.APP_NAME));
-        assertThat(replicatorDestinationConnectorSecretUserLabels.get(Labels.INSTANCE_LABEL), is(instanceName));
-        assertThat(replicatorDestinationConnectorSecretUserLabels.get(Labels.RELEASE_LABEL), is(instanceName));
+        assertThat(replicatorDestinationConnectorSecretUserLabels, hasCorrectLabels);
 
         Map<String, String> replicatorSourceConnectorUserSecretLabels = replicator.getSecret().getMetadata().getLabels();
-        assertThat(replicatorSourceConnectorUserSecretLabels.get(Labels.APP_LABEL), is(AbstractModel.APP_NAME));
-        assertThat(replicatorSourceConnectorUserSecretLabels.get(Labels.INSTANCE_LABEL), is(instanceName));
-        assertThat(replicatorSourceConnectorUserSecretLabels.get(Labels.RELEASE_LABEL), is(instanceName));
+        assertThat(replicatorSourceConnectorUserSecretLabels, hasCorrectLabels);
 
         assertThat(connectKafkaUser.getSpec().getAuthorization().getType(), is("simple"));
         assertThat(targetConnectorKafkaUser.getSpec().getAuthorization().getType(), is("simple"));

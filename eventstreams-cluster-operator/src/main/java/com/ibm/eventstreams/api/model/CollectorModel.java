@@ -73,7 +73,7 @@ public class CollectorModel extends AbstractModel {
      */
     public CollectorModel(EventStreams instance,
                           EventStreamsOperatorConfig.ImageLookup imageConfig) {
-        super(instance.getMetadata().getName(), instance.getMetadata().getNamespace(), COMPONENT_NAME);
+        super(instance, COMPONENT_NAME);
         Optional<ComponentSpec> collectorSpec = Optional.ofNullable(instance.getSpec())
             .map(EventStreamsSpec::getCollector);
         

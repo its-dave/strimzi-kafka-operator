@@ -14,7 +14,6 @@ package com.ibm.eventstreams.api.model;
 
 import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.EndpointServiceType;
-import com.ibm.eventstreams.api.Labels;
 import com.ibm.eventstreams.api.model.utils.ModelUtils;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
@@ -42,6 +41,7 @@ import io.strimzi.api.kafka.model.storage.EphemeralStorageBuilder;
 import io.strimzi.api.kafka.model.storage.PersistentClaimStorage;
 import io.strimzi.api.kafka.model.storage.PersistentClaimStorageBuilder;
 import io.strimzi.api.kafka.model.template.PodTemplateBuilder;
+import io.strimzi.operator.common.model.Labels;
 import org.hamcrest.collection.IsMapContaining;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -62,9 +62,12 @@ import static org.hamcrest.CoreMatchers.endsWith;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.aMapWithSize;
+import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.emptyIterableOf;
+import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasItems;
 import static org.mockito.Mockito.when;
@@ -129,12 +132,11 @@ public class SchemaRegistryModelTest {
         });
         assertThat(schemaRegistryNetworkPolicy.getSpec().getEgress().size(), is(0));
 
-        assertThat(schemaRegistryNetworkPolicy.getSpec().getPodSelector().getMatchLabels().size(), is(1));
-        assertThat(schemaRegistryNetworkPolicy
-            .getSpec()
-            .getPodSelector()
-            .getMatchLabels()
-            .get(Labels.COMPONENT_LABEL), is(SchemaRegistryModel.COMPONENT_NAME));
+        assertThat(schemaRegistryNetworkPolicy.getSpec().getPodSelector().getMatchLabels(), allOf(
+                aMapWithSize(2),
+                hasEntry(Labels.KUBERNETES_NAME_LABEL, SchemaRegistryModel.COMPONENT_NAME),
+                hasEntry(Labels.KUBERNETES_INSTANCE_LABEL, instanceName)
+            ));
 
         Map<String, Route> schemaRegistryRoutes = schemaRegistryModel.getRoutes();
         schemaRegistryRoutes.forEach((key, route) -> {
@@ -204,7 +206,7 @@ public class SchemaRegistryModelTest {
     public void testImageOverride() {
         String schemaImage = "schema-image:latest";
         String avroImage = "avro-image:latest";
-        String schemaProxyImage = "schema-proxy-image:latest";
+        String schemaRegistryProxyImage = "schema-proxy-image:latest";
 
         EventStreams instance = createDefaultEventStreams()
                 .editSpec()
@@ -214,7 +216,7 @@ public class SchemaRegistryModelTest {
                             .withImage(avroImage)
                         .endAvro()
                         .withNewProxy()
-                            .withImage(schemaProxyImage)
+                            .withImage(schemaRegistryProxyImage)
                         .endProxy()
                     .endSchemaRegistry()
                 .endSpec()
@@ -223,7 +225,7 @@ public class SchemaRegistryModelTest {
         Map<String, String> expectedImages = new HashMap<>();
         expectedImages.put(SchemaRegistryModel.COMPONENT_NAME, schemaImage);
         expectedImages.put(SchemaRegistryModel.AVRO_SERVICE_CONTAINER_NAME, avroImage);
-        expectedImages.put(SchemaRegistryModel.SCHEMA_REGISTRY_PROXY_CONTAINER_NAME, schemaProxyImage);
+        expectedImages.put(SchemaRegistryModel.SCHEMA_REGISTRY_PROXY_CONTAINER_NAME, schemaRegistryProxyImage);
 
         List<Container> containers = new SchemaRegistryModel(instance, imageConfig).getDeployment().getSpec().getTemplate()
                 .getSpec().getContainers();

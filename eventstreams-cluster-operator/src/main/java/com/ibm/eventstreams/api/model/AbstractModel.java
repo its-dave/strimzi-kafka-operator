@@ -13,7 +13,6 @@
 package com.ibm.eventstreams.api.model;
 
 import com.ibm.eventstreams.Main;
-import com.ibm.eventstreams.api.Labels;
 import com.ibm.eventstreams.api.TlsVersion;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
@@ -24,6 +23,7 @@ import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.EnvVarBuilder;
+import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.LabelSelector;
 import io.fabric8.kubernetes.api.model.LabelSelectorBuilder;
 import io.fabric8.kubernetes.api.model.LocalObjectReference;
@@ -53,7 +53,6 @@ import io.fabric8.kubernetes.api.model.apps.DeploymentBuilder;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicy;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicyBuilder;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicyEgressRule;
-import io.fabric8.kubernetes.api.model.networking.NetworkPolicyEgressRuleBuilder;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicyIngressRule;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicyIngressRuleBuilder;
 import io.fabric8.kubernetes.api.model.rbac.RoleBinding;
@@ -83,6 +82,8 @@ import io.strimzi.api.kafka.model.listener.KafkaListeners;
 import io.strimzi.api.kafka.model.status.ListenerAddress;
 import io.strimzi.api.kafka.model.status.ListenerStatus;
 import io.strimzi.api.kafka.model.template.PodTemplate;
+import io.strimzi.operator.common.model.Labels;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import io.strimzi.api.kafka.model.KafkaUserSpecBuilder;
@@ -104,6 +105,7 @@ import java.util.stream.Stream;
 
 @SuppressWarnings({"checkstyle:ClassFanOutComplexity", "checkstyle:ClassDataAbstractionCoupling"})
 public abstract class AbstractModel {
+    public static final String OPERATOR_NAME = io.strimzi.operator.cluster.model.AbstractModel.STRIMZI_CLUSTER_OPERATOR_NAME;
 
     public static final String APP_NAME = "ibm-es";
     public static final String APP_NAME_TRUNCATED = "es";
@@ -140,6 +142,9 @@ public abstract class AbstractModel {
     public static final String USER_P12_PASS = "user.password";
     public static final String SCRAM_PASSWORD = "password";
 
+    public static final String EVENTSTREAMS_AUTHENTICATION_LABEL = Labels.STRIMZI_DOMAIN + "authentication";
+    public static final String EVENTSTREAMS_PROTOCOL_LABEL = Labels.STRIMZI_DOMAIN + "protocol";
+
     private String kind;
     private String apiVersion;
     private String uid;
@@ -147,6 +152,7 @@ public abstract class AbstractModel {
     private List<ContainerEnvVar> envVars;
     private String instanceName;
     private String namespace;
+    private Labels labels;
     private int replicas;
     private ExternalAccess externalAccess;
     private ResourceRequirements resourceRequirements;
@@ -161,10 +167,19 @@ public abstract class AbstractModel {
 
     private static final Logger log = LogManager.getLogger();
 
-    protected AbstractModel(String instanceName, String namespace, String componentName) {
-        this.instanceName = instanceName;
-        this.namespace = namespace;
+    protected AbstractModel(HasMetadata resource, String componentName) {
+        this.instanceName = resource.getMetadata().getName();
+        this.namespace = resource.getMetadata().getNamespace();
         this.componentName = componentName;
+
+        this.labels = Labels.generateDefaultLabels(resource, componentName, OPERATOR_NAME);
+        // If the component is not part of the parent application (eventstreams), then override Strimzi name label
+        // to use resource name including the resource prefix (this matches Strimzi convention)
+        // This ckeck stops the default resource name prefix being added to eventstreams (e.g. my-es-ibm-es-eventstreams)
+        // to match Strimzi convention
+        if (!componentName.equals(DEFAULT_COMPONENT_NAME)) {
+            this.labels = labels.withStrimziName(getDefaultResourceName());
+        }
     }
 
     public String getComponentName() {
@@ -454,63 +469,43 @@ public abstract class AbstractModel {
         
     }
 
-    // If creating a Strimzi Custom Resource please use getComponentLabelsWithoutResourceGroup
-    public Map<String, String> getComponentLabels() {
-        Map<String, String> labels = getGenericLabels();
-        labels.putAll(getResourceGroupLabels());
-
-        return labels;
+    /**
+     * NOTE: If creating a Strimzi Custom Resource please use labelsWithoutResourceGroup
+     * @return the component labels
+     */
+    public Labels labels() {
+        return this.labels;
     }
 
-    // getComponentLabelsWithoutResourceGroup returns the component labels without any of the banned Strimzi namespaced labels
-    // Use this function to create labels for Strimzi Custom Resources
-    public Map<String, String> getComponentLabelsWithoutResourceGroup() {
-        Map<String, String> labels = getGenericLabels();
-
-        return labels;
+    /**
+     * Use this function to create labels for Strimzi Custom Resources
+     * as they cannot contain Strimzi resource group labels
+     * @return the component labels without any of the banned Strimzi resource group labels
+     */
+    public Labels labelsWithoutResourceGroup() {
+        return Labels.fromMap(
+                labels().toMap()
+                    .entrySet()
+                    .stream()
+                    .filter(entry -> !entry.getKey().startsWith(Labels.STRIMZI_DOMAIN))
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
     }
 
-    public Map<String, String> generateSecurityLabels(boolean isTls, List<String> authenticationMechanisms) {
+    /**
+     * @param isTls boolean on whether the component is using tls
+     * @param authenticationMechanisms a list of a mechanisms that are concatenated into a label
+     * @return a valid map of labels used for EventStreams security
+     */
+    public Map<String, String> securityLabels(boolean isTls, List<String> authenticationMechanisms) {
         Map<String, String> labels = new HashMap<>();
         if (authenticationMechanisms.size() > 0) {
             authenticationMechanisms.forEach(auth -> {
-                labels.put(Labels.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + auth, "true");
+                labels.put(EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + auth, "true");
             });
         } else {
-            labels.put(Labels.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + AUTHENTICATION_LABEL_NO_AUTH, "true");
+            labels.put(EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + AUTHENTICATION_LABEL_NO_AUTH, "true");
         }
-        labels.put(Labels.EVENTSTREAMS_PROTOCOL_LABEL, isTls ? "https" : "http");
-        return labels;
-    }
-
-    private Map<String, String> getGenericLabels() {
-        Map<String, String> labels = new HashMap<>();
-
-        labels.put(Labels.APP_LABEL, APP_NAME);
-        labels.put(Labels.COMPONENT_LABEL, this.componentName);
-        labels.put(Labels.INSTANCE_LABEL, this.instanceName);
-        labels.put(Labels.RELEASE_LABEL, this.instanceName);
-        labels.put(Labels.KUBERNETES_PART_OF_LABEL, this.instanceName);
-        labels.put(Labels.KUBERNETES_NAME_LABEL, Labels.KUBERNETES_NAME);
-        labels.put(Labels.KUBERNETES_INSTANCE_LABEL, this.instanceName);
-        labels.put(Labels.KUBERNETES_MANAGED_BY_LABEL, Labels.KUBERNETES_MANAGED_BY);
-
-        return labels;
-    }
-
-    private Map<String, String> getResourceGroupLabels() {
-        Map<String, String> labels = new HashMap<>();
-
-        labels.put(Labels.NAME_LABEL, getDefaultResourceName());
-
-        return labels;
-    }
-
-    public Map<String, String> getServiceSelectorLabel(String serviceSelector) {
-        Map<String, String> labels = new HashMap<String, String>();
-
-        labels.put(Labels.SERVICE_SELECTOR_LABEL, serviceSelector);
-
+        labels.put(EVENTSTREAMS_PROTOCOL_LABEL, isTls ? "https" : "http");
         return labels;
     }
 
@@ -570,26 +565,26 @@ public abstract class AbstractModel {
         List<Container> containers,
         List<Volume> volumes) {
 
+        Labels labels = labels();
+        Labels selectorLabels = labels.strimziSelectorLabels();
+
         return new DeploymentBuilder()
             .withNewMetadata()
                 .withName(getDefaultResourceName())
                 .withNamespace(namespace)
                 .withOwnerReferences(getEventStreamsOwnerReference())
                 .addToAnnotations(getEventStreamsMeteringAnnotations())
-                .addToLabels(getComponentLabels())
-                .addToLabels(getServiceSelectorLabel(componentName))
+                .addToLabels(labels.toMap())
             .endMetadata()
             .withNewSpec()
                 .withReplicas(replicas)
                 .withNewSelector()
-                    .addToMatchLabels(Labels.INSTANCE_LABEL, instanceName)
-                    .addToMatchLabels(Labels.COMPONENT_LABEL, componentName)
+                    .withMatchLabels(selectorLabels.toMap())
                 .endSelector()
                 .withNewTemplate()
                     .withNewMetadata()
                         .addToAnnotations(getEventStreamsMeteringAnnotations())
-                        .addToLabels(getComponentLabels())
-                        .addToLabels(getServiceSelectorLabel(componentName))
+                        .addToLabels(labels.toMap())
                     .endMetadata()
                     .withNewSpec()
                         .withContainers(containers)
@@ -603,25 +598,29 @@ public abstract class AbstractModel {
     }
 
     protected ServiceAccount createServiceAccount() {
+        Labels labels = labels();
+
         return new ServiceAccountBuilder()
                 .withNewMetadata()
                     .withName(getDefaultResourceName())
                     .withNamespace(namespace)
                     .withOwnerReferences(getEventStreamsOwnerReference())
                     .addToAnnotations(getEventStreamsMeteringAnnotations())
-                    .addToLabels(getComponentLabels())
+                    .addToLabels(labels.toMap())
                 .endMetadata()
                 .withImagePullSecrets(getPullSecrets())
                 .build();
     }
 
     protected RoleBinding createRoleBinding(Subject subject, RoleRef role) {
+        Labels labels = labels();
+
         return new RoleBindingBuilder()
                 .withNewMetadata()
                     .withName(getDefaultResourceName())
                     .withNamespace(namespace)
                     .withOwnerReferences(getEventStreamsOwnerReference())
-                    .addToLabels(getComponentLabels())
+                    .addToLabels(labels.toMap())
                 .endMetadata()
                 .withSubjects(subject)
                 .withRoleRef(role)
@@ -633,12 +632,14 @@ public abstract class AbstractModel {
     }
 
     protected ConfigMap createConfigMap(Map<String, String> data) {
+        Labels labels = labels();
+
         return new ConfigMapBuilder()
                 .withNewMetadata()
                     .withName(getConfigMapName())
                     .withNamespace(namespace)
                     .withOwnerReferences(getEventStreamsOwnerReference())
-                    .addToLabels(getComponentLabels())
+                    .addToLabels(labels.toMap())
                 .endMetadata()
                 .withData(data)
                 .build();
@@ -666,19 +667,21 @@ public abstract class AbstractModel {
     }
 
     protected Service createService(String type, String name, List<ServicePort> ports, Map<String, String> annotations) {
+        Labels labels = labels();
+        Labels selectorLabels = labels.strimziSelectorLabels();
+
         return new ServiceBuilder()
                 .withNewMetadata()
                     .withName(name)
                     .withNamespace(namespace)
                     .withOwnerReferences(getEventStreamsOwnerReference())
-                    .addToLabels(getComponentLabels())
+                    .addToLabels(labels.toMap())
                     .withAnnotations(annotations)
                 .endMetadata()
                 .withNewSpec()
                     .withType(type)
                     .addAllToPorts(ports)
-                    .addToSelector(Labels.INSTANCE_LABEL, instanceName)
-                    .addToSelector(Labels.COMPONENT_LABEL, componentName)
+                    .withSelector(selectorLabels.toMap())
                 .endSpec()
                 .build();
     }
@@ -693,12 +696,14 @@ public abstract class AbstractModel {
      * @return a configured Route
      */
     protected Route createRoute(String name, String serviceName, int port, TLSConfig tlsConfig, Map<String, String> additionalLabels) {
+        Labels labels = labels();
+
         RouteBuilder route = new RouteBuilder()
                 .withNewMetadata()
                     .withName(name)
                     .withNamespace(namespace)
                     .withOwnerReferences(getEventStreamsOwnerReference())
-                    .addToLabels(getComponentLabels())
+                    .addToLabels(labels.toMap())
                     .addToLabels(additionalLabels)
                 .endMetadata()
                 .withNewSpec()
@@ -737,12 +742,14 @@ public abstract class AbstractModel {
     protected NetworkPolicy createNetworkPolicy(LabelSelector labelSelector,
                                                 List<NetworkPolicyIngressRule> ingressRules,
                                                 List<NetworkPolicyEgressRule> egressRules) {
+        Labels labels = labels();
+
         return new NetworkPolicyBuilder()
             .withNewMetadata()
                 .withName(getDefaultResourceName())
                 .withNamespace(namespace)
                 .withOwnerReferences(getEventStreamsOwnerReference())
-                .addToLabels(getComponentLabels())
+                .addToLabels(labels.toMap())
             .endMetadata()
             .withNewSpec()
                 .withPodSelector(labelSelector)
@@ -752,8 +759,8 @@ public abstract class AbstractModel {
             .build();
     }
 
-    protected String getKafkaUserName(String kafkaUserSuffix) {
-        return getKafkaUserName(getInstanceName(), kafkaUserSuffix);
+    protected String getKafkaUserName(String kafkaUserName) {
+        return getKafkaUserName(getInstanceName(), kafkaUserName);
     }
 
     public static String getKafkaUserName(String instanceName, String kafkaUserName) {
@@ -761,8 +768,9 @@ public abstract class AbstractModel {
     }
 
     protected KafkaUser createKafkaUser(String kafkaUserName, KafkaUserSpec spec) {
-        Map<String, String> labels = getComponentLabelsWithoutResourceGroup();
-        labels.put(io.strimzi.operator.common.model.Labels.STRIMZI_CLUSTER_LABEL, EventStreamsKafkaModel.getKafkaInstanceName(getInstanceName()));
+        Labels labels = labelsWithoutResourceGroup()
+                // label each kafka user with the instance of kafka it belongs to
+                .withStrimziCluster(EventStreamsKafkaModel.getKafkaInstanceName(getInstanceName()));
 
         return new KafkaUserBuilder()
             .withApiVersion(KafkaUser.RESOURCE_GROUP + "/" + KafkaUser.V1BETA1)
@@ -770,7 +778,7 @@ public abstract class AbstractModel {
                 .withName(kafkaUserName)
                 .withOwnerReferences(getEventStreamsOwnerReference())
                 .withNamespace(getNamespace())
-                .withLabels(labels)
+                .withLabels(labels.toMap())
             .endMetadata()
             .withSpec(spec)
             .build();
@@ -840,35 +848,27 @@ public abstract class AbstractModel {
         return policyBuilder.build();
     }
 
-    protected NetworkPolicyEgressRule createEgressRule(int port, String componentName) {
-        return new NetworkPolicyEgressRuleBuilder()
-                .addNewPort().withNewPort(port).endPort()
-                .addNewTo()
-                    .withNewPodSelector()
-                        .addToMatchLabels(Labels.COMPONENT_LABEL, componentName)
-                    .endPodSelector()
-                .endTo()
-                .build();
-    }
-
     protected LabelSelector createLabelSelector(String componentName) {
         return new LabelSelectorBuilder()
-                .addToMatchLabels(Labels.COMPONENT_LABEL, componentName)
+                .addToMatchLabels(Labels.EMPTY
+                        .withKubernetesName(componentName)
+                        .withKubernetesInstance(instanceName)
+                        .toMap())
                 .build();
     }
 
     protected Secret createSecret(String name, Map<String, String> data) {
-        return createSecret(namespace, name, data, getComponentLabels(), null);
+        return createSecret(namespace, name, data, labels(), null);
     }
 
     protected Secret createSecret(String namespace, String name, Map<String, String> data,
-        Map<String, String> labels, Map<String, String> annotations) {
+        Labels labels, Map<String, String> annotations) {
 
         return new SecretBuilder()
             .withNewMetadata()
                 .withName(name)
                 .withNamespace(namespace)
-                .withLabels(labels)
+                .withLabels(labels.toMap())
                 .withAnnotations(annotations)
                 .withOwnerReferences(getEventStreamsOwnerReference())
             .endMetadata()

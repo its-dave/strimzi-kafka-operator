@@ -20,18 +20,19 @@ import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 
 public class Cp4iServicesBindingModel extends AbstractModel {
-    private static final String COMPONENT_NAME = "cp4i-services-binding";
+    // Part of the EventStreams installation
+    private static final String COMPONENT_NAME = DEFAULT_COMPONENT_NAME;
     private Cp4iServicesBinding cp4iServicesBinding;
 
     public Cp4iServicesBindingModel(EventStreams instance) {
-        super(instance.getMetadata().getName(), instance.getMetadata().getNamespace(), COMPONENT_NAME);
+        super(instance, COMPONENT_NAME);
 
         setOwnerReference(instance);
 
         ObjectMeta meta = new ObjectMetaBuilder().withName(getDefaultResourceName())
                 .withOwnerReferences(getEventStreamsOwnerReference())
                 .withNamespace(getNamespace())
-                .withLabels(getComponentLabels()).build();
+                .withLabels(labels().toMap()).build();
 
 
         cp4iServicesBinding = new Cp4iServicesBindingBuilder()

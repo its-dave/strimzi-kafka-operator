@@ -34,7 +34,7 @@ public class ReplicatorSecretModel extends AbstractModel {
     private static final Logger log = LogManager.getLogger(ReplicatorSecretModel.class.getName());
 
     public ReplicatorSecretModel(EventStreams instance) {
-        super(instance.getMetadata().getName(), instance.getMetadata().getNamespace(), COMPONENT_NAME);
+        super(instance, COMPONENT_NAME);
         setOwnerReference(instance);
 
         Base64.Encoder encoder = Base64.getEncoder();

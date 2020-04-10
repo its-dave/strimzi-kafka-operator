@@ -32,7 +32,7 @@ public class InternalKafkaUserModel extends AbstractModel {
      * @param instance
      */
     public InternalKafkaUserModel(EventStreams instance) {
-        super(instance.getMetadata().getName(), instance.getMetadata().getNamespace(), COMPONENT_NAME);
+        super(instance, COMPONENT_NAME);
 
         setOwnerReference(instance);
 

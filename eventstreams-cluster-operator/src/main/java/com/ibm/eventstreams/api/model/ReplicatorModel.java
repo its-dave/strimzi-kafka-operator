@@ -19,7 +19,6 @@ import java.util.Map;
 import java.util.Optional;
 
 import com.ibm.eventstreams.Main;
-import com.ibm.eventstreams.api.Labels;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsReplicator;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
@@ -42,10 +41,10 @@ import io.strimzi.api.kafka.model.listener.KafkaListenerTls;
 import io.strimzi.api.kafka.model.listener.KafkaListeners;
 import io.strimzi.api.kafka.model.template.KafkaConnectTemplate;
 import io.strimzi.api.kafka.model.template.KafkaConnectTemplateBuilder;
-import io.strimzi.api.kafka.model.template.MetadataTemplateBuilder;
 import io.strimzi.api.kafka.model.KafkaMirrorMaker2;
 import io.strimzi.api.kafka.model.KafkaMirrorMaker2Builder;
 
+import io.strimzi.operator.common.model.Labels;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -74,11 +73,12 @@ public class ReplicatorModel extends AbstractModel {
      * This class is used to model a KafkaMirrorMaker2 custom resource used by the strimzi cluster operator,
      * it is also used to create the kube resources required to correctly deploy the replicator
      * @param replicatorInstance
+     * @param instance
      * @param replicatorCredentials
      */
     public ReplicatorModel(EventStreamsReplicator replicatorInstance, EventStreams instance, ReplicatorCredentials replicatorCredentials) {
         //always set the namespace to be that of the owning EventStreams instance
-        super(instance.getMetadata().getName(), instance.getMetadata().getNamespace(), COMPONENT_NAME);
+        super(instance, COMPONENT_NAME);
 
         setOwnerReference(replicatorInstance);
         
@@ -141,18 +141,17 @@ public class ReplicatorModel extends AbstractModel {
         kafkaMirrorMaker2Config.put("value.converter", BYTE_ARRAY_CONVERTER_NAME);
         kafkaMirrorMaker2Config.put("group.id", getDefaultReplicatorClusterName(getInstanceName()));
 
-        Map<String, String> labels = getComponentLabelsWithoutResourceGroup();
+        Labels labels = labelsWithoutResourceGroup();
 
         // Needs to be KafkaConnectTemplate here, not MM2 equivalent
         KafkaConnectTemplate kafkaMirrorMaker2Template = new KafkaConnectTemplateBuilder()
                 .editOrNewPod()
-                    .withMetadata(new MetadataTemplateBuilder()
+                    .withNewMetadata()
                             .addToAnnotations(getEventStreamsMeteringAnnotations(COMPONENT_NAME))
                             .addToAnnotations(getPrometheusAnnotations(DEFAULT_PROMETHEUS_PORT))
-                            .addToLabels(getServiceSelectorLabel(COMPONENT_NAME))
-                            .addToLabels(labels)
-                            .build())
-                    .endPod()
+                            .addToLabels(labels.toMap())
+                    .endMetadata()
+                .endPod()
                 .build();
 
         //if no security set then caCert and clientAuthentication are null and just not set on the connect object
@@ -180,8 +179,7 @@ public class ReplicatorModel extends AbstractModel {
                     .withNamespace(getNamespace())
                     .withName(getReplicatorName())
                     .withOwnerReferences(getEventStreamsOwnerReference())
-                    .addToLabels(getServiceSelectorLabel(COMPONENT_NAME))
-                    .addToLabels(labels)
+                    .addToLabels(labels.toMap())
                 .endMetadata()
                 .withNewSpecLike(mm2Spec)
                     .withReplicas(replicas)
@@ -234,12 +232,13 @@ public class ReplicatorModel extends AbstractModel {
         policyBuilder
             .addNewFrom()
                 .withNewPodSelector()
-                    .addToMatchLabels(Labels.COMPONENT_LABEL, AdminApiModel.COMPONENT_NAME)
+                    .addToMatchLabels(Labels.EMPTY.withKubernetesName(AdminApiModel.COMPONENT_NAME).toMap())
                 .endPodSelector()
             .endFrom()
+            // Strimzi operator needs to Connect
             .addNewFrom()
                 .withNewPodSelector()
-                    .addToMatchLabels(io.strimzi.operator.common.model.Labels.STRIMZI_KIND_LABEL, "cluster-operator")
+                    .addToMatchLabels(Labels.STRIMZI_KIND_LABEL, AbstractModel.OPERATOR_NAME)
                 .endPodSelector()
                 .withNewNamespaceSelector()
                 .endNamespaceSelector()
