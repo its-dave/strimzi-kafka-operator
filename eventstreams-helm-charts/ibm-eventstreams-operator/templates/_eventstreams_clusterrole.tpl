@@ -60,6 +60,14 @@
     - patch
     - delete
 - apiGroups:
+    - rbac.authorization.k8s.io
+  resources:
+    - clusterroles
+    - clusterrolebindings
+  verbs:
+    - get
+    - list
+- apiGroups:
     - console.openshift.io
   resources:
     - consoleyamlsamples
@@ -132,6 +140,14 @@
     - create
     - patch
     - delete
+- apiGroups:
+    - rbac.authorization.k8s.io
+  resources:
+    - clusterroles
+    - clusterrolebindings
+  verbs:
+    - get
+    - list
 - apiGroups:
     - console.openshift.io
   resources:

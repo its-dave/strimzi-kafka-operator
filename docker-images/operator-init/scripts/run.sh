@@ -22,8 +22,9 @@ set -e
 # 4. ConsoleYAMLSample
 #
 # All of these manually-created resources have the owner reference set to
-# point to the Event Streams Cluster Operator, so that they will be automatically
-# deleted if the operator deployment is deleted.
+# point to the cluster role created for the Event Streams Cluster Operator,
+# so that they will be automatically deleted if the operator deployment is
+# deleted.
 #
 
 echo "---------------------------------------------------------------"
@@ -31,6 +32,65 @@ echo "---------------------------------------------------------------"
 echo "Creating Kubernetes resources for"
 echo "   Event Streams Operator  : $EVENTSTREAMS_UID"
 echo "   running in              : $EVENTSTREAMS_OPERATOR_NAMESPACE"
+
+echo "---------------------------------------------------------------"
+
+
+
+#
+# 0.   Identifying suitable owner reference
+#
+#  The ideal owner for resources created by this script is the clusterrole
+#  created for the operator deployment.
+#
+
+echo "Identifying owner reference to use"
+
+# default owner if we don't find a cluster role
+OWNER_APIVERSION="apps/v1"
+OWNER_KIND="Deployment"
+OWNER_NAME="eventstreams-cluster-operator"
+OWNER_UID=$EVENTSTREAMS_UID
+
+echo "Getting list of cluster role bindings"
+clusterrolebindingnames=`kubectl get clusterrolebinding -o name | grep ibm-eventstreams-operator`
+echo "Checking subjects for each CRB"
+for crbname in $clusterrolebindingnames;
+    do
+        echo "Checking $crbname"
+        crbattrs=`kubectl get $crbname -o jsonpath='{.subjects[0].kind}{" "}{.subjects[0].name}{" "}{.subjects[0].namespace}{" "}{.roleRef.kind}{" "}{.roleRef.name}'`
+        echo "Attributes: $crbattrs"
+
+        crb=( $crbattrs )
+        subjectkind=${crb[0]}
+        subjectname=${crb[1]}
+        subjectns=${crb[2]}
+        rolerefkind=${crb[3]}
+        rolerefname=${crb[4]}
+
+        if [ $subjectkind == "ServiceAccount" ] && \
+            [ $subjectname == "eventstreams-cluster-operator-namespaced" ] && \
+            [ $subjectns == $EVENTSTREAMS_OPERATOR_NAMESPACE ] && \
+            [ $rolerefkind == "ClusterRole" ] ; then
+
+            echo "Found a cluster role to use as ownerref"
+
+            OWNER_APIVERSION="rbac.authorization.k8s.io/v1"
+            OWNER_KIND="ClusterRole"
+            OWNER_NAME=$rolerefname
+            OWNER_UID=`kubectl get clusterrole $rolerefname -o jsonpath='{.metadata.uid}'`
+
+            break
+        fi
+    done
+
+echo "Resource to use as owner for operator supporting resources"
+echo "  apiVersion: $OWNER_APIVERSION"
+echo "  kind:       $OWNER_KIND"
+echo "  name:       $OWNER_NAME"
+echo "  uid:        $OWNER_UID"
+
+
 
 echo "---------------------------------------------------------------"
 
@@ -50,10 +110,10 @@ metadata:
   annotations:
     service.beta.openshift.io/serving-cert-secret-name: eventstreams-cluster-operator
   ownerReferences:
-  - apiVersion: apps/v1
-    kind: Deployment
-    name: eventstreams-cluster-operator
-    uid: $EVENTSTREAMS_UID
+  - apiVersion: $OWNER_APIVERSION
+    kind: $OWNER_KIND
+    name: $OWNER_NAME
+    uid: $OWNER_UID
 spec:
   selector:
     app: eventstreams
@@ -90,10 +150,10 @@ metadata:
   annotations:
     service.beta.openshift.io/inject-cabundle: "true"
   ownerReferences:
-  - apiVersion: apps/v1
-    kind: Deployment
-    name: eventstreams-cluster-operator
-    uid: $EVENTSTREAMS_UID
+  - apiVersion: $OWNER_APIVERSION
+    kind: $OWNER_KIND
+    name: $OWNER_NAME
+    uid: $OWNER_UID
 EOF
 
 echo "Verifying config map definition"
@@ -134,10 +194,10 @@ kind: ValidatingWebhookConfiguration
 metadata:
   name: validate-eventstreams-$EVENTSTREAMS_OPERATOR_NAMESPACE
   ownerReferences:
-  - apiVersion: apps/v1
-    kind: Deployment
-    name: eventstreams-cluster-operator
-    uid: $EVENTSTREAMS_UID
+  - apiVersion: $OWNER_APIVERSION
+    kind: $OWNER_KIND
+    name: $OWNER_NAME
+    uid: $OWNER_UID
 webhooks:
   - name: eventstreams.ibm.com.rejectlicensenotaccepted
     rules:
@@ -256,10 +316,10 @@ kind: ConsoleYAMLSample
 metadata:
   name: eventstreams-quickstart-$EVENTSTREAMS_OPERATOR_NAMESPACE
   ownerReferences:
-  - apiVersion: apps/v1
-    kind: Deployment
-    name: eventstreams-cluster-operator
-    uid: $EVENTSTREAMS_UID
+  - apiVersion: $OWNER_APIVERSION
+    kind: $OWNER_KIND
+    name: $OWNER_NAME
+    uid: $OWNER_UID
 spec:
   description: Small cluster for development use
   snippet: false
@@ -310,10 +370,10 @@ kind: ConsoleYAMLSample
 metadata:
   name: eventstreams-sample-3-$EVENTSTREAMS_OPERATOR_NAMESPACE
   ownerReferences:
-  - apiVersion: apps/v1
-    kind: Deployment
-    name: eventstreams-cluster-operator
-    uid: $EVENTSTREAMS_UID
+  - apiVersion: $OWNER_APIVERSION
+    kind: $OWNER_KIND
+    name: $OWNER_NAME
+    uid: $OWNER_UID
 spec:
   description: Secure production cluster with three brokers
   snippet: false
@@ -380,10 +440,10 @@ kind: ConsoleYAMLSample
 metadata:
   name: eventstreams-sample-6-$EVENTSTREAMS_OPERATOR_NAMESPACE
   ownerReferences:
-  - apiVersion: apps/v1
-    kind: Deployment
-    name: eventstreams-cluster-operator
-    uid: $EVENTSTREAMS_UID
+  - apiVersion: $OWNER_APIVERSION
+    kind: $OWNER_KIND
+    name: $OWNER_NAME
+    uid: $OWNER_UID
 spec:
   description: Secure production cluster with six brokers
   snippet: false
@@ -450,10 +510,10 @@ kind: ConsoleYAMLSample
 metadata:
   name: eventstreams-sample-9-$EVENTSTREAMS_OPERATOR_NAMESPACE
   ownerReferences:
-  - apiVersion: apps/v1
-    kind: Deployment
-    name: eventstreams-cluster-operator
-    uid: $EVENTSTREAMS_UID
+  - apiVersion: $OWNER_APIVERSION
+    kind: $OWNER_KIND
+    name: $OWNER_NAME
+    uid: $OWNER_UID
 spec:
   description: Secure production cluster with nine brokers
   snippet: false
