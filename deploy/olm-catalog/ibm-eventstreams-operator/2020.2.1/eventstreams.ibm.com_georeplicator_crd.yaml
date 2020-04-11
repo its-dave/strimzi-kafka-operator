@@ -69,7 +69,8 @@ spec:
                           with the following prefixes cannot be set: ssl., sasl.,
                           security., listeners, plugin.path, rest., bootstrap.servers,
                           consumer.interceptor.classes, producer.interceptor.classes
-                          (with the exception of: ssl.endpoint.identification.algorithm).'
+                          (with the exception of: ssl.endpoint.identification.algorithm,
+                          ssl.cipher.suites, ssl.protocol, ssl.enabled.protocols).'
                       tls:
                         type: object
                         properties:

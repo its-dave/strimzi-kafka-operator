@@ -311,7 +311,7 @@ Used in: xref:type-KafkaClientAuthenticationOAuth-{context}[`KafkaClientAuthenti
 [id='type-CertSecretSource-{context}']
 ### `CertSecretSource` schema reference
 
-Used in: xref:type-KafkaAuthorizationKeycloak-{context}[`KafkaAuthorizationKeycloak`], xref:type-KafkaBridgeTls-{context}[`KafkaBridgeTls`], xref:type-KafkaClientAuthenticationOAuth-{context}[`KafkaClientAuthenticationOAuth`], xref:type-KafkaConnectTls-{context}[`KafkaConnectTls`], xref:type-KafkaListenerAuthenticationOAuth-{context}[`KafkaListenerAuthenticationOAuth`], xref:type-KafkaMirrorMaker2Tls-{context}[`KafkaMirrorMaker2Tls`], xref:type-KafkaMirrorMakerTls-{context}[`KafkaMirrorMakerTls`]
+Used in: xref:type-KafkaBridgeTls-{context}[`KafkaBridgeTls`], xref:type-KafkaClientAuthenticationOAuth-{context}[`KafkaClientAuthenticationOAuth`], xref:type-KafkaConnectTls-{context}[`KafkaConnectTls`], xref:type-KafkaListenerAuthenticationOAuth-{context}[`KafkaListenerAuthenticationOAuth`], xref:type-KafkaMirrorMaker2Tls-{context}[`KafkaMirrorMaker2Tls`], xref:type-KafkaMirrorMakerTls-{context}[`KafkaMirrorMakerTls`]
 
 
 [options="header"]
@@ -721,47 +721,20 @@ Used in: xref:type-IngressListenerConfiguration-{context}[`IngressListenerConfig
 |map
 |====
 
-[id='type-KafkaAuthorizationSimple-{context}']
-### `KafkaAuthorizationSimple` schema reference
+[id='type-KafkaAuthorizationRunAs-{context}']
+### `KafkaAuthorizationRunAs` schema reference
 
 Used in: xref:type-KafkaClusterSpec-{context}[`KafkaClusterSpec`]
 
 
-The `type` property is a discriminator that distinguishes the use of the type `KafkaAuthorizationSimple` from xref:type-KafkaAuthorizationKeycloak-{context}[`KafkaAuthorizationKeycloak`].
-It must have the value `simple` for the type `KafkaAuthorizationSimple`.
+The `type` property is a discriminator that distinguishes the use of the type `KafkaAuthorizationRunAs` from other subtypes which may be added in the future.
+It must have the value `runas` for the type `KafkaAuthorizationRunAs`.
 [options="header"]
 |====
 |Property           |Description
-|type        1.2+<.<|Must be `simple`.
+|type        1.2+<.<|Must be `runas`.
 |string
 |superUsers  1.2+<.<|List of super users. Should contain list of user principals which should get unlimited access rights.
-|string array
-|====
-
-[id='type-KafkaAuthorizationKeycloak-{context}']
-### `KafkaAuthorizationKeycloak` schema reference
-
-Used in: xref:type-KafkaClusterSpec-{context}[`KafkaClusterSpec`]
-
-
-The `type` property is a discriminator that distinguishes the use of the type `KafkaAuthorizationKeycloak` from xref:type-KafkaAuthorizationSimple-{context}[`KafkaAuthorizationSimple`].
-It must have the value `keycloak` for the type `KafkaAuthorizationKeycloak`.
-[options="header"]
-|====
-|Property                               |Description
-|type                            1.2+<.<|Must be `keycloak`.
-|string
-|clientId                        1.2+<.<|OAuth Client ID which the Kafka client can use to authenticate against the OAuth server and use the token endpoint URI.
-|string
-|tokenEndpointUri                1.2+<.<|Authorization server token endpoint URI.
-|string
-|tlsTrustedCertificates          1.2+<.<|Trusted certificates for TLS connection to the OAuth server.
-|xref:type-CertSecretSource-{context}[`CertSecretSource`] array
-|disableTlsHostnameVerification  1.2+<.<|Enable or disable TLS hostname verification. Default value is `false`.
-|boolean
-|delegateToKafkaAcls             1.2+<.<|Whether authorization decision should be delegated to the 'Simple' authorizer if DENIED by Keycloak Authorization Services policies.Default value is `false`.
-|boolean
-|superUsers                      1.2+<.<|List of super users. Should contain list of user principals which should get unlimited access rights.
 |string array
 |====
 

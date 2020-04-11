@@ -19,6 +19,7 @@ import io.fabric8.kubernetes.client.Watch;
 import io.fabric8.kubernetes.internal.KubernetesDeserializer;
 import io.fabric8.openshift.client.OpenShiftClient;
 import io.strimzi.operator.PlatformFeaturesAvailability;
+import io.strimzi.operator.common.MetricsProvider;
 import io.strimzi.operator.common.operator.resource.RouteOperator;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.AbstractVerticle;
@@ -35,6 +36,7 @@ public class EventStreamsReplicatorVerticle extends AbstractVerticle {
     private static final Logger log = LogManager.getLogger(EventStreamsReplicatorVerticle.class);
     private final EventStreamsOperatorConfig.ImageLookup imageConfig;
     private RouteOperator routeOperator;
+    private final MetricsProvider metricsProvider;
 
     private KubernetesClient client;
     private Vertx vertx;
@@ -52,7 +54,7 @@ public class EventStreamsReplicatorVerticle extends AbstractVerticle {
     private Watch eventStreamsReplicatorCRWatcher;
     private long reconcileTimer;
 
-    public EventStreamsReplicatorVerticle(Vertx vertx, KubernetesClient client, String namespace, PlatformFeaturesAvailability pfa, EventStreamsOperatorConfig config) {
+    public EventStreamsReplicatorVerticle(Vertx vertx, KubernetesClient client, String namespace, MetricsProvider metricsProvider, PlatformFeaturesAvailability pfa, EventStreamsOperatorConfig config) {
         log.info("Creating EventStreamsVerticle for namespace {}", namespace);
         this.vertx = vertx;
         this.client = client;
@@ -62,7 +64,7 @@ public class EventStreamsReplicatorVerticle extends AbstractVerticle {
         this.reconciliationIntervalMilliSecs = config.getReconciliationIntervalMilliSecs();
         this.imageConfig = config.getImages();
         this.routeOperator = pfa.hasRoutes() ? new RouteOperator(vertx, client.adapt(OpenShiftClient.class)) : null;
-
+        this.metricsProvider = metricsProvider;
     }
 
     @Override
@@ -73,7 +75,16 @@ public class EventStreamsReplicatorVerticle extends AbstractVerticle {
 
             EventStreamsReplicatorResourceOperator replicatorResourceOperator = new EventStreamsReplicatorResourceOperator(vertx, client, EventStreamsReplicator.RESOURCE_KIND);
             EventStreamsResourceOperator esResourceOperator = new EventStreamsResourceOperator(vertx, client);
-            EventStreamsReplicatorOperator eventStreamsReplicatorOperator = new EventStreamsReplicatorOperator(vertx, client, EventStreams.RESOURCE_KIND, pfa, replicatorResourceOperator, esResourceOperator, routeOperator, replicatorStatusReadyTimeoutMilliSecs);
+            EventStreamsReplicatorOperator eventStreamsReplicatorOperator = new EventStreamsReplicatorOperator(
+                    vertx,
+                    client,
+                    EventStreams.RESOURCE_KIND,
+                    pfa,
+                    replicatorResourceOperator,
+                    esResourceOperator,
+                    routeOperator,
+                    metricsProvider,
+                    replicatorStatusReadyTimeoutMilliSecs);
 
             eventStreamsReplicatorOperator.createWatch(namespace, eventStreamsReplicatorOperator.recreateWatch(namespace))
                     .compose(w -> {

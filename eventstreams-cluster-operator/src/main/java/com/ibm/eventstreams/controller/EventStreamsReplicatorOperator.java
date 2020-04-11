@@ -28,6 +28,7 @@ import io.strimzi.api.kafka.model.listener.KafkaListenerTls;
 import io.strimzi.api.kafka.model.listener.KafkaListeners;
 import io.strimzi.operator.PlatformFeaturesAvailability;
 import io.strimzi.operator.common.AbstractOperator;
+import io.strimzi.operator.common.MetricsProvider;
 import io.strimzi.operator.common.Reconciliation;
 import io.strimzi.operator.common.model.Labels;
 import io.strimzi.operator.common.operator.resource.NetworkPolicyOperator;
@@ -57,6 +58,7 @@ public class EventStreamsReplicatorOperator extends AbstractOperator<EventStream
     private final SecretOperator secretOperator;
     private final EventStreamsResourceOperator resourceOperator;
     private final KafkaUserOperator kafkaUserOperator;
+    private final MetricsProvider metricsProvider;
 
     private PlatformFeaturesAvailability pfa;
 
@@ -67,8 +69,9 @@ public class EventStreamsReplicatorOperator extends AbstractOperator<EventStream
                                           EventStreamsReplicatorResourceOperator replicatorResourceOperator,
                                           EventStreamsResourceOperator resourceOperator,
                                           RouteOperator routeOperator,
+                                          MetricsProvider metricsProvider,
                                           long kafkaStatusReadyTimeoutMs) {
-        super(vertx, kind, replicatorResourceOperator);
+        super(vertx, kind, replicatorResourceOperator, metricsProvider);
 
         this.replicatorResourceOperator = replicatorResourceOperator;
         this.resourceOperator = resourceOperator;
@@ -76,6 +79,7 @@ public class EventStreamsReplicatorOperator extends AbstractOperator<EventStream
         this.networkPolicyOperator = new NetworkPolicyOperator(vertx, client);
         this.secretOperator = new SecretOperator(vertx, client);
         this.kafkaUserOperator = new KafkaUserOperator(vertx, client);
+        this.metricsProvider = metricsProvider;
         this.client = client;
         this.pfa = pfa;
     }

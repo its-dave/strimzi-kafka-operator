@@ -13,6 +13,7 @@
 package com.ibm.eventstreams;
 
 import com.ibm.eventstreams.controller.EventStreamsOperatorConfig;
+import com.ibm.eventstreams.controller.utils.MetricsUtils;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.Watch;
 import io.fabric8.kubernetes.client.Watcher;
@@ -132,7 +133,7 @@ public class EventStreamsVerticleTest {
 
     private void launchEventStreamsVerticles(VertxTestContext context, Map<String, String> defaultEnvVars) throws InterruptedException {
         CountDownLatch async = new CountDownLatch(1);
-        Main.runEventStreams(vertx, mockClient, new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9), EventStreamsOperatorConfig.fromMap(defaultEnvVars)).setHandler(ar -> {
+        Main.runEventStreams(vertx, mockClient, MetricsUtils.createMockMetricsProvider(), new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9), EventStreamsOperatorConfig.fromMap(defaultEnvVars)).setHandler(ar -> {
             context.verify(() -> assertThat("Not all verticles started", ar.cause(), is(nullValue())));
             async.countDown();
         });

@@ -47,7 +47,7 @@ public class EventStreamsReplicatorResourceOperator extends
         super(vertx, client, resourceKind);
         log.info("Creating EventStreamsReplicatorResourceOperator");
         this.client = client;
-        this.mirrorMaker2Operator = new CrdOperator<>(vertx, client, KafkaMirrorMaker2.class, KafkaMirrorMaker2List.class, DoneableKafkaMirrorMaker2.class);
+        this.mirrorMaker2Operator = new CrdOperator<>(vertx, client, KafkaMirrorMaker2.class, KafkaMirrorMaker2List.class, DoneableKafkaMirrorMaker2.class, Crds.getCrd(EventStreamsReplicator.class));
     }
 
     @Override

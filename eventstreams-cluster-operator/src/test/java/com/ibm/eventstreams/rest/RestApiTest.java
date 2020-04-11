@@ -16,6 +16,7 @@ package com.ibm.eventstreams.rest;
 import com.ibm.eventstreams.api.model.utils.MockEventStreamsKube;
 import com.ibm.eventstreams.controller.EventStreamsOperatorConfig;
 import com.ibm.eventstreams.controller.EventStreamsVerticle;
+import com.ibm.eventstreams.controller.utils.MetricsUtils;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.strimzi.operator.KubernetesVersion;
 import io.strimzi.operator.PlatformFeaturesAvailability;
@@ -55,6 +56,7 @@ public abstract class RestApiTest {
         mockClient = new MockEventStreamsKube().build();
 
         eventStreamsVerticle = new EventStreamsVerticle(vertx, mockClient, TEST_NAMESPACE,
+                MetricsUtils.createMockMetricsProvider(),
                 new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9),
                 EventStreamsOperatorConfig.fromMap(getDefaultEnvVars(TEST_NAMESPACE)));
 

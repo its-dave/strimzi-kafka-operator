@@ -68,6 +68,7 @@ import io.strimzi.certs.CertAndKey;
 import io.strimzi.operator.PlatformFeaturesAvailability;
 import io.strimzi.operator.cluster.model.ModelUtils;
 import io.strimzi.operator.common.AbstractOperator;
+import io.strimzi.operator.common.MetricsProvider;
 import io.strimzi.operator.common.Reconciliation;
 import io.strimzi.operator.common.operator.resource.ConfigMapOperator;
 import io.strimzi.operator.common.operator.resource.DeploymentOperator;
@@ -123,6 +124,8 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
     private final EventStreamsOperatorConfig.ImageLookup imageConfig;
     private PlatformFeaturesAvailability pfa;
 
+    private final MetricsProvider metricsProvider;
+
     private long defaultPollIntervalMs = 1000;
     private long kafkaStatusReadyTimeoutMs;
 
@@ -136,8 +139,9 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                                 Cp4iServicesBindingResourceOperator cp4iResourceOperator,
                                 EventStreamsOperatorConfig.ImageLookup imageConfig,
                                 RouteOperator routeOperator,
+                                MetricsProvider metricsProvider,
                                 long kafkaStatusReadyTimeoutMs) {
-        super(vertx, kind, esResourceOperator);
+        super(vertx, kind, esResourceOperator, metricsProvider);
         log.traceEntry(() -> vertx, () -> client, () -> kind, () -> pfa, () -> esResourceOperator, 
             () -> cp4iResourceOperator, () -> imageConfig, () -> routeOperator,
             () -> kafkaStatusReadyTimeoutMs);
@@ -158,6 +162,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         this.pvcOperator = new PvcOperator(vertx, client);
         this.imageConfig = imageConfig;
         this.networkPolicyOperator = new NetworkPolicyOperator(vertx, client);
+        this.metricsProvider = metricsProvider;
 
         this.kafkaStatusReadyTimeoutMs = kafkaStatusReadyTimeoutMs;
 

@@ -28,6 +28,7 @@ import io.fabric8.kubernetes.client.Watch;
 import io.fabric8.kubernetes.internal.KubernetesDeserializer;
 import io.fabric8.openshift.client.OpenShiftClient;
 import io.strimzi.operator.PlatformFeaturesAvailability;
+import io.strimzi.operator.common.MetricsProvider;
 import io.strimzi.operator.common.operator.resource.RouteOperator;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
@@ -51,6 +52,7 @@ public class EventStreamsVerticle extends AbstractVerticle {
     private static final Logger log = LogManager.getLogger(EventStreamsVerticle.class);
     private final EventStreamsOperatorConfig.ImageLookup imageConfig;
     private RouteOperator routeOperator;
+    private final MetricsProvider metricsProvider;
 
     private KubernetesClient client;
     private Vertx vertx;
@@ -68,7 +70,7 @@ public class EventStreamsVerticle extends AbstractVerticle {
     private Watch eventStreamsCRWatcher;
     private long reconcileTimer;
 
-    public EventStreamsVerticle(Vertx vertx, KubernetesClient client, String namespace, PlatformFeaturesAvailability pfa, EventStreamsOperatorConfig config) {
+    public EventStreamsVerticle(Vertx vertx, KubernetesClient client, String namespace, MetricsProvider metricsProvider, PlatformFeaturesAvailability pfa, EventStreamsOperatorConfig config) {
         log.info("Creating EventStreamsVerticle for namespace {}", namespace);
         this.vertx = vertx;
         this.client = client;
@@ -78,6 +80,7 @@ public class EventStreamsVerticle extends AbstractVerticle {
         this.reconciliationIntervalMilliSecs = config.getReconciliationIntervalMilliSecs();
         this.imageConfig = config.getImages();
         this.routeOperator = pfa.hasRoutes() ? new RouteOperator(vertx, client.adapt(OpenShiftClient.class)) : null;
+        this.metricsProvider = metricsProvider;
     }
 
     @Override
@@ -88,7 +91,17 @@ public class EventStreamsVerticle extends AbstractVerticle {
 
             EventStreamsResourceOperator esResourceOperator = new EventStreamsResourceOperator(vertx, client);
             Cp4iServicesBindingResourceOperator cp4iResourceOperator = new Cp4iServicesBindingResourceOperator(vertx, client, Cp4iServicesBinding.RESOURCE_KIND);
-            EventStreamsOperator eventStreamsOperator = new EventStreamsOperator(vertx, client, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, imageConfig, routeOperator, kafkaStatusReadyTimeoutMilliSecs);
+            EventStreamsOperator eventStreamsOperator = new EventStreamsOperator(
+                    vertx,
+                    client,
+                    EventStreams.RESOURCE_KIND,
+                    pfa,
+                    esResourceOperator,
+                    cp4iResourceOperator,
+                    imageConfig,
+                    routeOperator,
+                    metricsProvider,
+                    kafkaStatusReadyTimeoutMilliSecs);
             eventStreamsOperator.createWatch(namespace, eventStreamsOperator.recreateWatch(namespace))
                     .compose(w -> {
                         log.info("Started operator for EventStreams kind.");

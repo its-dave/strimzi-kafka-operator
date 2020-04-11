@@ -25,6 +25,7 @@ import io.strimzi.operator.cluster.operator.assembly.KafkaConnectAssemblyOperato
 import io.strimzi.operator.cluster.operator.assembly.KafkaConnectS2IAssemblyOperator;
 import io.strimzi.operator.cluster.operator.assembly.KafkaMirrorMaker2AssemblyOperator;
 import io.strimzi.operator.cluster.operator.resource.ResourceOperatorSupplier;
+import io.strimzi.operator.common.MetricsProvider;
 import io.strimzi.operator.common.PasswordGenerator;
 import io.strimzi.operator.common.operator.resource.ClusterRoleOperator;
 import io.vertx.core.CompositeFuture;
@@ -89,11 +90,24 @@ public class Main {
             if (crs.succeeded())    {
                 PlatformFeaturesAvailability.create(vertx, client).setHandler(pfa -> {
                     if (pfa.succeeded()) {
-                        log.info("Environment facts gathered: {}", pfa.result());
+                        PlatformFeaturesAvailability pfaObj = pfa.result();
 
-                        run(vertx, client, pfa.result(), config).setHandler(ar -> {
+                        log.info("Environment facts gathered: {}", pfaObj);
+
+                        ResourceOperatorSupplier resourceOperatorSupplier = new ResourceOperatorSupplier(vertx, client, pfaObj, config.getOperationTimeoutMs());
+
+                        run(vertx, client, resourceOperatorSupplier, pfaObj, config).setHandler(ar -> {
                             if (ar.failed()) {
                                 log.error("Unable to start operator for 1 or more namespace", ar.cause());
+                                System.exit(1);
+                            }
+                        });
+
+                        EventStreamsOperatorConfig eventStreamsConfig = EventStreamsOperatorConfig.fromMap(System.getenv());
+
+                        runEventStreams(vertx, client, resourceOperatorSupplier.metricsProvider, pfaObj, eventStreamsConfig).setHandler(asyncResult -> {
+                            if (asyncResult.failed()) {
+                                log.error("Failed to start EventStreams operator for 1 or more namespace", asyncResult.cause());
                                 System.exit(1);
                             }
                         });
@@ -107,29 +121,10 @@ public class Main {
                 System.exit(1);
             }
         });
-
-        EventStreamsOperatorConfig eventStreamsConfig = EventStreamsOperatorConfig.fromMap(System.getenv());
-
-        PlatformFeaturesAvailability.create(vertx, client).setHandler(pfa -> {
-
-            if (pfa.succeeded()) {
-                log.info("Platform features: {}", pfa.result());
-                runEventStreams(vertx, client, pfa.result(), eventStreamsConfig).setHandler(asyncResult -> {
-                    if (asyncResult.failed()) {
-                        log.error("Failed to start EventStreams operator for 1 or more namespace", asyncResult.cause());
-                        System.exit(1);
-                    }
-                });
-            } else {
-                log.error("Failed to gather platform features", pfa.cause());
-                System.exit(1);
-            }
-        });
-
     }
 
 
-    static CompositeFuture runEventStreams(Vertx vertx, KubernetesClient client, PlatformFeaturesAvailability pfa, EventStreamsOperatorConfig config) {
+    static CompositeFuture runEventStreams(Vertx vertx, KubernetesClient client, MetricsProvider metricsProvider, PlatformFeaturesAvailability pfa, EventStreamsOperatorConfig config) {
         List<Future> futures = new ArrayList<>();
 
         logOperatorEnvVars();
@@ -142,6 +137,7 @@ public class Main {
             EventStreamsVerticle eventStreamsVerticle = new EventStreamsVerticle(vertx,
                 client,
                 namespace,
+                metricsProvider,
                 pfa,
                 config);
 
@@ -159,6 +155,7 @@ public class Main {
             EventStreamsReplicatorVerticle eventSteamsReplicatorVerticle = new EventStreamsReplicatorVerticle(vertx,
                     client,
                     namespace,
+                    metricsProvider,
                     pfa,
                     config);
 
@@ -187,10 +184,10 @@ public class Main {
     }
 
 
-    static CompositeFuture run(Vertx vertx, KubernetesClient client, PlatformFeaturesAvailability pfa, ClusterOperatorConfig config) {
+    static CompositeFuture run(Vertx vertx, KubernetesClient client, ResourceOperatorSupplier resourceOperatorSupplier, PlatformFeaturesAvailability pfa, ClusterOperatorConfig config) {
         printEnvInfo();
 
-        ResourceOperatorSupplier resourceOperatorSupplier = new ResourceOperatorSupplier(vertx, client, pfa, config.getOperationTimeoutMs());
+        // ResourceOperatorSupplier resourceOperatorSupplier = new ResourceOperatorSupplier(vertx, client, pfa, config.getOperationTimeoutMs());
 
         OpenSslCertManager certManager = new OpenSslCertManager();
         PasswordGenerator passwordGenerator = new PasswordGenerator(12,
@@ -226,7 +223,8 @@ public class Main {
                     kafkaConnectS2IClusterOperations,
                     null,
                     kafkaMirrorMaker2AssemblyOperator,
-                    null);
+                    null,
+                    resourceOperatorSupplier.metricsProvider);
             vertx.deployVerticle(operator,
                 res -> {
                     if (res.succeeded()) {

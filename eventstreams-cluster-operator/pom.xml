@@ -152,9 +152,16 @@
             <artifactId>log4j-api</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-micrometer-metrics</artifactId>
-            <version>${vertx.micrometer-metrics.version}</version>
         </dependency>
     </dependencies>
 
@@ -254,6 +261,8 @@
                                 <ignoredUnusedDeclaredDependency>com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:jar</ignoredUnusedDeclaredDependency>
                                 <ignoredUnusedDeclaredDependency>org.projectlombok:lombok:jar:1.18.4</ignoredUnusedDeclaredDependency>
                                 <ignoredUnusedDeclaredDependency>io.sundr:builder-annotations:jar:0.19.0:</ignoredUnusedDeclaredDependency>
+                                <ignoredUnusedDeclaredDependency>io.micrometer:micrometer-core</ignoredUnusedDeclaredDependency>
+                                <ignoredUnusedDeclaredDependency>io.micrometer:micrometer-registry-prometheus</ignoredUnusedDeclaredDependency>
                             </ignoredUnusedDeclaredDependencies>
                         </configuration>
                     </execution>
