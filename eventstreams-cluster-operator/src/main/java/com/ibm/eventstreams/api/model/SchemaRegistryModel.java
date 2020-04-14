@@ -46,11 +46,13 @@ import io.fabric8.kubernetes.api.model.networking.NetworkPolicyIngressRule;
 import io.strimzi.api.kafka.model.ContainerEnvVar;
 import io.strimzi.api.kafka.model.InlineLogging;
 import io.strimzi.api.kafka.model.Logging;
+import io.strimzi.api.kafka.model.status.ListenerStatus;
 import io.strimzi.api.kafka.model.storage.EphemeralStorage;
 import io.strimzi.api.kafka.model.storage.PersistentClaimStorage;
 import io.strimzi.api.kafka.model.storage.Storage;
 import io.strimzi.api.kafka.model.template.PodTemplate;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -96,6 +98,10 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
     private List<ContainerEnvVar> schemaRegistryProxyEnvVars;
     private ResourceRequirements schemaRegistryProxyResourceRequirements;
     private String defaultProxyTraceString = "info";
+    private final String icpClusterName;
+    private final String iamServerURL;
+
+    private List<ListenerStatus> kafkaListeners;
 
 
 
@@ -105,10 +111,17 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
      * This class is used to model the kube resources required for the correct deployment of the schema registry
      * @param instance
      * @param imageConfig
+     * @param kafkaListeners
      */
     public SchemaRegistryModel(EventStreams instance,
-                               EventStreamsOperatorConfig.ImageLookup imageConfig) {
+                               EventStreamsOperatorConfig.ImageLookup imageConfig,
+                               List<ListenerStatus> kafkaListeners,
+                               Map<String, String> icpClusterData) {
+
         super(instance, instance.getSpec().getSchemaRegistry(), COMPONENT_NAME);
+        this.kafkaListeners = kafkaListeners != null ? new ArrayList<>(kafkaListeners) : new ArrayList<>();
+        this.icpClusterName = icpClusterData.getOrDefault("cluster_name", "null");
+        this.iamServerURL = icpClusterData.getOrDefault("cluster_endpoint", "null");
 
         Optional<SchemaRegistrySpec> schemaRegistrySpec = Optional.ofNullable(instance.getSpec()).map(EventStreamsSpec::getSchemaRegistry);
 
@@ -461,6 +474,14 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
             .withLivenessProbe(createProxyLivenessProbe())
             .withReadinessProbe(createProxyReadinessProbe());
 
+        // Add The IAM Specific Volume mount. If we need to build without IAM Support we can put a variable check
+        // here.
+        containerBuilder.addNewVolumeMount()
+            .withNewName(IBMCLOUD_CA_VOLUME_MOUNT_NAME)
+            .withMountPath(IBMCLOUD_CA_CERTIFICATE_PATH)
+            .withNewReadOnly(true)
+            .endVolumeMount();
+
         configureSecurityVolumeMounts(containerBuilder);
 
         return containerBuilder.build();
@@ -471,6 +492,8 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
      * @return A list of default EnvVars for the schema registry proxy container
      */
     private List<EnvVar> getSchemaRegistryProxyEnvVars() {
+        String internalBootstrap = getInternalKafkaBootstrap(kafkaListeners);
+        String runasBootstrap = getRunAsKafkaBootstrap(kafkaListeners);
 
         List<EnvVar> envVars = new ArrayList<>();
         envVars.addAll(Arrays.asList(
@@ -480,6 +503,32 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
             new EnvVarBuilder().withName("AUTHENTICATION_ENABLED").withValue(endpoints.stream()
                 .allMatch(ep -> ep.getAuthenticationMechanisms().isEmpty()) ? "false" : "true").build(),
             new EnvVarBuilder().withName("TRACE_SPEC").withValue(defaultProxyTraceString).build(),
+            new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_SERVERS").withValue(internalBootstrap).build(),
+            new EnvVarBuilder().withName("RUNAS_KAFKA_BOOTSTRAP_SERVERS").withValue(runasBootstrap).build(),
+            new EnvVarBuilder().withName("KAFKA_PRINCIPAL").withValue(InternalKafkaUserModel.getInternalKafkaUserSecretName(getInstanceName())).build(),
+            new EnvVarBuilder().withName("SSL_TRUSTSTORE_PATH").withValue(CLUSTER_CERTIFICATE_PATH + File.separator + CA_P12).build(),
+            new EnvVarBuilder()
+                .withName("SSL_TRUSTSTORE_PASSWORD")
+                .withNewValueFrom()
+                .withNewSecretKeyRef()
+                .withName(EventStreamsKafkaModel.getKafkaClusterCaCertName(getInstanceName()))
+                .withKey(CA_P12_PASS)
+                .endSecretKeyRef()
+                .endValueFrom()
+                .build(),
+            new EnvVarBuilder()
+                .withName("SSL_KEYSTORE_PATH")
+                .withValue(KAFKA_USER_CERTIFICATE_PATH + File.separator + "podtls.p12")
+                .build(),
+            new EnvVarBuilder()
+                .withName("SSL_KEYSTORE_PASSWORD")
+                .withNewValueFrom()
+                .withNewSecretKeyRef()
+                .withName(InternalKafkaUserModel.getInternalKafkaUserSecretName(getInstanceName()))
+                .withKey(USER_P12_PASS)
+                .endSecretKeyRef()
+                .endValueFrom()
+                .build(),
             new EnvVarBuilder()
                 .withName("HMAC_SECRET")
                 .withNewValueFrom()
@@ -488,9 +537,31 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
                 .withKey(MessageAuthenticationModel.HMAC_SECRET)
                 .endSecretKeyRef()
                 .endValueFrom()
+                .build(),
+            // Add The IAM Specific Envars.  If we need to build without IAM Support we can put a variable check
+            // here.
+            new EnvVarBuilder().withName("IAM_CLUSTER_NAME").withValue(icpClusterName).build(),
+            new EnvVarBuilder().withName("IAM_SERVER_URL").withValue(iamServerURL).build(),
+            new EnvVarBuilder().withName("IAM_SERVER_CA_CERT").withValue(IBMCLOUD_CA_CERTIFICATE_PATH + File.separator + CA_CERT).build(),
+            new EnvVarBuilder()
+                .withName("CLIENT_ID")
+                .withNewValueFrom()
+                .withNewSecretKeyRef()
+                .withName(getResourcePrefix() + "-oidc-secret")
+                .withKey(CLIENT_ID_KEY)
+                .endSecretKeyRef()
+                .endValueFrom()
+                .build(),
+            new EnvVarBuilder()
+                .withName("CLIENT_SECRET")
+                .withNewValueFrom()
+                .withNewSecretKeyRef()
+                .withName(getResourcePrefix() + "-oidc-secret")
+                .withKey(CLIENT_SECRET_KEY)
+                .endSecretKeyRef()
+                .endValueFrom()
                 .build()
         ));
-
 
         configureSecurityEnvVars(envVars);
 

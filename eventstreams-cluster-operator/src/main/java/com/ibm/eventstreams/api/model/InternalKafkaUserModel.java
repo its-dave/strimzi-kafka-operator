@@ -21,6 +21,7 @@ import io.strimzi.api.kafka.model.KafkaUser;
 import io.strimzi.api.kafka.model.KafkaUserSpecBuilder;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class InternalKafkaUserModel extends AbstractModel {
@@ -45,8 +46,14 @@ public class InternalKafkaUserModel extends AbstractModel {
             .withOperation(AclOperation.READ)
             .withHost("*")
             .build();
+        AclRule rule2 = new AclRuleBuilder()
+            .withNewAclRuleClusterResource()
+            .endAclRuleClusterResource()
+            .withOperation(AclOperation.DESCRIBE)
+            .withHost("*")
+            .build();
 
-        aclList.add(rule1);
+        aclList.addAll(Arrays.asList(rule1, rule2));
         
         kafkaUser = createKafkaUser(getInternalKafkaUserName(getInstanceName()),
                 new KafkaUserSpecBuilder()

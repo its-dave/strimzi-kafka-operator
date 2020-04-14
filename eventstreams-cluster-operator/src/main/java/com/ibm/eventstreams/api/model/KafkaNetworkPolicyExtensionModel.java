@@ -57,12 +57,19 @@ public class KafkaNetworkPolicyExtensionModel extends AbstractModel {
             .endPodSelector()
             .build();
 
+        NetworkPolicyPeer schemaRegistryPodPeer = new NetworkPolicyPeerBuilder()
+            .withNewPodSelector()
+            .addToMatchLabels(Labels.STRIMZI_NAME_LABEL, AdminApiModel.getDefaultResourceName(getInstanceName(), SchemaRegistryModel.COMPONENT_NAME))
+            .endPodSelector()
+            .build();
+
         return new NetworkPolicyIngressRuleBuilder()
             .addNewPort()
             .withNewPort(KafkaCluster.RUNAS_PORT)
             .endPort()
             .addToFrom(adminAPIPodPeer)
             .addToFrom(restProducerPodPeer)
+            .addToFrom(schemaRegistryPodPeer)
             .build();
     }
 

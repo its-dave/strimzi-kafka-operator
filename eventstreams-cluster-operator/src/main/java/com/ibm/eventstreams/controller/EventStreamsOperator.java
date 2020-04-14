@@ -621,7 +621,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         Future<ReconciliationState> createSchemaRegistry(Supplier<Date> dateSupplier) {
             log.traceEntry(() -> dateSupplier);
             List<Future> schemaRegistryFutures = new ArrayList<>();
-            SchemaRegistryModel schemaRegistry = new SchemaRegistryModel(instance, imageConfig);
+            SchemaRegistryModel schemaRegistry = new SchemaRegistryModel(instance, imageConfig, status.getKafkaListeners(), icpClusterData);
             if (schemaRegistry.getCustomImage()) {
                 customImageCount++;
             }

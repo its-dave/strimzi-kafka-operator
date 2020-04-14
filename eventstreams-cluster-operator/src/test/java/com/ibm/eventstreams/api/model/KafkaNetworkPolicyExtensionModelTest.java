@@ -49,7 +49,7 @@ public class KafkaNetworkPolicyExtensionModelTest {
         assertThat(kafkaNetworkPolicyExtensionNetworkPolicy.getSpec().getIngress(), hasSize(1));
         assertThat(kafkaNetworkPolicyExtensionNetworkPolicy.getSpec().getIngress().get(0).getPorts(), hasSize(1));
         assertThat(kafkaNetworkPolicyExtensionNetworkPolicy.getSpec().getIngress().get(0).getPorts().get(0).getPort().getIntVal(), is(KafkaCluster.RUNAS_PORT));
-        assertThat(kafkaNetworkPolicyExtensionNetworkPolicy.getSpec().getIngress().get(0).getFrom(), hasSize(2));
+        assertThat(kafkaNetworkPolicyExtensionNetworkPolicy.getSpec().getIngress().get(0).getFrom(), hasSize(3));
 
         NetworkPolicyPeer expectedRestProducerPeer = new NetworkPolicyPeerBuilder()
             .withNewPodSelector()
@@ -63,6 +63,12 @@ public class KafkaNetworkPolicyExtensionModelTest {
             .endPodSelector()
             .build();
 
-        assertThat(kafkaNetworkPolicyExtensionNetworkPolicy.getSpec().getIngress().get(0).getFrom(), hasItems(expectedRestProducerPeer, expectedAdminAPIPeer));
+        NetworkPolicyPeer expectedSchemaRegistryPeer = new NetworkPolicyPeerBuilder()
+            .withNewPodSelector()
+            .addToMatchLabels(Labels.STRIMZI_NAME_LABEL, "test-instance-ibm-es-schema-registry")
+            .endPodSelector()
+            .build();
+
+        assertThat(kafkaNetworkPolicyExtensionNetworkPolicy.getSpec().getIngress().get(0).getFrom(), hasItems(expectedRestProducerPeer, expectedAdminAPIPeer, expectedSchemaRegistryPeer));
     }
 }

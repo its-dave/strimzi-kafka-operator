@@ -29,6 +29,7 @@ import io.fabric8.openshift.api.model.Route;
 import io.fabric8.openshift.api.model.TLSConfig;
 import io.strimzi.certs.CertAndKey;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -65,6 +66,10 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
     public static final String KAFKA_USER_CERTIFICATE_PATH = CERTIFICATE_PATH + "/p2p";
     public static final String CLUSTER_CERTIFICATE_PATH = CERTIFICATE_PATH + "/cluster";
     public static final String CLIENT_CA_CERTIFICATE_PATH = CERTIFICATE_PATH + "/client";
+    public static final String IBMCLOUD_CA_CERTIFICATE_PATH = CERTIFICATE_PATH + File.separator + "ibmcloud";
+    public static final String IBMCLOUD_CA_VOLUME_MOUNT_NAME = "ibmcloud";
+    public static final String CLIENT_ID_KEY = "CLIENT_ID";
+    public static final String CLIENT_SECRET_KEY = "CLIENT_SECRET";
 
     private final CertificateSecretModel certificateSecretModel;
 

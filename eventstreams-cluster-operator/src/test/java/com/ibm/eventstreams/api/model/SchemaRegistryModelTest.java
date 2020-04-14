@@ -78,6 +78,7 @@ public class SchemaRegistryModelTest {
     private final String instanceName = "test-instance";
     private final String componentPrefix = instanceName + "-" + AbstractModel.APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME;
     private final int defaultReplicas = 1;
+    private final Map<String, String> mockIcpClusterDataMap = new HashMap<>();
 
     @Mock
     private EventStreamsOperatorConfig.ImageLookup imageConfig;
@@ -98,7 +99,7 @@ public class SchemaRegistryModelTest {
 
     private SchemaRegistryModel createDefaultSchemaRegistryModel() {
         EventStreams eventStreamsResource = createDefaultEventStreams().build();
-        return new SchemaRegistryModel(eventStreamsResource, imageConfig);
+        return new SchemaRegistryModel(eventStreamsResource, imageConfig, null, mockIcpClusterDataMap);
     }
 
     @Test
@@ -181,7 +182,7 @@ public class SchemaRegistryModelTest {
                 .endSpec()
                 .build();
         SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(eventStreamsResource, Mockito.mock(
-            EventStreamsOperatorConfig.ImageLookup.class));
+            EventStreamsOperatorConfig.ImageLookup.class), null, mockIcpClusterDataMap);
 
         List<Container> containerList = schemaRegistryModel.getDeployment().getSpec().getTemplate().getSpec().getContainers();
 
@@ -227,7 +228,7 @@ public class SchemaRegistryModelTest {
         expectedImages.put(SchemaRegistryModel.AVRO_SERVICE_CONTAINER_NAME, avroImage);
         expectedImages.put(SchemaRegistryModel.SCHEMA_REGISTRY_PROXY_CONTAINER_NAME, schemaRegistryProxyImage);
 
-        List<Container> containers = new SchemaRegistryModel(instance, imageConfig).getDeployment().getSpec().getTemplate()
+        List<Container> containers = new SchemaRegistryModel(instance, imageConfig, null, mockIcpClusterDataMap).getDeployment().getSpec().getTemplate()
                 .getSpec().getContainers();
 
         ModelUtils.assertCorrectImageOverridesOnContainers(containers, expectedImages);
@@ -282,7 +283,7 @@ public class SchemaRegistryModelTest {
                 .endSpec()
                 .build();
 
-        List<Container> containers = new SchemaRegistryModel(instance, imageConfig).getDeployment().getSpec().getTemplate()
+        List<Container> containers = new SchemaRegistryModel(instance, imageConfig, null, mockIcpClusterDataMap).getDeployment().getSpec().getTemplate()
                 .getSpec().getContainers();
 
         Map<String, String> expectedImages = new HashMap<>();
@@ -314,7 +315,7 @@ public class SchemaRegistryModelTest {
             .endSpec()
             .build();
 
-        assertThat(new SchemaRegistryModel(eventStreams, imageConfig).getServiceAccount()
+        assertThat(new SchemaRegistryModel(eventStreams, imageConfig, null, mockIcpClusterDataMap).getServiceAccount()
                         .getImagePullSecrets(), contains(imagePullSecretOverride));
     }
 
@@ -334,7 +335,7 @@ public class SchemaRegistryModelTest {
             .endSpec()
             .build();
 
-        assertThat(new SchemaRegistryModel(eventStreams, imageConfig).getServiceAccount()
+        assertThat(new SchemaRegistryModel(eventStreams, imageConfig, null, mockIcpClusterDataMap).getServiceAccount()
                         .getImagePullSecrets(), contains(imagePullSecretOverride));
     }
 
@@ -374,14 +375,14 @@ public class SchemaRegistryModelTest {
             .endSpec()
             .build();
 
-        assertThat(new SchemaRegistryModel(eventStreams, imageConfig).getServiceAccount()
+        assertThat(new SchemaRegistryModel(eventStreams, imageConfig, null, mockIcpClusterDataMap).getServiceAccount()
                         .getImagePullSecrets(), containsInAnyOrder(globalPullSecretOverride, componentPullSecretOverride));
     }
 
     @Test
     public void testSchemaRegistryProxyAuthenticationEnvVarsSet() {
         EventStreams defaultEs = createDefaultEventStreams().build();
-        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig);
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockIcpClusterDataMap);
 
         EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:IAM-BEARER;SCRAM-SHA-512,7080:MAC;IAM-BEARER").build();
         EnvVar endpoints = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7080").build();
@@ -396,7 +397,7 @@ public class SchemaRegistryModelTest {
     @Test
     public void testDefaultLogging() {
         EventStreams defaultEs = createDefaultEventStreams().build();
-        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig);
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockIcpClusterDataMap);
 
         EnvVar expectedEnvVar = new EnvVarBuilder()
                 .withName(SchemaRegistryModel.LOG_LEVEL_ENV_NAME)
@@ -422,7 +423,7 @@ public class SchemaRegistryModelTest {
                     .endSchemaRegistry()
                 .endSpec()
                 .build();
-        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig);
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockIcpClusterDataMap);
 
         EnvVar expectedEnvVar = new EnvVarBuilder()
                 .withName(SchemaRegistryModel.LOG_LEVEL_ENV_NAME)
@@ -444,7 +445,7 @@ public class SchemaRegistryModelTest {
                     .endSchemaRegistry()
                 .endSpec()
                 .build();
-        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig);
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockIcpClusterDataMap);
 
         EnvVar expectedEnvVar = new EnvVarBuilder()
                 .withName(SchemaRegistryModel.LOG_LEVEL_ENV_NAME)
@@ -466,7 +467,7 @@ public class SchemaRegistryModelTest {
                     .endSchemaRegistry()
                 .endSpec()
                 .build();
-        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig);
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockIcpClusterDataMap);
 
         EnvVar expectedEnvVar = new EnvVarBuilder()
                 .withName(SchemaRegistryModel.LOG_LEVEL_ENV_NAME)
@@ -480,7 +481,7 @@ public class SchemaRegistryModelTest {
     @Test
     public void testAvroDefaultLogging() {
         EventStreams defaultEs = createDefaultEventStreams().build();
-        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig);
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockIcpClusterDataMap);
 
         EnvVar expectedEnvVar = new EnvVarBuilder()
                 .withName(SchemaRegistryModel.AVRO_LOG_LEVEL_ENV_NAME)
@@ -508,7 +509,7 @@ public class SchemaRegistryModelTest {
                     .endSchemaRegistry()
                 .endSpec()
                 .build();
-        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig);
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockIcpClusterDataMap);
 
         EnvVar expectedEnvVar = new EnvVarBuilder()
                 .withName(SchemaRegistryModel.AVRO_LOG_LEVEL_ENV_NAME)
@@ -532,7 +533,7 @@ public class SchemaRegistryModelTest {
                     .endSchemaRegistry()
                 .endSpec()
                 .build();
-        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig);
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockIcpClusterDataMap);
 
         EnvVar expectedEnvVar = new EnvVarBuilder()
                 .withName(SchemaRegistryModel.AVRO_LOG_LEVEL_ENV_NAME)
@@ -556,7 +557,7 @@ public class SchemaRegistryModelTest {
                     .endSchemaRegistry()
                 .endSpec()
                 .build();
-        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig);
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockIcpClusterDataMap);
 
         EnvVar expectedEnvVar = new EnvVarBuilder()
                 .withName(SchemaRegistryModel.AVRO_LOG_LEVEL_ENV_NAME)
@@ -570,7 +571,7 @@ public class SchemaRegistryModelTest {
     @Test
     public void testCreateSchemaRegistryRouteWithTlsEncryption() {
         EventStreams eventStreams = createDefaultEventStreams().build();
-        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(eventStreams, imageConfig);
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(eventStreams, imageConfig, null, mockIcpClusterDataMap);
         String expectedRouteName = instanceName + "-" + AbstractModel.APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME + "-" + Endpoint.DEFAULT_EXTERNAL_NAME;
         assertThat(schemaRegistryModel.getRoutes(), IsMapContaining.hasKey(expectedRouteName));
         assertThat(schemaRegistryModel.getRoutes().get(expectedRouteName).getSpec().getTls().getTermination(),  is("passthrough"));
@@ -579,7 +580,7 @@ public class SchemaRegistryModelTest {
     @Test
     public void testGenerationIdLabelOnDeployment() {
         EventStreams eventStreams = createDefaultEventStreams().build();
-        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(eventStreams, imageConfig);
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(eventStreams, imageConfig, null, mockIcpClusterDataMap);
 
         assertThat(schemaRegistryModel.getDeployment("newID").getMetadata().getLabels().containsKey(AbstractSecureEndpointsModel.CERT_GENERATION_KEY), is(true));
         assertThat(schemaRegistryModel.getDeployment("newID").getMetadata().getLabels().get(AbstractSecureEndpointsModel.CERT_GENERATION_KEY), is("newID"));
@@ -648,7 +649,7 @@ public class SchemaRegistryModelTest {
                 .endSchemaRegistry()
             .endSpec()
             .build();
-        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(eventStreams, imageConfig);
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(eventStreams, imageConfig, null, mockIcpClusterDataMap);
 
         PersistentVolumeClaim pvc = schemaRegistryModel.getPersistentVolumeClaim();
         assertThat("Owner Reference should be empty by default so that pvcs are not deleted",
@@ -680,7 +681,7 @@ public class SchemaRegistryModelTest {
                 .endSchemaRegistry()
             .endSpec()
             .build();
-        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(eventStreams, imageConfig);
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(eventStreams, imageConfig, null, mockIcpClusterDataMap);
 
         PersistentVolumeClaim pvc = schemaRegistryModel.getPersistentVolumeClaim();
 
@@ -689,5 +690,26 @@ public class SchemaRegistryModelTest {
         assertThat(pvc.getSpec().getSelector(), is(new LabelSelector(new ArrayList<>(), selector)));
         assertThat("Owner Reference should be empty by default so that pvcs are not deleted",
                 pvc.getMetadata().getOwnerReferences(), is(new ArrayList<>()));
+    }
+
+    @Test
+    public void testWhenICPClusterDataEnvironmentVariablesSet() {
+        String clusterIAM = "iam-endpoint:9080";
+        String clusterName = "test-cluster";
+        String kafkaPrincipal = "test-instance-ibm-es-kafka-user";
+        mockIcpClusterDataMap.put("cluster_name", clusterName);
+        mockIcpClusterDataMap.put("cluster_endpoint", clusterIAM);
+
+        EventStreams eventStreams = createDefaultEventStreams().build();
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(eventStreams, imageConfig, null, mockIcpClusterDataMap);
+
+        EnvVar expectedEnvVarIAMClusterName = new EnvVarBuilder().withName("IAM_CLUSTER_NAME").withValue(clusterName).build();
+        EnvVar expectedEnvVarIAMClusterEndpoint = new EnvVarBuilder().withName("IAM_SERVER_URL").withValue(clusterIAM).build();
+        EnvVar expectedEnvVarKafkaPrincipal = new EnvVarBuilder().withName("KAFKA_PRINCIPAL").withValue(kafkaPrincipal).build();
+
+        List<EnvVar> actualSchemaProxyEnvVars = schemaRegistryModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(2).getEnv();
+        System.out.println(actualSchemaProxyEnvVars);
+        assertThat(actualSchemaProxyEnvVars, hasItems(expectedEnvVarIAMClusterName, expectedEnvVarIAMClusterEndpoint, expectedEnvVarKafkaPrincipal));
+
     }
 }

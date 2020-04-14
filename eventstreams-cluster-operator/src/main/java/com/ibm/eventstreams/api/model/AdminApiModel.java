@@ -67,7 +67,6 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
 
     public static final String CLUSTER_CA_VOLUME_MOUNT_NAME = "cluster-ca";
     public static final String CERTS_VOLUME_MOUNT_NAME = "certs";
-    public static final String IBMCLOUD_CA_VOLUME_MOUNT_NAME = "ibmcloud";
     public static final String KAFKA_CONFIGMAP_MOUNT_NAME = "kafka-cm";
     public static final String CLIENT_CA_VOLUME_MOUNT_NAME = "client-ca";
 
@@ -77,10 +76,6 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
     public static final String KAFKA_USER_CERTIFICATE_PATH = CERTIFICATE_PATH + File.separator + "p2p";
     public static final String CLUSTER_CERTIFICATE_PATH = CERTIFICATE_PATH + File.separator + "cluster";
     public static final String CLIENT_CA_CERTIFICATE_PATH = CERTIFICATE_PATH + File.separator + "client";
-    public static final String IBMCLOUD_CA_CERTIFICATE_PATH = CERTIFICATE_PATH + File.separator + "ibmcloud";
-
-    private static final String CLIENT_ID_KEY = "CLIENT_ID";
-    private static final String CLIENT_SECRET_KEY = "CLIENT_SECRET";
 
     private String traceString = "info";
     private final String prometheusHost;
