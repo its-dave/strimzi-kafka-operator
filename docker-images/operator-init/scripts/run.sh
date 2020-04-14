@@ -53,7 +53,7 @@ OWNER_NAME="eventstreams-cluster-operator"
 OWNER_UID=$EVENTSTREAMS_UID
 
 echo "Getting list of cluster role bindings"
-clusterrolebindingnames=`kubectl get clusterrolebinding -o name | grep ibm-eventstreams-operator`
+clusterrolebindingnames=`kubectl get clusterrolebinding -o name | grep eventstreams`
 echo "Checking subjects for each CRB"
 for crbname in $clusterrolebindingnames;
     do
