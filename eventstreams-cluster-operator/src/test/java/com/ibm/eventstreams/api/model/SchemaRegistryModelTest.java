@@ -617,6 +617,30 @@ public class SchemaRegistryModelTest {
         assertThat(volumeMounts.get(5).getName(), is(AbstractSecureEndpointsModel.KAFKA_USER_SECRET_VOLUME_NAME));
         assertThat(volumeMounts.get(5).getReadOnly(), is(true));
         assertThat(volumeMounts.get(5).getMountPath(), is(AbstractSecureEndpointsModel.KAFKA_USER_CERTIFICATE_PATH));
+
+        // Test mounts for proxy
+        List<VolumeMount> volumeMountsProxy = schemaRegistryModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(2).getVolumeMounts();
+
+        assertThat(volumeMountsProxy.size(), is(5));
+        assertThat(volumeMountsProxy.get(0).getName(), is(AbstractSecureEndpointsModel.IBMCLOUD_CA_VOLUME_MOUNT_NAME));
+        assertThat(volumeMountsProxy.get(0).getReadOnly(), is(true));
+        assertThat(volumeMountsProxy.get(0).getMountPath(), is(AbstractSecureEndpointsModel.IBMCLOUD_CA_CERTIFICATE_PATH));
+
+        assertThat(volumeMountsProxy.get(1).getName(), is(AbstractSecureEndpointsModel.CERTS_VOLUME_MOUNT_NAME));
+        assertThat(volumeMountsProxy.get(1).getReadOnly(), is(true));
+        assertThat(volumeMountsProxy.get(1).getMountPath(), is(AbstractSecureEndpointsModel.CERTIFICATE_PATH));
+
+        assertThat(volumeMountsProxy.get(2).getName(), is(AbstractSecureEndpointsModel.CLUSTER_CA_VOLUME_MOUNT_NAME));
+        assertThat(volumeMountsProxy.get(2).getReadOnly(), is(true));
+        assertThat(volumeMountsProxy.get(2).getMountPath(), is(AbstractSecureEndpointsModel.CLUSTER_CERTIFICATE_PATH));
+
+        assertThat(volumeMountsProxy.get(3).getName(), is(AbstractSecureEndpointsModel.CLIENT_CA_VOLUME_MOUNT_NAME));
+        assertThat(volumeMountsProxy.get(3).getReadOnly(), is(true));
+        assertThat(volumeMountsProxy.get(3).getMountPath(), is(AbstractSecureEndpointsModel.CLIENT_CA_CERTIFICATE_PATH));
+
+        assertThat(volumeMountsProxy.get(4).getName(), is(AbstractSecureEndpointsModel.KAFKA_USER_SECRET_VOLUME_NAME));
+        assertThat(volumeMountsProxy.get(4).getReadOnly(), is(true));
+        assertThat(volumeMountsProxy.get(4).getMountPath(), is(AbstractSecureEndpointsModel.KAFKA_USER_CERTIFICATE_PATH));
     }
 
     @Test
@@ -625,14 +649,15 @@ public class SchemaRegistryModelTest {
 
         List<Volume> volumes = schemaRegistryModel.getDeployment().getSpec().getTemplate().getSpec().getVolumes();
 
-        assertThat(volumes.size(), is(6));
+        assertThat(volumes.size(), is(7));
 
         assertThat(volumes.get(0).getName(), is(SchemaRegistryModel.TEMP_DIR_NAME));
-        assertThat(volumes.get(1).getName(), is(SchemaRegistryModel.SHARED_VOLUME_MOUNT_NAME));
-        assertThat(volumes.get(2).getName(), is(AbstractSecureEndpointsModel.CERTS_VOLUME_MOUNT_NAME));
-        assertThat(volumes.get(3).getName(), is(AbstractSecureEndpointsModel.CLUSTER_CA_VOLUME_MOUNT_NAME));
-        assertThat(volumes.get(4).getName(), is(AbstractSecureEndpointsModel.CLIENT_CA_VOLUME_MOUNT_NAME));
-        assertThat(volumes.get(5).getName(), is(AbstractSecureEndpointsModel.KAFKA_USER_SECRET_VOLUME_NAME));
+        assertThat(volumes.get(1).getName(), is(AbstractSecureEndpointsModel.IBMCLOUD_CA_VOLUME_MOUNT_NAME));
+        assertThat(volumes.get(2).getName(), is(SchemaRegistryModel.SHARED_VOLUME_MOUNT_NAME));
+        assertThat(volumes.get(3).getName(), is(AbstractSecureEndpointsModel.CERTS_VOLUME_MOUNT_NAME));
+        assertThat(volumes.get(4).getName(), is(AbstractSecureEndpointsModel.CLUSTER_CA_VOLUME_MOUNT_NAME));
+        assertThat(volumes.get(5).getName(), is(AbstractSecureEndpointsModel.CLIENT_CA_VOLUME_MOUNT_NAME));
+        assertThat(volumes.get(6).getName(), is(AbstractSecureEndpointsModel.KAFKA_USER_SECRET_VOLUME_NAME));
     }
 
     @Test

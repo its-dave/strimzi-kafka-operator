@@ -100,10 +100,9 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
     private String defaultProxyTraceString = "info";
     private final String icpClusterName;
     private final String iamServerURL;
+    private final String ibmcloudCASecretName;
 
     private List<ListenerStatus> kafkaListeners;
-
-
 
     private Storage storage;
 
@@ -112,6 +111,7 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
      * @param instance
      * @param imageConfig
      * @param kafkaListeners
+     * @param icpClusterData
      */
     public SchemaRegistryModel(EventStreams instance,
                                EventStreamsOperatorConfig.ImageLookup imageConfig,
@@ -122,6 +122,8 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
         this.kafkaListeners = kafkaListeners != null ? new ArrayList<>(kafkaListeners) : new ArrayList<>();
         this.icpClusterName = icpClusterData.getOrDefault("cluster_name", "null");
         this.iamServerURL = icpClusterData.getOrDefault("cluster_endpoint", "null");
+
+        ibmcloudCASecretName = ClusterSecretsModel.getIBMCloudSecretName(getInstanceName());
 
         Optional<SchemaRegistrySpec> schemaRegistrySpec = Optional.ofNullable(instance.getSpec()).map(EventStreamsSpec::getSchemaRegistry);
 
@@ -247,6 +249,16 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
             .endEmptyDir()
             .build();
         volumes.add(temp);
+
+        // Add The IAM Specific Volumes.  If we need to build without IAM Support we can put a variable check
+        // here.
+        volumes.add(new VolumeBuilder()
+            .withNewName(IBMCLOUD_CA_VOLUME_MOUNT_NAME)
+            .withNewSecret()
+            .withNewSecretName(ibmcloudCASecretName)
+            .addNewItem().withNewKey(CA_CERT).withNewPath(CA_CERT).endItem()
+            .endSecret()
+            .build());
 
         if (storage instanceof PersistentClaimStorage) {
             Volume sharedPersistentVolume = new VolumeBuilder()
