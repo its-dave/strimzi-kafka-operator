@@ -275,7 +275,8 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
             new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_INTERNAL_PLAIN_URL").withValue(kafkaBootstrapInternalPlainUrl).build(),
             new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_INTERNAL_TLS_URL").withValue(kafkaBootstrapInternalTlsUrl).build(),
             new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_EXTERNAL_URL").withValue(kafkaBootstrapExternalUrl).build(),
-            new EnvVarBuilder().withName("SSL_TRUSTSTORE_PATH").withValue(CLUSTER_CERTIFICATE_PATH + File.separator + CA_P12).build(),
+            new EnvVarBuilder().withName("SSL_TRUSTSTORE_P12_PATH").withValue(CLUSTER_CERTIFICATE_PATH + File.separator + CA_P12).build(),
+            new EnvVarBuilder().withName("SSL_TRUSTSTORE_CRT_PATH").withValue(CLUSTER_CERTIFICATE_PATH + File.separator + CA_CERT).build(),
             new EnvVarBuilder().withName("CLIENT_CA_PATH").withValue(CLIENT_CA_CERTIFICATE_PATH + File.separator + CA_CERT).build(),
             new EnvVarBuilder().withName("SCHEMA_REGISTRY_ENABLED").withValue(Boolean.toString(SchemaRegistryModel.isSchemaRegistryEnabled(instance))).build(),
             new EnvVarBuilder().withName("SCHEMA_REGISTRY_URL").withValue(schemaRegistryEndpoint).build(),
@@ -292,7 +293,7 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
             new EnvVarBuilder().withName("GEOREPLICATION_EXTERNAL_SERVER_AUTH_ENABLED").withValue(Boolean.toString(isReplicatorExternalServerAuthForConnectEnabled(instance))).build(),
             new EnvVarBuilder().withName("GEOREPLICATION_INTERNAL_CLIENT_AUTH_TYPE").withValue(isReplicatorInternalClientAuthForConnectEnabled(instance) ? ReplicatorModel.getInternalTlsKafkaListenerAuthentication(instance).getType() : "NONE").build(),
             new EnvVarBuilder()
-                .withName("SSL_TRUSTSTORE_PASSWORD")
+                .withName("SSL_TRUSTSTORE_P12_PASSWORD")
                 .withNewValueFrom()
                 .withNewSecretKeyRef()
                 .withName(EventStreamsKafkaModel.getKafkaClusterCaCertName(getInstanceName()))
@@ -338,15 +339,15 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
                 .endValueFrom()
                 .build(),
             new EnvVarBuilder()
-               .withName("ES_CACERT")
-               .withNewValueFrom()
-               .withNewSecretKeyRef()
-               .withName(EventStreamsKafkaModel.getKafkaClusterCaCertName(getInstanceName()))
-               .withKey("ca.crt")
-               .withOptional(true)
-               .endSecretKeyRef()
-               .endValueFrom()
-               .build()
+                .withName("ES_CACERT")
+                .withNewValueFrom()
+                .withNewSecretKeyRef()
+                .withName(EventStreamsKafkaModel.getKafkaClusterCaCertName(getInstanceName()))
+                .withKey("ca.crt")
+                .withOptional(true)
+                .endSecretKeyRef()
+                .endValueFrom()
+                .build()
             ));
 
         configureSecurityEnvVars(envVars);

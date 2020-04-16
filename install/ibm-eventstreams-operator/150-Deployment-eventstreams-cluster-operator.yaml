@@ -112,9 +112,9 @@ spec:
         - name: EVENTSTREAMS_DEFAULT_JMXTRANS_IMAGE
           value: "strimzi/jmxtrans:latest"
         - name: EVENTSTREAMS_DEFAULT_REST_PRODUCER_IMAGE # Proprietary images
-          value: "hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-rest-producer-v2-icp-linux-amd64:2020-04-07-20.28.56-96af430"
+          value: "hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-rest-producer-v2-icp-linux-amd64:2020-04-15-16.04.19-40c3fcc"
         - name: EVENTSTREAMS_DEFAULT_ADMIN_API_IMAGE
-          value: "hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-admin-icp-linux-amd64:2020-04-07-20.19.17-96af430"
+          value: "hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-admin-icp-linux-amd64:2020-04-15-16.04.26-40c3fcc"
         - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_IMAGE
           value: "hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-schema-registry-icp-linux-amd64:2020-04-08-10.53.04-a549b6c-dev"
         - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_AVRO_IMAGE

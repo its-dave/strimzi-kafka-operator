@@ -29,8 +29,6 @@ import com.ibm.eventstreams.controller.EventStreamsOperatorConfig;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.EnvVarBuilder;
-import io.fabric8.kubernetes.api.model.EnvVarSource;
-import io.fabric8.kubernetes.api.model.EnvVarSourceBuilder;
 import io.fabric8.kubernetes.api.model.LocalObjectReference;
 import io.fabric8.kubernetes.api.model.LocalObjectReferenceBuilder;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
@@ -38,7 +36,6 @@ import io.fabric8.kubernetes.api.model.OwnerReference;
 import io.fabric8.kubernetes.api.model.Quantity;
 import io.fabric8.kubernetes.api.model.ResourceRequirements;
 import io.fabric8.kubernetes.api.model.ResourceRequirementsBuilder;
-import io.fabric8.kubernetes.api.model.SecretKeySelector;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.VolumeMount;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
@@ -179,9 +176,6 @@ public class AdminApiModelTest {
         EnvVar geoRepExternalServerAuthEnv = new EnvVarBuilder().withName("GEOREPLICATION_EXTERNAL_SERVER_AUTH_ENABLED").withValue("false").build();
         EnvVar geoRepInternalClientAuthTypeEnv = new EnvVarBuilder().withName("GEOREPLICATION_INTERNAL_CLIENT_AUTH_TYPE").withValue("NONE").build();
 
-        EnvVarSource esCaCertEnvVarSource = new EnvVarSourceBuilder().withSecretKeyRef(new SecretKeySelector("ca.crt", instanceName + "-cluster-ca-cert", true)).build();
-        EnvVar esCaCertEnv = new EnvVarBuilder().withName("ES_CACERT").withValueFrom(esCaCertEnvVarSource).build();
-
         Container adminApiContainer = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0);
         List<EnvVar> defaultEnvVars = adminApiContainer.getEnv();
         assertThat(defaultEnvVars, hasItem(kafkaBootstrapUrlEnv));
@@ -191,7 +185,6 @@ public class AdminApiModelTest {
         assertThat(defaultEnvVars, hasItem(clientCaCertPath));
         assertThat(defaultEnvVars, hasItem(authentication));
         assertThat(defaultEnvVars, hasItem(endpoints));
-        assertThat(defaultEnvVars, hasItem(esCaCertEnv));
         assertThat(defaultEnvVars, hasItem(tlsVersion));
         assertThat(defaultEnvVars, hasItem(kafkaConnectRestApiEnv));
         assertThat(defaultEnvVars, hasItem(apiVersionEnv));
@@ -697,10 +690,12 @@ public class AdminApiModelTest {
         EventStreams eventStreams = createDefaultEventStreams().build();
         AdminApiModel adminApiModel = new AdminApiModel(eventStreams, imageConfig, null, mockIcpClusterDataMap);
 
-        EnvVar expectedEnvVarTrustStorePath = new EnvVarBuilder().withName("SSL_TRUSTSTORE_PATH").withValue(clusterCertPath + File.separator + "ca.p12").build();
+        EnvVar expectedTruststoreP12Path = new EnvVarBuilder().withName("SSL_TRUSTSTORE_P12_PATH").withValue(clusterCertPath + File.separator + "ca.p12").build();
+        EnvVar expectedTruststoreCrtPath = new EnvVarBuilder().withName("SSL_TRUSTSTORE_CRT_PATH").withValue(clusterCertPath + File.separator + "ca.crt").build();
         EnvVar expectedEnvVarKeyStorePath = new EnvVarBuilder().withName("SSL_KEYSTORE_PATH").withValue(userCertPath + File.separator + "podtls.p12").build();
         List<EnvVar> actualEnvVars = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getEnv();
-        assertThat(actualEnvVars, hasItem(expectedEnvVarTrustStorePath));
+        assertThat(actualEnvVars, hasItem(expectedTruststoreP12Path));
+        assertThat(actualEnvVars, hasItem(expectedTruststoreCrtPath));
         assertThat(actualEnvVars, hasItem(expectedEnvVarKeyStorePath));
     }
 
