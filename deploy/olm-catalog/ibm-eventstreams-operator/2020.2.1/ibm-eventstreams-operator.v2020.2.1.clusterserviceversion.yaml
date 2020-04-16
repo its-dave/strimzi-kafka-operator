@@ -287,7 +287,7 @@ metadata:
     categories: Streaming & Messaging
     certified: 'false'
     containerImage: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-operator-icp-linux-amd64:latest
-    createdAt: 2020-04-16T09:37:05Z
+    createdAt: 2020-04-16T11:03:12Z
     description: Kafka-based messaging platform for handling real-time data feeds.
     operators.operatorframework.io/internal-objects: '["kafkas.eventstreams.ibm.com","kafkamirrormaker2s.eventstreams.ibm.com"]'
     repository: https://github.ibm.com/mhub/qp-eventstreams-operator
@@ -1052,9 +1052,9 @@ spec:
                 - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_AVRO_IMAGE
                   value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-avro-icp-linux-amd64:2020-01-16-15.39.43-165fd5b-exp
                 - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_PROXY_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-schema-registry-v2-icp-linux-amd64:2020-03-30-10.05.01-08c581c
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-schema-registry-v2-icp-linux-amd64:2020-04-15-16.04.28-40c3fcc
                 - name: EVENTSTREAMS_DEFAULT_ADMIN_UI_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-admin-ui-icp-linux-amd64:2020-04-09-08.37.08-36fa778-dev
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-admin-ui-icp-linux-amd64:2020-04-15-14.42.19-3b45e8e-dev
                 - name: EVENTSTREAMS_DEFAULT_ADMIN_UI_REDIS_IMAGE
                   value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-database-icp-linux-amd64:2020-02-11-13.40.39-0a99ddb-exp
                 - name: EVENTSTREAMS_DEFAULT_COLLECTOR_IMAGE

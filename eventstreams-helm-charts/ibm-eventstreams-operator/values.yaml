@@ -66,12 +66,12 @@ schemaRegistryProxy:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: eventstreams-schema-registry-v2-icp-linux-amd64
-    tag: 2020-03-30-10.05.01-08c581c
+    tag: 2020-04-15-16.04.28-40c3fcc
 adminUi:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: eventstreams-admin-ui-icp-linux-amd64
-    tag: 2020-04-09-08.37.08-36fa778-dev
+    tag: 2020-04-15-14.42.19-3b45e8e-dev
 adminUiDatabase:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
