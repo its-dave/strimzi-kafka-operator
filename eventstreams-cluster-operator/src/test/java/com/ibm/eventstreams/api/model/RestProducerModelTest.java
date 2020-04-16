@@ -87,6 +87,15 @@ public class RestProducerModelTest {
                 .endSpec();
     }
 
+    private EventStreamsBuilder createEventStreamsWithAuth() {
+        return ModelUtils.createEventStreamsWithAuthentication(instanceName)
+            .editSpec()
+            .withNewRestProducer()
+            .withReplicas(defaultReplicas)
+            .endRestProducer()
+            .endSpec();
+    }
+
     private RestProducerModel createDefaultRestProducerModel() {
         EventStreams instance = createDefaultEventStreams().build();
         return new RestProducerModel(instance, imageConfig, listeners, mockIcpClusterDataMap);
@@ -368,7 +377,7 @@ public class RestProducerModelTest {
         String kafkaBootstrap = instanceName + "-kafka-bootstrap." + restProducerModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_PORT;
         String runasKafkaBootstrap = instanceName + "-kafka-bootstrap." + restProducerModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_RUNAS_PORT;
         EnvVar kafkaBootstrapUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_SERVERS").withValue(kafkaBootstrap).build();
-        EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:IAM-BEARER;SCRAM-SHA-512,7080").build();
+        EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443,7080").build();
         EnvVar endpoints = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7080").build();
         EnvVar tlsVersion = new EnvVarBuilder().withName("TLS_VERSION").withValue("9443:TLSv1.2,7080").build();
         EnvVar runasKafkaBootstrapUrlEnv = new EnvVarBuilder().withName("RUNAS_KAFKA_BOOTSTRAP_SERVERS").withValue(runasKafkaBootstrap).build();
@@ -380,6 +389,27 @@ public class RestProducerModelTest {
         assertThat(adminApiContainer.getEnv(), hasItem(endpoints));
         assertThat(adminApiContainer.getEnv(), hasItem(tlsVersion));
 
+    }
+
+    @Test
+    public void testContainerHasDefaultKafkaBootstrapEnvironmentVariablesWithAuth() {
+        EventStreams defaultEs = createEventStreamsWithAuth().build();
+        RestProducerModel restProducerModel = new RestProducerModel(defaultEs, imageConfig, listeners, mockIcpClusterDataMap);
+
+        String kafkaBootstrap = instanceName + "-kafka-bootstrap." + restProducerModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_PORT;
+        String runasKafkaBootstrap = instanceName + "-kafka-bootstrap." + restProducerModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_RUNAS_PORT;
+        EnvVar kafkaBootstrapUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_SERVERS").withValue(kafkaBootstrap).build();
+        EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:IAM-BEARER;SCRAM-SHA-512,7080").build();
+        EnvVar endpoints = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7080").build();
+        EnvVar tlsVersion = new EnvVarBuilder().withName("TLS_VERSION").withValue("9443:TLSv1.2,7080").build();
+        EnvVar runasKafkaBootstrapUrlEnv = new EnvVarBuilder().withName("RUNAS_KAFKA_BOOTSTRAP_SERVERS").withValue(runasKafkaBootstrap).build();
+        Container adminApiContainer = restProducerModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0);
+
+        assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapUrlEnv));
+        assertThat(adminApiContainer.getEnv(), hasItem(runasKafkaBootstrapUrlEnv));
+        assertThat(adminApiContainer.getEnv(), hasItem(authentication));
+        assertThat(adminApiContainer.getEnv(), hasItem(endpoints));
+        assertThat(adminApiContainer.getEnv(), hasItem(tlsVersion));
     }
 
     @Test

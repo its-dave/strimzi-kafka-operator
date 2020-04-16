@@ -55,6 +55,7 @@ import io.strimzi.api.kafka.model.template.PodTemplate;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -688,9 +689,10 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
     }
 
     @Override
-    public List<String> getP2PAuthenticationMechanisms() {
-        return Arrays.asList("MAC", "IAM-BEARER");
+    public List<String> getP2PAuthenticationMechanisms(EventStreams instance) {
+        return authEnabled(instance) ? Arrays.asList("MAC", "IAM-BEARER") : Collections.emptyList();
     }
+
 
     /**
      * @return Deployment return the deployment with an empty generation id

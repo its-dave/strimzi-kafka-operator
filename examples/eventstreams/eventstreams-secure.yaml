@@ -1,0 +1,39 @@
+apiVersion: eventstreams.ibm.com/v1beta1
+kind: EventStreams
+metadata:
+  name: secure
+spec:
+  licenseAccept: false
+  version: 2020.2.1
+  adminApi: {}
+  adminUI: {}
+  collector: {}
+  restProducer: {}
+  schemaRegistry:
+    storage:
+      type: ephemeral
+  strimziOverrides:
+    kafka:
+      authorization:
+        type: runas
+      replicas: 1
+      config:
+        interceptor.class.names: com.ibm.eventstreams.interceptors.metrics.ProducerMetricsInterceptor
+        offsets.topic.replication.factor: 1
+        transaction.state.log.min.isr: 1
+        transaction.state.log.replication.factor: 1
+      listeners:
+        external:
+          type: route
+          authentication:
+            type: scram-sha-512
+        plain: {}
+        tls: {}
+      storage:
+        type: ephemeral
+      metrics: {}
+    zookeeper:
+      replicas: 1
+      storage:
+        type: ephemeral
+      metrics: {}

@@ -67,14 +67,14 @@ public class Endpoint {
      * overall security of CR.
      * @return external endpoint
      */
-    public static Endpoint createDefaultExternalEndpoint() {
+    public static Endpoint createDefaultExternalEndpoint(boolean authEnabled) {
         return new Endpoint(DEFAULT_EXTERNAL_NAME,
                             DEFAULT_EXTERNAL_TLS_PORT,
                             DEFAULT_TLS_VERSION,
                             DEFAULT_EXTERNAL_SERVICE_TYPE,
                             DEFAULT_EXTERNAL_NAME,
                             null,
-                            DEFAULT_EXTERNAL_AUTHENTICATION_MECHANISM);
+                            authEnabled ? DEFAULT_EXTERNAL_AUTHENTICATION_MECHANISM : Collections.emptyList());
     }
 
     /**

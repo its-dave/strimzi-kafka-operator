@@ -214,7 +214,7 @@ public class AdminUIModel extends AbstractModel {
             .endEmptyDir()
             .build();
 
-        return Arrays.asList(redis);
+        return Collections.singletonList(redis);
 
     }
 
@@ -379,8 +379,8 @@ public class AdminUIModel extends AbstractModel {
             envVarDefaults.add(new EnvVarBuilder().withName("CLUSTER_EXTERNAL_PORT").withValue("").build());
         }
 
-        envVarDefaults.add(new EnvVarBuilder().withName("ESFF_SECURITY_AUTH").withValue("true").build());
-        envVarDefaults.add(new EnvVarBuilder().withName("ESFF_SECURITY_AUTHZ").withValue("true").build());
+        envVarDefaults.add(new EnvVarBuilder().withName("ESFF_SECURITY_AUTH").withValue(authEnabled(instance).toString()).build());
+        envVarDefaults.add(new EnvVarBuilder().withName("ESFF_SECURITY_AUTHZ").withValue(authEnabled(instance).toString()).build());
 
         List<EnvVar> envVars = combineEnvVarListsNoDuplicateKeys(envVarDefaults);
 

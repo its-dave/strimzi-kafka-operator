@@ -87,7 +87,7 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
         super(instance, componentName);
         this.certificateSecretModel = new CertificateSecretModel(instance, componentName);
         this.routes = new HashMap<>();
-        this.endpoints = createEndpoints(instance, spec, getP2PAuthenticationMechanisms());
+        this.endpoints = createEndpoints(instance, spec, getP2PAuthenticationMechanisms(instance));
     }
 
     /**
@@ -117,7 +117,7 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
         List<Endpoint> endpoints = Optional.ofNullable(spec)
             .map(SecurityComponentSpec::getEndpoints)
             .map(endpointSpecs -> endpointSpecs.stream().map(Endpoint.createEndpointFromSpec()).collect(Collectors.toList()))
-            .orElse(new ArrayList<>(Collections.singletonList(Endpoint.createDefaultExternalEndpoint())));
+            .orElse(new ArrayList<>(Collections.singletonList(Endpoint.createDefaultExternalEndpoint(authEnabled(instance)))));
 
         endpoints.add(Endpoint.createP2PEndpoint(instance, podToPodAuth));
 
@@ -150,9 +150,9 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
         return getDefaultResourceNameWithSuffix(getServiceSuffix(type));
     }
 
-    public List<String> getP2PAuthenticationMechanisms() {
+    public List<String> getP2PAuthenticationMechanisms(EventStreams instance) {
         return Collections.emptyList();
-    }
+    };
 
     /**
      * Get the specific Endpoint suffix based on the EndpointServiceType. Note that are currently only

@@ -13,6 +13,8 @@
 package com.ibm.eventstreams.api.model;
 
 import com.ibm.eventstreams.Main;
+import com.ibm.eventstreams.api.ListenerAuthentication;
+import com.ibm.eventstreams.api.ListenerType;
 import com.ibm.eventstreams.api.TlsVersion;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
@@ -259,6 +261,16 @@ public abstract class AbstractModel {
             case NONE: return false;
             default: return true;
         }
+    }
+
+    protected Boolean authEnabled(EventStreams instance) {
+        return isListenerAuthenticated(instance, ListenerType.PLAIN) ||
+            isListenerAuthenticated(instance, ListenerType.EXTERNAL) ||
+            isListenerAuthenticated(instance, ListenerType.TLS);
+    }
+
+    private Boolean isListenerAuthenticated(EventStreams instance, ListenerType type) {
+        return ListenerAuthentication.getAuthentication(instance, type) != ListenerAuthentication.NONE && ListenerAuthentication.getAuthentication(instance, type) != null;
     }
 
     protected String getUrlProtocol() {

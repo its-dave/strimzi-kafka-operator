@@ -29,6 +29,8 @@ import com.ibm.eventstreams.controller.EventStreamsOperatorConfig;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.EnvVarBuilder;
+import io.fabric8.kubernetes.api.model.EnvVarSource;
+import io.fabric8.kubernetes.api.model.EnvVarSourceBuilder;
 import io.fabric8.kubernetes.api.model.LocalObjectReference;
 import io.fabric8.kubernetes.api.model.LocalObjectReferenceBuilder;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
@@ -36,6 +38,7 @@ import io.fabric8.kubernetes.api.model.OwnerReference;
 import io.fabric8.kubernetes.api.model.Quantity;
 import io.fabric8.kubernetes.api.model.ResourceRequirements;
 import io.fabric8.kubernetes.api.model.ResourceRequirementsBuilder;
+import io.fabric8.kubernetes.api.model.SecretKeySelector;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.VolumeMount;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
@@ -105,6 +108,16 @@ public class AdminApiModelTest {
                 .endSpec();
     }
 
+    private EventStreamsBuilder createEventStreamsWithAuthentication() {
+        return ModelUtils.createEventStreamsWithAuthentication(instanceName)
+            .withApiVersion(apiVersion)
+            .editSpec()
+            .withNewAdminApi()
+                .withReplicas(defaultReplicas)
+            .endAdminApi()
+            .endSpec();
+    }
+
     private EventStreamsBuilder createEventStreams(EventStreamsSpec eventStreamsSpec) {
         return ModelUtils.createEventStreams(instanceName, eventStreamsSpec)
                 .editSpec()
@@ -125,6 +138,11 @@ public class AdminApiModelTest {
 
     private AdminApiModel createDefaultAdminApiModel() {
         EventStreams eventStreamsResource = createDefaultEventStreams().build();
+        return new AdminApiModel(eventStreamsResource, imageConfig, listeners, mockIcpClusterDataMap);
+    }
+
+    private AdminApiModel createAdminApiModelWithAuthentication() {
+        EventStreams eventStreamsResource = createEventStreamsWithAuthentication().build();
         return new AdminApiModel(eventStreamsResource, imageConfig, listeners, mockIcpClusterDataMap);
     }
 
@@ -163,7 +181,7 @@ public class AdminApiModelTest {
         EnvVar zkConnectEnv = new EnvVarBuilder().withName("ZOOKEEPER_CONNECT").withValue(zookeeperEndpoint).build();
         EnvVar kafkaStsEnv = new EnvVarBuilder().withName("KAFKA_STS_NAME").withValue(instanceName + "-" + EventStreamsKafkaModel.KAFKA_COMPONENT_NAME).build();
         EnvVar clientCaCertPath = new EnvVarBuilder().withName("CLIENT_CA_PATH").withValue("/certs/client/ca.crt").build();
-        EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:IAM-BEARER;SCRAM-SHA-512,7080:IAM-BEARER").build();
+        EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443,7080").build();
         EnvVar endpoints = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7080").build();
         EnvVar tlsVersion = new EnvVarBuilder().withName("TLS_VERSION").withValue("9443:TLSv1.2,7080").build();
         EnvVar kafkaConnectRestApiEnv = new EnvVarBuilder().withName("KAFKA_CONNECT_REST_API_ADDRESS").withValue(kafkaConnectRestEndpoint).build();
@@ -196,6 +214,58 @@ public class AdminApiModelTest {
         assertThat(defaultEnvVars, hasItem(geoRepInternalServerAuthEnv));
         assertThat(defaultEnvVars, hasItem(geoRepInternalClientAuthTypeEnv));
     }
+
+    @Test
+    public void testAdminApiEnvVarsWithAuthentication() {
+        AdminApiModel adminApiModel = createAdminApiModelWithAuthentication();
+        String kafkaBootstrap = instanceName + "-kafka-bootstrap." + adminApiModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_PORT;
+        String schemaRegistryEndpoint = instanceName  + "-" + AbstractModel.APP_NAME + "-schema-registry" + "-" + INTERNAL_SERVICE_SUFFIX  + "." + adminApiModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.getPodToPodPort(adminApiModel.tlsEnabled());
+        String zookeeperEndpoint = instanceName + "-" + EventStreamsKafkaModel.ZOOKEEPER_COMPONENT_NAME + "-client." + adminApiModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.ZOOKEEPER_PORT;
+        String kafkaConnectRestEndpoint = "http://" + instanceName  + "-" + AbstractModel.APP_NAME + "-" + ReplicatorModel.COMPONENT_NAME + "-mirrormaker2-api." + adminApiModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + ReplicatorModel.REPLICATOR_PORT;
+
+        EnvVar kafkaBootstrapUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_SERVERS").withValue(kafkaBootstrap).build();
+        EnvVar schemaRegistryUrlEnv = new EnvVarBuilder().withName("SCHEMA_REGISTRY_URL").withValue(schemaRegistryEndpoint).build();
+        EnvVar zkConnectEnv = new EnvVarBuilder().withName("ZOOKEEPER_CONNECT").withValue(zookeeperEndpoint).build();
+        EnvVar kafkaStsEnv = new EnvVarBuilder().withName("KAFKA_STS_NAME").withValue(instanceName + "-" + EventStreamsKafkaModel.KAFKA_COMPONENT_NAME).build();
+        EnvVar clientCaCertPath = new EnvVarBuilder().withName("CLIENT_CA_PATH").withValue("/certs/client/ca.crt").build();
+        EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:IAM-BEARER;SCRAM-SHA-512,7080:IAM-BEARER").build();
+        EnvVar endpoints = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7080").build();
+        EnvVar tlsVersion = new EnvVarBuilder().withName("TLS_VERSION").withValue("9443:TLSv1.2,7080").build();
+        EnvVar kafkaConnectRestApiEnv = new EnvVarBuilder().withName("KAFKA_CONNECT_REST_API_ADDRESS").withValue(kafkaConnectRestEndpoint).build();
+        EnvVar apiVersionEnv = new EnvVarBuilder().withName("EVENTSTREAMS_API_GROUP").withValue(apiVersion).build();
+        //   EnvVar geoRepEnabledEnv = new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue("false").build();
+        EnvVar geoRepSecretNameEnv = new EnvVarBuilder().withName("GEOREPLICATION_SECRET_NAME").withValue(instanceName  + "-" + AbstractModel.APP_NAME + "-" + ReplicatorSecretModel.REPLICATOR_SECRET_NAME).build();
+        EnvVar geoRepInternalClientAuthEnv = new EnvVarBuilder().withName("GEOREPLICATION_INTERNAL_CLIENT_AUTH_ENABLED").withValue("false").build();
+        EnvVar geoRepExternalClientAuthEnv = new EnvVarBuilder().withName("GEOREPLICATION_EXTERNAL_CLIENT_AUTH_ENABLED").withValue("false").build();
+        EnvVar geoRepInternalServerAuthEnv = new EnvVarBuilder().withName("GEOREPLICATION_INTERNAL_SERVER_AUTH_ENABLED").withValue("false").build();
+        EnvVar geoRepExternalServerAuthEnv = new EnvVarBuilder().withName("GEOREPLICATION_EXTERNAL_SERVER_AUTH_ENABLED").withValue("false").build();
+        EnvVar geoRepInternalClientAuthTypeEnv = new EnvVarBuilder().withName("GEOREPLICATION_INTERNAL_CLIENT_AUTH_TYPE").withValue("NONE").build();
+
+        EnvVarSource esCaCertEnvVarSource = new EnvVarSourceBuilder().withSecretKeyRef(new SecretKeySelector("ca.crt", instanceName + "-cluster-ca-cert", true)).build();
+        EnvVar esCaCertEnv = new EnvVarBuilder().withName("ES_CACERT").withValueFrom(esCaCertEnvVarSource).build();
+
+        Container adminApiContainer = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0);
+        List<EnvVar> defaultEnvVars = adminApiContainer.getEnv();
+        assertThat(defaultEnvVars, hasItem(kafkaBootstrapUrlEnv));
+        assertThat(defaultEnvVars, hasItem(zkConnectEnv));
+        assertThat(defaultEnvVars, hasItem(schemaRegistryUrlEnv));
+        assertThat(defaultEnvVars, hasItem(kafkaStsEnv));
+        assertThat(defaultEnvVars, hasItem(clientCaCertPath));
+        assertThat(defaultEnvVars, hasItem(authentication));
+        assertThat(defaultEnvVars, hasItem(endpoints));
+        assertThat(defaultEnvVars, hasItem(esCaCertEnv));
+        assertThat(defaultEnvVars, hasItem(tlsVersion));
+        assertThat(defaultEnvVars, hasItem(kafkaConnectRestApiEnv));
+        assertThat(defaultEnvVars, hasItem(apiVersionEnv));
+        //  assertThat(defaultEnvVars, hasItem(geoRepEnabledEnv));
+        assertThat(defaultEnvVars, hasItem(geoRepSecretNameEnv));
+        assertThat(defaultEnvVars, hasItem(geoRepInternalClientAuthEnv));
+        assertThat(defaultEnvVars, hasItem(geoRepExternalClientAuthEnv));
+        assertThat(defaultEnvVars, hasItem(geoRepInternalServerAuthEnv));
+        assertThat(defaultEnvVars, hasItem(geoRepInternalServerAuthEnv));
+        assertThat(defaultEnvVars, hasItem(geoRepInternalClientAuthTypeEnv));
+    }
+
 
     @Test
     public void testDefaultResourceRequirements() {

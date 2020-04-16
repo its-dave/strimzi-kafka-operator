@@ -144,6 +144,7 @@ import static com.ibm.eventstreams.api.model.AbstractModel.APP_NAME;
 import static com.ibm.eventstreams.api.model.AbstractModel.AUTHENTICATION_LABEL_SEPARATOR;
 import static com.ibm.eventstreams.api.model.AbstractSecureEndpointsModel.getInternalServiceName;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -2293,6 +2294,59 @@ public class EventStreamsOperatorTest {
                 assertThat(adminUI.isPresent(), is(true));
                 Container uiContainer = adminUI.get().getSpec().getTemplate().getSpec().getContainers().get(0);
                 assertThat(uiContainer.getEnv(), hasItem(new EnvVarBuilder().withName(CP4I_ADMIN_UI_ENVAR_NAME).withValue(CP4I_TEST_HEADER_URL).build()));
+                async.flag();
+            })));
+    }
+
+    @Test
+    public void testAdminUiUpdatesWhenKafkaListenerUpdates(VertxTestContext context) {
+        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
+        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        EventStreams noAuth = createEventStreamsWithStrimziOverrides(NAMESPACE, CLUSTER_NAME, new KafkaSpecBuilder()
+            .withNewKafka()
+                .withNewListeners()
+                    .withNewPlain()
+                    .endPlain()
+                .endListeners()
+            .endKafka()
+            .build());
+
+        EventStreams withAuth = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
+
+        Checkpoint async = context.checkpoint();
+        esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), withAuth)
+            .onComplete(context.succeeding(v -> context.verify(() -> {
+                Optional<Deployment> adminUI = Optional.ofNullable(mockClient.apps().deployments().inNamespace(NAMESPACE).list())
+                    .map(DeploymentList::getItems)
+                    .map(list -> list.stream()
+                        .filter(deploy -> deploy.getMetadata().getName().equals(CLUSTER_NAME + "-" + APP_NAME + "-" + AdminUIModel.COMPONENT_NAME))
+                        .findFirst())
+                    .map(deployment -> (Deployment) deployment.get());
+
+                assertThat(adminUI.isPresent(), is(true));
+                Container uiContainer = adminUI.get().getSpec().getTemplate().getSpec().getContainers().get(0);
+
+                assertThat(uiContainer.getEnv(), hasItems(
+                    new EnvVarBuilder().withName("ESFF_SECURITY_AUTH").withValue("true").build(),
+                    new EnvVarBuilder().withName("ESFF_SECURITY_AUTHZ").withValue("true").build())
+                );
+            })))
+            .compose(v -> esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), noAuth))
+            .onComplete(context.succeeding(v -> context.verify(() -> {
+                Optional<Deployment> adminUI = Optional.ofNullable(mockClient.apps().deployments().inNamespace(NAMESPACE).list())
+                    .map(DeploymentList::getItems)
+                    .map(list -> list.stream()
+                        .filter(deploy -> deploy.getMetadata().getName().equals(CLUSTER_NAME + "-" + APP_NAME + "-" + AdminUIModel.COMPONENT_NAME))
+                        .findFirst())
+                    .map(deployment -> (Deployment) deployment.get());
+
+                assertThat(adminUI.isPresent(), is(true));
+                Container uiContainer = adminUI.get().getSpec().getTemplate().getSpec().getContainers().get(0);
+
+                assertThat(uiContainer.getEnv(), hasItems(
+                    new EnvVarBuilder().withName("ESFF_SECURITY_AUTH").withValue("false").build(),
+                    new EnvVarBuilder().withName("ESFF_SECURITY_AUTHZ").withValue("false").build())
+                );
                 async.flag();
             })));
     }

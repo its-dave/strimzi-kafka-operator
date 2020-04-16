@@ -97,6 +97,20 @@ public class SchemaRegistryModelTest {
                 .endSpec();
     }
 
+    private EventStreamsBuilder createEventStreamsWithAuthentication() {
+        return ModelUtils.createEventStreamsWithAuthentication(instanceName)
+            .editSpec()
+            .withNewSchemaRegistry()
+            .withReplicas(defaultReplicas)
+            .withNewAvro()
+            .endAvro()
+            .withNewProxy()
+            .endProxy()
+            .withStorage(new EphemeralStorageBuilder().build())
+            .endSchemaRegistry()
+            .endSpec();
+    }
+
     private SchemaRegistryModel createDefaultSchemaRegistryModel() {
         EventStreams eventStreamsResource = createDefaultEventStreams().build();
         return new SchemaRegistryModel(eventStreamsResource, imageConfig, null, mockIcpClusterDataMap);
@@ -380,8 +394,23 @@ public class SchemaRegistryModelTest {
     }
 
     @Test
-    public void testSchemaRegistryProxyAuthenticationEnvVarsSet() {
+    public void testSchemaRegistryProxyAuthenticationEnvVarsSetWithNoAuth() {
         EventStreams defaultEs = createDefaultEventStreams().build();
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockIcpClusterDataMap);
+
+        EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443,7080").build();
+        EnvVar endpoints = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7080").build();
+        EnvVar tlsVersion = new EnvVarBuilder().withName("TLS_VERSION").withValue("9443:TLSv1.2,7080").build();
+        EnvVar authEnabled  = new EnvVarBuilder().withName("AUTHENTICATION_ENABLED").withValue("false").build();
+
+        List<EnvVar> envVars = schemaRegistryModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().stream().filter(container -> SchemaRegistryModel.SCHEMA_REGISTRY_PROXY_CONTAINER_NAME.equals(container.getName())).findFirst().get().getEnv();
+
+        assertThat(envVars, hasItems(authentication, endpoints, tlsVersion, authEnabled));
+    }
+
+    @Test
+    public void testSchemaRegistryProxyAuthenticationEnvVarsWithAuth() {
+        EventStreams defaultEs = createEventStreamsWithAuthentication().build();
         SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockIcpClusterDataMap);
 
         EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:IAM-BEARER;SCRAM-SHA-512,7080:MAC;IAM-BEARER").build();

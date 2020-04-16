@@ -444,8 +444,8 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
     }
 
     @Override
-    public List<String> getP2PAuthenticationMechanisms() {
-        return Collections.singletonList("IAM-BEARER");
+    public List<String> getP2PAuthenticationMechanisms(EventStreams instance) {
+        return authEnabled(instance) ? Collections.singletonList("IAM-BEARER") : Collections.emptyList();
     }
 
     /**

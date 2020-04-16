@@ -12,28 +12,9 @@
  */
 package com.ibm.eventstreams.api.model;
 
-import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.lessThan;
-import static org.hamcrest.Matchers.aMapWithSize;
-import static org.hamcrest.Matchers.hasEntry;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 import com.ibm.eventstreams.api.model.utils.ModelUtils;
 import com.ibm.eventstreams.api.spec.EventStreams;
-
-import io.strimzi.api.kafka.model.KafkaUser;
-import io.strimzi.api.kafka.model.KafkaUserSpec;
-import io.strimzi.api.kafka.model.KafkaUserSpecBuilder;
-import io.strimzi.operator.common.model.Labels;
-import org.junit.jupiter.api.Test;
-
+import com.ibm.eventstreams.api.spec.EventStreamsSpecBuilder;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.ContainerBuilder;
 import io.fabric8.kubernetes.api.model.HTTPHeaderBuilder;
@@ -44,6 +25,25 @@ import io.fabric8.kubernetes.api.model.ProbeBuilder;
 import io.fabric8.kubernetes.api.model.Volume;
 import io.fabric8.kubernetes.api.model.VolumeBuilder;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
+import io.strimzi.api.kafka.model.KafkaSpecBuilder;
+import io.strimzi.api.kafka.model.KafkaUser;
+import io.strimzi.api.kafka.model.KafkaUserSpec;
+import io.strimzi.api.kafka.model.KafkaUserSpecBuilder;
+import io.strimzi.operator.common.model.Labels;
+import org.junit.jupiter.api.Test;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.aMapWithSize;
+import static org.hamcrest.Matchers.hasEntry;
+import static org.hamcrest.Matchers.lessThan;
 
 
 public class AbstractModelTest {
@@ -347,5 +347,69 @@ public class AbstractModelTest {
         ComponentModel model = new ComponentModel(instance);
         assertThat(model.getDefaultResourceNameWithSuffix("AVeryLongSuffixThatIsLongerThanSixtyFourCharactersToTestTruncation"), is("t-tqjt-test-AVeryLongSuffixThatIsLongerThanSixtyFourChara-+Cv2"));
         assertThat(model.getDefaultResourceNameWithSuffix("AVeryLongSuffixThatIsLongerThanSixtyFourCharactersToTestTruncation").length(), is(lessThan(64)));
+    }
+
+    @Test
+    public void testDefaultEventStreamsAuthenticationSetting() {
+        EventStreams instance = ModelUtils.createDefaultEventStreams(instanceName).build();
+        ComponentModel model = new ComponentModel(instance);
+        assertThat(model.authEnabled(instance), is(false));
+    }
+
+    @Test
+    public void testEventStreamsAuthenticationWithPlainKafkaListenerAuthentication() {
+        EventStreams plainAuthInstance = ModelUtils.createEventStreams(instanceName, new EventStreamsSpecBuilder()
+            .withStrimziOverrides(new KafkaSpecBuilder()
+                .withNewKafka()
+                    .withNewListeners()
+                        .withNewPlain()
+                            .withNewKafkaListenerAuthenticationScramSha512Auth()
+                            .endKafkaListenerAuthenticationScramSha512Auth()
+                        .endPlain()
+                    .endListeners()
+                .endKafka()
+                .build())
+            .build())
+            .build();
+        ComponentModel plainListener = new ComponentModel(plainAuthInstance);
+        assertThat(plainListener.authEnabled(plainAuthInstance), is(true));
+    }
+
+    @Test
+    public void testEventStreamsAuthenticationWithExternalKafkaListenerAuthentication() {
+        EventStreams externalListenerInstance = ModelUtils.createEventStreams(instanceName, new EventStreamsSpecBuilder()
+            .withStrimziOverrides(new KafkaSpecBuilder()
+                .withNewKafka()
+                .withNewListeners()
+                .withNewKafkaListenerExternalRoute()
+                .withNewKafkaListenerAuthenticationTlsAuth()
+                .endKafkaListenerAuthenticationTlsAuth()
+                .endKafkaListenerExternalRoute()
+                .endListeners()
+                .endKafka()
+                .build())
+            .build())
+            .build();
+        ComponentModel externalListener = new ComponentModel(externalListenerInstance);
+        assertThat(externalListener.authEnabled(externalListenerInstance), is(true));
+    }
+
+    @Test
+    public void testEventStreamsAuthenticationWithTlsKafkaListenerAuthentication() {
+        EventStreams tlsAuthInstance = ModelUtils.createEventStreams(instanceName, new EventStreamsSpecBuilder()
+            .withStrimziOverrides(new KafkaSpecBuilder()
+                .withNewKafka()
+                .withNewListeners()
+                .withNewTls()
+                .withNewKafkaListenerAuthenticationTlsAuth()
+                .endKafkaListenerAuthenticationTlsAuth()
+                .endTls()
+                .endListeners()
+                .endKafka()
+                .build())
+            .build())
+            .build();
+        ComponentModel tlsListener = new ComponentModel(tlsAuthInstance);
+        assertThat(tlsListener.authEnabled(tlsAuthInstance), is(true));
     }
 }

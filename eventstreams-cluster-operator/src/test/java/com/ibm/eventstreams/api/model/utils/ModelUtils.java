@@ -28,6 +28,7 @@ import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.SecretBuilder;
 import io.strimzi.api.kafka.model.Kafka;
+import io.strimzi.api.kafka.model.KafkaSpecBuilder;
 import io.strimzi.api.kafka.model.listener.KafkaListeners;
 import io.strimzi.api.kafka.model.listener.KafkaListenersBuilder;
 import io.strimzi.operator.cluster.model.AbstractModel;
@@ -67,6 +68,25 @@ public class ModelUtils {
                 .withNewSpec()
                 .withReplicas(1)
                 .endSpec();
+    }
+
+    public static EventStreamsBuilder createEventStreamsWithAuthentication(String instanceName) {
+        return ModelUtils.createDefaultEventStreams(instanceName)
+            .withMetadata(new ObjectMetaBuilder()
+                .withNewName(instanceName)
+                .build())
+            .editSpec()
+            .withStrimziOverrides(new KafkaSpecBuilder()
+                .withNewKafka()
+                    .withNewListeners()
+                        .withNewPlain()
+                            .withNewKafkaListenerAuthenticationTlsAuth()
+                            .endKafkaListenerAuthenticationTlsAuth()
+                        .endPlain()
+                    .endListeners()
+                .endKafka()
+            .build())
+            .endSpec();
     }
 
     public static void assertCorrectImageOverridesOnContainers(List<Container> containers, Map<String, String> imageOverrides) {
