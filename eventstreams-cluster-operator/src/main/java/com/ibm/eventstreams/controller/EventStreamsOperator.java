@@ -23,6 +23,7 @@ import com.ibm.eventstreams.api.model.EventStreamsKafkaModel;
 import com.ibm.eventstreams.api.model.InternalKafkaUserModel;
 import com.ibm.eventstreams.api.model.KafkaNetworkPolicyExtensionModel;
 import com.ibm.eventstreams.api.model.MessageAuthenticationModel;
+import com.ibm.eventstreams.api.model.ReplicatorModel;
 import com.ibm.eventstreams.api.model.ReplicatorSecretModel;
 import com.ibm.eventstreams.api.model.ReplicatorSourceUsersModel;
 import com.ibm.eventstreams.api.model.RestProducerModel;
@@ -39,8 +40,8 @@ import com.ibm.eventstreams.rest.EndpointValidation;
 import com.ibm.eventstreams.rest.LicenseValidation;
 import com.ibm.eventstreams.rest.NameValidation;
 import com.ibm.eventstreams.rest.PlainListenerValidation;
-import com.ibm.eventstreams.rest.VersionValidation;
 import com.ibm.eventstreams.rest.ValidationResponsePayload.ValidationResponse;
+import com.ibm.eventstreams.rest.VersionValidation;
 import com.ibm.iam.api.controller.Cp4iServicesBindingResourceOperator;
 import com.ibm.iam.api.model.ClientModel;
 import com.ibm.iam.api.model.Cp4iServicesBindingModel;
@@ -110,8 +111,8 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
     private final KubernetesClient client;
     private final EventStreamsResourceOperator esResourceOperator;
     private final Cp4iServicesBindingResourceOperator cp4iResourceOperator;
+    private final EventStreamsReplicatorResourceOperator replicatorResourceOperator;
     private final KafkaUserOperator kafkaUserOperator;
-    private final KafkaMirrorMaker2Operator kafkaMirrorMaker2Operator;
     private final DeploymentOperator deploymentOperator;
     private final ServiceAccountOperator serviceAccountOperator;
     private final RoleBindingOperator roleBindingOperator;
@@ -137,6 +138,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
     public EventStreamsOperator(Vertx vertx, KubernetesClient client, String kind, PlatformFeaturesAvailability pfa,
                                 EventStreamsResourceOperator esResourceOperator,
                                 Cp4iServicesBindingResourceOperator cp4iResourceOperator,
+                                EventStreamsReplicatorResourceOperator replicatorResourceOperator,
                                 EventStreamsOperatorConfig.ImageLookup imageConfig,
                                 RouteOperator routeOperator,
                                 MetricsProvider metricsProvider,
@@ -148,10 +150,10 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         log.info("Creating EventStreamsOperator");
         this.esResourceOperator = esResourceOperator;
         this.cp4iResourceOperator = cp4iResourceOperator;
+        this.replicatorResourceOperator = replicatorResourceOperator;
         this.client = client;
         this.pfa = pfa;
         this.kafkaUserOperator = new KafkaUserOperator(vertx, client);
-        this.kafkaMirrorMaker2Operator = new KafkaMirrorMaker2Operator(vertx, client);
         this.deploymentOperator = new DeploymentOperator(vertx, client);
         this.serviceAccountOperator = new ServiceAccountOperator(vertx, client);
         this.roleBindingOperator = new RoleBindingOperator(vertx, client);
@@ -199,6 +201,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 .compose(state -> state.createMessageAuthenticationSecret())
                 .compose(state -> state.createRestProducer(this::dateSupplier))
                 .compose(state -> state.createReplicatorSecret())
+                .compose(state -> state.hasEventStreamsReplicator())
                 .compose(state -> state.createAdminApi(this::dateSupplier))
                 .compose(state -> state.createSchemaRegistry(this::dateSupplier))
                 .compose(state -> state.createAdminUI())
@@ -226,6 +229,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         final EventStreamsOperatorConfig.ImageLookup imageConfig;
         final EventStreamsCertificateManager certificateManager;
         Map<String, String> icpClusterData = null;
+        boolean isGeoReplicationEnabled = false;
 
         ReconciliationState(Reconciliation reconciliation, EventStreams instance, EventStreamsOperatorConfig.ImageLookup imageConfig) {
             log.traceEntry(() -> reconciliation, () -> instance, () -> imageConfig);
@@ -527,6 +531,14 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 .map(v -> this));
         }
 
+        Future<ReconciliationState> hasEventStreamsReplicator() {
+            log.traceEntry();
+            return log.traceExit(replicatorResourceOperator.getAsync(namespace, instance.getMetadata().getName()).compose(replicator -> {
+                isGeoReplicationEnabled = ReplicatorModel.isReplicatorEnabled(replicator);
+                return Future.succeededFuture(this);
+            }));
+        }
+
         Future<ReconciliationState> createReplicatorUsers() {
             log.traceEntry();
             ReplicatorSourceUsersModel replicatorSourceUsersModel = new ReplicatorSourceUsersModel(instance);
@@ -585,7 +597,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         Future<ReconciliationState> createAdminApi(Supplier<Date> dateSupplier) {
             log.traceEntry(() -> dateSupplier);
             List<Future> adminApiFutures = new ArrayList<>();
-            AdminApiModel adminApi = new AdminApiModel(instance, imageConfig, status.getKafkaListeners(), icpClusterData);
+            AdminApiModel adminApi = new AdminApiModel(instance, imageConfig, status.getKafkaListeners(), icpClusterData, isGeoReplicationEnabled);
             if (adminApi.getCustomImage()) {
                 customImageCount++;
             }

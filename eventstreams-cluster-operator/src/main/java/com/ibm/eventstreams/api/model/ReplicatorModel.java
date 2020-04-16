@@ -56,6 +56,7 @@ import io.fabric8.kubernetes.api.model.networking.NetworkPolicyIngressRule;
 public class ReplicatorModel extends AbstractModel {
 
     public static final String COMPONENT_NAME = "replicator";
+    public static final String REPLICATOR_APPLICATION_NAME = "kafka-mirror-maker-2";
     public static final int REPLICATOR_PORT = 8083;
     public static final String REPLICATOR_CLUSTER_NAME = "replicator-cluster";
     protected static final String CONFIG_STORAGE_TOPIC_NAME = "__eventstreams_georeplicator_configs";
@@ -207,7 +208,8 @@ public class ReplicatorModel extends AbstractModel {
     }
 
     public static boolean isReplicatorEnabled(EventStreamsReplicator replicatorInstance) {
-        return Optional.ofNullable(replicatorInstance.getSpec().getReplicas())
+        return Optional.ofNullable(replicatorInstance)
+                .map(replicator -> replicator.getSpec().getReplicas())
                 .map(replicas -> replicas > 0)
                 .orElse(false);
     }
@@ -220,7 +222,7 @@ public class ReplicatorModel extends AbstractModel {
         List<NetworkPolicyIngressRule> ingressRules = new ArrayList<>(1);
         ingressRules.add(createCustomReplicatorConnectIngressRule());
         List<NetworkPolicyEgressRule> egressRules = new ArrayList<>(0);
-        return super.createNetworkPolicy(createLabelSelector(COMPONENT_NAME), ingressRules, egressRules);
+        return super.createNetworkPolicy(createLabelSelector(REPLICATOR_APPLICATION_NAME), ingressRules, egressRules);
     }
 
 

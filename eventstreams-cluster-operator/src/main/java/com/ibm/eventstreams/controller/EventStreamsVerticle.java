@@ -13,6 +13,7 @@
 package com.ibm.eventstreams.controller;
 
 import com.ibm.eventstreams.api.spec.EventStreams;
+import com.ibm.eventstreams.api.spec.EventStreamsReplicator;
 import com.ibm.eventstreams.rest.EndpointValidation;
 import com.ibm.eventstreams.rest.EntityLabelValidation;
 import com.ibm.eventstreams.rest.KubernetesProbe;
@@ -91,6 +92,7 @@ public class EventStreamsVerticle extends AbstractVerticle {
 
             EventStreamsResourceOperator esResourceOperator = new EventStreamsResourceOperator(vertx, client);
             Cp4iServicesBindingResourceOperator cp4iResourceOperator = new Cp4iServicesBindingResourceOperator(vertx, client, Cp4iServicesBinding.RESOURCE_KIND);
+            EventStreamsReplicatorResourceOperator replicatorResourceOperator = new EventStreamsReplicatorResourceOperator(vertx, client, EventStreamsReplicator.RESOURCE_KIND);
             EventStreamsOperator eventStreamsOperator = new EventStreamsOperator(
                     vertx,
                     client,
@@ -98,6 +100,7 @@ public class EventStreamsVerticle extends AbstractVerticle {
                     pfa,
                     esResourceOperator,
                     cp4iResourceOperator,
+                    replicatorResourceOperator,
                     imageConfig,
                     routeOperator,
                     metricsProvider,

@@ -88,6 +88,7 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
     private final ServiceAccount serviceAccount;
     private final NetworkPolicy networkPolicy;
     private final RoleBinding roleBinding;
+    private final boolean isGeoReplicationEnabled;
 
     private static final Logger log = LogManager.getLogger(AdminApiModel.class.getName());
     private List<ListenerStatus> kafkaListeners;
@@ -102,7 +103,8 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
     public AdminApiModel(EventStreams instance,
                          EventStreamsOperatorConfig.ImageLookup imageConfig,
                          List<ListenerStatus> kafkaListeners,
-                         Map<String, String> icpClusterData) {
+                         Map<String, String> icpClusterData,
+                         boolean isGeoReplicationEnabled) {
         super(instance, instance.getSpec().getAdminApi(), COMPONENT_NAME);
         this.kafkaListeners = kafkaListeners != null ? new ArrayList<>(kafkaListeners) : new ArrayList<>();
 
@@ -110,6 +112,8 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
         this.prometheusPort = icpClusterData.getOrDefault("cluster_router_https_port", "null");
         this.icpClusterName = icpClusterData.getOrDefault("cluster_name", "null");
         this.iamServerURL = icpClusterData.getOrDefault("cluster_endpoint", "null");
+
+        this.isGeoReplicationEnabled = isGeoReplicationEnabled;
 
         ibmcloudCASecretName = ClusterSecretsModel.getIBMCloudSecretName(getInstanceName());
 
@@ -261,7 +265,7 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
         String kafkaBootstrapExternalUrl = getExternalKafkaBootstrap(kafkaListeners);
         String schemaRegistryEndpoint =  getInternalServiceName(getInstanceName(), SchemaRegistryModel.COMPONENT_NAME) + "." +  getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.getPodToPodPort(tlsEnabled());
         String zookeeperEndpoint = EventStreamsKafkaModel.getKafkaInstanceName(getInstanceName()) + "-" + EventStreamsKafkaModel.ZOOKEEPER_COMPONENT_NAME + "-client." + getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.ZOOKEEPER_PORT;
-        String kafkaConnectRestEndpoint = "http://" + getResourcePrefix() + "-" + ReplicatorModel.COMPONENT_NAME + "-mirrormaker2-api." + getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + ReplicatorModel.REPLICATOR_PORT;
+        String kafkaConnectRestEndpoint = "http://" + getInstanceName() + "-mirrormaker2-api." + getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + ReplicatorModel.REPLICATOR_PORT;
 
         ArrayList envVars = new ArrayList<>(Arrays.asList(
             new EnvVarBuilder().withName("RELEASE").withValue(getInstanceName()).build(),
@@ -285,7 +289,7 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
             new EnvVarBuilder().withName("PROMETHEUS_PORT").withValue(prometheusPort).build(),
             new EnvVarBuilder().withName("KAFKA_STS_NAME").withValue(EventStreamsKafkaModel.getKafkaInstanceName(getInstanceName()) + "-" + EventStreamsKafkaModel.KAFKA_COMPONENT_NAME).build(),
             new EnvVarBuilder().withName("KAFKA_CONNECT_REST_API_ADDRESS").withValue(kafkaConnectRestEndpoint).build(),
-            //new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue(Boolean.toString(ReplicatorModel.isReplicatorEnabled(instance))).build(),
+            new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue(Boolean.toString(isGeoReplicationEnabled)).build(),
             new EnvVarBuilder().withName("GEOREPLICATION_SECRET_NAME").withValue(getResourcePrefix() + "-" + ReplicatorSecretModel.REPLICATOR_SECRET_NAME).build(),
             new EnvVarBuilder().withName("GEOREPLICATION_INTERNAL_CLIENT_AUTH_ENABLED").withValue(Boolean.toString(isReplicatorInternalClientAuthForConnectEnabled(instance))).build(),
             new EnvVarBuilder().withName("GEOREPLICATION_EXTERNAL_CLIENT_AUTH_ENABLED").withValue(Boolean.toString(isReplicatorExternalClientAuthForConnectEnabled(instance))).build(),
