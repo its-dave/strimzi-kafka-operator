@@ -9,7 +9,7 @@ This results in a single `Main` that runs two completely separate operators.
 
 ### Pre-reqs
 If building the whole project you will need:
-- all of the [pre-reqs listed for Strimzi](DEV_QUICK_START_MACOS.md#Preparing your Mac for work) or for [non-Mac users](DEV_QUICK_START.md#pre-requisites)
+- all of the [pre-reqs listed for Strimzi](DEV_QUICK_START_MACOS.md#) or for [non-Mac users](DEV_QUICK_START.md#pre-requisites)
 - yq v2.4.1 [source repo](https://github.com/mikefarah/yq)
 - jq [source repo](https://stedolan.github.io/jq/)
 - operator-sdk [source repo](https://github.com/operator-framework/operator-sdk/blob/master/doc/user/install-operator-sdk.md)
@@ -57,7 +57,7 @@ oc apply -f install/ibm-eventstreams-operator/
 Finally you can create an instance of the EventStreams Custom resource.
 
 ```
-kubectl apply -f examples/evenstreams/eventstreams-ephemeral-single.yaml
+kubectl apply -f examples/evenstreams/eventstreams-quickstart.yaml
 ```
 
 ### Watching multiple namespaces
@@ -74,7 +74,7 @@ For more details, follow the [Strimzi instructions](https://strimzi.io/docs/quic
 
 Apply EventStreams SCC by replacing the namespace to the custom namespace.
 ```
-oc apply -f install/cluster-operator/100-SecurityContextConstraints-eventstreams.yaml
+oc apply -f install/ibm-eventstreams-operator/100-SecurityContextConstraints-eventstreams.yaml
 ```
 
 In the operator deployment `install/cluster-operator/150-Deployment-eventstreams-cluster-operator.yaml` set the
@@ -107,7 +107,7 @@ You **don't need a custom scc**, as the default `restricted` scc should work fin
 
 However, if you want to apply a custom SCC, a sample is available to get you started. You need to have the `strimzi-kafka-operator` directory locally.  The repository can be found [here](https://github.ibm.com/mhub/strimzi-kafka-operator)
 
-Make the following updates to `install/cluster-operator/100-SecurityContextConstraints-eventstreams.yaml`:
+Make the following updates to `install/ibm-eventstreams-operator/100-SecurityContextConstraints-eventstreams.yaml`:
 1. Replace the namespace you have created (by default, the `myproject` namespace is used)
 ```
 groups:

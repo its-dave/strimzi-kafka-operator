@@ -100,8 +100,6 @@ spec:
               value: "{{ default .Values.userOperator.image.repository .Values.imageRepositoryOverride }}/{{ .Values.userOperator.image.name }}:{{ .Values.userOperator.image.tag }}"
             - name: EVENTSTREAMS_DEFAULT_KAFKA_INIT_IMAGE
               value: "{{ default .Values.kafkaInit.image.repository .Values.imageRepositoryOverride }}/{{ .Values.kafkaInit.image.name }}:{{ .Values.kafkaInit.image.tag }}"
-            - name: EVENTSTREAMS_DEFAULT_KAFKA_BRIDGE_IMAGE
-              value: "{{ default .Values.kafkaBridge.image.repository .Values.imageRepositoryOverride }}/{{ .Values.kafkaBridge.image.name }}:{{ .Values.kafkaBridge.image.tag }}"
             - name: EVENTSTREAMS_DEFAULT_JMXTRANS_IMAGE
               value: "{{ default .Values.jmxTrans.image.repository .Values.imageRepositoryOverride }}/{{ .Values.jmxTrans.image.name }}:{{ .Values.jmxTrans.image.tag }}"
             # Proprietary images

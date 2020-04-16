@@ -4,7 +4,7 @@ metadata:
     certified: 'false'
     description: Kafka-based messaging platform for handling real-time data feeds.
     support: IBM
-    containerImage: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-operator-icp-linux-amd64:latest
+    containerImage: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-operator-icp-linux:latest
     operators.operatorframework.io/internal-objects: '["kafkas.eventstreams.ibm.com","kafkamirrormaker2s.eventstreams.ibm.com"]'
   alm-examples-metadata:
     quickstart:

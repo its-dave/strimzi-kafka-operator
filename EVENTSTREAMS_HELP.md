@@ -18,7 +18,7 @@ If for any reason a `Dockerfile` fails to build on a run with a `c` compilation 
 image has fallen out of date locally.
 To re-pull this image run:
 ```
-docker pull hyc-qp-stable-docker-local.artifactory.swg-devops.com/openjdk-8-jre-ubi7-icp-linux-amd64:latest
+docker pull hyc-qp-stable-docker-local.artifactory.swg-devops.com/openjdk-8-jre-ubi7-icp-linux:latest
 ```
 
 ## eventstreamses not found

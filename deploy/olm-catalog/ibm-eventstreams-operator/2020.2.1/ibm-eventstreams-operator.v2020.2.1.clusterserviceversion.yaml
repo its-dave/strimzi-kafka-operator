@@ -341,7 +341,7 @@ metadata:
     capabilities: Basic Install
     categories: Streaming & Messaging
     certified: 'false'
-    containerImage: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-operator-icp-linux-amd64:latest
+    containerImage: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-operator-icp-linux:latest
     createdAt: 2020-04-16T12:56:04Z
     description: Kafka-based messaging platform for handling real-time data feeds.
     operators.operatorframework.io/internal-objects: '["kafkas.eventstreams.ibm.com","kafkamirrormaker2s.eventstreams.ibm.com"]'
@@ -1066,55 +1066,53 @@ spec:
                     fieldRef:
                       fieldPath: metadata.name
                 - name: EVENTSTREAMS_DEFAULT_TLS_SIDECAR_ENTITY_OPERATOR_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka-amd64:latest-kafka-2.4.0
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:latest-kafka-2.4.0
                 - name: EVENTSTREAMS_DEFAULT_TLS_SIDECAR_KAFKA_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka-amd64:latest-kafka-2.4.0
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:latest-kafka-2.4.0
                 - name: EVENTSTREAMS_DEFAULT_TLS_SIDECAR_ZOOKEEPER_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka-amd64:latest-kafka-2.4.0
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:latest-kafka-2.4.0
                 - name: EVENTSTREAMS_DEFAULT_KAFKA_EXPORTER_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka-amd64:latest-kafka-2.4.0
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:latest-kafka-2.4.0
                 - name: EVENTSTREAMS_KAFKA_IMAGES
                   value: |
-                    2.4.0=hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka-amd64:latest-kafka-2.4.0
+                    2.4.0=hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:latest-kafka-2.4.0
                 - name: EVENTSTREAMS_KAFKA_CONNECT_IMAGES
                   value: |
-                    2.4.0=hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka-amd64:latest-kafka-2.4.0
+                    2.4.0=hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:latest-kafka-2.4.0
                 - name: EVENTSTREAMS_KAFKA_CONNECT_S2I_IMAGES
                   value: |
-                    2.4.0=hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka-amd64:latest-kafka-2.4.0
+                    2.4.0=hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:latest-kafka-2.4.0
                 - name: EVENTSTREAMS_KAFKA_MIRROR_MAKER_IMAGES
                   value: |
-                    2.4.0=hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka-amd64:latest-kafka-2.4.0
+                    2.4.0=hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:latest-kafka-2.4.0
                 - name: EVENTSTREAMS_KAFKA_MIRROR_MAKER_2_IMAGES
                   value: |
-                    2.4.0=hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka-amd64:latest-kafka-2.4.0
+                    2.4.0=hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:latest-kafka-2.4.0
                 - name: EVENTSTREAMS_DEFAULT_TOPIC_OPERATOR_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator-amd64:latest
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator:latest
                 - name: EVENTSTREAMS_DEFAULT_USER_OPERATOR_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator-amd64:latest
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator:latest
                 - name: EVENTSTREAMS_DEFAULT_KAFKA_INIT_IMAGE
-                  value: strimzi/operator:latest
-                - name: EVENTSTREAMS_DEFAULT_KAFKA_BRIDGE_IMAGE
-                  value: strimzi/kafka-bridge:0.15.2
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator:latest
                 - name: EVENTSTREAMS_DEFAULT_JMXTRANS_IMAGE
-                  value: strimzi/jmxtrans:latest
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/jmxtrans:latest
                 - name: EVENTSTREAMS_DEFAULT_REST_PRODUCER_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-rest-producer-v2-icp-linux-amd64:2020-04-15-16.04.19-40c3fcc
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-rest-producer-v2-icp-linux:2020-04-15-16.04.19-40c3fcc
                 - name: EVENTSTREAMS_DEFAULT_ADMIN_API_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-admin-icp-linux-amd64:2020-04-15-16.04.26-40c3fcc
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-admin-icp-linux:2020-04-15-16.04.26-40c3fcc
                 - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-schema-registry-icp-linux-amd64:2020-04-08-10.53.04-a549b6c-dev
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-schema-registry-icp-linux:2020-04-08-10.53.04-a549b6c-dev
                 - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_AVRO_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-avro-icp-linux-amd64:2020-01-16-15.39.43-165fd5b-exp
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-schema-registry-avro-icp-linux:2020-04-09-16.03.17-cd87238
                 - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_PROXY_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-schema-registry-v2-icp-linux-amd64:2020-04-15-16.04.28-40c3fcc
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-schema-registry-v2-icp-linux:2020-04-15-16.04.28-40c3fcc
                 - name: EVENTSTREAMS_DEFAULT_ADMIN_UI_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-admin-ui-icp-linux-amd64:2020-04-15-14.42.19-3b45e8e-dev
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-admin-ui-icp-linux:2020-04-15-14.42.19-3b45e8e-dev
                 - name: EVENTSTREAMS_DEFAULT_ADMIN_UI_REDIS_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-database-icp-linux-amd64:2020-02-11-13.40.39-0a99ddb-exp
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-session-store-icp-linux:2020-04-09-15.40.36-f32e234
                 - name: EVENTSTREAMS_DEFAULT_COLLECTOR_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-metrics-collector-icp-linux-amd64:2020-04-08-11.08.41-3cb71d9
-                image: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator-amd64:latest
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-metrics-collector-icp-linux:2020-04-08-11.08.41-3cb71d9
+                image: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator:latest
                 livenessProbe:
                   httpGet:
                     path: /healthy
@@ -1150,7 +1148,7 @@ spec:
                   valueFrom:
                     fieldRef:
                       fieldPath: metadata.uid
-                image: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator-init-amd64:latest
+                image: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator-init:latest
                 name: install-validating-webhook
                 resources: {}
                 securityContext:
