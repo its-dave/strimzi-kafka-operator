@@ -213,7 +213,7 @@ public class ReplicatorModel extends AbstractModel {
     }
 
     public String getReplicatorName() {
-        return getDefaultResourceName(getInstanceName(), COMPONENT_NAME);
+        return getInstanceName();
     }
 
     private NetworkPolicy createNetworkPolicy() {

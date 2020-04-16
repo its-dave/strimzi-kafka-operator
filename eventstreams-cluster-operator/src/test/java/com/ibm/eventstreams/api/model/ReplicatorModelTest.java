@@ -12,14 +12,31 @@
  */
 package com.ibm.eventstreams.api.model;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.CoreMatchers.startsWith;
-import static org.hamcrest.Matchers.aMapWithSize;
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.hasEntry;
+import com.ibm.eventstreams.Main;
+import com.ibm.eventstreams.api.model.utils.ModelUtils;
+import com.ibm.eventstreams.api.spec.EventStreams;
+import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
+import com.ibm.eventstreams.api.spec.EventStreamsReplicator;
+import com.ibm.eventstreams.api.spec.EventStreamsReplicatorBuilder;
+import com.ibm.eventstreams.replicator.ReplicatorCredentials;
+import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
+import io.fabric8.kubernetes.api.model.Secret;
+import io.fabric8.kubernetes.api.model.SecretBuilder;
+import io.fabric8.kubernetes.api.model.networking.NetworkPolicy;
+import io.strimzi.api.kafka.model.KafkaMirrorMaker2;
+import io.strimzi.api.kafka.model.KafkaMirrorMaker2ClusterSpec;
+import io.strimzi.api.kafka.model.KafkaMirrorMaker2ClusterSpecBuilder;
+import io.strimzi.api.kafka.model.KafkaMirrorMaker2Spec;
+import io.strimzi.api.kafka.model.KafkaMirrorMaker2SpecBuilder;
+import io.strimzi.api.kafka.model.KafkaMirrorMaker2Tls;
+import io.strimzi.api.kafka.model.KafkaMirrorMaker2TlsBuilder;
+import io.strimzi.api.kafka.model.KafkaSpecBuilder;
+import io.strimzi.api.kafka.model.authentication.KafkaClientAuthentication;
+import io.strimzi.api.kafka.model.authentication.KafkaClientAuthenticationTlsBuilder;
+import io.strimzi.api.kafka.model.connect.ExternalConfiguration;
+import io.strimzi.operator.cluster.model.Ca;
+import io.strimzi.operator.common.model.Labels;
+import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -27,39 +44,13 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 
-import io.fabric8.kubernetes.api.model.networking.NetworkPolicy;
-import io.strimzi.api.kafka.model.KafkaMirrorMaker2ClusterSpecBuilder;
-import io.strimzi.api.kafka.model.KafkaMirrorMaker2Spec;
-import io.strimzi.api.kafka.model.KafkaMirrorMaker2SpecBuilder;
-import io.strimzi.api.kafka.model.connect.ExternalConfiguration;
-import io.strimzi.operator.cluster.model.Ca;
-
-import com.ibm.eventstreams.Main;
-import com.ibm.eventstreams.api.model.utils.ModelUtils;
-
-import com.ibm.eventstreams.api.spec.EventStreams;
-import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
-
-import com.ibm.eventstreams.replicator.ReplicatorCredentials;
-import io.fabric8.kubernetes.api.model.SecretBuilder;
-
-import io.strimzi.api.kafka.model.KafkaMirrorMaker2;
-import io.strimzi.api.kafka.model.KafkaMirrorMaker2ClusterSpec;
-import io.strimzi.api.kafka.model.KafkaMirrorMaker2Tls;
-import io.strimzi.api.kafka.model.KafkaMirrorMaker2TlsBuilder;
-import io.strimzi.api.kafka.model.KafkaSpecBuilder;
-import io.strimzi.api.kafka.model.authentication.KafkaClientAuthentication;
-import io.strimzi.api.kafka.model.authentication.KafkaClientAuthenticationTlsBuilder;
-
-import com.ibm.eventstreams.api.spec.EventStreamsReplicator;
-import com.ibm.eventstreams.api.spec.EventStreamsReplicatorBuilder;
-
-import io.strimzi.operator.common.model.Labels;
-
-import org.junit.jupiter.api.Test;
-
-import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
-import io.fabric8.kubernetes.api.model.Secret;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.aMapWithSize;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.hasEntry;
 
 public class ReplicatorModelTest {
 
@@ -85,7 +76,7 @@ public class ReplicatorModelTest {
         assertThat(replicator.getKind(), is("KafkaMirrorMaker2"));
         assertThat(replicator.getApiVersion(), is("eventstreams.ibm.com/v1alpha1"));
 
-        assertThat(replicator.getMetadata().getName(), startsWith(componentPrefix));
+        assertThat(replicator.getMetadata().getName(), is(instanceName));
         assertThat(replicator.getMetadata().getNamespace(), is(namespace));
 
         Map<String, String> labels = replicator.getMetadata().getLabels();
@@ -122,7 +113,7 @@ public class ReplicatorModelTest {
         assertThat(replicator.getKind(), is("KafkaMirrorMaker2"));
         assertThat(replicator.getApiVersion(), is("eventstreams.ibm.com/v1alpha1"));
 
-        assertThat(replicator.getMetadata().getName(), startsWith(componentPrefix));
+        assertThat(replicator.getMetadata().getName(), is(instanceName));
         assertThat(replicator.getMetadata().getNamespace(), is(namespace));
 
         Map<String, String> labels = replicator.getMetadata().getLabels();
