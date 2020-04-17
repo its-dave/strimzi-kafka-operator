@@ -365,7 +365,7 @@ public class ReplicatorUsersModelTest {
         assertThat(replicatorDestinationConnectorUser.getSpec().getAuthorization(), instanceOf(KafkaUserAuthorizationSimple.class));
         KafkaUserAuthorizationSimple kafkaDestUserAuth = (KafkaUserAuthorizationSimple) replicatorDestinationConnectorUser.getSpec().getAuthorization();
         List<AclRule> aclsDest = kafkaDestUserAuth.getAcls();
-        assertThat(aclsDest.size(), is(2));
+        assertThat(aclsDest.size(), is(3));
 
         AclRule rule1destcreate = aclsDest.get(0);
         assertThat(rule1destcreate.getResource(), instanceOf(AclRuleClusterResource.class));
@@ -377,11 +377,19 @@ public class ReplicatorUsersModelTest {
         assertThat(rule1destalter.getOperation(), is(AclOperation.ALTER));
         assertThat(rule1destalter.getHost(), is("*"));
 
+        AclRule rule1destalterconfig = aclsDest.get(2);
+        assertThat(rule1destalterconfig.getResource(), instanceOf(AclRuleTopicResource.class));
+        AclRuleTopicResource rule1destalterconfigtopic = (AclRuleTopicResource) rule1destalterconfig.getResource();
+        assertThat(rule1destalterconfigtopic.getName(), is("*"));
+        assertThat(rule1destalterconfigtopic.getPatternType(), is(AclResourcePatternType.LITERAL));
+        assertThat(rule1destalterconfig.getOperation(), is(AclOperation.ALTERCONFIGS));
+        assertThat(rule1destalterconfig.getHost(), is("*"));
+
         //MM2 to source Kafka ACL
         assertThat(replicatorSourceConnectorUser.getSpec().getAuthorization(), instanceOf(KafkaUserAuthorizationSimple.class));
         KafkaUserAuthorizationSimple kafkasourceUserAuth = (KafkaUserAuthorizationSimple) replicatorSourceConnectorUser.getSpec().getAuthorization();
         List<AclRule> aclsSource = kafkasourceUserAuth.getAcls();
-        assertThat(aclsSource.size(), is(6));
+        assertThat(aclsSource.size(), is(7));
 
         AclRule rule1sourceread = aclsSource.get(0);
         assertThat(rule1sourceread.getResource(), instanceOf(AclRuleTopicResource.class));
@@ -399,25 +407,33 @@ public class ReplicatorUsersModelTest {
         assertThat(rule1sourcedescribe.getOperation(), is(AclOperation.DESCRIBE));
         assertThat(rule1sourcedescribe.getHost(), is("*"));
 
-        AclRule rule2sourcecreate = aclsSource.get(2);
+        AclRule rule1sourcedescribeconfig = aclsSource.get(2);
+        assertThat(rule1sourcedescribeconfig.getResource(), instanceOf(AclRuleTopicResource.class));
+        AclRuleTopicResource rule1sourcedescribetopicconfig = (AclRuleTopicResource) rule1sourcedescribeconfig.getResource();
+        assertThat(rule1sourcedescribetopicconfig.getName(), is("*"));
+        assertThat(rule1sourcedescribetopicconfig.getPatternType(), is(AclResourcePatternType.LITERAL));
+        assertThat(rule1sourcedescribeconfig.getOperation(), is(AclOperation.DESCRIBECONFIGS));
+        assertThat(rule1sourcedescribeconfig.getHost(), is("*"));
+
+        AclRule rule2sourcecreate = aclsSource.get(3);
         assertThat(rule2sourcecreate.getResource(), instanceOf(AclRuleClusterResource.class));
         assertThat(rule2sourcecreate.getOperation(), is(AclOperation.CREATE));
         assertThat(rule2sourcecreate.getHost(), is("*"));
 
-        AclRule rule2sourceread = aclsSource.get(3);
+        AclRule rule2sourceread = aclsSource.get(4);
         assertThat(rule2sourceread.getResource(), instanceOf(AclRuleClusterResource.class));
         assertThat(rule2sourceread.getOperation(), is(AclOperation.READ));
         assertThat(rule2sourceread.getHost(), is("*"));
 
-        AclRule rule2sourcedescribe = aclsSource.get(4);
+        AclRule rule2sourcedescribe = aclsSource.get(5);
         assertThat(rule2sourcedescribe.getResource(), instanceOf(AclRuleClusterResource.class));
         assertThat(rule2sourcedescribe.getOperation(), is(AclOperation.DESCRIBE));
         assertThat(rule2sourcedescribe.getHost(), is("*"));
 
-        AclRule rule3source = aclsSource.get(5);
+        AclRule rule3source = aclsSource.get(6);
         assertThat(rule3source.getResource(), instanceOf(AclRuleTopicResource.class));
         AclRuleTopicResource rule3sourcetopic = (AclRuleTopicResource) rule3source.getResource();
-        assertThat(rule3sourcetopic.getName(), is("mm2-offset-syncs.*"));
+        assertThat(rule3sourcetopic.getName(), is("mm2-offset-syncs."));
         assertThat(rule3sourcetopic.getPatternType(), is(AclResourcePatternType.PREFIX));
         assertThat(rule3source.getOperation(), is(AclOperation.WRITE));
         assertThat(rule3source.getHost(), is("*"));

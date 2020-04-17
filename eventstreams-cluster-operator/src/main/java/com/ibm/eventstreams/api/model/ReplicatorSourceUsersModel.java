@@ -70,6 +70,15 @@ public class ReplicatorSourceUsersModel extends AbstractModel {
                     .withHost("*")
                     .build();
 
+            AclRule allTopicDescribeConfig = new AclRuleBuilder()
+                .withNewAclRuleTopicResource()
+                .withName("*")
+                .withPatternType(AclResourcePatternType.LITERAL)
+                .endAclRuleTopicResource()
+                .withOperation(AclOperation.DESCRIBECONFIGS)
+                .withHost("*")
+                .build();
+
 
             // Need the ability to create the source offset topic
             AclRule clusterResourceCreate = new AclRuleBuilder()
@@ -99,7 +108,7 @@ public class ReplicatorSourceUsersModel extends AbstractModel {
             // We don't know the full name so using the prefix
             AclRule offsetTopicWrite = new AclRuleBuilder()
                     .withNewAclRuleTopicResource()
-                    .withName("mm2-offset-syncs.*")
+                    .withName("mm2-offset-syncs.")
                     .withPatternType(AclResourcePatternType.PREFIX)
                     .endAclRuleTopicResource()
                     .withOperation(AclOperation.WRITE)
@@ -108,6 +117,7 @@ public class ReplicatorSourceUsersModel extends AbstractModel {
 
             connectorSourceAclList.add(allTopicsRead);
             connectorSourceAclList.add(allTopicDescribe);
+            connectorSourceAclList.add(allTopicDescribeConfig);
             connectorSourceAclList.add(clusterResourceCreate);
             connectorSourceAclList.add(clusterResourceRead);
             connectorSourceAclList.add(clusterResourceDescribe);
