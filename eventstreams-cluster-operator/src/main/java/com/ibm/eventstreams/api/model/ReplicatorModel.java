@@ -55,7 +55,8 @@ import io.fabric8.kubernetes.api.model.networking.NetworkPolicyIngressRule;
 
 public class ReplicatorModel extends AbstractModel {
 
-    public static final String COMPONENT_NAME = "replicator";
+
+    public static final String COMPONENT_NAME = "georep";
     public static final String REPLICATOR_APPLICATION_NAME = "kafka-mirror-maker-2";
     public static final int REPLICATOR_PORT = 8083;
     public static final String REPLICATOR_CLUSTER_NAME = "replicator-cluster";

@@ -64,7 +64,7 @@ import java.util.Optional;
 public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
 
     // static variables
-    public static final String COMPONENT_NAME = "schema-registry";
+    public static final String COMPONENT_NAME = "schema";
     public static final String AVRO_SERVICE_CONTAINER_NAME = "avro-service";
     public static final String SCHEMA_REGISTRY_PROXY_CONTAINER_NAME = "schema-proxy";
     public static final int SCHEMA_REGISTRY_PORT = 3000;

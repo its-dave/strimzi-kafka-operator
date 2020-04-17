@@ -1565,7 +1565,7 @@ public class EventStreamsOperatorTest {
 
         AtomicReference<Secret> secretReference = new AtomicReference<>();
         Checkpoint async = context.checkpoint(3);
-        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(secureInstance, null, "admin-api");
+        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(secureInstance, null, "admapi");
 
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), secureInstance)
             .onComplete(context.succeeding(v -> {
@@ -1688,7 +1688,7 @@ public class EventStreamsOperatorTest {
 
         AtomicReference<Secret> secretReference = new AtomicReference<>();
         Checkpoint async = context.checkpoint(3);
-        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(secureInstance, null, "admin-api");
+        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(secureInstance, null, "admapi");
 
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), insecureInstance)
             .onComplete(context.succeeding(v -> {
@@ -1754,7 +1754,7 @@ public class EventStreamsOperatorTest {
 
         AtomicReference<Secret> secretReference = new AtomicReference<>();
         Checkpoint async = context.checkpoint(3);
-        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(beforeInstance, null, "admin-api");
+        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(beforeInstance, null, "admapi");
 
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), beforeInstance)
             .onComplete(context.succeeding(v -> {
@@ -3053,8 +3053,8 @@ public class EventStreamsOperatorTest {
             .map(v -> {
                 ArgumentCaptor<EventStreams> updatedEventStreams = ArgumentCaptor.forClass(EventStreams.class);
                 verify(esResourceOperator, times(2)).updateEventStreamsStatus(updatedEventStreams.capture());
-                context.verify(() -> assertThat(updatedEventStreams.getValue().getStatus().getRoutes().get("admin-api-secure-mutual"), is(notNullValue())));
-                context.verify(() -> assertThat(updatedEventStreams.getValue().getStatus().getRoutes().get("admin-api-secure-bearer"), is(notNullValue())));
+                context.verify(() -> assertThat(updatedEventStreams.getValue().getStatus().getRoutes().get("admapi-secure-mutual"), is(notNullValue())));
+                context.verify(() -> assertThat(updatedEventStreams.getValue().getStatus().getRoutes().get("admapi-secure-bearer"), is(notNullValue())));
 
                 // Get the CR used previously and return the updated CR with insecure endpoints.
                 EventStreams insecureInstance = new EventStreamsBuilder(secureInstance)
@@ -3098,8 +3098,8 @@ public class EventStreamsOperatorTest {
 
                 ArgumentCaptor<EventStreams> updatedEventStreams = ArgumentCaptor.forClass(EventStreams.class);
                 verify(esResourceOperator, times(3)).updateEventStreamsStatus(updatedEventStreams.capture());
-                assertThat(updatedEventStreams.getValue().getStatus().getRoutes().get("admin-api-insecure-mutual"), is(notNullValue()));
-                assertThat(updatedEventStreams.getValue().getStatus().getRoutes().get("admin-api-insecure-bearer"), is(notNullValue()));
+                assertThat(updatedEventStreams.getValue().getStatus().getRoutes().get("admapi-insecure-mutual"), is(notNullValue()));
+                assertThat(updatedEventStreams.getValue().getStatus().getRoutes().get("admapi-insecure-bearer"), is(notNullValue()));
                 async.flag();
             })));
     }

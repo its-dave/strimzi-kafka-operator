@@ -70,7 +70,7 @@ import static com.ibm.eventstreams.api.model.AbstractSecureEndpointsModel.getInt
 public class AdminUIModel extends AbstractModel {
 
     // static variables
-    public static final String COMPONENT_NAME = "admin-ui";
+    public static final String COMPONENT_NAME = "ui";
     public static final int UI_SERVICE_PORT = 3000;
     public static final String REDIS_CONTAINER_NAME = "redis";
     private static final int DEFAULT_REPLICAS = 1;

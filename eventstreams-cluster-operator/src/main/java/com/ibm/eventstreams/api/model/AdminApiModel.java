@@ -60,7 +60,7 @@ import java.util.Optional;
 
 public class AdminApiModel extends AbstractSecureEndpointsModel {
 
-    public static final String COMPONENT_NAME = "admin-api";
+    public static final String COMPONENT_NAME = "admapi";
     public static final String ADMIN_API_CONTAINER_NAME = "admin-api";
     public static final int DEFAULT_REPLICAS = 1;
     public static final String DEFAULT_IBMCOM_IMAGE = "ibmcom/admin-api:latest";

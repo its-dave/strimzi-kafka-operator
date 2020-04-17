@@ -51,7 +51,7 @@ import java.util.Optional;
 
 public class RestProducerModel extends AbstractSecureEndpointsModel {
 
-    public static final String COMPONENT_NAME = "rest-producer";
+    public static final String COMPONENT_NAME = "recapi";
     public static final int DEFAULT_REPLICAS = 1;
     private static final String DEFAULT_IBMCOM_IMAGE = "ibmcom/rest-producer:latest";
 

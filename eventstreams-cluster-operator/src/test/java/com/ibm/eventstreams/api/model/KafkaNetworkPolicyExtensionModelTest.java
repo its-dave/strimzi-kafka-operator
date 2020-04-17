@@ -53,19 +53,19 @@ public class KafkaNetworkPolicyExtensionModelTest {
 
         NetworkPolicyPeer expectedRestProducerPeer = new NetworkPolicyPeerBuilder()
             .withNewPodSelector()
-            .addToMatchLabels(Labels.STRIMZI_NAME_LABEL, "test-instance-ibm-es-rest-producer")
+            .addToMatchLabels(Labels.STRIMZI_NAME_LABEL, "test-instance-ibm-es-recapi")
             .endPodSelector()
             .build();
 
         NetworkPolicyPeer expectedAdminAPIPeer = new NetworkPolicyPeerBuilder()
             .withNewPodSelector()
-            .addToMatchLabels(Labels.STRIMZI_NAME_LABEL, "test-instance-ibm-es-admin-api")
+            .addToMatchLabels(Labels.STRIMZI_NAME_LABEL, "test-instance-ibm-es-admapi")
             .endPodSelector()
             .build();
 
         NetworkPolicyPeer expectedSchemaRegistryPeer = new NetworkPolicyPeerBuilder()
             .withNewPodSelector()
-            .addToMatchLabels(Labels.STRIMZI_NAME_LABEL, "test-instance-ibm-es-schema-registry")
+            .addToMatchLabels(Labels.STRIMZI_NAME_LABEL, "test-instance-ibm-es-schema")
             .endPodSelector()
             .build();
 

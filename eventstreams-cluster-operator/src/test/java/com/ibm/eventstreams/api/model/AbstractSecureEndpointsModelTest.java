@@ -56,7 +56,7 @@ public class AbstractSecureEndpointsModelTest {
 
     // Extend AbstractSecureEndpointsModel to test the abstract class
     private class ComponentModel extends AbstractSecureEndpointsModel {
-        public static final String COMPONENT_NAME = "test-component";
+        public static final String COMPONENT_NAME = "test";
 
         public ComponentModel(EventStreams instance, SecurityComponentSpec spec) {
             super(instance, spec, COMPONENT_NAME);
@@ -310,7 +310,7 @@ public class AbstractSecureEndpointsModelTest {
         assertThat(volumes, hasSize(4));
 
         assertThat(volumes.get(0).getName(), is("certs"));
-        assertThat(volumes.get(0).getSecret().getSecretName(), is("test-instance-ibm-es-test-component-cert"));
+        assertThat(volumes.get(0).getSecret().getSecretName(), is("test-instance-ibm-es-test-cert"));
 
         assertThat(volumes.get(1).getName(), is("cluster-ca"));
         assertThat(volumes.get(1).getSecret().getSecretName(), is(EventStreamsKafkaModel.getKafkaClusterCaCertName(instanceName)));
@@ -358,7 +358,7 @@ public class AbstractSecureEndpointsModelTest {
         assertThat(volumes, hasSize(4));
 
         assertThat(volumes.get(0).getName(), is("certs"));
-        assertThat(volumes.get(0).getSecret().getSecretName(), is("test-instance-ibm-es-test-component-cert"));
+        assertThat(volumes.get(0).getSecret().getSecretName(), is("test-instance-ibm-es-test-cert"));
 
         assertThat(volumes.get(1).getName(), is("cluster-ca"));
         assertThat(volumes.get(1).getSecret().getSecretName(), is(EventStreamsKafkaModel.getKafkaClusterCaCertName(instanceName)));

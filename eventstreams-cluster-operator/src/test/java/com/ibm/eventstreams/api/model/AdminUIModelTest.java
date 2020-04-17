@@ -167,7 +167,7 @@ public class AdminUIModelTest {
         assertThat(createdRoleRef.getApiGroup(), is("rbac.authorization.k8s.io"));
 
         // confirm Kubernetes name and instance labels present, so the UI can discover it for status
-        assertThat(uiPodMetadata.getLabels(), hasEntry(Labels.KUBERNETES_NAME_LABEL, "admin-ui"));
+        assertThat(uiPodMetadata.getLabels(), hasEntry(Labels.KUBERNETES_NAME_LABEL, "ui"));
         assertThat(uiPodMetadata.getLabels(), hasEntry(Labels.KUBERNETES_INSTANCE_LABEL, instanceName));
 
         // confirm ui container has required envars
@@ -221,7 +221,7 @@ public class AdminUIModelTest {
         assertThat(createdRoleRef.getApiGroup(), is("rbac.authorization.k8s.io"));
 
         // confirm Kubernetes name and instance labels present, so the UI can discover it for status
-        assertThat(uiPodMetadata.getLabels(), hasEntry(Labels.KUBERNETES_NAME_LABEL, "admin-ui"));
+        assertThat(uiPodMetadata.getLabels(), hasEntry(Labels.KUBERNETES_NAME_LABEL, "ui"));
         assertThat(uiPodMetadata.getLabels(), hasEntry(Labels.KUBERNETES_INSTANCE_LABEL, instanceName));
 
         // confirm ui container has required envars
@@ -547,7 +547,7 @@ public class AdminUIModelTest {
 
         AdminUIModel ui = new AdminUIModel(eventStreams, imageConfig, false, null);
 
-        String expectedServiceCertName = "test-instance-ibm-es-admin-ui-service-cert";
+        String expectedServiceCertName = "test-instance-ibm-es-ui-service-cert";
 
         assertThat(ui.getRoute().getSpec().getTls().getTermination(), is("reencrypt"));
         assertThat(ui.getService().getMetadata().getAnnotations(),

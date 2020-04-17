@@ -21,6 +21,7 @@ import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.strimzi.operator.common.model.Labels;
 
 public class ClientModel extends AbstractModel {
+    private static final String COMPONENT_NAME = "oidc";
     private static final String SECRET_POSTFIX = "oidc-secret";
     private Client client;
 
@@ -28,7 +29,7 @@ public class ClientModel extends AbstractModel {
         super(instance, DEFAULT_COMPONENT_NAME);
 
         setOwnerReference(instance);
-        
+
         Labels labels = labels();
 
         String trustedURIPrefixes = routeHost;
