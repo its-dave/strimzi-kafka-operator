@@ -131,7 +131,6 @@ public class EventStreamsReplicatorOperator extends AbstractOperator<EventStream
                     .map(List::isEmpty)
                     .orElse(true);
 
-
             // fail straight away if cr has errored conditions
             if (!isValidCR) {
                 return Future.failedFuture("Invalid Custom Resource");
@@ -153,6 +152,7 @@ public class EventStreamsReplicatorOperator extends AbstractOperator<EventStream
                     ReplicatorDestinationUsersModel replicatorUsersModel = new ReplicatorDestinationUsersModel(replicatorInstance, instance);
                     return kafkaUserOperator.reconcile(namespace, replicatorUsersModel.getConnectKafkaUserName(), replicatorUsersModel.getConnectKafkaUser())
                             .compose(state -> kafkaUserOperator.reconcile(namespace, replicatorUsersModel.getTargetConnectorKafkaUserName(), replicatorUsersModel.getTargetConnectorKafkaUser()))
+                            .compose(state -> kafkaUserOperator.reconcile(namespace, replicatorUsersModel.getConnectExternalKafkaUserName(), replicatorUsersModel.getConnectExternalKafkaUser()))
                             .compose(state -> setTrustStoreForReplicator(replicatorCredentials, instance))
                             .compose(state -> setClientAuthForReplicator(replicatorCredentials, replicatorInstance, instance))
 
