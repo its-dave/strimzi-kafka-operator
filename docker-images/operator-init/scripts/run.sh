@@ -334,7 +334,8 @@ spec:
         name: quickstart
         namespace: placeholder
     spec:
-        licenseAccept: false
+        license:
+          accept: false
         version: 2020.2.1
         adminApi: {}
         adminUI: {}
@@ -388,7 +389,8 @@ spec:
         name: sample-three
         namespace: placeholder
     spec:
-        licenseAccept: false
+        license:
+          accept: false
         version: 2020.2.1
         adminApi: {}
         adminUI: {}
@@ -458,7 +460,8 @@ spec:
         name: sample-six
         namespace: placeholder
     spec:
-        licenseAccept: false
+        license:
+          accept: false
         version: 2020.2.1
         adminApi: {}
         adminUI: {}
@@ -528,7 +531,8 @@ spec:
         name: sample-nine
         namespace: placeholder
     spec:
-        licenseAccept: false
+        license:
+          accept: false
         version: 2020.2.1
         adminApi: {}
         adminUI: {}

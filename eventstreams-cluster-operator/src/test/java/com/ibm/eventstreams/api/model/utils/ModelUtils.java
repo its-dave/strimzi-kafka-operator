@@ -49,7 +49,9 @@ public class ModelUtils {
         return new EventStreamsBuilder()
                 .withMetadata(new ObjectMetaBuilder().withName(instanceName).build())
                 .withNewSpec()
-                .withLicenseAccept(true)
+                    .withNewLicense()
+                        .withAccept(true)
+                    .endLicense()
                 .endSpec();
     }
 

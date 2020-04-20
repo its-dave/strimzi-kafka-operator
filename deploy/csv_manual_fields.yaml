@@ -72,7 +72,7 @@ spec:
       specDescriptors:
         - displayName: License accept
           description: I accept the product license after reading it at <TBC>
-          path: licenseAccept
+          path: license.accept
           x-descriptors:
             - 'urn:alm:descriptor:com.tectonic.ui:booleanSwitch'
         - displayName: Kafka storage

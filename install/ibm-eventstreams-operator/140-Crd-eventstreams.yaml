@@ -37,9 +37,16 @@ spec:
         spec:
           type: object
           properties:
-            licenseAccept:
-              type: boolean
-              description: Accept the product license after reading it at <TBC>.
+            license:
+              type: object
+              properties:
+                accept:
+                  type: boolean
+                  description: Accept the product license after reading it at <TBC>.
+              required:
+              - accept
+              description: Specify the license information for the instance of Event
+                Streams.
             version:
               type: string
               description: Version of the Event Streams instance.
@@ -7806,7 +7813,7 @@ spec:
               - zookeeper
               description: Configuration of the Kafka and ZooKeeper clusters.
           required:
-          - licenseAccept
+          - license
           - version
           - adminApi
           - strimziOverrides

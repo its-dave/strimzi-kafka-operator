@@ -28,13 +28,13 @@ import java.io.Serializable;
 @JsonDeserialize(using = JsonDeserializer.None.class)
 @Buildable(editableEnabled = false, generateBuilderPackage = false, builderPackage = "io.fabric8.kubernetes.api.builder")
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({"licenseAccept", "version", "images", "adminApi", "adminUI", "collector", "restProducer", "replicator", "schemaRegistry", "monitoring", "security", "strimziOverrides"})
+@JsonPropertyOrder({"license", "version", "images", "adminApi", "adminUI", "collector", "restProducer", "replicator", "schemaRegistry", "monitoring", "security", "strimziOverrides"})
 @EqualsAndHashCode
 public class EventStreamsSpec implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private boolean licenseAccept;
+    private LicenseSpec license;
     private String version;
     private SecurityComponentSpec adminApi;
     private SecurityComponentSpec restProducer;
@@ -46,13 +46,13 @@ public class EventStreamsSpec implements Serializable {
     private ImagesSpec images;
 
     @JsonProperty(required = true)
-    @Description("Accept the product license after reading it at <TBC>")
-    public boolean isLicenseAccept() {
-        return licenseAccept;
+    @Description("Specify the license information for the instance of Event Streams")
+    public LicenseSpec getLicense() {
+        return license;
     }
     
-    public void setLicenseAccept(boolean licenseAccept) {
-        this.licenseAccept = licenseAccept;
+    public void setLicense(LicenseSpec license) {
+        this.license = license;
     }
 
     @Description("Configuration for accessing Event Streams Docker images")

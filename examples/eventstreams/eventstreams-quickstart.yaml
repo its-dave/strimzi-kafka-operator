@@ -3,7 +3,8 @@ kind: EventStreams
 metadata:
     name: quickstart
 spec:
-    licenseAccept: false
+    license:
+        accept: false
     version: 2020.2.1
     adminApi: {}
     adminUI: {}

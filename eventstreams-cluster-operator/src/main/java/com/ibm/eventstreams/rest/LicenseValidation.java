@@ -13,10 +13,14 @@
 package com.ibm.eventstreams.rest;
 
 import com.ibm.eventstreams.api.spec.EventStreams;
+import com.ibm.eventstreams.api.spec.EventStreamsSpec;
+import com.ibm.eventstreams.api.spec.LicenseSpec;
 import io.vertx.core.json.Json;
 import io.vertx.ext.web.RoutingContext;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.util.Optional;
 
 
 public class LicenseValidation extends AbstractValidation {
@@ -24,7 +28,11 @@ public class LicenseValidation extends AbstractValidation {
     private static final Logger log = LogManager.getLogger(NameValidation.class.getName());
 
     public static boolean shouldReject(EventStreams customResourceSpec) {
-        return !customResourceSpec.getSpec().isLicenseAccept();
+        return Optional.ofNullable(customResourceSpec.getSpec())
+                    .map(EventStreamsSpec::getLicense)
+                    .map(LicenseSpec::isAccept)
+                    .map(accepted -> !accepted)
+                    .orElse(true);
     }
 
 

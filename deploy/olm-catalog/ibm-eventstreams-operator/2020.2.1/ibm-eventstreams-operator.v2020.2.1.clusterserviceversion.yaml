@@ -14,7 +14,9 @@ metadata:
             "adminApi": {},
             "adminUI": {},
             "collector": {},
-            "licenseAccept": false,
+            "license": {
+              "accept": false
+            },
             "restProducer": {},
             "schemaRegistry": {
               "storage": {
@@ -63,7 +65,9 @@ metadata:
             "adminApi": {},
             "adminUI": {},
             "collector": {},
-            "licenseAccept": false,
+            "license": {
+              "accept": false
+            },
             "restProducer": {},
             "schemaRegistry": {
               "storage": {
@@ -135,7 +139,9 @@ metadata:
             "adminApi": {},
             "adminUI": {},
             "collector": {},
-            "licenseAccept": false,
+            "license": {
+              "accept": false
+            },
             "restProducer": {},
             "schemaRegistry": {
               "storage": {
@@ -207,7 +213,9 @@ metadata:
             "adminApi": {},
             "adminUI": {},
             "collector": {},
-            "licenseAccept": false,
+            "license": {
+              "accept": false
+            },
             "restProducer": {},
             "schemaRegistry": {
               "storage": {
@@ -279,7 +287,9 @@ metadata:
             "adminApi": {},
             "adminUI": {},
             "collector": {},
-            "licenseAccept": false,
+            "license": {
+              "accept": false
+            },
             "restProducer": {},
             "schemaRegistry": {
               "storage": {
@@ -423,7 +433,7 @@ spec:
       specDescriptors:
       - description: I accept the product license after reading it at <TBC>
         displayName: License accept
-        path: licenseAccept
+        path: license.accept
         x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:booleanSwitch'
       - description: The type of storage used by Kafka brokers

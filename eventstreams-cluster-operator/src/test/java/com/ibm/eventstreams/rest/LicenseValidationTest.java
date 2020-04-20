@@ -40,7 +40,7 @@ public class LicenseValidationTest extends RestApiTest {
 
     @Test
     public void testLicenseNotAccepted(VertxTestContext context) {
-        EventStreams test = ModelUtils.createDefaultEventStreams("test-es").editOrNewSpec().withLicenseAccept(false).endSpec().build();
+        EventStreams test = ModelUtils.createDefaultEventStreams("test-es").editOrNewSpec().editLicense().withAccept(false).endLicense().endSpec().build();
         
         Map<String, Object> request = new HashMap<String, Object>();
         request.put("object", test);
