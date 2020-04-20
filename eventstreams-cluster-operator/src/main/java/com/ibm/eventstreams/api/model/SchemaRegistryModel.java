@@ -513,35 +513,12 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
             new EnvVarBuilder().withName("RELEASE").withValue(getInstanceName()).build(),
             new EnvVarBuilder().withName("LICENSE").withValue("accept").build(),
             new EnvVarBuilder().withName("NAMESPACE").withValue(getNamespace()).build(),
-            new EnvVarBuilder().withName("AUTHENTICATION_ENABLED").withValue(endpoints.stream()
+            new EnvVarBuilder().withName("AUTHORIZATION_ENABLED").withValue(endpoints.stream()
                 .allMatch(ep -> ep.getAuthenticationMechanisms().isEmpty()) ? "false" : "true").build(),
             new EnvVarBuilder().withName("TRACE_SPEC").withValue(defaultProxyTraceString).build(),
             new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_SERVERS").withValue(internalBootstrap).build(),
             new EnvVarBuilder().withName("RUNAS_KAFKA_BOOTSTRAP_SERVERS").withValue(runasBootstrap).build(),
             new EnvVarBuilder().withName("KAFKA_PRINCIPAL").withValue(InternalKafkaUserModel.getInternalKafkaUserSecretName(getInstanceName())).build(),
-            new EnvVarBuilder().withName("SSL_TRUSTSTORE_PATH").withValue(CLUSTER_CERTIFICATE_PATH + File.separator + CA_P12).build(),
-            new EnvVarBuilder()
-                .withName("SSL_TRUSTSTORE_PASSWORD")
-                .withNewValueFrom()
-                .withNewSecretKeyRef()
-                .withName(EventStreamsKafkaModel.getKafkaClusterCaCertName(getInstanceName()))
-                .withKey(CA_P12_PASS)
-                .endSecretKeyRef()
-                .endValueFrom()
-                .build(),
-            new EnvVarBuilder()
-                .withName("SSL_KEYSTORE_PATH")
-                .withValue(KAFKA_USER_CERTIFICATE_PATH + File.separator + "podtls.p12")
-                .build(),
-            new EnvVarBuilder()
-                .withName("SSL_KEYSTORE_PASSWORD")
-                .withNewValueFrom()
-                .withNewSecretKeyRef()
-                .withName(InternalKafkaUserModel.getInternalKafkaUserSecretName(getInstanceName()))
-                .withKey(USER_P12_PASS)
-                .endSecretKeyRef()
-                .endValueFrom()
-                .build(),
             new EnvVarBuilder()
                 .withName("HMAC_SECRET")
                 .withNewValueFrom()

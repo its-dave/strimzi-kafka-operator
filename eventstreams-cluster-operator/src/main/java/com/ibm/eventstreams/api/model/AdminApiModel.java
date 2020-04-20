@@ -275,13 +275,9 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
             new EnvVarBuilder().withName("TRACE_SPEC").withValue(traceString).build(),
             new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_SERVERS").withValue(internalBootstrap).build(),
             new EnvVarBuilder().withName("RUNAS_KAFKA_BOOTSTRAP_SERVERS").withValue(runasBootstrap).build(),
-            new EnvVarBuilder().withName("SSL_ENABLED").withValue(tlsEnabled().toString()).build(),
             new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_INTERNAL_PLAIN_URL").withValue(kafkaBootstrapInternalPlainUrl).build(),
             new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_INTERNAL_TLS_URL").withValue(kafkaBootstrapInternalTlsUrl).build(),
             new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_EXTERNAL_URL").withValue(kafkaBootstrapExternalUrl).build(),
-            new EnvVarBuilder().withName("SSL_TRUSTSTORE_P12_PATH").withValue(CLUSTER_CERTIFICATE_PATH + File.separator + CA_P12).build(),
-            new EnvVarBuilder().withName("SSL_TRUSTSTORE_CRT_PATH").withValue(CLUSTER_CERTIFICATE_PATH + File.separator + CA_CERT).build(),
-            new EnvVarBuilder().withName("CLIENT_CA_PATH").withValue(CLIENT_CA_CERTIFICATE_PATH + File.separator + CA_CERT).build(),
             new EnvVarBuilder().withName("SCHEMA_REGISTRY_ENABLED").withValue(Boolean.toString(SchemaRegistryModel.isSchemaRegistryEnabled(instance))).build(),
             new EnvVarBuilder().withName("SCHEMA_REGISTRY_URL").withValue(schemaRegistryEndpoint).build(),
             new EnvVarBuilder().withName("ZOOKEEPER_CONNECT").withValue(zookeeperEndpoint).build(),
@@ -296,28 +292,6 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
             new EnvVarBuilder().withName("GEOREPLICATION_INTERNAL_SERVER_AUTH_ENABLED").withValue(Boolean.toString(isReplicatorInternalServerAuthForConnectEnabled(instance))).build(),
             new EnvVarBuilder().withName("GEOREPLICATION_EXTERNAL_SERVER_AUTH_ENABLED").withValue(Boolean.toString(isReplicatorExternalServerAuthForConnectEnabled(instance))).build(),
             new EnvVarBuilder().withName("GEOREPLICATION_INTERNAL_CLIENT_AUTH_TYPE").withValue(isReplicatorInternalClientAuthForConnectEnabled(instance) ? ReplicatorModel.getInternalTlsKafkaListenerAuthentication(instance).getType() : "NONE").build(),
-            new EnvVarBuilder()
-                .withName("SSL_TRUSTSTORE_P12_PASSWORD")
-                .withNewValueFrom()
-                .withNewSecretKeyRef()
-                .withName(EventStreamsKafkaModel.getKafkaClusterCaCertName(getInstanceName()))
-                .withKey(CA_P12_PASS)
-                .endSecretKeyRef()
-                .endValueFrom()
-                .build(),
-            new EnvVarBuilder()
-                .withName("SSL_KEYSTORE_PATH")
-                .withValue(KAFKA_USER_CERTIFICATE_PATH + File.separator + "podtls.p12")
-                .build(),
-            new EnvVarBuilder()
-                .withName("SSL_KEYSTORE_PASSWORD")
-                .withNewValueFrom()
-                .withNewSecretKeyRef()
-                .withName(InternalKafkaUserModel.getInternalKafkaUserSecretName(getInstanceName()))
-                .withKey(USER_P12_PASS)
-                .endSecretKeyRef()
-                .endValueFrom()
-                .build(),
 
         // Add The IAM Specific Envars.  If we need to build without IAM Support we can put a variable check
         // here.

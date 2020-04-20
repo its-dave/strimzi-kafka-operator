@@ -401,7 +401,7 @@ public class SchemaRegistryModelTest {
         EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443,7080").build();
         EnvVar endpoints = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7080").build();
         EnvVar tlsVersion = new EnvVarBuilder().withName("TLS_VERSION").withValue("9443:TLSv1.2,7080").build();
-        EnvVar authEnabled  = new EnvVarBuilder().withName("AUTHENTICATION_ENABLED").withValue("false").build();
+        EnvVar authEnabled  = new EnvVarBuilder().withName("AUTHORIZATION_ENABLED").withValue("false").build();
 
         List<EnvVar> envVars = schemaRegistryModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().stream().filter(container -> SchemaRegistryModel.SCHEMA_REGISTRY_PROXY_CONTAINER_NAME.equals(container.getName())).findFirst().get().getEnv();
 
@@ -416,7 +416,7 @@ public class SchemaRegistryModelTest {
         EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:IAM-BEARER;SCRAM-SHA-512,7080:MAC;IAM-BEARER").build();
         EnvVar endpoints = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7080").build();
         EnvVar tlsVersion = new EnvVarBuilder().withName("TLS_VERSION").withValue("9443:TLSv1.2,7080").build();
-        EnvVar authEnabled  = new EnvVarBuilder().withName("AUTHENTICATION_ENABLED").withValue("true").build();
+        EnvVar authEnabled  = new EnvVarBuilder().withName("AUTHORIZATION_ENABLED").withValue("true").build();
 
         List<EnvVar> envVars = schemaRegistryModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().stream().filter(container -> SchemaRegistryModel.SCHEMA_REGISTRY_PROXY_CONTAINER_NAME.equals(container.getName())).findFirst().get().getEnv();
 

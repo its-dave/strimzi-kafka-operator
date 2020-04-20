@@ -36,6 +36,7 @@ import com.ibm.eventstreams.api.status.EventStreamsStatus;
 import com.ibm.eventstreams.api.status.EventStreamsStatusBuilder;
 import com.ibm.eventstreams.controller.certificates.EventStreamsCertificateException;
 import com.ibm.eventstreams.controller.certificates.EventStreamsCertificateManager;
+import com.ibm.eventstreams.rest.AuthenticationValidation;
 import com.ibm.eventstreams.rest.EndpointValidation;
 import com.ibm.eventstreams.rest.LicenseValidation;
 import com.ibm.eventstreams.rest.NameValidation;
@@ -288,6 +289,9 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             if (PlainListenerValidation.shouldReject(instance)) {
                 addNotReadyCondition("InvalidSecurityConfiguration", PlainListenerValidation.getRejectionReason(instance));
                 isValidCR = false;
+            }
+            if (AuthenticationValidation.shouldWarn(instance)) {
+                addWarningCondition("AuthenticationConfigurationWarning", AuthenticationValidation.getWarningReason(instance));
             }
 
             boolean adminApiRequested = Optional.ofNullable(instance.getSpec()).map(EventStreamsSpec::getAdminApi).isPresent();
@@ -1059,6 +1063,29 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         }
 
         /**
+         * Checks if the provided condition's message is a new message, if so then it will update the condition
+         * or else use the old condition.
+         *
+         * This will check to see if a matching condition was previously seen and the message is the same, and if so
+         * that will be reused (allowing for timestamps to remain consistent). If not,
+         * the provided condition will be added as-is.
+         *
+         * @param condition Condition to add to the status conditions list.
+         */
+        private void maybeUpdateCondition(Condition condition) {
+            log.traceEntry(() -> condition);
+            // restore the equivalent previous condition if found, otherwise
+            //  add the new condition to the status
+            addCondition(previousConditions
+                .stream()
+                .filter(c -> condition.getReason().equals(c.getReason()))
+                .filter(c -> condition.getMessage().equals(c.getMessage()))
+                .findFirst()
+                .orElse(condition));
+            log.traceExit();
+        }
+
+        /**
          * Adds a "Ready" condition to the status if there is not already one.
          *  This does nothing if there is already an existing ready condition from
          *  a previous reconcile.
@@ -1093,6 +1120,26 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                         .withReason(reason)
                         .withMessage(message)
                         .build());
+            log.traceExit();
+        }
+
+        /**
+         * Adds a "Warning" condition to the status that documents a reason why the
+         * Event Streams operand may be configured in a way that breaks things in Event Streams.
+         *
+         * @param reason A unique, one-word, CamelCase reason for why the operand may be configured to break things in ES.
+         * @param message A human-readable message indicating why the operand may be configured to break things in ES.
+         */
+        private void addWarningCondition(String reason, String message) {
+            log.traceEntry(() -> reason, () -> message);
+            maybeUpdateCondition(
+                new ConditionBuilder()
+                    .withLastTransitionTime(ModelUtils.formatTimestamp(dateSupplier()))
+                    .withType("Warning")
+                    .withStatus("True")
+                    .withReason(reason)
+                    .withMessage(message)
+                    .build());
             log.traceExit();
         }
 

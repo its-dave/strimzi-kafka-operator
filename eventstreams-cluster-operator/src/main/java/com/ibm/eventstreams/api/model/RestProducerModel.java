@@ -180,7 +180,6 @@ public class RestProducerModel extends AbstractSecureEndpointsModel {
             new EnvVarBuilder().withName("NAMESPACE").withValue(getNamespace()).build(),
             new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_SERVERS").withValue(internalBootstrap).build(),
             new EnvVarBuilder().withName("RUNAS_KAFKA_BOOTSTRAP_SERVERS").withValue(runasBootstrap).build(),
-            new EnvVarBuilder().withName("SSL_ENABLED").withValue(tlsEnabled().toString()).build(),
             new EnvVarBuilder().withName("SCHEMA_REGISTRY_URL").withValue(schemaRegistryEndpoint).build(),
             new EnvVarBuilder().withName("SCHEMA_REGISTRY_SECURITY_PROTOCOL").withValue(getUrlProtocol()).build(),
             new EnvVarBuilder().withName("MAX_KEY_SIZE").withValue("4096").build(),
@@ -190,31 +189,7 @@ public class RestProducerModel extends AbstractSecureEndpointsModel {
             new EnvVarBuilder().withName("DELIVERY_TIMEOUT_MS").withValue("2000").build(),
             new EnvVarBuilder().withName("REQUEST_TIMEOUT_MS").withValue("1000").build(),
             new EnvVarBuilder().withName("SKIP_SSL_VALIDATION_SCHEMA_REGISTRY").withValue("true").build(),
-            new EnvVarBuilder().withName("CLIENT_CA_PATH").withValue(CLIENT_CA_CERTIFICATE_PATH + File.separator + CA_CERT).build(),
             new EnvVarBuilder().withName("TRACE_SPEC").withValue(traceString).build(),
-            new EnvVarBuilder().withName("SSL_TRUSTSTORE_PATH").withValue(CLUSTER_CERTIFICATE_PATH + File.separator + CA_P12).build(),
-            new EnvVarBuilder()
-                .withName("SSL_TRUSTSTORE_PASSWORD")
-                .withNewValueFrom()
-                    .withNewSecretKeyRef()
-                        .withName(EventStreamsKafkaModel.getKafkaClusterCaCertName(getInstanceName()))
-                        .withKey(CA_P12_PASS)
-                    .endSecretKeyRef()
-                .endValueFrom()
-                .build(),
-            new EnvVarBuilder()
-                .withName("SSL_KEYSTORE_PATH")
-                .withValue(KAFKA_USER_CERTIFICATE_PATH + File.separator + "podtls.p12")
-                .build(),
-            new EnvVarBuilder()
-                .withName("SSL_KEYSTORE_PASSWORD")
-                .withNewValueFrom()
-                    .withNewSecretKeyRef()
-                        .withName(InternalKafkaUserModel.getInternalKafkaUserSecretName(getInstanceName()))
-                        .withKey(USER_P12_PASS)
-                    .endSecretKeyRef()
-                .endValueFrom()
-                .build(),
             // Add The IAM Specific Envars.  If we need to build without IAM Support we can put a variable check
             // here.
             new EnvVarBuilder().withName("IAM_CLUSTER_NAME").withValue(icpClusterName).build(),

@@ -49,6 +49,7 @@ import com.ibm.eventstreams.api.status.EventStreamsVersions;
 import com.ibm.eventstreams.controller.utils.ConditionUtils;
 import com.ibm.eventstreams.controller.utils.ControllerUtils;
 import com.ibm.eventstreams.controller.utils.MetricsUtils;
+import com.ibm.eventstreams.rest.AuthenticationValidation;
 import com.ibm.eventstreams.rest.PlainListenerValidation;
 import com.ibm.iam.api.controller.Cp4iServicesBindingResourceOperator;
 import com.ibm.iam.api.spec.Cp4iServicesBinding;
@@ -398,6 +399,97 @@ public class EventStreamsOperatorTest {
                         hasItem(hasProperty("name", is(DEFAULT_VERSION))));
                 assertThat(argument.getValue().getStatus().getVersions().getAvailable().getChannels(),
                         hasItem(hasProperty("name", is("2020.2"))));
+                async.flag();
+            })));
+    }
+
+    @Test
+    public void testStatusHasAuthenticationChangeWhenAuthChanged(VertxTestContext context) {
+        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
+        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+
+        EventStreams unauthES = new EventStreamsBuilder()
+            .withMetadata(new ObjectMetaBuilder()
+                    .withNewName(CLUSTER_NAME)
+                    .withNewNamespace(NAMESPACE)
+                    .build())
+            .withNewSpec()
+            .withLicenseAccept(true)
+            .withNewVersion(DEFAULT_VERSION)
+            .withNewAdminApi()
+                .withReplicas(1)
+                .withEndpoints(new EndpointSpecBuilder()
+                    .withNewName("auth")
+                    .withAccessPort(9999)
+                    .withAuthenticationMechanisms("TEST_AUTH")
+                .build())
+            .endAdminApi()
+            .withStrimziOverrides(new KafkaSpecBuilder()
+                    .withNewKafka()
+                        .withReplicas(1)
+                        .withNewListeners()
+                            .withNewPlain()
+                            .endPlain()
+                        .endListeners()
+                        .withNewEphemeralStorage()
+                        .endEphemeralStorage()
+                    .endKafka()
+                    .withNewZookeeper()
+                        .withReplicas(1)
+                        .withNewEphemeralStorage()
+                        .endEphemeralStorage()
+                    .endZookeeper()
+                    .build())
+            .endSpec()
+            .build();
+
+        Checkpoint async = context.checkpoint();
+        esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), unauthES)
+            .onComplete(context.succeeding(v -> context.verify(() -> {
+                ArgumentCaptor<EventStreams> argument = ArgumentCaptor.forClass(EventStreams.class);
+                verify(esResourceOperator, times(2)).updateEventStreamsStatus(argument.capture());
+
+                EventStreamsStatus status = argument.getValue().getStatus();
+                assertThat(status.getConditions(), hasItem(hasProperty("reason", is("AuthenticationConfigurationWarning"))));
+                assertThat(status.getConditions(), hasItem(hasProperty("message", is(AuthenticationValidation.AUTH_ENDPOINT_UNAUTH_ES_WARNING))));
+            })))
+            .map(v -> {
+                ArgumentCaptor<EventStreams> argument = ArgumentCaptor.forClass(EventStreams.class);
+                verify(esResourceOperator, times(2)).updateEventStreamsStatus(argument.capture());
+                EventStreams authEs = new EventStreamsBuilder(unauthES)
+                    .editSpec()
+                        .withNewAdminApi()
+                            .withEndpoints(new EndpointSpecBuilder()
+                                .withAccessPort(9999)
+                                .withNewName("access")
+                                .withAuthenticationMechanisms(Collections.emptyList())
+                            .build())
+                        .endAdminApi()
+                        .withStrimziOverrides(new KafkaSpecBuilder()
+                            .withNewKafka()
+                                .withNewListeners()
+                                    .withNewPlain()
+                                    .endPlain()
+                                    .withNewTls()
+                                        .withNewKafkaListenerAuthenticationScramSha512Auth()
+                                        .endKafkaListenerAuthenticationScramSha512Auth()
+                                    .endTls()
+                                .endListeners()
+                            .endKafka()
+                        .build())
+                    .endSpec()
+                    .build();
+
+                return authEs;
+            })
+            .compose(authEs -> esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), authEs))
+            .onComplete(context.succeeding(v -> context.verify(() -> {
+                ArgumentCaptor<EventStreams> argument = ArgumentCaptor.forClass(EventStreams.class);
+                verify(esResourceOperator, times(3)).updateEventStreamsStatus(argument.capture());
+
+                EventStreamsStatus status = argument.getValue().getStatus();
+                assertThat(status.getConditions(), hasItem(hasProperty("reason", is("AuthenticationConfigurationWarning"))));
+                assertThat(status.getConditions(), hasItem(hasProperty("message", is(AuthenticationValidation.UNAUTH_ENDPOINT_AUTH_ES_WARNING))));
                 async.flag();
             })));
     }

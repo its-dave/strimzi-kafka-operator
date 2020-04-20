@@ -26,6 +26,7 @@ import lombok.EqualsAndHashCode;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Optional;
 
 @JsonDeserialize(using = JsonDeserializer.None.class)
 @Buildable(editableEnabled = false, generateBuilderPackage = false, builderPackage = "io.fabric8.kubernetes.api.builder")
@@ -96,5 +97,11 @@ public class EndpointSpec implements Serializable {
 
     public void setAuthenticationMechanisms(List<String> authenticationMechanisms) {
         this.authenticationMechanisms = authenticationMechanisms;
+    }
+
+    public boolean hasAuth() {
+        return Optional.ofNullable(authenticationMechanisms)
+            .map(authenticationMechanisms -> authenticationMechanisms.size() > 0)
+            .orElse(false);
     }
 }

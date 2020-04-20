@@ -71,6 +71,14 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
     public static final String CLIENT_ID_KEY = "CLIENT_ID";
     public static final String CLIENT_SECRET_KEY = "CLIENT_SECRET";
 
+    public static final String SSL_TRUSTSTORE_P12_PATH_ENV_KEY = "SSL_TRUSTSTORE_P12_PATH";
+    public static final String SSL_TRUSTSTORE_P12_PASSWORD_ENV_KEY = "SSL_TRUSTSTORE_P12_PASSWORD";
+    public static final String SSL_TRUSTSTORE_CRT_PATH_ENV_KEY = "SSL_TRUSTSTORE_CRT_PATH";
+    public static final String CLIENT_CA_PATH_ENV_KEY = "CLIENT_CA_PATH";
+    public static final String SSL_KEYSTORE_PATH_ENV_KEY = "SSL_KEYSTORE_PATH";
+    public static final String SSL_KEYSTORE_PASSWORD_PATH_ENV_KEY = "SSL_KEYSTORE_PASSWORD";
+    public static final String SSL_ENABLED_ENV_KEY = "SSL_ENABLED";
+
     private final CertificateSecretModel certificateSecretModel;
 
     protected List<Endpoint> endpoints;
@@ -330,6 +338,32 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
                 .map(getTlsVersionEnvValue())
                 .collect(Collectors.joining(PORT_SEPARATOR)))
             .build());
+
+        envVars.addAll(Arrays.asList(
+            new EnvVarBuilder().withName(SSL_TRUSTSTORE_P12_PATH_ENV_KEY).withValue(CLUSTER_CERTIFICATE_PATH + File.separator + CA_P12).build(),
+            new EnvVarBuilder().withName(SSL_TRUSTSTORE_CRT_PATH_ENV_KEY).withValue(CLUSTER_CERTIFICATE_PATH + File.separator + CA_CERT).build(),
+            new EnvVarBuilder().withName(CLIENT_CA_PATH_ENV_KEY).withValue(CLIENT_CA_CERTIFICATE_PATH + File.separator + CA_CERT).build(),
+            new EnvVarBuilder()
+                .withName(SSL_TRUSTSTORE_P12_PASSWORD_ENV_KEY)
+                .withNewValueFrom()
+                .withNewSecretKeyRef()
+                .withName(EventStreamsKafkaModel.getKafkaClusterCaCertName(getInstanceName()))
+                .withKey(CA_P12_PASS)
+                .endSecretKeyRef()
+                .endValueFrom()
+                .build(),
+            new EnvVarBuilder().withName(SSL_KEYSTORE_PATH_ENV_KEY).withValue(KAFKA_USER_CERTIFICATE_PATH + File.separator + "podtls.p12").build(),
+            new EnvVarBuilder()
+                .withName(SSL_KEYSTORE_PASSWORD_PATH_ENV_KEY)
+                .withNewValueFrom()
+                .withNewSecretKeyRef()
+                .withName(InternalKafkaUserModel.getInternalKafkaUserSecretName(getInstanceName()))
+                .withKey(USER_P12_PASS)
+                .endSecretKeyRef()
+                .endValueFrom()
+                .build(),
+            new EnvVarBuilder().withName(SSL_ENABLED_ENV_KEY).withValue(tlsEnabled().toString()).build()
+            ));
     }
 
     /**
