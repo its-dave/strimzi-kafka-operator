@@ -20,6 +20,7 @@ spec:
     - esgr
   subresources:
     status: {}
+  preserveUnknownFields: false
   validation:
     openAPIV3Schema:
       type: object

@@ -260,6 +260,7 @@ public class CrdGenerator {
             }
             result.set("subresources", statusNode);
         }
+        result.put("preserveUnknownFields", false);
         result.set("validation", buildValidation(crdClass));
         return result;
     }

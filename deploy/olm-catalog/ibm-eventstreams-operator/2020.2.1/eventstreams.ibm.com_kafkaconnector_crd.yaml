@@ -24,6 +24,7 @@ spec:
     - strimzi
   subresources:
     status: {}
+  preserveUnknownFields: false
   validation:
     openAPIV3Schema:
       type: object

@@ -47,6 +47,7 @@ spec:
     priority: 1
   subresources:
     status: {}
+  preserveUnknownFields: false
   validation:
     openAPIV3Schema:
       type: object
