@@ -26,6 +26,7 @@ import java.util.List;
 
 public class InternalKafkaUserModel extends AbstractModel {
     public static final String COMPONENT_NAME = "kafka-user";
+    public static final String APPLICATION_NAME = "kafka-user";
     public KafkaUser kafkaUser;
 
     /**
@@ -33,7 +34,7 @@ public class InternalKafkaUserModel extends AbstractModel {
      * @param instance
      */
     public InternalKafkaUserModel(EventStreams instance) {
-        super(instance, COMPONENT_NAME);
+        super(instance, COMPONENT_NAME, APPLICATION_NAME);
 
         setOwnerReference(instance);
 

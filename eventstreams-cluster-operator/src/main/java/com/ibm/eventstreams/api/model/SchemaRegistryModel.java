@@ -65,6 +65,7 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
 
     // static variables
     public static final String COMPONENT_NAME = "schema";
+    public static final String APPLICATION_NAME = "schema-registry";
     public static final String AVRO_SERVICE_CONTAINER_NAME = "avro-service";
     public static final String SCHEMA_REGISTRY_PROXY_CONTAINER_NAME = "schema-proxy";
     public static final int SCHEMA_REGISTRY_PORT = 3000;
@@ -119,7 +120,7 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
                                List<ListenerStatus> kafkaListeners,
                                Map<String, String> icpClusterData) {
 
-        super(instance, instance.getSpec().getSchemaRegistry(), COMPONENT_NAME);
+        super(instance, instance.getSpec().getSchemaRegistry(), COMPONENT_NAME, APPLICATION_NAME);
         this.kafkaListeners = kafkaListeners != null ? new ArrayList<>(kafkaListeners) : new ArrayList<>();
         this.icpClusterName = icpClusterData.getOrDefault("cluster_name", "null");
         this.iamServerURL = icpClusterData.getOrDefault("cluster_endpoint", "null");

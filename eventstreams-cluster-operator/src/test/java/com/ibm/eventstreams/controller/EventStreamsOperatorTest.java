@@ -1049,7 +1049,7 @@ public class EventStreamsOperatorTest {
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
         reconciliationState.icpClusterData = Collections.emptyMap();
 
-        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, new SecurityComponentSpec(), componentName);
+        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, new SecurityComponentSpec(), componentName, "endpoint-component-label");
         List<Endpoint> endpoints = endpointModel.createEndpoints(esCluster, new SecurityComponentSpec(), Collections.emptyList());
 
         Endpoint endpoint = endpoints.get(0);
@@ -1091,7 +1091,7 @@ public class EventStreamsOperatorTest {
             .withEndpoints(internal)
             .build();
 
-        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, spec, "endpoint-component");
+        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, spec, "endpoint-component", "endpoint-component-label");
 
         reconciliationState.reconcileCerts(endpointModel, Collections.emptyMap(), Date::new).setHandler(ar -> {
             assertThat("Number of secrets do not match " + mockClient.secrets().list().getItems(), mockClient.secrets().list().getItems().size(), is(4));
@@ -1132,7 +1132,7 @@ public class EventStreamsOperatorTest {
             .withEndpoints(internal)
             .build();
 
-        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, spec, "endpoint-component");
+        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, spec, "endpoint-component", "endpoint-component-label");
 
         reconciliationState.reconcileCerts(endpointModel, Collections.emptyMap(), Date::new).setHandler(ar -> {
             assertThat("Number of secrets do not match " + mockClient.secrets().list().getItems(), mockClient.secrets().list().getItems().size(), is(4));
@@ -1173,7 +1173,7 @@ public class EventStreamsOperatorTest {
             .withEndpoints(plainInternal, plainNodePort)
             .build();
 
-        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, spec, "endpoint-component");
+        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, spec, "endpoint-component", "endpoint-component-label");
 
         reconciliationState.reconcileCerts(endpointModel, Collections.emptyMap(), Date::new).setHandler(ar -> {
             assertThat("The number of secrets does not match", mockClient.secrets().list().getItems(), hasSize(4));
@@ -1223,7 +1223,7 @@ public class EventStreamsOperatorTest {
             .withEndpoints(route, nodePort, internal)
             .build();
 
-        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, spec, "endpoint-component");
+        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, spec, "endpoint-component", "endpoint-component-label");
 
         reconciliationState.reconcileCerts(endpointModel, Collections.singletonMap(endpointModel.getRouteName(route.getName()), "additional.hosts"), Date::new).setHandler(ar -> {
             assertThat("The number of secrets does not match", mockClient.secrets().list().getItems(), hasSize(4));
@@ -1263,7 +1263,7 @@ public class EventStreamsOperatorTest {
             .withEndpoints(tlsInternal)
             .build();
 
-        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, spec, "endpoint-component");
+        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, spec, "endpoint-component", "endpoint-component-label");
         Map<String, String> additionalHosts = Collections.singletonMap(tlsInternal.getName(), "extra.host.name");
 
         reconciliationState.reconcileCerts(endpointModel, additionalHosts, Date::new).setHandler(ar -> {
@@ -1301,7 +1301,7 @@ public class EventStreamsOperatorTest {
             .withEndpoints(tlsInternal)
             .build();
 
-        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, spec, "endpoint-component");
+        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, spec, "endpoint-component", "endpoint-component-label");
         Map<String, String> additionalHosts = Collections.singletonMap(tlsInternal.getName(), "extra.host.name");
 
         reconciliationState.reconcileCerts(endpointModel, additionalHosts, Date::new).setHandler(ar -> {
@@ -1339,7 +1339,7 @@ public class EventStreamsOperatorTest {
             .withEndpoints(tlsInternal)
             .build();
 
-        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, spec, "endpoint-component");
+        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, spec, "endpoint-component", "endpoint-component-label");
         Map<String, String> additionalHosts = Collections.singletonMap(tlsInternal.getName(), "extra.host.name");
 
         reconciliationState.reconcileCerts(endpointModel, additionalHosts, Date::new).setHandler(ar -> {
@@ -1387,7 +1387,7 @@ public class EventStreamsOperatorTest {
             .withEndpoints(tlsRoute, tlsInternal)
             .build();
 
-        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, spec, "endpoint-component");
+        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, spec, "endpoint-component", "endpoint-component-label");
         Map<String, String> additionalHosts = Collections.singletonMap(endpointModel.getRouteName(tlsRoute.getName()), "extra.host.name");
 
         reconciliationState.reconcileCerts(endpointModel, additionalHosts, Date::new).setHandler(ar -> {
@@ -1460,7 +1460,7 @@ public class EventStreamsOperatorTest {
             .withEndpoints(tlsRoute, tlsInternal)
             .build();
 
-        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, spec, "endpoint-component");
+        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, spec, "endpoint-component", "endpoint-component-label");
         Map<String, String> additionalHosts = Collections.singletonMap(tlsInternal.getName(), "extra.host.name");
 
         reconciliationState.reconcileCerts(endpointModel, additionalHosts, Date::new).setHandler(ar -> {
@@ -1517,7 +1517,7 @@ public class EventStreamsOperatorTest {
             .withEndpoints(tlsInternal)
             .build();
 
-        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, spec, "endpoint-component");
+        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, spec, "endpoint-component", "endpoint-component-label");
 
         Map<String, String> additionalHosts = Collections.singletonMap(tlsInternal.getName(), "extra.host.name");
 
@@ -1657,7 +1657,7 @@ public class EventStreamsOperatorTest {
 
         AtomicReference<Secret> secretReference = new AtomicReference<>();
         Checkpoint async = context.checkpoint(3);
-        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(secureInstance, null, "admapi");
+        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(secureInstance, null, "admapi", "admin-api");
 
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), secureInstance)
             .onComplete(context.succeeding(v -> {
@@ -1780,7 +1780,7 @@ public class EventStreamsOperatorTest {
 
         AtomicReference<Secret> secretReference = new AtomicReference<>();
         Checkpoint async = context.checkpoint(3);
-        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(secureInstance, null, "admapi");
+        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(secureInstance, null, "admapi", "admin-api");
 
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), insecureInstance)
             .onComplete(context.succeeding(v -> {
@@ -1846,7 +1846,7 @@ public class EventStreamsOperatorTest {
 
         AtomicReference<Secret> secretReference = new AtomicReference<>();
         Checkpoint async = context.checkpoint(3);
-        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(beforeInstance, null, "admapi");
+        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(beforeInstance, null, "admapi", "admin-api");
 
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), beforeInstance)
             .onComplete(context.succeeding(v -> {
@@ -2290,7 +2290,7 @@ public class EventStreamsOperatorTest {
 
         Checkpoint async = context.checkpoint();
 
-        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, null, componentName);
+        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, null, componentName, "endpoint-component-label");
         assertThat(esCluster.getStatus().getRoutes().get(previousCustomEndpoint), is(notNullValue()));
         assertThat(esCluster.getStatus().getRoutes().get(previousDefaultEndpoint), is(notNullValue()));
 
@@ -2328,7 +2328,7 @@ public class EventStreamsOperatorTest {
 
         Checkpoint async = context.checkpoint();
 
-        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, null, componentName);
+        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, null, componentName, "endpoint-component-label");
         assertThat(esCluster.getStatus().getRoutes().get(customEndpoint), is(notNullValue()));
         assertThat(esCluster.getStatus().getRoutes().get(defaultEndpoint), is(notNullValue()));
 

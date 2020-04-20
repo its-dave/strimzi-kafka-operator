@@ -25,7 +25,6 @@ import java.util.Map;
 
 public class ReplicatorSecretModel extends AbstractModel {
 
-    public static final String COMPONENT_NAME = "replicator";
     public static final String REPLICATOR_TARGET_CLUSTERS_SECRET_KEY_NAME = "georeplicationdestinationclusters";
     public static final String REPLICATOR_SECRET_NAME = "georep-secret";
 
@@ -34,7 +33,7 @@ public class ReplicatorSecretModel extends AbstractModel {
     private static final Logger log = LogManager.getLogger(ReplicatorSecretModel.class.getName());
 
     public ReplicatorSecretModel(EventStreams instance) {
-        super(instance, COMPONENT_NAME);
+        super(instance, ReplicatorModel.COMPONENT_NAME, ReplicatorModel.APPLICATION_NAME);
         setOwnerReference(instance);
 
         Base64.Encoder encoder = Base64.getEncoder();

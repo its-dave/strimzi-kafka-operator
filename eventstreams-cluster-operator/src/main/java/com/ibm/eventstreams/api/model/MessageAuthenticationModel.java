@@ -14,6 +14,7 @@ package com.ibm.eventstreams.api.model;
 
 import com.ibm.eventstreams.api.spec.EventStreams;
 import io.fabric8.kubernetes.api.model.Secret;
+import io.strimzi.operator.common.model.Labels;
 
 import java.nio.charset.Charset;
 import java.util.Base64;
@@ -33,7 +34,7 @@ public class MessageAuthenticationModel extends AbstractModel {
     Secret secret;
 
     public MessageAuthenticationModel(EventStreams instance) {
-        super(instance, DEFAULT_COMPONENT_NAME);
+        super(instance, DEFAULT_COMPONENT_NAME, Labels.APPLICATION_NAME);
         setOwnerReference(instance);
         secret = createSecret();
     }

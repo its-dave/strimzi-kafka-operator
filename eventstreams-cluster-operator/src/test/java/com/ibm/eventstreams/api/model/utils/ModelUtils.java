@@ -191,8 +191,8 @@ public class ModelUtils {
     }
 
     public static class EndpointsModel extends AbstractSecureEndpointsModel {
-        public EndpointsModel(EventStreams instance, SecurityComponentSpec spec, String componentName) {
-            super(instance, spec, componentName);
+        public EndpointsModel(EventStreams instance, SecurityComponentSpec spec, String componentName, String applicationName) {
+            super(instance, spec, componentName, applicationName);
             setTlsVersion(TlsVersion.TLS_V1_2);
             createService(EndpointServiceType.INTERNAL);
             createService(EndpointServiceType.ROUTE);

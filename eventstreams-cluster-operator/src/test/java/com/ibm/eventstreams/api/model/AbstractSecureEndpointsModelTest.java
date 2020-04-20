@@ -66,7 +66,7 @@ public class AbstractSecureEndpointsModelTest {
         public static final String COMPONENT_NAME = "test";
 
         public ComponentModel(EventStreams instance, SecurityComponentSpec spec) {
-            super(instance, spec, COMPONENT_NAME);
+            super(instance, spec, COMPONENT_NAME, "testlongname");
             setTlsVersion(TlsVersion.TLS_V1_2);
             setOwnerReference(instance);
         }

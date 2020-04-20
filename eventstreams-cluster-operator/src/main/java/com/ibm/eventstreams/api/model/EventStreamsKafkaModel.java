@@ -81,7 +81,7 @@ public class EventStreamsKafkaModel extends AbstractModel {
      */
     @SuppressWarnings({"checkstyle:MethodLength"})
     public EventStreamsKafkaModel(EventStreams instance) {
-        super(instance, STRIMZI_COMPONENT_NAME);
+        super(instance, STRIMZI_COMPONENT_NAME, STRIMZI_COMPONENT_NAME);
 
         setOwnerReference(instance);
         setTlsVersion(Optional.ofNullable(instance.getSpec())

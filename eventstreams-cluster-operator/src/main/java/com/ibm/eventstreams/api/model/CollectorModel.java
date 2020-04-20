@@ -53,6 +53,7 @@ import java.util.Optional;
 public class CollectorModel extends AbstractModel {
 
     public static final String COMPONENT_NAME = "metrics";
+    public static final String APPLICATION_NAME = "metrics";
     public static final int METRICS_PORT = 8888; // no tls for prometheus
     public static final int API_PORT = 6888; // optionally tls secured for internal communication
     public static final int DEFAULT_REPLICAS = 1;
@@ -73,7 +74,7 @@ public class CollectorModel extends AbstractModel {
      */
     public CollectorModel(EventStreams instance,
                           EventStreamsOperatorConfig.ImageLookup imageConfig) {
-        super(instance, COMPONENT_NAME);
+        super(instance, COMPONENT_NAME, APPLICATION_NAME);
         Optional<ComponentSpec> collectorSpec = Optional.ofNullable(instance.getSpec())
             .map(EventStreamsSpec::getCollector);
         

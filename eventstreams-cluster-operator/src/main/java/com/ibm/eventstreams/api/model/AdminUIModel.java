@@ -71,6 +71,7 @@ public class AdminUIModel extends AbstractModel {
 
     // static variables
     public static final String COMPONENT_NAME = "ui";
+    public static final String APPLICATION_NAME = "admin-ui";
     public static final int UI_SERVICE_PORT = 3000;
     public static final String REDIS_CONTAINER_NAME = "redis";
     private static final int DEFAULT_REPLICAS = 1;
@@ -115,7 +116,7 @@ public class AdminUIModel extends AbstractModel {
                         Boolean hasRoutes,
                         Map<String, String> icpClusterData) {
 
-        super(instance, COMPONENT_NAME);
+        super(instance, COMPONENT_NAME, APPLICATION_NAME);
 
         this.icpClusterData = icpClusterData;
         this.oidcSecretName = ClientModel.getSecretName(instance);

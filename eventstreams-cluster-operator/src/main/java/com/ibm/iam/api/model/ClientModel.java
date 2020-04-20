@@ -26,7 +26,7 @@ public class ClientModel extends AbstractModel {
     private Client client;
 
     public ClientModel(EventStreams instance, String routeHost) {
-        super(instance, DEFAULT_COMPONENT_NAME);
+        super(instance, DEFAULT_COMPONENT_NAME, Labels.APPLICATION_NAME);
 
         setOwnerReference(instance);
 

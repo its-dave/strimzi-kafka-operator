@@ -18,6 +18,7 @@ import com.ibm.iam.api.spec.Cp4iServicesBinding;
 import com.ibm.iam.api.spec.Cp4iServicesBindingBuilder;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
+import io.strimzi.operator.common.model.Labels;
 
 public class Cp4iServicesBindingModel extends AbstractModel {
     // Part of the EventStreams installation
@@ -25,7 +26,7 @@ public class Cp4iServicesBindingModel extends AbstractModel {
     private Cp4iServicesBinding cp4iServicesBinding;
 
     public Cp4iServicesBindingModel(EventStreams instance) {
-        super(instance, COMPONENT_NAME);
+        super(instance, COMPONENT_NAME, Labels.APPLICATION_NAME);
 
         setOwnerReference(instance);
 

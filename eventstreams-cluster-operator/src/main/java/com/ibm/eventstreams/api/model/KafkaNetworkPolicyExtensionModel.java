@@ -29,7 +29,7 @@ public class KafkaNetworkPolicyExtensionModel extends AbstractModel {
     private final NetworkPolicy networkPolicy;
 
     public KafkaNetworkPolicyExtensionModel(EventStreams instance) {
-        super(instance, "kafka"); // TODO reference KafkaCluster.APPLICATION_NAME
+        super(instance, "kafka", "kafka"); // TODO reference KafkaCluster.APPLICATION_NAME
 
         setOwnerReference(instance);
 

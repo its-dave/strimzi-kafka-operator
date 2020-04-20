@@ -61,6 +61,7 @@ import java.util.Optional;
 public class AdminApiModel extends AbstractSecureEndpointsModel {
 
     public static final String COMPONENT_NAME = "admapi";
+    public static final String APPLICATION_NAME = "admin-api";
     public static final String ADMIN_API_CONTAINER_NAME = "admin-api";
     public static final int DEFAULT_REPLICAS = 1;
     public static final String DEFAULT_IBMCOM_IMAGE = "ibmcom/admin-api:latest";
@@ -105,7 +106,7 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
                          List<ListenerStatus> kafkaListeners,
                          Map<String, String> icpClusterData,
                          boolean isGeoReplicationEnabled) {
-        super(instance, instance.getSpec().getAdminApi(), COMPONENT_NAME);
+        super(instance, instance.getSpec().getAdminApi(), COMPONENT_NAME, APPLICATION_NAME);
         this.kafkaListeners = kafkaListeners != null ? new ArrayList<>(kafkaListeners) : new ArrayList<>();
 
         this.prometheusHost = icpClusterData.getOrDefault("cluster_address", "null");

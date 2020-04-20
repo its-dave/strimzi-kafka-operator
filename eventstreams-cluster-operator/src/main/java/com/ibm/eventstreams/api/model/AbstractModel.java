@@ -169,17 +169,22 @@ public abstract class AbstractModel {
 
     private static final Logger log = LogManager.getLogger();
 
-    protected AbstractModel(HasMetadata resource, String componentName) {
+    /**
+     *
+     * @param componentName used to name components and should be max 6 characters
+     * @param applicationName used for labeling components, should be descriptive
+     */
+    protected AbstractModel(HasMetadata resource, String componentName, String applicationName) {
         this.instanceName = resource.getMetadata().getName();
         this.namespace = resource.getMetadata().getNamespace();
         this.componentName = componentName;
 
-        this.labels = Labels.generateDefaultLabels(resource, componentName, OPERATOR_NAME);
+        this.labels = Labels.generateDefaultLabels(resource, applicationName, OPERATOR_NAME);
         // If the component is not part of the parent application (eventstreams), then override Strimzi name label
         // to use resource name including the resource prefix (this matches Strimzi convention)
-        // This ckeck stops the default resource name prefix being added to eventstreams (e.g. my-es-ibm-es-eventstreams)
+        // This check stops the default resource name prefix being added to eventstreams (e.g. my-es-ibm-es-eventstreams)
         // to match Strimzi convention
-        if (!componentName.equals(DEFAULT_COMPONENT_NAME)) {
+        if (!applicationName.equals(Labels.APPLICATION_NAME)) {
             this.labels = labels.withStrimziName(getDefaultResourceName());
         }
     }

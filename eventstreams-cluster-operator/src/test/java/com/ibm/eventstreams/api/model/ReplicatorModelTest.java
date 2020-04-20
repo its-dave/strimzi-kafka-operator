@@ -155,7 +155,7 @@ public class ReplicatorModelTest {
                 .getMetadata()
                 .getLabels();
 
-        assertThat(replicatorPodLabels, hasEntry(Labels.KUBERNETES_NAME_LABEL, ReplicatorModel.COMPONENT_NAME));
+        assertThat(replicatorPodLabels, hasEntry(Labels.KUBERNETES_NAME_LABEL, ReplicatorModel.APPLICATION_NAME));
     }
 
 
@@ -221,11 +221,11 @@ public class ReplicatorModelTest {
 
         assertThat(replicatorSecretLabels,  allOf(
                 aMapWithSize(7),
-                hasEntry(Labels.KUBERNETES_NAME_LABEL, "replicator"),
+                hasEntry(Labels.KUBERNETES_NAME_LABEL, "geo-replicator"),
                 hasEntry(Labels.KUBERNETES_INSTANCE_LABEL, instanceName),
                 hasEntry(Labels.KUBERNETES_MANAGED_BY_LABEL, "eventstreams-cluster-operator"),
                 hasEntry(Labels.KUBERNETES_PART_OF_LABEL, "eventstreams-" + instanceName),
-                hasEntry(Labels.STRIMZI_NAME_LABEL, "test-ibm-es-replicator"),
+                hasEntry(Labels.STRIMZI_NAME_LABEL, "test-ibm-es-georep"),
                 hasEntry(Labels.STRIMZI_CLUSTER_LABEL, instanceName),
                 hasEntry(Labels.STRIMZI_KIND_LABEL, "EventStreams")));
     }

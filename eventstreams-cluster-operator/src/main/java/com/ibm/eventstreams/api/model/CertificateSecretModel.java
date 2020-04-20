@@ -27,8 +27,8 @@ public class CertificateSecretModel extends AbstractModel {
     private Map<String, CertAndKey> certificates = new HashMap<>();
     private Secret secret;
 
-    public CertificateSecretModel(EventStreams instance, String componentName) {
-        super(instance, componentName);
+    public CertificateSecretModel(EventStreams instance, String componentName, String applicationName) {
+        super(instance, componentName, applicationName);
         setOwnerReference(instance);
     }
 

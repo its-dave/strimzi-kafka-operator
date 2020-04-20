@@ -52,6 +52,7 @@ import java.util.Optional;
 public class RestProducerModel extends AbstractSecureEndpointsModel {
 
     public static final String COMPONENT_NAME = "recapi";
+    public static final String APPLICATION_NAME = "rest-producer";
     public static final int DEFAULT_REPLICAS = 1;
     private static final String DEFAULT_IBMCOM_IMAGE = "ibmcom/rest-producer:latest";
 
@@ -90,7 +91,7 @@ public class RestProducerModel extends AbstractSecureEndpointsModel {
                              EventStreamsOperatorConfig.ImageLookup imageConfig,
                              List<ListenerStatus> kafkaListeners,
                              Map<String, String> icpClusterData) {
-        super(instance, instance.getSpec().getRestProducer(), COMPONENT_NAME);
+        super(instance, instance.getSpec().getRestProducer(), COMPONENT_NAME, APPLICATION_NAME);
         this.kafkaListeners = kafkaListeners != null ? new ArrayList<>(kafkaListeners) : new ArrayList<>();
 
         this.icpClusterName = icpClusterData.getOrDefault("cluster_name", "null");

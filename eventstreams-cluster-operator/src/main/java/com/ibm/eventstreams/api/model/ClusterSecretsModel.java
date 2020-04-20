@@ -25,6 +25,7 @@ import java.util.Map;
 
 public class ClusterSecretsModel extends AbstractModel {
     public static final String COMPONENT_NAME = "ibmcloud-ca-cert";
+    public static final String APPLICATION_NAME = "ibmcloud-ca-cert";
     private SecretOperator secretOperator;
     private EventStreams instance;
     private static final Logger log = LogManager.getLogger(ClusterSecretsModel.class.getName());
@@ -35,7 +36,7 @@ public class ClusterSecretsModel extends AbstractModel {
      * @param secretOperator - A SecretOperator instance
      */
     public ClusterSecretsModel(EventStreams instance, SecretOperator secretOperator) {
-        super(instance, COMPONENT_NAME);
+        super(instance, COMPONENT_NAME, APPLICATION_NAME);
         setOwnerReference(instance);
         this.secretOperator = secretOperator;
         this.instance = instance;

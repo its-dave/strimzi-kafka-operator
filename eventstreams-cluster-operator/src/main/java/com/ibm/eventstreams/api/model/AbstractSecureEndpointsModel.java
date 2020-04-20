@@ -91,9 +91,9 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
     // private Service ingressService = null;
 
 
-    public AbstractSecureEndpointsModel(EventStreams instance, SecurityComponentSpec spec, String componentName) {
-        super(instance, componentName);
-        this.certificateSecretModel = new CertificateSecretModel(instance, componentName);
+    public AbstractSecureEndpointsModel(EventStreams instance, SecurityComponentSpec spec, String componentName, String applicationName) {
+        super(instance, componentName, applicationName);
+        this.certificateSecretModel = new CertificateSecretModel(instance, componentName, applicationName);
         this.routes = new HashMap<>();
         this.endpoints = createEndpoints(instance, spec, getP2PAuthenticationMechanisms(instance));
     }

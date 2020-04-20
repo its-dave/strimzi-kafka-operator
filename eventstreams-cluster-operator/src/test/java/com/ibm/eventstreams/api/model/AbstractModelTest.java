@@ -53,9 +53,10 @@ public class AbstractModelTest {
     // Extend AbstractModel to test the abstract class
     private class ComponentModel extends AbstractModel {
         private static final String COMPONENT_NAME = "test";
+        private static final String APPLICATION_NAME = "testlongname";
 
         public ComponentModel(EventStreams instance) {
-            super(instance, COMPONENT_NAME);
+            super(instance, COMPONENT_NAME, APPLICATION_NAME);
             setOwnerReference(instance);
         }
     }
@@ -92,7 +93,7 @@ public class AbstractModelTest {
         assertThat(deployment.getSpec().getTemplate().getMetadata().getLabels(),
                 allOf(
                     aMapWithSize(7),
-                    hasEntry(Labels.KUBERNETES_NAME_LABEL, ComponentModel.COMPONENT_NAME),
+                    hasEntry(Labels.KUBERNETES_NAME_LABEL, ComponentModel.APPLICATION_NAME),
                     hasEntry(Labels.KUBERNETES_INSTANCE_LABEL, instanceName),
                     hasEntry(Labels.KUBERNETES_PART_OF_LABEL, "eventstreams-" + instanceName),
                     hasEntry(Labels.KUBERNETES_MANAGED_BY_LABEL, AbstractModel.OPERATOR_NAME),

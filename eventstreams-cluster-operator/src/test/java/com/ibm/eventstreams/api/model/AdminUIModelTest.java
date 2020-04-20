@@ -167,7 +167,7 @@ public class AdminUIModelTest {
         assertThat(createdRoleRef.getApiGroup(), is("rbac.authorization.k8s.io"));
 
         // confirm Kubernetes name and instance labels present, so the UI can discover it for status
-        assertThat(uiPodMetadata.getLabels(), hasEntry(Labels.KUBERNETES_NAME_LABEL, "ui"));
+        assertThat(uiPodMetadata.getLabels(), hasEntry(Labels.KUBERNETES_NAME_LABEL, "admin-ui"));
         assertThat(uiPodMetadata.getLabels(), hasEntry(Labels.KUBERNETES_INSTANCE_LABEL, instanceName));
 
         // confirm ui container has required envars
@@ -221,7 +221,7 @@ public class AdminUIModelTest {
         assertThat(createdRoleRef.getApiGroup(), is("rbac.authorization.k8s.io"));
 
         // confirm Kubernetes name and instance labels present, so the UI can discover it for status
-        assertThat(uiPodMetadata.getLabels(), hasEntry(Labels.KUBERNETES_NAME_LABEL, "ui"));
+        assertThat(uiPodMetadata.getLabels(), hasEntry(Labels.KUBERNETES_NAME_LABEL, "admin-ui"));
         assertThat(uiPodMetadata.getLabels(), hasEntry(Labels.KUBERNETES_INSTANCE_LABEL, instanceName));
 
         // confirm ui container has required envars

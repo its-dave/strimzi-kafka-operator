@@ -57,6 +57,7 @@ public class ReplicatorModel extends AbstractModel {
 
 
     public static final String COMPONENT_NAME = "georep";
+    public static final String APPLICATION_NAME = "geo-replicator";
     public static final String REPLICATOR_APPLICATION_NAME = "kafka-mirror-maker-2";
     public static final int REPLICATOR_PORT = 8083;
     public static final String REPLICATOR_CLUSTER_NAME = "replicator-cluster";
@@ -80,7 +81,7 @@ public class ReplicatorModel extends AbstractModel {
      */
     public ReplicatorModel(EventStreamsReplicator replicatorInstance, EventStreams instance, ReplicatorCredentials replicatorCredentials) {
         //always set the namespace to be that of the owning EventStreams instance
-        super(instance, COMPONENT_NAME);
+        super(instance, COMPONENT_NAME, APPLICATION_NAME);
 
         setOwnerReference(replicatorInstance);
         
