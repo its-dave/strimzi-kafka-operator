@@ -1201,3 +1201,26 @@ spec:
     matchLabels:
       name: ibm-eventstreams-operator
   version: 2020.2.1
+  relatedImages:
+  - name: strimzi-operator-latest
+    image: cp.icr.io/cp/icp4i/es/strimzi-operator-latest@sha256:4097889236A2AF26C293033FEB964C4CF118C0224E0D063FEC0A89E9D0569EF2
+  - name: strimzi-operator-init-latest
+    image: cp.icr.io/cp/icp4i/es/strimzi-operator-init-latest@sha256:4097889236A2AF26C293033FEB964C4CF118C0224E0D063FEC0A89E9D0569EF2
+  - name: eventstreams-rest-producer-v2-icp-linux-2020-04-15-16.04.19-40c3fcc
+    image: cp.icr.io/cp/icp4i/es/eventstreams-rest-producer-v2-icp-linux-2020-04-15-16.04.19-40c3fcc@sha256:d2840561078ea4567122c709864ba33626c95e5bff15ad79f7db2f704305d2cd
+  - name: eventstreams-admin-icp-linux-2020-04-15-16.04.26-40c3fcc
+    image: cp.icr.io/cp/icp4i/es/eventstreams-admin-icp-linux-2020-04-15-16.04.26-40c3fcc@sha256:49bc3e09f26ab8f50835b34ad35d6319dac9ccf65edd60e998603f3daec659ac
+  - name: eventstreams-schema-registry-icp-linux-2020-04-08-10.53.04-a549b6c-dev
+    image: cp.icr.io/cp/icp4i/es/eventstreams-schema-registry-icp-linux-2020-04-08-10.53.04-a549b6c-dev@sha256:7e918061fe8d98f622ad87a3121a9bbbd9dc452e28c2c48312e7e6b67fd666f2
+  - name: eventstreams-schema-registry-avro-icp-linux-2020-04-09-16.03.17-cd87238
+    image: cp.icr.io/cp/icp4i/es/eventstreams-schema-registry-avro-icp-linux-2020-04-09-16.03.17-cd87238@sha256:300004da677dfd029b5429366c1a0251bd64c178922b3e5a857b02dbda231d26
+  - name: eventstreams-schema-registry-v2-icp-linux-2020-04-15-16.04.28-40c3fcc
+    image: cp.icr.io/cp/icp4i/es/eventstreams-schema-registry-v2-icp-linux-2020-04-15-16.04.28-40c3fcc@sha256:deac57962867c791dcbaf38008f3ecad0a780a5e18629277460e51d9a1eafbe3
+  - name: eventstreams-admin-ui-icp-linux-2020-04-15-14.42.19-3b45e8e-dev
+    image: cp.icr.io/cp/icp4i/es/eventstreams-admin-ui-icp-linux-2020-04-15-14.42.19-3b45e8e-dev@sha256:cf58fec5d0803a9320c561c9ed4b8d8955594cd3565038b42df8ac5ba3734400
+  - name: eventstreams-session-store-icp-linux-2020-04-09-15.40.36-f32e234
+    image: cp.icr.io/cp/icp4i/es/eventstreams-session-store-icp-linux-2020-04-09-15.40.36-f32e234@sha256:63bbdfe2e4ffc6442346fb59212b436191338fdace7de0bb909cdfd95c823518
+  - name: eventstreams-metrics-collector-icp-linux-2020-04-08-11.08.41-3cb71d9
+    image: cp.icr.io/cp/icp4i/es/eventstreams-metrics-collector-icp-linux-2020-04-08-11.08.41-3cb71d9@sha256:bfe704c05bd1ad576592d5d0c89bde0fc26f90340ae0962ceed3e24726a6593d
+  - name: strimzi-kafka-latest-kafka-2.4.0
+    image: cp.icr.io/cp/icp4i/es/strimzi-kafka-latest-kafka-2.4.0@sha256:4097889236A2AF26C293033FEB964C4CF118C0224E0D063FEC0A89E9D0569EF2

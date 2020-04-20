@@ -103,44 +103,9 @@ build_scorecard:
 	# run with a script in order to avoid the complaints from the Makefile regarding the indentation since yq is very strict on that
 	${WORKING_DIR}/scorecard-preparation.sh
 
-build_csv: clean
-	$(CP) ${INSTALL_DIR}/040-Crd-kafka.yaml $(KAFKA_CRD_FILE)
-	$(CP) ${INSTALL_DIR}/041-Crd-kafkaconnect.yaml $(KAFKA_CONNECT_CRD_FILE)
-	$(CP) ${INSTALL_DIR}/042-Crd-kafkaconnects2i.yaml $(KAFKA_CONNECT_S2I_CRD_FILE)
-	$(CP) ${INSTALL_DIR}/043-Crd-kafkatopic.yaml $(KAFKA_TOPIC_CRD_FILE)
-	$(CP) ${INSTALL_DIR}/044-Crd-kafkauser.yaml $(KAFKA_USER_CRD_FILE)
-	# ignoring Mirror Maker and Bridge CRDs as we don't use them in Event Streams
-	# $(CP) ${INSTALL_DIR}/045-Crd-kafkamirrormaker.yaml $(KAFKA_MIRROR_MAKER_CRD_FILE)
-	# $(CP) ${INSTALL_DIR}/046-Crd-kafkabridge.yaml $(KAFKA_BRIDGE_CRD_FILE)
-	$(CP) ${INSTALL_DIR}/047-Crd-kafkaconnector.yaml $(KAFKA_CONNECTOR_CRD_FILE)
-	$(CP) ${INSTALL_DIR}/048-Crd-kafkamirrormaker2.yaml $(KAFKA_MIRROR_MAKER_2_CRD_FILE)
-	$(CP) ${INSTALL_DIR}/140-Crd-eventstreams.yaml $(EVENTSTREAMS_CRD_FILE)
-	$(CP) ${INSTALL_DIR}/143-Crd-eventstreamsreplicator.yaml $(EVENTSTREAMS_GEOREP_CRD_FILE)
-	yq w -i $(EVENTSTREAMS_CRD_FILE) spec.version v1beta1
-	yq w -i $(EVENTSTREAMS_GEOREP_CRD_FILE) spec.version v1beta1
-	$(CP) ../examples/eventstreams/*.yaml $(CRD_DIR)
-	$(eval LAST_CREATED_DATE:=$(shell yq r $(GENERATED_CSV) metadata.annotations.createdAt))
-	$(CP) ${INSTALL_DIR}/020-ClusterRole-strimzi-cluster-operator-role.yaml $(ROLE_FILE)
-	$(CP) ${INSTALL_DIR}/150-Deployment-eventstreams-cluster-operator.yaml $(OPERATOR_FILE)
-	yq r $(ROLE_FILE) metadata.name | xargs yq w -i $(OPERATOR_FILE) spec.template.spec.serviceAccountName
-	$(SED) -i "s/metadata.namespace/metadata.annotations['olm.targetNamespaces']/" $(OPERATOR_FILE)
-	$(SED) -i "0,/metadata.annotations\['olm.targetNamespaces'\]/{s/metadata.annotations\['olm.targetNamespaces'\]/metadata.namespace/}" $(OPERATOR_FILE)
-
-	cd .. && operator-sdk generate csv --csv-version $(CSV_VERSION) --operator-name $(OPERATOR_NAME) --update-crds
-	rm -rf $(BUILD_DIR)
-
-	yq m -ix $(GENERATED_CSV) csv_manual_fields.yaml
-	yq w -i $(GENERATED_CSV) metadata.annotations.createdAt $(DATE)
-
-	$(CP) ${INSTALL_DIR}/031-ClusterRole-strimzi-entity-operator.yaml $(BUNDLE_DIR)/entityoperator.clusterrole.yaml
-	$(CP) ${INSTALL_DIR}/122-ClusterRole-eventstreams-ui.yaml $(BUNDLE_DIR)/adminui.clusterrole.yaml
-	$(CP) ${INSTALL_DIR}/123-ClusterRole-eventstreams-admin.yaml $(BUNDLE_DIR)/adminapi.clusterrole.yaml
-	operator-courier verify olm-catalog/$(OPERATOR_NAME)
-
-ifdef TRAVIS
-	# In travis reset the created date so we can perform a git status --porcelain
-	yq w -i $(GENERATED_CSV) metadata.annotations.createdAt $(LAST_CREATED_DATE)
-endif
+.PHONY: .EXPORT_ALL_VARIABLES
+build_csv: .EXPORT_ALL_VARIABLES clean
+	./build_csv.sh
 
 docker_build: build_csv
 	docker build -t $(IMAGE_NAME) -f ${IMAGE_BASE_NAME}.Dockerfile .
