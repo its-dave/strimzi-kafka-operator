@@ -17,6 +17,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.strimzi.api.kafka.model.template.PodTemplate;
+import io.strimzi.crdgenerator.annotations.Description;
 import io.sundr.builder.annotations.Buildable;
 import lombok.EqualsAndHashCode;
 
@@ -34,6 +35,7 @@ public class ComponentTemplate implements Serializable {
 
     private PodTemplate pod;
 
+    @Description("Template to override attributes for pods created for this component")
     public PodTemplate getPod() {
         return pod;
     }

@@ -140,6 +140,8 @@ spec:
                       value:
                         type: string
                         description: The environment variable value.
+                  description: Apply additional custom environment variables to this
+                    component.
                 externalAccess:
                   type: object
                   properties:
@@ -149,6 +151,7 @@ spec:
                   - type
                 image:
                   type: string
+                  description: Identify a custom image to use for this component.
                 livenessProbe:
                   type: object
                   properties:
@@ -175,6 +178,8 @@ spec:
                       type: integer
                       minimum: 0
                       description: The timeout for each attempted health check.
+                  description: Modify the Kubernetes liveness probe applied to this
+                    component.
                 logging:
                   type: object
                   properties:
@@ -193,6 +198,7 @@ spec:
                       description: Logging type, must be either 'inline' or 'external'.
                   required:
                   - type
+                  description: Specify custom logging for this component.
                 readinessProbe:
                   type: object
                   properties:
@@ -219,6 +225,8 @@ spec:
                       type: integer
                       minimum: 0
                       description: The timeout for each attempted health check.
+                  description: Modify the Kubernetes readiness probe applied to this
+                    component.
                 replicas:
                   type: integer
                   description: The number of instances to deploy.
@@ -229,6 +237,8 @@ spec:
                       type: object
                     requests:
                       type: object
+                  description: Modifies the resource limits and requests to apply
+                    to this component.
                 template:
                   type: object
                   properties:
@@ -547,6 +557,8 @@ spec:
                               value:
                                 type: string
                           description: The pod's tolerations.
+                      description: Template to override attributes for pods created
+                        for this component.
               description: Configuration of the Event Streams administration API server.
             adminUI:
               type: object
@@ -556,6 +568,7 @@ spec:
                   properties:
                     image:
                       type: string
+                      description: Identify a custom image to use for this component.
                     logging:
                       type: object
                       properties:
@@ -574,6 +587,7 @@ spec:
                           description: Logging type, must be either 'inline' or 'external'.
                       required:
                       - type
+                      description: Specify custom logging for this component.
                     resources:
                       type: object
                       properties:
@@ -581,6 +595,8 @@ spec:
                           type: object
                         requests:
                           type: object
+                      description: Modifies the resource limits and requests to apply
+                        to this component.
                     envVars:
                       type: array
                       items:
@@ -592,6 +608,8 @@ spec:
                           value:
                             type: string
                             description: The environment variable value.
+                      description: Apply additional custom environment variables to
+                        this component.
                     livenessProbe:
                       type: object
                       properties:
@@ -618,6 +636,8 @@ spec:
                           type: integer
                           minimum: 0
                           description: The timeout for each attempted health check.
+                      description: Modify the Kubernetes liveness probe applied to
+                        this component.
                     readinessProbe:
                       type: object
                       properties:
@@ -644,6 +664,8 @@ spec:
                           type: integer
                           minimum: 0
                           description: The timeout for each attempted health check.
+                      description: Modify the Kubernetes readiness probe applied to
+                        this component.
                   description: Configuration options for the redis container used
                     to store UI login sessions.
                 envVars:
@@ -657,6 +679,8 @@ spec:
                       value:
                         type: string
                         description: The environment variable value.
+                  description: Apply additional custom environment variables to this
+                    component.
                 externalAccess:
                   type: object
                   properties:
@@ -666,6 +690,7 @@ spec:
                   - type
                 image:
                   type: string
+                  description: Identify a custom image to use for this component.
                 livenessProbe:
                   type: object
                   properties:
@@ -692,6 +717,8 @@ spec:
                       type: integer
                       minimum: 0
                       description: The timeout for each attempted health check.
+                  description: Modify the Kubernetes liveness probe applied to this
+                    component.
                 logging:
                   type: object
                   properties:
@@ -710,6 +737,7 @@ spec:
                       description: Logging type, must be either 'inline' or 'external'.
                   required:
                   - type
+                  description: Specify custom logging for this component.
                 readinessProbe:
                   type: object
                   properties:
@@ -736,6 +764,8 @@ spec:
                       type: integer
                       minimum: 0
                       description: The timeout for each attempted health check.
+                  description: Modify the Kubernetes readiness probe applied to this
+                    component.
                 replicas:
                   type: integer
                   description: The number of instances to deploy.
@@ -746,6 +776,8 @@ spec:
                       type: object
                     requests:
                       type: object
+                  description: Modifies the resource limits and requests to apply
+                    to this component.
                 template:
                   type: object
                   properties:
@@ -1064,6 +1096,8 @@ spec:
                               value:
                                 type: string
                           description: The pod's tolerations.
+                      description: Template to override attributes for pods created
+                        for this component.
               description: Configuration of the web server that hosts the administration
                 user interface.
             collector:
@@ -1390,6 +1424,8 @@ spec:
                               value:
                                 type: string
                           description: The pod's tolerations.
+                      description: Template to override attributes for pods created
+                        for this component.
                 externalAccess:
                   type: object
                   properties:
@@ -1408,8 +1444,11 @@ spec:
                       value:
                         type: string
                         description: The environment variable value.
+                  description: Apply additional custom environment variables to this
+                    component.
                 image:
                   type: string
+                  description: Identify a custom image to use for this component.
                 livenessProbe:
                   type: object
                   properties:
@@ -1436,6 +1475,8 @@ spec:
                       type: integer
                       minimum: 0
                       description: The timeout for each attempted health check.
+                  description: Modify the Kubernetes liveness probe applied to this
+                    component.
                 logging:
                   type: object
                   properties:
@@ -1454,6 +1495,7 @@ spec:
                       description: Logging type, must be either 'inline' or 'external'.
                   required:
                   - type
+                  description: Specify custom logging for this component.
                 readinessProbe:
                   type: object
                   properties:
@@ -1480,6 +1522,8 @@ spec:
                       type: integer
                       minimum: 0
                       description: The timeout for each attempted health check.
+                  description: Modify the Kubernetes readiness probe applied to this
+                    component.
                 resources:
                   type: object
                   properties:
@@ -1487,6 +1531,8 @@ spec:
                       type: object
                     requests:
                       type: object
+                  description: Modifies the resource limits and requests to apply
+                    to this component.
               description: Configuration of the collector server responsible for aggregating
                 metrics from Kafka brokers.
             restProducer:
@@ -1565,6 +1611,8 @@ spec:
                       value:
                         type: string
                         description: The environment variable value.
+                  description: Apply additional custom environment variables to this
+                    component.
                 externalAccess:
                   type: object
                   properties:
@@ -1574,6 +1622,7 @@ spec:
                   - type
                 image:
                   type: string
+                  description: Identify a custom image to use for this component.
                 livenessProbe:
                   type: object
                   properties:
@@ -1600,6 +1649,8 @@ spec:
                       type: integer
                       minimum: 0
                       description: The timeout for each attempted health check.
+                  description: Modify the Kubernetes liveness probe applied to this
+                    component.
                 logging:
                   type: object
                   properties:
@@ -1618,6 +1669,7 @@ spec:
                       description: Logging type, must be either 'inline' or 'external'.
                   required:
                   - type
+                  description: Specify custom logging for this component.
                 readinessProbe:
                   type: object
                   properties:
@@ -1644,6 +1696,8 @@ spec:
                       type: integer
                       minimum: 0
                       description: The timeout for each attempted health check.
+                  description: Modify the Kubernetes readiness probe applied to this
+                    component.
                 replicas:
                   type: integer
                   description: The number of instances to deploy.
@@ -1654,6 +1708,8 @@ spec:
                       type: object
                     requests:
                       type: object
+                  description: Modifies the resource limits and requests to apply
+                    to this component.
                 template:
                   type: object
                   properties:
@@ -1972,6 +2028,8 @@ spec:
                               value:
                                 type: string
                           description: The pod's tolerations.
+                      description: Template to override attributes for pods created
+                        for this component.
               description: Configuration of the REST Producer server that allows messages
                 to be produced to Kafka topics from REST clients.
             schemaRegistry:
@@ -2093,11 +2151,13 @@ spec:
                         the JBOD disks array.
                   required:
                   - type
+                  description: Storage configuration (disk).
                 avro:
                   type: object
                   properties:
                     image:
                       type: string
+                      description: Identify a custom image to use for this component.
                     logging:
                       type: object
                       properties:
@@ -2116,6 +2176,7 @@ spec:
                           description: Logging type, must be either 'inline' or 'external'.
                       required:
                       - type
+                      description: Specify custom logging for this component.
                     resources:
                       type: object
                       properties:
@@ -2123,6 +2184,8 @@ spec:
                           type: object
                         requests:
                           type: object
+                      description: Modifies the resource limits and requests to apply
+                        to this component.
                     envVars:
                       type: array
                       items:
@@ -2134,6 +2197,8 @@ spec:
                           value:
                             type: string
                             description: The environment variable value.
+                      description: Apply additional custom environment variables to
+                        this component.
                     livenessProbe:
                       type: object
                       properties:
@@ -2160,6 +2225,8 @@ spec:
                           type: integer
                           minimum: 0
                           description: The timeout for each attempted health check.
+                      description: Modify the Kubernetes liveness probe applied to
+                        this component.
                     readinessProbe:
                       type: object
                       properties:
@@ -2186,11 +2253,16 @@ spec:
                           type: integer
                           minimum: 0
                           description: The timeout for each attempted health check.
+                      description: Modify the Kubernetes readiness probe applied to
+                        this component.
+                  description: Specify overrides for the container used to generate
+                    Avro classes.
                 proxy:
                   type: object
                   properties:
                     image:
                       type: string
+                      description: Identify a custom image to use for this component.
                     logging:
                       type: object
                       properties:
@@ -2209,6 +2281,7 @@ spec:
                           description: Logging type, must be either 'inline' or 'external'.
                       required:
                       - type
+                      description: Specify custom logging for this component.
                     resources:
                       type: object
                       properties:
@@ -2216,6 +2289,8 @@ spec:
                           type: object
                         requests:
                           type: object
+                      description: Modifies the resource limits and requests to apply
+                        to this component.
                     envVars:
                       type: array
                       items:
@@ -2227,6 +2302,8 @@ spec:
                           value:
                             type: string
                             description: The environment variable value.
+                      description: Apply additional custom environment variables to
+                        this component.
                     livenessProbe:
                       type: object
                       properties:
@@ -2253,6 +2330,8 @@ spec:
                           type: integer
                           minimum: 0
                           description: The timeout for each attempted health check.
+                      description: Modify the Kubernetes liveness probe applied to
+                        this component.
                     readinessProbe:
                       type: object
                       properties:
@@ -2279,6 +2358,10 @@ spec:
                           type: integer
                           minimum: 0
                           description: The timeout for each attempted health check.
+                      description: Modify the Kubernetes readiness probe applied to
+                        this component.
+                  description: Specify overrides for the container used for proxying
+                    HTTP requests to the Schema Registry.
                 endpoints:
                   type: array
                   items:
@@ -2352,6 +2435,8 @@ spec:
                       value:
                         type: string
                         description: The environment variable value.
+                  description: Apply additional custom environment variables to this
+                    component.
                 externalAccess:
                   type: object
                   properties:
@@ -2361,6 +2446,7 @@ spec:
                   - type
                 image:
                   type: string
+                  description: Identify a custom image to use for this component.
                 livenessProbe:
                   type: object
                   properties:
@@ -2387,6 +2473,8 @@ spec:
                       type: integer
                       minimum: 0
                       description: The timeout for each attempted health check.
+                  description: Modify the Kubernetes liveness probe applied to this
+                    component.
                 logging:
                   type: object
                   properties:
@@ -2405,6 +2493,7 @@ spec:
                       description: Logging type, must be either 'inline' or 'external'.
                   required:
                   - type
+                  description: Specify custom logging for this component.
                 readinessProbe:
                   type: object
                   properties:
@@ -2431,6 +2520,8 @@ spec:
                       type: integer
                       minimum: 0
                       description: The timeout for each attempted health check.
+                  description: Modify the Kubernetes readiness probe applied to this
+                    component.
                 replicas:
                   type: integer
                   description: The number of instances to deploy.
@@ -2441,6 +2532,8 @@ spec:
                       type: object
                     requests:
                       type: object
+                  description: Modifies the resource limits and requests to apply
+                    to this component.
                 template:
                   type: object
                   properties:
@@ -2759,6 +2852,8 @@ spec:
                               value:
                                 type: string
                           description: The pod's tolerations.
+                      description: Template to override attributes for pods created
+                        for this component.
               description: Configuration of the Schema Registry server.
             security:
               type: object

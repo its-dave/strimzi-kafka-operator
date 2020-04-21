@@ -20,6 +20,7 @@ import io.fabric8.kubernetes.api.model.ResourceRequirements;
 import io.strimzi.api.kafka.model.ContainerEnvVar;
 import io.strimzi.api.kafka.model.Logging;
 import io.strimzi.api.kafka.model.Probe;
+import io.strimzi.crdgenerator.annotations.Description;
 import io.sundr.builder.annotations.Buildable;
 import lombok.EqualsAndHashCode;
 
@@ -41,6 +42,7 @@ public class ContainerSpec implements Serializable {
     private Probe readinessProbe;
     private List<ContainerEnvVar> envVars;
 
+    @Description("Identify a custom image to use for this component")
     public String getImage() {
         return image;
     }
@@ -49,6 +51,7 @@ public class ContainerSpec implements Serializable {
         this.image = image;
     }
 
+    @Description("Specify custom logging for this component")
     public Logging getLogging() {
         return logging;
     }
@@ -57,6 +60,7 @@ public class ContainerSpec implements Serializable {
         this.logging = logging;
     }
 
+    @Description("Modifies the resource limits and requests to apply to this component")
     public ResourceRequirements getResources() {
         return resources;
     }
@@ -65,6 +69,7 @@ public class ContainerSpec implements Serializable {
         this.resources = resources;
     }
 
+    @Description("Modify the Kubernetes liveness probe applied to this component")
     public Probe getLivenessProbe() {
         return livenessProbe;
     }
@@ -73,6 +78,7 @@ public class ContainerSpec implements Serializable {
         this.livenessProbe = livenessProbe;
     }
 
+    @Description("Modify the Kubernetes readiness probe applied to this component")
     public Probe getReadinessProbe() {
         return readinessProbe;
     }
@@ -81,6 +87,7 @@ public class ContainerSpec implements Serializable {
         this.readinessProbe = readinessProbe;
     }
 
+    @Description("Apply additional custom environment variables to this component")
     public List<ContainerEnvVar> getEnvVars() {
         return envVars;
     }

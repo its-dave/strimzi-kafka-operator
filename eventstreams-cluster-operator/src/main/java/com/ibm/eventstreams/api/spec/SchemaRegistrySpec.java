@@ -17,6 +17,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.strimzi.api.kafka.model.storage.Storage;
+import io.strimzi.crdgenerator.annotations.Description;
 import io.sundr.builder.annotations.Buildable;
 import lombok.EqualsAndHashCode;
 
@@ -33,6 +34,7 @@ public class SchemaRegistrySpec extends SecurityComponentSpec {
     private ContainerSpec avro;
     private ContainerSpec proxy;
 
+    @Description("Storage configuration (disk).")
     public Storage getStorage() {
         return storage;
     }
@@ -41,6 +43,7 @@ public class SchemaRegistrySpec extends SecurityComponentSpec {
         this.storage = storage;
     }
 
+    @Description("Specify overrides for the container used to generate Avro classes")
     public ContainerSpec getAvro() {
         return avro;
     }
@@ -49,6 +52,7 @@ public class SchemaRegistrySpec extends SecurityComponentSpec {
         this.avro = avro;
     }
 
+    @Description("Specify overrides for the container used for proxying HTTP requests to the Schema Registry")
     public ContainerSpec getProxy() {
         return proxy;
     }
