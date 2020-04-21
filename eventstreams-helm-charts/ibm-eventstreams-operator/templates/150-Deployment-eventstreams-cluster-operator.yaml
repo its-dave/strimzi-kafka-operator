@@ -131,6 +131,16 @@ spec:
               port: 8080
             initialDelaySeconds: 10
             periodSeconds: 30
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+                - MKNOD
+            privileged: false
+            readOnlyRootFilesystem: false
+            runAsNonRoot: true
+            runAsUser: 5000
           resources:
             limits:
               cpu: 1000m

@@ -32,6 +32,7 @@ import io.fabric8.kubernetes.api.model.AffinityBuilder;
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.EnvVarBuilder;
 import io.fabric8.kubernetes.api.model.ResourceRequirements;
+import io.fabric8.kubernetes.api.model.SecurityContext;
 import io.fabric8.kubernetes.api.model.WeightedPodAffinityTerm;
 import io.fabric8.kubernetes.api.model.WeightedPodAffinityTermBuilder;
 import io.strimzi.api.kafka.model.ContainerEnvVar;
@@ -115,6 +116,7 @@ public class EventStreamsKafkaModel extends AbstractModel {
      * @param strimziOverrides the kafka spec provided in the Eventstreams CR
      * @return the Kafka CR to be created
      */
+    @SuppressWarnings({"checkstyle:MethodLength"})
     private Kafka createKafka(KafkaSpec strimziOverrides) {
 
         List<EnvVar> kafkaEnvVars = Arrays.asList(
@@ -132,6 +134,14 @@ public class EventStreamsKafkaModel extends AbstractModel {
                         .orElseGet(ArrayList::new));
 
         Labels strimziComponentLabels = labelsWithoutResourceGroup();
+
+        SecurityContext readOnlyFsSecurityContext = getSecurityContext(true);
+        SecurityContext writableFsSecurityContext = getSecurityContext(false);
+
+        /**
+         * Core Kafka CustomResource
+         * only include mandatary component changes
+         */
 
         KafkaBuilder builder = new KafkaBuilder()
             .withApiVersion(Kafka.RESOURCE_GROUP + "/" + Kafka.V1BETA1)
@@ -151,7 +161,14 @@ public class EventStreamsKafkaModel extends AbstractModel {
                     .editOrNewTemplate()
                         .editOrNewKafkaContainer()
                             .withEnv(createContainerEnvVarList(kafkaEnvVars))
+                            .withSecurityContext(writableFsSecurityContext)
                         .endKafkaContainer()
+                        .editOrNewInitContainer()
+                            .withSecurityContext(writableFsSecurityContext)
+                        .endInitContainer()
+                        .editOrNewTlsSidecarContainer()
+                            .withSecurityContext(writableFsSecurityContext)
+                        .endTlsSidecarContainer()
                         .editOrNewPod()
                             .editOrNewMetadata()
                                 .addToAnnotations(getEventStreamsMeteringAnnotations("kafka"))
@@ -176,6 +193,12 @@ public class EventStreamsKafkaModel extends AbstractModel {
                         .withResources(getZookeeperTlsResources())
                     .endTlsSidecar()
                     .editOrNewTemplate()
+                        .editOrNewZookeeperContainer()
+                            .withSecurityContext(writableFsSecurityContext)
+                        .endZookeeperContainer()
+                        .editOrNewTlsSidecarContainer()
+                            .withSecurityContext(writableFsSecurityContext)
+                        .endTlsSidecarContainer()
                         .editOrNewPod()
                             .editOrNewMetadata()
                                 .addToAnnotations(getEventStreamsMeteringAnnotations())
@@ -201,6 +224,12 @@ public class EventStreamsKafkaModel extends AbstractModel {
                         .withResources(getEntityOperatorTlsResources())
                     .endTlsSidecar()
                     .editOrNewTemplate()
+                        .editOrNewUserOperatorContainer()
+                            .withSecurityContext(writableFsSecurityContext)
+                        .endUserOperatorContainer()
+                        .editOrNewTlsSidecarContainer()
+                            .withSecurityContext(writableFsSecurityContext)
+                        .endTlsSidecarContainer()
                         .editOrNewPod()
                             .editOrNewMetadata()
                                 .addToAnnotations(getEventStreamsMeteringAnnotations())
@@ -213,18 +242,47 @@ public class EventStreamsKafkaModel extends AbstractModel {
                 .endEntityOperator()
             .endSpec();
 
-        //
-        // add optional elements to the spec before building
 
+        /**
+         * Add optional elements to the spec before building
+         */
+
+
+        /**
+         * Topic Operator
+         */
         if (Optional.ofNullable(entityOperatorSpec).map(EntityOperatorSpec::getTopicOperator).isPresent()) {
             builder.editSpec()
                     .editEntityOperator()
                         .editOrNewTopicOperator()
                             .withResources(getEntityTopicOperatorResources())
                         .endTopicOperator()
+                        .editOrNewTemplate()
+                            .editOrNewTopicOperatorContainer()
+                                .withSecurityContext(writableFsSecurityContext)
+                            .endTopicOperatorContainer()
+                        .endTemplate()
                     .endEntityOperator()
                 .endSpec();
         }
+
+        /**
+         * JmxTrans
+         */
+        if (Optional.ofNullable(strimziOverrides).map(KafkaSpec::getJmxTrans).isPresent()) {
+            builder.editSpec()
+                    .editJmxTrans()
+                         // These need to be defined
+//                        .withResources(getJmxTransResources())
+                        .editOrNewTemplate()
+                            .editOrNewContainer()
+                                .withSecurityContext(readOnlyFsSecurityContext)
+                            .endContainer()
+                        .endTemplate()
+                    .endJmxTrans()
+                    .endSpec();
+        }
+
         return builder.build();
     }
 

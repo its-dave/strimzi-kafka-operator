@@ -24,14 +24,6 @@ overrides:
 # CUSTOM STRIMZI REQUIRED
 ##############################
 
-  # TODO: Custom Strimzi with DropAll
-  - rule: "ContainerHasDropAll"
-    message: '^\[ERROR\] scanned-(statefulset|deployment)-\w+-my-es-(kafka|zookeeper|entity-operator)\.yaml:.*'
-    reason: "Currently have no control over Security context within containers in Strimzi (container builder does not use it or expose it)"
-  - rule: "ContainerHasDropAll"
-    message: '^\[ERROR\] scanned-deployment-\w+-my-es-ibm-es-replicator-connect\.yaml:.*'
-    reason: "Currently have no control over Security context within containers in Strimzi"
-
   # TODO: Custom Strimzi with PodSecurityContextDefined
   - rule: "PodSecurityContextDefined"
     message: '^\[ERROR\] scanned-(deployment|statefulset)-\w+-my-es-(kafka|zookeeper|entity-operator)\.yaml:.*'

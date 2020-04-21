@@ -148,11 +148,14 @@ public class ReplicatorModel extends AbstractModel {
 
         // Needs to be KafkaConnectTemplate here, not MM2 equivalent
         KafkaConnectTemplate kafkaMirrorMaker2Template = new KafkaConnectTemplateBuilder()
+                .editOrNewConnectContainer()
+                    .withSecurityContext(getSecurityContext(false))
+                .endConnectContainer()
                 .editOrNewPod()
                     .withNewMetadata()
-                            .addToAnnotations(getEventStreamsMeteringAnnotations(COMPONENT_NAME))
-                            .addToAnnotations(getPrometheusAnnotations(DEFAULT_PROMETHEUS_PORT))
-                            .addToLabels(labels.toMap())
+                        .addToAnnotations(getEventStreamsMeteringAnnotations(COMPONENT_NAME))
+                        .addToAnnotations(getPrometheusAnnotations(DEFAULT_PROMETHEUS_PORT))
+                        .addToLabels(labels.toMap())
                     .endMetadata()
                 .endPod()
                 .build();
