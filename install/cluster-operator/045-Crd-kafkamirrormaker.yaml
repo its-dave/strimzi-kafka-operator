@@ -242,6 +242,7 @@ spec:
                     sasl., security., interceptor.classes (with the exception of:
                     ssl.endpoint.identification.algorithm, ssl.cipher.suites, ssl.protocol,
                     ssl.enabled.protocols).'
+                  x-kubernetes-preserve-unknown-fields: true
                 tls:
                   type: object
                   properties:
@@ -433,6 +434,7 @@ spec:
                     following prefixes cannot be set: ssl., bootstrap.servers, sasl.,
                     security., interceptor.classes (with the exception of: ssl.endpoint.identification.algorithm,
                     ssl.cipher.suites, ssl.protocol, ssl.enabled.protocols).'
+                  x-kubernetes-preserve-unknown-fields: true
                 tls:
                   type: object
                   properties:
@@ -744,6 +746,7 @@ spec:
               type: object
               description: The Prometheus JMX Exporter configuration. See {JMXExporter}
                 for details of the structure of this configuration.
+              x-kubernetes-preserve-unknown-fields: true
             tracing:
               type: object
               properties:

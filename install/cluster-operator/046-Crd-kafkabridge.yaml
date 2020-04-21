@@ -256,6 +256,7 @@ spec:
                     prefixes cannot be set: ssl., bootstrap.servers, group.id, sasl.,
                     security. (with the exception of: ssl.endpoint.identification.algorithm,
                     ssl.cipher.suites, ssl.protocol, ssl.enabled.protocols).'
+                  x-kubernetes-preserve-unknown-fields: true
               description: Kafka consumer related configuration.
             producer:
               type: object
@@ -267,6 +268,7 @@ spec:
                     prefixes cannot be set: ssl., bootstrap.servers, sasl., security.
                     (with the exception of: ssl.endpoint.identification.algorithm,
                     ssl.cipher.suites, ssl.protocol, ssl.enabled.protocols).'
+                  x-kubernetes-preserve-unknown-fields: true
               description: Kafka producer related configuration.
             resources:
               type: object
@@ -332,6 +334,7 @@ spec:
               description: '**Currently not supported** The Prometheus JMX Exporter
                 configuration. See {JMXExporter} for details of the structure of this
                 configuration.'
+              x-kubernetes-preserve-unknown-fields: true
             livenessProbe:
               type: object
               properties:

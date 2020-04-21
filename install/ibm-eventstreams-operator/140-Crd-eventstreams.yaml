@@ -3733,6 +3733,7 @@ spec:
                         zookeeper.set.acl, authorizer., super.user (with the exception
                         of: zookeeper.connection.timeout.ms, ssl.cipher.suites, ssl.protocol,
                         ssl.enabled.protocols).'
+                      x-kubernetes-preserve-unknown-fields: true
                     rack:
                       type: object
                       properties:
@@ -4091,6 +4092,7 @@ spec:
                       description: The Prometheus JMX Exporter configuration. See
                         https://github.com/prometheus/jmx_exporter for details of
                         the structure of this configuration.
+                      x-kubernetes-preserve-unknown-fields: true
                     logging:
                       type: object
                       properties:
@@ -5092,6 +5094,7 @@ spec:
                       description: 'The ZooKeeper broker config. Properties with the
                         following prefixes cannot be set: server., dataDir, dataLogDir,
                         clientPort, authProvider, quorum.auth, requireClientAuthScheme.'
+                      x-kubernetes-preserve-unknown-fields: true
                     affinity:
                       type: object
                       properties:
@@ -5416,6 +5419,7 @@ spec:
                       description: The Prometheus JMX Exporter configuration. See
                         https://github.com/prometheus/jmx_exporter for details of
                         the structure of this configuration.
+                      x-kubernetes-preserve-unknown-fields: true
                     logging:
                       type: object
                       properties:

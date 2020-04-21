@@ -72,6 +72,7 @@ spec:
                       listeners, plugin.path, rest., bootstrap.servers, consumer.interceptor.classes,
                       producer.interceptor.classes (with the exception of: ssl.endpoint.identification.algorithm,
                       ssl.cipher.suites, ssl.protocol, ssl.enabled.protocols).'
+                    x-kubernetes-preserve-unknown-fields: true
                   tls:
                     type: object
                     properties:
@@ -267,6 +268,7 @@ spec:
                         type: object
                         description: 'The Kafka Connector configuration. The following
                           properties cannot be set: connector.class, tasks.max.'
+                        x-kubernetes-preserve-unknown-fields: true
                       pause:
                         type: boolean
                         description: Whether the connector should be paused. Defaults
@@ -284,6 +286,7 @@ spec:
                         type: object
                         description: 'The Kafka Connector configuration. The following
                           properties cannot be set: connector.class, tasks.max.'
+                        x-kubernetes-preserve-unknown-fields: true
                       pause:
                         type: boolean
                         description: Whether the connector should be paused. Defaults
@@ -301,6 +304,7 @@ spec:
                         type: object
                         description: 'The Kafka Connector configuration. The following
                           properties cannot be set: connector.class, tasks.max.'
+                        x-kubernetes-preserve-unknown-fields: true
                       pause:
                         type: boolean
                         description: Whether the connector should be paused. Defaults
@@ -671,6 +675,7 @@ spec:
               type: object
               description: The Prometheus JMX Exporter configuration. See https://github.com/prometheus/jmx_exporter
                 for details of the structure of this configuration.
+              x-kubernetes-preserve-unknown-fields: true
             tracing:
               type: object
               properties:

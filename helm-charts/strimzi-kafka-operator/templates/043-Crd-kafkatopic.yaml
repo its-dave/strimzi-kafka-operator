@@ -64,6 +64,7 @@ spec:
             config:
               type: object
               description: The topic configuration.
+              x-kubernetes-preserve-unknown-fields: true
             topicName:
               type: string
               description: The name of the topic. When absent this will default to

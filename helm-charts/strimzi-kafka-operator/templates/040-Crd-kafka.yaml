@@ -992,6 +992,7 @@ spec:
                     of: zookeeper.connection.timeout.ms, ssl.cipher.suites, ssl.protocol,
                     ssl.enabled.protocols,cruise.control.metrics.topic.num.partitions,
                     cruise.control.metrics.topic.replication.factor, cruise.control.metrics.topic.retention.ms).'
+                  x-kubernetes-preserve-unknown-fields: true
                 rack:
                   type: object
                   properties:
@@ -1349,6 +1350,7 @@ spec:
                   type: object
                   description: The Prometheus JMX Exporter configuration. See https://github.com/prometheus/jmx_exporter
                     for details of the structure of this configuration.
+                  x-kubernetes-preserve-unknown-fields: true
                 logging:
                   type: object
                   properties:
@@ -2325,6 +2327,7 @@ spec:
                     ssl., serverCnxnFactory, sslQuorum (with the exception of: ssl.protocol,
                     ssl.quorum.protocol, ssl.enabledProtocols, ssl.quorum.enabledProtocols,
                     ssl.ciphersuites, ssl.quorum.ciphersuites).'
+                  x-kubernetes-preserve-unknown-fields: true
                 affinity:
                   type: object
                   properties:
@@ -2648,6 +2651,7 @@ spec:
                   type: object
                   description: The Prometheus JMX Exporter configuration. See https://github.com/prometheus/jmx_exporter
                     for details of the structure of this configuration.
+                  x-kubernetes-preserve-unknown-fields: true
                 logging:
                   type: object
                   properties:
