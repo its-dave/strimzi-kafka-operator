@@ -57,6 +57,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.ibm.eventstreams.api.model.AbstractSecureEndpointsModel.INTERNAL_SERVICE_SUFFIX;
+import static com.ibm.eventstreams.api.model.AbstractSecureEndpointsModel.ROUTE_SERVICE_SUFFIX;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.startsWith;
@@ -173,6 +174,7 @@ public class AdminUIModelTest {
         // confirm ui container has required envars
         String adminApiService = "http://" + instanceName + "-" + AbstractModel.APP_NAME + "-" + AdminApiModel.COMPONENT_NAME + "-" + INTERNAL_SERVICE_SUFFIX + "." +  namespace + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.DEFAULT_P2P_PLAIN_PORT;
         String schemaRegistryService = "http://" + instanceName + "-" + AbstractModel.APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME + "-" + INTERNAL_SERVICE_SUFFIX + "." +  namespace + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.DEFAULT_P2P_PLAIN_PORT;
+        String restProducerService = "http://" + instanceName + "-" + AbstractModel.APP_NAME + "-" + RestProducerModel.COMPONENT_NAME + "-" + ROUTE_SERVICE_SUFFIX + "." +  namespace + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.DEFAULT_P2P_PLAIN_PORT;
 
         assertThat(uiContainers.get(0).getEnv(), hasItems(
                 new EnvVarBuilder().withName("ID").withValue(instanceName).build(),
@@ -183,6 +185,7 @@ public class AdminUIModelTest {
                 new EnvVarBuilder().withName("ICP_USER_MGMT_PORT").withValue("443").build(),
                 new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue("true").build(),
                 new EnvVarBuilder().withName("SCHEMA_REGISTRY_URL").withValue(schemaRegistryService).build(),
+                new EnvVarBuilder().withName("REST_PRODUCER_URL").withValue(restProducerService).build(),
                 new EnvVarBuilder().withName(AbstractModel.TLS_VERSION_ENV_KEY).withValue("TLSv1.2").build(),
                 new EnvVarBuilder().withName("ICP_USER_MGMT_HIGHEST_ROLE_FOR_CRN").withValue("idmgmt/identity/api/v1/teams/highestRole").build()));
 

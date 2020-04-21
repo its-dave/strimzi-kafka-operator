@@ -65,6 +65,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+
+import static com.ibm.eventstreams.api.model.AbstractSecureEndpointsModel.getExternalServiceName;
 import static com.ibm.eventstreams.api.model.AbstractSecureEndpointsModel.getInternalServiceName;
 
 public class AdminUIModel extends AbstractModel {
@@ -271,6 +273,7 @@ public class AdminUIModel extends AbstractModel {
 
         String adminApiService = getUrlProtocol(crTlsVersionValue) + getInternalServiceName(getInstanceName(), AdminApiModel.COMPONENT_NAME) + "." +  getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.getPodToPodPort(isSecurityEnabled);
         String schemaRegistryService = getUrlProtocol(crTlsVersionValue) + getInternalServiceName(getInstanceName(), SchemaRegistryModel.COMPONENT_NAME) + "." +  getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.getPodToPodPort(isSecurityEnabled);
+        String restProducerService = getUrlProtocol(crTlsVersionValue) + getExternalServiceName(getInstanceName(), RestProducerModel.COMPONENT_NAME) + "." +  getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.getPodToPodPort(isSecurityEnabled);
 
         List<EnvVar> envVarDefaults = new ArrayList<>();
 
@@ -332,6 +335,8 @@ public class AdminUIModel extends AbstractModel {
         envVarDefaults.add(new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue("true").build());
         envVarDefaults.add(new EnvVarBuilder().withName("SCHEMA_REGISTRY_ENABLED").withValue(Boolean.toString(SchemaRegistryModel.isSchemaRegistryEnabled(instance))).build());
         envVarDefaults.add(new EnvVarBuilder().withName("SCHEMA_REGISTRY_URL").withValue(schemaRegistryService).build());
+        envVarDefaults.add(new EnvVarBuilder().withName("REST_PRODUCER_URL").withValue(restProducerService).build());
+
         envVarDefaults.add(
             new EnvVarBuilder()
                 .withName(TRACE_STATE)

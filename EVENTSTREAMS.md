@@ -9,11 +9,12 @@ This results in a single `Main` that runs two completely separate operators.
 
 ### Pre-reqs
 If building the whole project you will need:
-- all of the [pre-reqs listed for Strimzi](DEV_QUICK_START_MACOS.md#) or for [non-Mac users](DEV_QUICK_START.md#pre-requisites)
+- all of the [pre-reqs listed for Strimzi](DEV_QUICK_START_MACOS.md#preparing-your-mac-for-work) or for [non-Mac users](DEV_QUICK_START.md#pre-requisites)
 - yq v2.4.1 [source repo](https://github.com/mikefarah/yq)
 - jq [source repo](https://stedolan.github.io/jq/)
 - operator-sdk [source repo](https://github.com/operator-framework/operator-sdk/blob/master/doc/user/install-operator-sdk.md)
 - python v3
+- gsed
 ```
 brew install yq jq operator-sdk python3
 ```
@@ -48,6 +49,7 @@ This will generate a docker image for EventStreams.
 This will also regenerate the EventStreams CustomResourceDefinition into `install/ibm-eventstreams-operator`
 
 ## Deploy
+If deploying for the first time from scratch, be aware that the following needs to be in a project called 'myproject'.
 
 To deploy the EventStreams operator into your Kubernetes Environment with a `common-services` installed
 ```
@@ -57,7 +59,7 @@ oc apply -f install/ibm-eventstreams-operator/
 Finally you can create an instance of the EventStreams Custom resource.
 
 ```
-kubectl apply -f examples/evenstreams/eventstreams-quickstart.yaml
+oc apply -f examples/eventstreams/eventstreams-quickstart.yaml
 ```
 
 ### Watching multiple namespaces
@@ -176,10 +178,10 @@ cp terraform.tfvars.example terraform.tfvars
     * `fyre_inf_vm_nine_dot_ip` - the IP address of your cluster that starts with 9 (IP 1 Column). Click on your cluster to see it.
     * `repo_token` - your Artifactory API token
     * `repo_user` - your Artifactory username (your w3 email)
-5. terraform init
+5. ```terraform init```
     * If you do not have terraform installed:
         * https://www.terraform.io/downloads.html
-6. terraform apply
+6. ```terraform apply```
     * When asked "Do you want to perform these actions?", enter `yes`.
 
 _Note_: If you're going to re-run to a different cluster without doing a new clone be sure to run `rm -rf terraform.tfstate*` when in `tf_openshift_4_tools/fyre/ceph_and_inception_install` before running your next `terraform apply`
@@ -192,6 +194,7 @@ oc patch configs.imageregistry.operator.openshift.io/cluster --patch '{"spec":{"
 _(This can take about 5-10 minutes, cluster can become inaccessible while this happens)_
 
 Copy the output of `oc registry login --skip-check` into your docker insecure registries (`Preferences > Daemon > Insecure Registries`)
+Note: If you have a newer version of docker installed, this will need to be added to `Preferences > Docker Engine` instead.
 
 ### Build operator registry with our operator bundle, push to OpenShift registry
 Run `make build_csv deploy  -C deploy` this will build and verify the OLM bundle, build a catalog source and push it to your OpenShift
