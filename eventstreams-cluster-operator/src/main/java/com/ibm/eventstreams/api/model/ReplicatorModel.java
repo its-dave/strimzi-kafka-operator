@@ -60,7 +60,7 @@ public class ReplicatorModel extends AbstractModel {
     public static final String APPLICATION_NAME = "geo-replicator";
     public static final String REPLICATOR_APPLICATION_NAME = "kafka-mirror-maker-2";
     public static final int REPLICATOR_PORT = 8083;
-    public static final String REPLICATOR_CLUSTER_NAME = "replicator-cluster";
+    public static final String REPLICATOR_CLUSTER_NAME = "georep-cluster";
     protected static final String CONFIG_STORAGE_TOPIC_NAME = "__eventstreams_georeplicator_configs";
     protected static final String OFFSET_STORAGE_TOPIC_NAME = "__eventstreams_georeplicator_offsets";
     protected static final String STATUS_STORAGE_TOPIC_NAME = "__eventstreams_georeplicator_status";
