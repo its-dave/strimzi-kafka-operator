@@ -927,8 +927,8 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 model.setCertAndKey(endpoint.getName(), providedCertAndKey.get());
                 log.debug("Finished Updating Cert and Key in Model for {}, secret needs to be generated", model.getComponentName());
                 return log.traceExit(true);
-            } else if (!certSecret.isPresent() || certificateManager.shouldGenerateOrRenewCertificate(certSecret.get(), endpoint.getName(), dateSupplier, service, hosts)) {
-                CertAndKey certAndKey = certificateManager.generateCertificateAndKey(service, hosts);
+            } else if (!certSecret.isPresent() || certificateManager.shouldGenerateOrRenewCertificate(certSecret.get(), endpoint.getName(), dateSupplier, service, hosts, model.getComponentName())) {
+                CertAndKey certAndKey = certificateManager.generateCertificateAndKey(service, hosts, model.getComponentName());
                 model.setCertAndKey(endpoint.getName(), certAndKey);
                 log.debug("Finished Updating Cert and Key in Model for {}, secret needs to be regenerated", model.getComponentName());
                 return log.traceExit(true);

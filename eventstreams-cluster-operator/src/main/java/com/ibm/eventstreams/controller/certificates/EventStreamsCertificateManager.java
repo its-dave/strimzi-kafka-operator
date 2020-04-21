@@ -58,6 +58,8 @@ public class EventStreamsCertificateManager {
     private static final Logger log = LogManager.getLogger(EventStreamsCertificateManager.class.getName());
     private static final String ORGANISATION_NAME = "eventstreams.ibm.com";
 
+    public static final int MAX_CHARS_IN_COMMON_NAME = 64;
+
     private SecretOperator secretOperator;
     private String namespace;
     private String kafkaInstanceName;
@@ -68,10 +70,10 @@ public class EventStreamsCertificateManager {
         this.kafkaInstanceName = kafkaInstanceName;
     }
 
-    public CertAndKey generateCertificateAndKey(Service service, List<String> additionalHosts) throws EventStreamsCertificateException {
+    public CertAndKey generateCertificateAndKey(Service service, List<String> additionalHosts, String componentName) throws EventStreamsCertificateException {
         try {
             OpenSslCertManager certManager = new OpenSslCertManager();
-            Subject subject = createSubject(service, additionalHosts);
+            Subject subject = createSubject(service, additionalHosts, componentName);
             File keyFile = File.createTempFile("tls", "temp-key");
             File csrFile = File.createTempFile("tls", "temp-csr");
             File certFile = File.createTempFile("tls", "temp-cert");
@@ -123,10 +125,10 @@ public class EventStreamsCertificateManager {
         }
     }
 
-    public Subject createSubject(Service service, List<String> additionalHosts) {
+    public Subject createSubject(Service service, List<String> additionalHosts, String componentName) {
         Subject subject = new Subject();
         Map<String, String> sbjAltNames = new HashMap<>();
-        String commonName = getCommonName(service, additionalHosts);
+        String commonName = getCommonName(service, additionalHosts, componentName);
         int dnsNumber = 1;
 
         if (commonName != null) {
@@ -157,17 +159,21 @@ public class EventStreamsCertificateManager {
         return dnsNumber + 1;
     }
 
-    private String getCommonName(Service service, List<String> additionalHosts) {
+    private String getCommonName(Service service, List<String> additionalHosts, String componentName) {
         if (additionalHosts.size() > 0) {
-            return getRouteCommonName(additionalHosts.get(0));
+            return getRouteCommonName(additionalHosts.get(0), componentName);
         }
 
-        return service == null ? null : service.getMetadata().getName();
+        return service == null ? null : truncateCommonName(service.getMetadata().getName());
     }
 
-    private String getRouteCommonName(String routeName) {
-        String[] routeNameParts = routeName.split("apps");
-        return routeNameParts.length > 1 ? "*.apps" + routeNameParts[1] : routeName;
+    public String getRouteCommonName(String routeName, String componentName) {
+        String[] routeNameParts = routeName.split(componentName);
+        return routeNameParts.length > 1 ? truncateCommonName("*." + componentName + routeNameParts[1]) : truncateCommonName(routeName);
+    }
+
+    public String truncateCommonName(String name) {
+        return name.length() <= MAX_CHARS_IN_COMMON_NAME ? name : "*" + name.substring(name.length() - MAX_CHARS_IN_COMMON_NAME + 1);
     }
 
     public static PrivateKey loadKey(byte[] keyData) throws EventStreamsCertificateException {
@@ -196,7 +202,7 @@ public class EventStreamsCertificateManager {
         }
     }
 
-    public boolean shouldGenerateOrRenewCertificate(Secret certSecret, String certName, Supplier<Date> dateSupplier, Service service, List<String> additionalHosts) {
+    public boolean shouldGenerateOrRenewCertificate(Secret certSecret, String certName, Supplier<Date> dateSupplier, Service service, List<String> additionalHosts, String componentName) {
         byte[] certData = getBase64DecodedSecretData(certSecret, CertificateSecretModel.formatCertID(certName));
         byte[] keyData = getBase64DecodedSecretData(certSecret, CertificateSecretModel.formatKeyID(certName));
 
@@ -206,7 +212,7 @@ public class EventStreamsCertificateManager {
 
         CertAndKey certAndKey = new CertAndKey(keyData, certData);
         try {
-            testCertAndKey(certAndKey, dateSupplier, service, additionalHosts);
+            testCertAndKey(certAndKey, dateSupplier, service, additionalHosts, componentName);
         } catch (EventStreamsCertificateException e) {
             log.debug(e);
             return true;
@@ -214,13 +220,13 @@ public class EventStreamsCertificateManager {
         return false;
     }
 
-    private void testCertAndKey(CertAndKey certAndKey, Supplier<Date> dateSupplier, Service service, List<String> additionalHosts) throws EventStreamsCertificateException {
+    private void testCertAndKey(CertAndKey certAndKey, Supplier<Date> dateSupplier, Service service, List<String> additionalHosts, String componentName) throws EventStreamsCertificateException {
         try {
             X509Certificate cert = EventStreamsCertificateManager.loadCert(certAndKey.cert());
             EventStreamsCertificateManager.loadKey(certAndKey.key());
             cert.checkValidity(dateSupplier.get());
             cert.verify(getClusterCa().getPublicKey());
-            checkSans(cert, createSubject(service, additionalHosts));
+            checkSans(cert, createSubject(service, additionalHosts, componentName));
         } catch (SignatureException | NoSuchProviderException | InvalidKeyException | CertificateException | NoSuchAlgorithmException e) {
             throw new EventStreamsCertificateException(e);
         }

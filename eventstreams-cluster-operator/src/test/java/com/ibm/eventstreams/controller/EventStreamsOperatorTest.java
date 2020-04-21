@@ -1070,13 +1070,14 @@ public class EventStreamsOperatorTest {
                 CertAndKey certAndKey = reconciliationState.certificateManager.certificateAndKey(secret, endpointModel.getCertSecretCertID(endpoint.getName()), endpointModel.getCertSecretKeyID(endpoint.getName()));
 
                 X509Certificate certificate = ControllerUtils.checkCertificate(reconciliationState.certificateManager, certAndKey);
-                ControllerUtils.checkSans(context, reconciliationState.certificateManager, certificate, null, additionalHosts.get(routeName));
+                ControllerUtils.checkSans(context, reconciliationState.certificateManager, certificate, null, additionalHosts.get(routeName), componentName);
                 async.flag();
             })));
     }
 
     @Test
     public void testSingleNonRouteEndpointCertificateSecretContentIsValid(VertxTestContext context) {
+        String componentName = "endpoint-component";
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(false, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
         Checkpoint async = context.checkpoint(1);
@@ -1095,7 +1096,7 @@ public class EventStreamsOperatorTest {
             .withEndpoints(internal)
             .build();
 
-        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, spec, "endpoint-component", "endpoint-component-label");
+        ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, spec, componentName, "endpoint-component-label");
 
         reconciliationState.reconcileCerts(endpointModel, Collections.emptyMap(), Date::new).setHandler(ar -> {
             assertThat("Number of secrets do not match " + mockClient.secrets().list().getItems(), mockClient.secrets().list().getItems().size(), is(4));
@@ -1109,7 +1110,7 @@ public class EventStreamsOperatorTest {
             assertThat("There is no cert file data entry for tls P2P port", secret.getData().get(endpointModel.getCertSecretCertID(Endpoint.DEFAULT_P2P_TLS_NAME)), is(nullValue()));
 
             X509Certificate certificate = ControllerUtils.checkCertificate(reconciliationState.certificateManager, certAndKey);
-            ControllerUtils.checkSans(context, reconciliationState.certificateManager, certificate, endpointModel.getSecurityService(internal.getType()), "");
+            ControllerUtils.checkSans(context, reconciliationState.certificateManager, certificate, endpointModel.getSecurityService(internal.getType()), "", componentName);
             async.flag();
         });
     }
@@ -1563,6 +1564,8 @@ public class EventStreamsOperatorTest {
                 List<Secret> secrets = mockClient.secrets().withLabel(Labels.KUBERNETES_INSTANCE_LABEL, CLUSTER_NAME).list().getItems();
                 secrets.forEach(secret -> {
                     if (secret.getMetadata().getName().endsWith("-cert")) {
+                        String componentName = secret.getMetadata().getName().split("ibm-es-")[0];
+                        componentName = componentName.replace("-secret", "");
                         Optional<Service> serviceOpt = mockClient.services().list().getItems()
                                 .stream()
                                 .filter(service -> service.getMetadata().getName().contains("external"))
@@ -1581,7 +1584,7 @@ public class EventStreamsOperatorTest {
                         String keyID = secret.getData().keySet().stream().filter(string -> string.endsWith(CertificateSecretModel.formatKeyID(Endpoint.DEFAULT_EXTERNAL_NAME))).findAny().get();
                         CertAndKey certAndKey = state.certificateManager.certificateAndKey(secret, certID, keyID);
                         X509Certificate certificate = ControllerUtils.checkCertificate(state.certificateManager, certAndKey);
-                        ControllerUtils.checkSans(context, state.certificateManager, certificate, null, routeOpt.get().getSpec().getHost());
+                        ControllerUtils.checkSans(context, state.certificateManager, certificate, null, routeOpt.get().getSpec().getHost(), componentName);
                     }
                 });
                 async.flag();
@@ -2081,8 +2084,8 @@ public class EventStreamsOperatorTest {
 
         EventStreams instance = new EventStreamsBuilder(minimalInstance)
                 .editSpec()
-                    .withNewAdminApi().
-                            withReplicas(1)
+                    .withNewAdminApi()
+                        .withReplicas(1)
                     .endAdminApi()
                     .withNewAdminUI()
                         .withReplicas(1)

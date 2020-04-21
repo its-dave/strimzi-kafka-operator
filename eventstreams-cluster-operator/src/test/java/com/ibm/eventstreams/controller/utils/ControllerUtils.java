@@ -44,7 +44,7 @@ public class ControllerUtils {
         }
     }
 
-    public static void checkSans(VertxTestContext context, EventStreamsCertificateManager certificateManager, X509Certificate certificate, Service service, String additionalHost) {
+    public static void checkSans(VertxTestContext context, EventStreamsCertificateManager certificateManager, X509Certificate certificate, Service service, String additionalHost, String componentName) {
         context.verify(() -> {
             List<String> sans = certificate.getSubjectAlternativeNames().stream()
                     .map(l -> l.get(1).toString())
@@ -54,7 +54,7 @@ public class ControllerUtils {
                         .orElse(true) ?
                     Collections.emptyList() :
                     Collections.singletonList(additionalHost);
-            Subject subject = certificateManager.createSubject(service, additionalHosts);
+            Subject subject = certificateManager.createSubject(service, additionalHosts, componentName);
             assertThat("The certificate has the expected number of SANs\nSubject : " + subject.subjectAltNames().toString() + "\nexpected : " + sans.toString(), subject.subjectAltNames(), aMapWithSize(sans.size()));
             // Remove all subjects from SANs list, if all expected are removed then SANs list should be empty
             subject.subjectAltNames().values().forEach(sans::remove);
