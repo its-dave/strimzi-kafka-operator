@@ -235,7 +235,7 @@ public class CollectorModel extends AbstractModel {
         List<NetworkPolicyIngressRule> ingressRules = new ArrayList<>(1);
         ingressRules.add(new NetworkPolicyIngressRule());
 
-        return createNetworkPolicy(createLabelSelector(COMPONENT_NAME), ingressRules, null);
+        return createNetworkPolicy(createLabelSelector(APPLICATION_NAME), ingressRules, null);
     }
 
     /**

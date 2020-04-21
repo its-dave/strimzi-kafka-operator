@@ -219,7 +219,7 @@ public class RestProducerModelTest {
 
         assertThat(restProducerNetworkPolicy.getSpec().getPodSelector().getMatchLabels(), allOf(
                 aMapWithSize(2),
-                hasEntry(Labels.KUBERNETES_NAME_LABEL, RestProducerModel.COMPONENT_NAME),
+                hasEntry(Labels.KUBERNETES_NAME_LABEL, RestProducerModel.APPLICATION_NAME),
                 hasEntry(Labels.KUBERNETES_INSTANCE_LABEL, instanceName)
                 ));
     }

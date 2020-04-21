@@ -149,7 +149,7 @@ public class SchemaRegistryModelTest {
 
         assertThat(schemaRegistryNetworkPolicy.getSpec().getPodSelector().getMatchLabels(), allOf(
                 aMapWithSize(2),
-                hasEntry(Labels.KUBERNETES_NAME_LABEL, SchemaRegistryModel.COMPONENT_NAME),
+                hasEntry(Labels.KUBERNETES_NAME_LABEL, SchemaRegistryModel.APPLICATION_NAME),
                 hasEntry(Labels.KUBERNETES_INSTANCE_LABEL, instanceName)
             ));
 

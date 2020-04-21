@@ -277,7 +277,7 @@ public class AdminUIModelTest {
 
         assertThat(userInterfaceNetworkPolicy.getSpec().getPodSelector().getMatchLabels(), allOf(
                 aMapWithSize(2),
-                hasEntry(Labels.KUBERNETES_NAME_LABEL, AdminUIModel.COMPONENT_NAME),
+                hasEntry(Labels.KUBERNETES_NAME_LABEL, AdminUIModel.APPLICATION_NAME),
                 hasEntry(Labels.KUBERNETES_INSTANCE_LABEL, instanceName)));
 
         assertThat(userInterfaceNetworkPolicy.getSpec().getIngress().size(), is(1));

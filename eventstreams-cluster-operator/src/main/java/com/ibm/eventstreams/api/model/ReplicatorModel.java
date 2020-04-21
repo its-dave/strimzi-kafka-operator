@@ -236,7 +236,7 @@ public class ReplicatorModel extends AbstractModel {
         policyBuilder
             .addNewFrom()
                 .withNewPodSelector()
-                    .addToMatchLabels(Labels.EMPTY.withKubernetesName(AdminApiModel.COMPONENT_NAME).toMap())
+                    .addToMatchLabels(Labels.EMPTY.withKubernetesName(AdminApiModel.APPLICATION_NAME).toMap())
                 .endPodSelector()
             .endFrom()
             // Strimzi operator needs to Connect

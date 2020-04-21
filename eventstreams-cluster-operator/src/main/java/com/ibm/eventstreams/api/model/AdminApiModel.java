@@ -460,7 +460,7 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
 
         endpoints.forEach(endpoint -> ingressRules.add(createIngressRule(endpoint.getPort(), new HashMap<>())));
 
-        return createNetworkPolicy(createLabelSelector(COMPONENT_NAME), ingressRules, null);
+        return createNetworkPolicy(createLabelSelector(APPLICATION_NAME), ingressRules, null);
     }
 
     private void setTraceString(Logging logging) {

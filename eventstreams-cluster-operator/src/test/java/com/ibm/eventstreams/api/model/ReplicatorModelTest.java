@@ -196,7 +196,7 @@ public class ReplicatorModelTest {
         assertThat(networkPolicy.getSpec().getIngress().get(0).getFrom().size(), is(2));
         assertThat(networkPolicy.getSpec().getIngress().get(0).getFrom().get(0).getPodSelector().getMatchLabels().size(), is(1));
 
-        assertThat(networkPolicy.getSpec().getIngress().get(0).getFrom().get(0).getPodSelector().getMatchLabels(), hasEntry(Labels.KUBERNETES_NAME_LABEL, AdminApiModel.COMPONENT_NAME));
+        assertThat(networkPolicy.getSpec().getIngress().get(0).getFrom().get(0).getPodSelector().getMatchLabels(), hasEntry(Labels.KUBERNETES_NAME_LABEL, AdminApiModel.APPLICATION_NAME));
         assertThat(networkPolicy.getSpec().getIngress().get(0).getFrom().get(1).getPodSelector().getMatchLabels().size(), is(1));
 
         assertThat(networkPolicy.getSpec().getIngress().get(0).getFrom().get(1).getPodSelector().getMatchLabels().get(Labels.STRIMZI_KIND_LABEL), is(expectedClusterOperatorName));
