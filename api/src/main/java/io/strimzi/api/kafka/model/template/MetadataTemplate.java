@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.strimzi.api.kafka.model.Constants;
 import io.strimzi.api.kafka.model.UnknownPropertyPreserving;
 import io.strimzi.crdgenerator.annotations.Description;
+import io.strimzi.crdgenerator.annotations.PreserveUnknownFields;
 import io.sundr.builder.annotations.Buildable;
 import lombok.EqualsAndHashCode;
 
@@ -37,6 +38,7 @@ public class MetadataTemplate implements Serializable, UnknownPropertyPreserving
     @Description("Labels which should be added to the resource template. " +
             "Can be applied to different resources such as `StatefulSets`, `Deployments`, `Pods`, and `Services`.")
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    @PreserveUnknownFields(true)
     public Map<String, String> getLabels() {
         return labels;
     }
@@ -48,6 +50,7 @@ public class MetadataTemplate implements Serializable, UnknownPropertyPreserving
     @Description("Annotations which should be added to the resource template. " +
             "Can be applied to different resources such as `StatefulSets`, `Deployments`, `Pods`, and `Services`.")
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    @PreserveUnknownFields(true)
     public Map<String, String> getAnnotations() {
         return annotations;
     }

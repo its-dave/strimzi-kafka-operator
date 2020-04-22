@@ -7,6 +7,7 @@ package io.strimzi.api.kafka.model;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.strimzi.crdgenerator.annotations.Description;
+import io.strimzi.crdgenerator.annotations.PreserveUnknownFields;
 import io.sundr.builder.annotations.Buildable;
 
 import java.util.Map;
@@ -35,6 +36,7 @@ public class InlineLogging extends Logging {
     }
 
     @Description("A Map from logger name to logger level.")
+    @PreserveUnknownFields(true)
     public Map<String, String> getLoggers() {
         return loggers;
     }
