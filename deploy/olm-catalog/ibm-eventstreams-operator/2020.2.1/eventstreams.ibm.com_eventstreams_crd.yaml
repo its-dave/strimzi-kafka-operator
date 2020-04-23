@@ -8955,6 +8955,7 @@ spec:
             routes:
               type: object
               description: OpenShift Routes created as part of the Event Streams cluster.
+              x-kubernetes-preserve-unknown-fields: true
             customImages:
               type: boolean
               description: Identifies whether any of the Docker images have been modified
