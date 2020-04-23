@@ -122,15 +122,18 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
      * @return A list of endpoints
      */
     private List<Endpoint> getEndpoints(EventStreams instance, SecurityComponentSpec spec, List<String> podToPodAuth) {
-        List<Endpoint> endpoints = Optional.ofNullable(spec)
+        List<Endpoint> publicEndpoints = Optional.ofNullable(spec)
             .map(SecurityComponentSpec::getEndpoints)
-            .map(endpointSpecs -> endpointSpecs.stream().map(Endpoint.createEndpointFromSpec()).collect(Collectors.toList()))
-            .orElse(new ArrayList<>(Collections.singletonList(Endpoint.createDefaultExternalEndpoint(authEnabled(instance)))));
+            .map(endpointSpecs -> endpointSpecs.stream().map(Endpoint::createEndpointFromSpec).collect(Collectors.toList()))
+            .orElse(createDefaultEndpoints(authEnabled(instance)));
 
+        List<Endpoint> endpoints = new ArrayList<>(publicEndpoints);
         endpoints.add(Endpoint.createP2PEndpoint(instance, podToPodAuth));
 
         return endpoints;
     }
+
+    protected abstract List<Endpoint> createDefaultEndpoints(boolean authEnabled);
 
     /**
      * Creates a single service per type of Service with all access ports of the same Service type configured
@@ -160,7 +163,7 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
 
     public List<String> getP2PAuthenticationMechanisms(EventStreams instance) {
         return Collections.emptyList();
-    };
+    }
 
     /**
      * Get the specific Endpoint suffix based on the EndpointServiceType. Note that are currently only
@@ -215,7 +218,6 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
      * implementing Routes/NodePort/Regular services so defaults to returning an internal service when
      * LoadBalancer and Ingress are specified.
      * @param type the EndpointServiceType of service wanted
-     * @return the services that matches the EndpointService type
      */
     private void updateServiceValueFromType(EndpointServiceType type, Service value) {
         value = value.getSpec().getPorts().size() > 0 ? value : null;

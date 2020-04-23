@@ -13,6 +13,7 @@
 
 package com.ibm.eventstreams.api.model.utils;
 
+import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.EndpointServiceType;
 import com.ibm.eventstreams.api.TlsVersion;
 import com.ibm.eventstreams.api.model.AbstractSecureEndpointsModel;
@@ -35,6 +36,7 @@ import io.strimzi.operator.cluster.model.AbstractModel;
 import io.strimzi.operator.cluster.model.Ca;
 import io.strimzi.operator.common.model.Labels;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -199,6 +201,11 @@ public class ModelUtils {
             createService(EndpointServiceType.INTERNAL);
             createService(EndpointServiceType.ROUTE);
             createService(EndpointServiceType.NODE_PORT);
+        }
+
+        @Override
+        protected List<Endpoint> createDefaultEndpoints(boolean authEnabled) {
+            return Collections.singletonList(Endpoint.createDefaultExternalEndpoint(authEnabled));
         }
     }
 

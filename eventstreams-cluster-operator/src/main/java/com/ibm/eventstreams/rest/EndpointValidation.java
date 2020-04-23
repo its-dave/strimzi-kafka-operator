@@ -79,6 +79,7 @@ public class EndpointValidation extends AbstractValidation {
             checkUniqueNames(outcome, REST_PRODUCER_SPEC_NAME, restProdEndpoints.get());
             checkUniquePorts(outcome, REST_PRODUCER_SPEC_NAME, restProdEndpoints.get());
             checkValidTypes(outcome, REST_PRODUCER_SPEC_NAME, restProdEndpoints.get());
+            checkNoIAMBearer(outcome, REST_PRODUCER_SPEC_NAME, restProdEndpoints.get());
         }
         if (schemaRegistryEndpoints.isPresent()) {
             checkNoEndpointsOnReservedPorts(outcome, SCHEMA_REGISTRY_SPEC_NAME, schemaRegistryEndpoints.get());
@@ -111,9 +112,7 @@ public class EndpointValidation extends AbstractValidation {
 
     private static boolean hasEndpointsOnReservedPorts(List<EndpointSpec> endpoints) {
         return endpoints.stream()
-            .filter(endpoint -> endpoint.getAccessPort().intValue() == Endpoint.DEFAULT_P2P_PLAIN_PORT || endpoint.getAccessPort().intValue() == Endpoint.DEFAULT_P2P_TLS_PORT)
-            .findAny()
-            .isPresent();
+            .anyMatch(endpoint -> endpoint.getAccessPort() == Endpoint.DEFAULT_P2P_PLAIN_PORT || endpoint.getAccessPort() == Endpoint.DEFAULT_P2P_TLS_PORT);
     }
 
     private static ValidationResponse reservedEndpointResponse(String spec) {
@@ -131,9 +130,7 @@ public class EndpointValidation extends AbstractValidation {
 
     private static boolean hasNameTooLong(List<EndpointSpec> endpoints) {
         return endpoints.stream()
-            .filter(endpoint -> endpoint.getName().length() > ENDPOINT_NAME_MAX_LENGTH)
-            .findAny()
-            .isPresent();
+            .anyMatch(endpoint -> endpoint.getName().length() > ENDPOINT_NAME_MAX_LENGTH);
     }
 
     private static ValidationResponse nameTooLongResponse(String spec) {
@@ -183,21 +180,35 @@ public class EndpointValidation extends AbstractValidation {
             outcome.setResponse(invalidTypeResponse(specName));
         }
     }
+
     private static boolean hasInvalidTypes(List<EndpointSpec> endpoints) {
         return endpoints.stream()
-            .filter(endpoint -> {
-                return endpoint.getType() != null &&
-                    (endpoint.getType().equals(EndpointServiceType.NODE_PORT) ||
-                    endpoint.getType().equals(EndpointServiceType.INGRESS) ||
-                    endpoint.getType().equals(EndpointServiceType.LOAD_BALANCER));
-            })
-            .findAny()
-            .isPresent();
+            .filter(endpoint -> endpoint.getType() != null)
+            .anyMatch(endpoint -> endpoint.getType().equals(EndpointServiceType.NODE_PORT) ||
+                endpoint.getType().equals(EndpointServiceType.INGRESS) ||
+                endpoint.getType().equals(EndpointServiceType.LOAD_BALANCER));
     }
 
     private static ValidationResponse invalidTypeResponse(String spec) {
         return ValidationResponsePayload.createFailureResponse(
             spec + " endpoint configuration has endpoints with invalid types. Acceptable types are 'Route' and 'Internal'",
+            FAILURE_REASON);
+    }
+
+    private static void checkNoIAMBearer(ValidationResponsePayload outcome, String specName, List<EndpointSpec> endpoints) {
+        if (hasIAMBearerAuth(endpoints)) {
+            outcome.setResponse(invalidIAMBearerEndpointResponse(specName));
+        }
+    }
+
+    private static boolean hasIAMBearerAuth(List<EndpointSpec> endpoints) {
+        return endpoints.stream()
+            .anyMatch(endpoint -> endpoint.getAuthenticationMechanisms().contains(Endpoint.IAM_BEARER_KEY));
+    }
+
+    private static ValidationResponse invalidIAMBearerEndpointResponse(String spec) {
+        return ValidationResponsePayload.createFailureResponse(
+            String.format("%s endpoint configuration contains auth mechanism '%s', which is prohibited for the Rest Producer", spec, Endpoint.IAM_BEARER_KEY),
             FAILURE_REASON);
     }
 }

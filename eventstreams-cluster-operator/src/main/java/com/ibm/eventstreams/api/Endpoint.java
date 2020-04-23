@@ -22,19 +22,21 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
 
 public class Endpoint {
     private static final boolean DEFAULT_TLS_SETTING = false;
     private static final TlsVersion DEFAULT_P2P_TLS_VERSION = TlsVersion.NONE;
     private static final boolean DEFAULT_EXTERNAL_ENDPOINT_TLS_SETTING = true;
-    private static final TlsVersion DEFAULT_TLS_VERSION = TlsVersion.TLS_V1_2;
+    public static final TlsVersion DEFAULT_TLS_VERSION = TlsVersion.TLS_V1_2;
 
     public static final String DEFAULT_EXTERNAL_NAME = "external";
-    private static final int DEFAULT_EXTERNAL_TLS_PORT = 9443;
-    private static final EndpointServiceType DEFAULT_EXTERNAL_SERVICE_TYPE = EndpointServiceType.ROUTE;
+    public static final int DEFAULT_EXTERNAL_TLS_PORT = 9443;
+    public static final EndpointServiceType DEFAULT_EXTERNAL_SERVICE_TYPE = EndpointServiceType.ROUTE;
     private static final int DEFAULT_EXTERNAL_PLAIN_PORT = 9080;
-    private static final List<String> DEFAULT_EXTERNAL_AUTHENTICATION_MECHANISM = Arrays.asList("IAM-BEARER", "SCRAM-SHA-512");
+    public static final String IAM_BEARER_KEY = "IAM-BEARER";
+    public static final String SCRAM_SHA_512_KEY = "SCRAM-SHA-512";
+    public static final String MAC_KEY = "MAC";
+    private static final List<String> DEFAULT_EXTERNAL_AUTHENTICATION_MECHANISM = Arrays.asList(IAM_BEARER_KEY, SCRAM_SHA_512_KEY);
 
     public static final String DEFAULT_P2P_TLS_NAME = "p2ptls";
     public static final String DEFAULT_P2P_PLAIN_NAME = "pod2pod";
@@ -100,8 +102,8 @@ public class Endpoint {
      * following fields, then defaults have been created for them.
      * @return an endpoint object representing what the user has configured this endpoint to look like.
      */
-    public static Function<EndpointSpec, Endpoint> createEndpointFromSpec() {
-        return spec -> new Endpoint(spec.getName(),
+    public static Endpoint createEndpointFromSpec(EndpointSpec spec) {
+        return new Endpoint(spec.getName(),
                                     getPortOrDefault(spec),
                                     getTlsVersionOrDefault(spec),
                                     getTypeOrDefault(spec),

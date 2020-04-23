@@ -667,10 +667,14 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
     }
 
     @Override
-    public List<String> getP2PAuthenticationMechanisms(EventStreams instance) {
-        return authEnabled(instance) ? Arrays.asList("MAC", "IAM-BEARER") : Collections.emptyList();
+    protected List<Endpoint> createDefaultEndpoints(boolean authEnabled) {
+        return new ArrayList<>(Collections.singletonList(Endpoint.createDefaultExternalEndpoint(authEnabled)));
     }
 
+    @Override
+    public List<String> getP2PAuthenticationMechanisms(EventStreams instance) {
+        return authEnabled(instance) ? Arrays.asList(Endpoint.MAC_KEY, Endpoint.IAM_BEARER_KEY) : Collections.emptyList();
+    }
 
     /**
      * @return Deployment return the deployment with an empty generation id

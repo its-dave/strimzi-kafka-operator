@@ -268,7 +268,7 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
         String zookeeperEndpoint = EventStreamsKafkaModel.getKafkaInstanceName(getInstanceName()) + "-" + EventStreamsKafkaModel.ZOOKEEPER_COMPONENT_NAME + "-client." + getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.ZOOKEEPER_PORT;
         String kafkaConnectRestEndpoint = "http://" + getInstanceName() + "-mirrormaker2-api." + getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + ReplicatorModel.REPLICATOR_PORT;
 
-        ArrayList envVars = new ArrayList<>(Arrays.asList(
+        ArrayList<EnvVar> envVars = new ArrayList<>(Arrays.asList(
             new EnvVarBuilder().withName("RELEASE").withValue(getInstanceName()).build(),
             new EnvVarBuilder().withName("LICENSE").withValue("accept").build(),
             new EnvVarBuilder().withName("NAMESPACE").withValue(getNamespace()).build(),
@@ -423,8 +423,13 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
     }
 
     @Override
+    protected List<Endpoint> createDefaultEndpoints(boolean authEnabled) {
+        return new ArrayList<>(Collections.singletonList(Endpoint.createDefaultExternalEndpoint(authEnabled)));
+    }
+
+    @Override
     public List<String> getP2PAuthenticationMechanisms(EventStreams instance) {
-        return authEnabled(instance) ? Collections.singletonList("IAM-BEARER") : Collections.emptyList();
+        return authEnabled(instance) ? Collections.singletonList(Endpoint.IAM_BEARER_KEY) : Collections.emptyList();
     }
 
     /**
@@ -466,7 +471,7 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
     private void setTraceString(Logging logging) {
         if (logging != null && InlineLogging.TYPE_INLINE.equals(logging.getType())) {
             Map<String, String> loggers = ((InlineLogging) logging).getLoggers();
-            List<String> loggersArray = new ArrayList();
+            List<String> loggersArray = new ArrayList<>();
             loggers.forEach((k, v) -> {
                 loggersArray.add(k + ":" + v);
             });

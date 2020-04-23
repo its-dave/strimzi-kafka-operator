@@ -44,6 +44,7 @@ import io.strimzi.api.kafka.model.template.PodTemplate;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,15 +57,9 @@ public class RestProducerModel extends AbstractSecureEndpointsModel {
     public static final int DEFAULT_REPLICAS = 1;
     private static final String DEFAULT_IBMCOM_IMAGE = "ibmcom/rest-producer:latest";
 
-    public static final String CLUSTER_CA_VOLUME_MOUNT_NAME = "cluster-ca";
-    public static final String CERTS_VOLUME_MOUNT_NAME = "certs";
     public static final String IBMCLOUD_CA_VOLUME_MOUNT_NAME = "ibmcloud";
-    public static final String CLIENT_CA_VOLUME_MOUNT_NAME = "client-ca";
 
     public static final String CERTIFICATE_PATH = "/certs";
-    public static final String KAFKA_USER_CERTIFICATE_PATH = CERTIFICATE_PATH + File.separator + "p2p";
-    public static final String CLUSTER_CERTIFICATE_PATH = CERTIFICATE_PATH + File.separator + "cluster";
-    public static final String CLIENT_CA_CERTIFICATE_PATH = CERTIFICATE_PATH + File.separator + "client";
     public static final String IBMCLOUD_CA_CERTIFICATE_PATH = CERTIFICATE_PATH + File.separator + "ibmcloud";
 
     private static final String CLIENT_ID_KEY = "CLIENT_ID";
@@ -345,4 +340,14 @@ public class RestProducerModel extends AbstractSecureEndpointsModel {
         return createNetworkPolicy(createLabelSelector(APPLICATION_NAME), ingressRules, null);
     }
 
+    @Override
+    protected List<Endpoint> createDefaultEndpoints(boolean authEnabled) {
+        return Collections.singletonList(new Endpoint(Endpoint.DEFAULT_EXTERNAL_NAME,
+            Endpoint.DEFAULT_EXTERNAL_TLS_PORT,
+            Endpoint.DEFAULT_TLS_VERSION,
+            Endpoint.DEFAULT_EXTERNAL_SERVICE_TYPE,
+            Endpoint.DEFAULT_EXTERNAL_NAME,
+            null,
+            authEnabled ? Collections.singletonList(Endpoint.SCRAM_SHA_512_KEY) : Collections.emptyList()));
+    }
 }

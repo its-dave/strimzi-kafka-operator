@@ -70,6 +70,11 @@ public class AbstractSecureEndpointsModelTest {
             setTlsVersion(TlsVersion.TLS_V1_2);
             setOwnerReference(instance);
         }
+
+        @Override
+        protected List<Endpoint> createDefaultEndpoints(boolean authEnabled) {
+            return Collections.singletonList(Endpoint.createDefaultExternalEndpoint(authEnabled));
+        }
     }
 
     private EndpointSpec basicEndpointSpec = new EndpointSpecBuilder()
