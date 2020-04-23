@@ -202,6 +202,77 @@ public class EndpointValidationTest extends RestApiTest {
     }
 
     @Test
+    public void testAdminApiEndpointsNotValidWithInvalidName(VertxTestContext context) {
+
+        EndpointSpec endpoint = new EndpointSpecBuilder()
+            .withName("Bad-EndpoInt")
+            .withAccessPort(8888)
+            .build();
+
+        EventStreams test = ModelUtils.createDefaultEventStreams("test-es")
+            .editOrNewSpec()
+            .withNewAdminApi()
+            .withEndpoints(endpoint)
+            .endAdminApi()
+            .endSpec()
+            .build();
+
+        Map<String, Object> request = new HashMap<String, Object>();
+        request.put("object", test);
+
+        Map<String, Object> payload = new HashMap<String, Object>();
+        payload.put("request", request);
+
+
+        Checkpoint async = context.checkpoint();
+        WebClient.wrap(httpClient).post(EventStreamsVerticle.API_SERVER_PORT, "localhost", "/admissionwebhook/rejectinvalidendpoints").sendJson(payload, context.succeeding(resp -> context.verify(() -> {
+
+            JsonObject responseObj = resp.bodyAsJsonObject();
+
+            assertThat(responseObj.getJsonObject("response").getBoolean("allowed"), is(false));
+            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("status"), is("Failure"));
+            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is(EndpointValidation.FAILURE_REASON));
+            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getInteger("code"), is(400));
+            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("message"),
+                is("adminApi endpoint configuration has endpoints with invalid names. Acceptable names are lowercase alphanumeric with dashes (^[a-z][-a-z0-9]*$)"));
+            async.flag();
+        })));
+    }
+
+    @Test
+    public void testAdminApiEndpointsWithValidWithName(VertxTestContext context) {
+
+        EndpointSpec endpoint = new EndpointSpecBuilder()
+            .withName("good-endpoint-1")
+            .withAccessPort(8888)
+            .build();
+
+        EventStreams test = ModelUtils.createDefaultEventStreams("test-es")
+            .editOrNewSpec()
+            .withNewAdminApi()
+            .withEndpoints(endpoint)
+            .endAdminApi()
+            .endSpec()
+            .build();
+
+        Map<String, Object> request = new HashMap<String, Object>();
+        request.put("object", test);
+
+        Map<String, Object> payload = new HashMap<String, Object>();
+        payload.put("request", request);
+
+
+        Checkpoint async = context.checkpoint();
+        WebClient.wrap(httpClient).post(EventStreamsVerticle.API_SERVER_PORT, "localhost", "/admissionwebhook/rejectinvalidendpoints").sendJson(payload, context.succeeding(resp -> context.verify(() -> {
+
+            JsonObject responseObj = resp.bodyAsJsonObject();
+
+            assertThat(responseObj.getJsonObject("response").getBoolean("allowed"), is(true));
+            async.flag();
+        })));
+    }
+
+    @Test
     public void testKafkaExternalListenerNotValidWithNodeport(VertxTestContext context) {
     
         EventStreams test = ModelUtils.createDefaultEventStreams("test-es")

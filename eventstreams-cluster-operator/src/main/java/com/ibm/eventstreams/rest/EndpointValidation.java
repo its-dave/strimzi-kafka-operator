@@ -16,6 +16,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.EndpointServiceType;
@@ -46,6 +47,8 @@ public class EndpointValidation extends AbstractValidation {
     public static final String SCHEMA_REGISTRY_SPEC_NAME = "schemaRegistry";
     public static final String FAILURE_REASON = "InvalidEndpoints";
     public static final int ENDPOINT_NAME_MAX_LENGTH = 16;
+    private static final String VALID_NAME_REGEX = "^[a-z][-a-z0-9]*$";
+    private static final Pattern VALID_NAME_PATTERN = Pattern.compile(VALID_NAME_REGEX);
 
     public static void rejectInvalidEndpoint(RoutingContext routingContext) {
 
@@ -68,14 +71,14 @@ public class EndpointValidation extends AbstractValidation {
         ValidationResponsePayload outcome = new ValidationResponsePayload(null);
         if (adminApiEndpoints.isPresent()) {
             checkNoEndpointsOnReservedPorts(outcome, ADMIN_API_SPEC_NAME, adminApiEndpoints.get());
-            checkNameTooLong(outcome, ADMIN_API_SPEC_NAME, adminApiEndpoints.get());
+            checkValidNames(outcome, ADMIN_API_SPEC_NAME, adminApiEndpoints.get());
             checkUniqueNames(outcome, ADMIN_API_SPEC_NAME, adminApiEndpoints.get());
             checkUniquePorts(outcome, ADMIN_API_SPEC_NAME, adminApiEndpoints.get());
             checkValidTypes(outcome, ADMIN_API_SPEC_NAME, adminApiEndpoints.get());
         }
         if (restProdEndpoints.isPresent()) {
             checkNoEndpointsOnReservedPorts(outcome, REST_PRODUCER_SPEC_NAME, restProdEndpoints.get());
-            checkNameTooLong(outcome, REST_PRODUCER_SPEC_NAME, restProdEndpoints.get());
+            checkValidNames(outcome, REST_PRODUCER_SPEC_NAME, restProdEndpoints.get());
             checkUniqueNames(outcome, REST_PRODUCER_SPEC_NAME, restProdEndpoints.get());
             checkUniquePorts(outcome, REST_PRODUCER_SPEC_NAME, restProdEndpoints.get());
             checkValidTypes(outcome, REST_PRODUCER_SPEC_NAME, restProdEndpoints.get());
@@ -83,7 +86,7 @@ public class EndpointValidation extends AbstractValidation {
         }
         if (schemaRegistryEndpoints.isPresent()) {
             checkNoEndpointsOnReservedPorts(outcome, SCHEMA_REGISTRY_SPEC_NAME, schemaRegistryEndpoints.get());
-            checkNameTooLong(outcome, SCHEMA_REGISTRY_SPEC_NAME, schemaRegistryEndpoints.get());
+            checkValidNames(outcome, SCHEMA_REGISTRY_SPEC_NAME, schemaRegistryEndpoints.get());
             checkUniqueNames(outcome, SCHEMA_REGISTRY_SPEC_NAME, schemaRegistryEndpoints.get());
             checkUniquePorts(outcome, SCHEMA_REGISTRY_SPEC_NAME, schemaRegistryEndpoints.get());
             checkValidTypes(outcome, SCHEMA_REGISTRY_SPEC_NAME, schemaRegistryEndpoints.get());
@@ -121,11 +124,23 @@ public class EndpointValidation extends AbstractValidation {
             FAILURE_REASON);
     }
 
-
-    private static void checkNameTooLong(ValidationResponsePayload outcome, String specName, List<EndpointSpec> endpoints) {
-        if (hasNameTooLong(endpoints)) {
+    private static void checkValidNames(ValidationResponsePayload outcome, String specName, List<EndpointSpec> endpoints) {
+        if (hasInvalidName(endpoints)) {
+            outcome.setResponse(invalidEndpointNameResponse(specName));
+        } else if (hasNameTooLong(endpoints)) {
             outcome.setResponse(nameTooLongResponse(specName));
         }
+    }
+
+    private static boolean hasInvalidName(List<EndpointSpec> endpoints) {
+        return endpoints.stream()
+            .anyMatch(endpoint -> !VALID_NAME_PATTERN.matcher(endpoint.getName()).matches());
+    }
+
+    private static ValidationResponse invalidEndpointNameResponse(String spec) {
+        return ValidationResponsePayload.createFailureResponse(
+            String.format("%s endpoint configuration has endpoints with invalid names. Acceptable names are lowercase alphanumeric with dashes (%s)", spec, VALID_NAME_REGEX),
+            FAILURE_REASON);
     }
 
     private static boolean hasNameTooLong(List<EndpointSpec> endpoints) {
