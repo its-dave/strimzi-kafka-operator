@@ -16,12 +16,10 @@ import com.ibm.eventstreams.api.model.AbstractModel;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.iam.api.spec.Client;
 import com.ibm.iam.api.spec.ClientBuilder;
-import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.strimzi.operator.common.model.Labels;
 
 public class ClientModel extends AbstractModel {
-    private static final String COMPONENT_NAME = "oidc";
     private static final String SECRET_POSTFIX = "oidc-secret";
     private Client client;
 
@@ -36,16 +34,14 @@ public class ClientModel extends AbstractModel {
         String redirectURIs = routeHost + "/oauth/callback";
         String postLogoutRedirectURIs = routeHost + "/console/logout";
 
-        ObjectMeta meta = new ObjectMetaBuilder()
-                .withName(getDefaultResourceName())
-                .withOwnerReferences(getEventStreamsOwnerReference())
-                .withNamespace(getNamespace())
-                .withLabels(labels.toMap())
-                .build();
-
         client = new ClientBuilder()
             .withApiVersion(Client.RESOURCE_GROUP + "/" + Client.V1)
-            .withMetadata(meta)
+            .withMetadata(new ObjectMetaBuilder()
+                    .withName(getDefaultResourceName())
+                    .withOwnerReferences(getEventStreamsOwnerReference())
+                    .withNamespace(getNamespace())
+                    .withLabels(labels.toMap())
+                    .build())
             .withNewSpec()
                .withClientId("")
                .withNewOidcLibertyClient()

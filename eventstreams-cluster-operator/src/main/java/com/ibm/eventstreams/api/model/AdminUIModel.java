@@ -196,9 +196,9 @@ public class AdminUIModel extends AbstractModel {
             networkPolicy = createNetworkPolicy();
         }
 
-        // The route is created regardless of whether a UI deployment is created,
-        //  because it is required for OIDC registration. (The OIDC client that
-        //  creates is required for other components, like admin-api).
+        // The route is created regardless of whether a UI deployment is created.
+        //  This is because it is required for OIDC registration.
+        //  (The OIDC client is required for other components, like admin-api).
 
         TLSConfig tlsConfig = new TLSConfigBuilder()
                 .withNewTermination("reencrypt")
@@ -226,8 +226,9 @@ public class AdminUIModel extends AbstractModel {
      * @return The service associated with the Admin UI pod
      */
     private Service createService() {
-        Service service = createService(UI_SERVICE_PORT);
-        service.getMetadata().setAnnotations(Collections.singletonMap("service.beta.openshift.io/serving-cert-secret-name", getServiceCertificateName()));
+        Service service = createService(getDefaultResourceName(),
+                Collections.singletonList(createServicePort(UI_SERVICE_PORT)),
+                Collections.singletonMap("service.beta.openshift.io/serving-cert-secret-name", getServiceCertificateName()));
         return service;
     }
 

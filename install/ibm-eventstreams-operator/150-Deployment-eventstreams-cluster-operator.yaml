@@ -24,6 +24,16 @@ spec:
       eventstreams.ibm.com/kind: cluster-operator
   template:
     metadata:
+      annotations:
+        cloudpakId: c8b82d189e7545f0892db9ef2731b90d
+        cloudpakName: IBM Cloud Pak for Integration
+        cloudpakVersion: 2019.4.1
+        productChargedContainers: ""
+        productCloudpakRatio: "1:1"
+        productID: ID
+        productMetric: VIRTUAL_PROCESSOR_CORE
+        productName: eventstreams
+        productVersion: version
       labels:
         name: eventstreams-cluster-operator
         eventstreams.ibm.com/kind: cluster-operator
