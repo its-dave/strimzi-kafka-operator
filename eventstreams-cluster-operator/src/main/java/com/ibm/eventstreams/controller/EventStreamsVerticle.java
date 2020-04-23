@@ -93,6 +93,7 @@ public class EventStreamsVerticle extends AbstractVerticle {
             EventStreamsResourceOperator esResourceOperator = new EventStreamsResourceOperator(vertx, client);
             Cp4iServicesBindingResourceOperator cp4iResourceOperator = new Cp4iServicesBindingResourceOperator(vertx, client, Cp4iServicesBinding.RESOURCE_KIND);
             EventStreamsReplicatorResourceOperator replicatorResourceOperator = new EventStreamsReplicatorResourceOperator(vertx, client, EventStreamsReplicator.RESOURCE_KIND);
+            KafkaUserOperator kafkaUserOperator = new KafkaUserOperator(vertx, client);
             EventStreamsOperator eventStreamsOperator = new EventStreamsOperator(
                     vertx,
                     client,
@@ -101,6 +102,7 @@ public class EventStreamsVerticle extends AbstractVerticle {
                     esResourceOperator,
                     cp4iResourceOperator,
                     replicatorResourceOperator,
+                    kafkaUserOperator,
                     imageConfig,
                     routeOperator,
                     metricsProvider,

@@ -63,9 +63,11 @@ import io.fabric8.openshift.api.model.Route;
 import io.fabric8.openshift.api.model.RouteSpec;
 import io.strimzi.api.kafka.Crds;
 import io.strimzi.api.kafka.model.Kafka;
+import io.strimzi.api.kafka.model.KafkaUser;
 import io.strimzi.api.kafka.model.status.Condition;
 import io.strimzi.api.kafka.model.status.ConditionBuilder;
 import io.strimzi.api.kafka.model.status.KafkaStatus;
+import io.strimzi.api.kafka.model.status.KafkaUserStatus;
 import io.strimzi.certs.CertAndKey;
 import io.strimzi.operator.PlatformFeaturesAvailability;
 import io.strimzi.operator.cluster.model.ModelUtils;
@@ -140,6 +142,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                                 EventStreamsResourceOperator esResourceOperator,
                                 Cp4iServicesBindingResourceOperator cp4iResourceOperator,
                                 EventStreamsReplicatorResourceOperator replicatorResourceOperator,
+                                KafkaUserOperator kafkaUserOperator,
                                 EventStreamsOperatorConfig.ImageLookup imageConfig,
                                 RouteOperator routeOperator,
                                 MetricsProvider metricsProvider,
@@ -150,11 +153,11 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             () -> kafkaStatusReadyTimeoutMs);
         log.info("Creating EventStreamsOperator");
         this.esResourceOperator = esResourceOperator;
+        this.kafkaUserOperator = kafkaUserOperator;
         this.cp4iResourceOperator = cp4iResourceOperator;
         this.replicatorResourceOperator = replicatorResourceOperator;
         this.client = client;
         this.pfa = pfa;
-        this.kafkaUserOperator = new KafkaUserOperator(vertx, client);
         this.deploymentOperator = new DeploymentOperator(vertx, client);
         this.serviceAccountOperator = new ServiceAccountOperator(vertx, client);
         this.roleBindingOperator = new RoleBindingOperator(vertx, client);
@@ -199,6 +202,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 .compose(state -> state.createKafkaNetworkPolicyExtension())
                 .compose(state -> state.createReplicatorUsers()) //needs to be before createReplicator and createAdminAPI
                 .compose(state -> state.createInternalKafkaUser())
+                .compose(state -> state.waitForKafkaUserStatus())
                 .compose(state -> state.createMessageAuthenticationSecret())
                 .compose(state -> state.createRestProducer(this::dateSupplier))
                 .compose(state -> state.createReplicatorSecret())
@@ -231,6 +235,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         final EventStreamsCertificateManager certificateManager;
         Map<String, String> icpClusterData = null;
         boolean isGeoReplicationEnabled = false;
+        String kafkaPrincipal;
 
         ReconciliationState(Reconciliation reconciliation, EventStreams instance, EventStreamsOperatorConfig.ImageLookup imageConfig) {
             log.traceEntry(() -> reconciliation, () -> instance, () -> imageConfig);
@@ -574,6 +579,37 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                     .map(this));
         }
 
+        Future<ReconciliationState> waitForKafkaUserStatus() {
+            log.traceEntry();
+            String internalKafkaUsername = InternalKafkaUserModel.getInternalKafkaUserName(instance.getMetadata().getName());
+
+            return log.traceExit(kafkaUserOperator.kafkaUserHasStoppedDeploying(namespace, internalKafkaUsername, defaultPollIntervalMs, kafkaStatusReadyTimeoutMs)
+                .compose(v -> {
+                    log.debug("Retrieve Kafka user instances in namespace: {}", namespace);
+                    Optional<KafkaUser> kafkaUser = kafkaUserOperator.getKafkaUser(namespace, internalKafkaUsername);
+                    if (kafkaUser.isPresent()) {
+                        log.debug("Found Kafka user instance with name: {}", kafkaUser.get().getMetadata().getName());
+                        KafkaUserStatus kafkaUserStatus = kafkaUser.get().getStatus();
+                        log.debug("{}: kafkaUserStatus: {}", reconciliation, kafkaUserStatus);
+
+                        kafkaPrincipal = kafkaUserStatus.getUsername();
+                        List<Condition> conditions = Optional.ofNullable(kafkaUserStatus.getConditions()).orElse(Collections.emptyList());
+                        conditions.stream()
+                            // ignore Kafka user readiness conditions as we want to set our own
+                            .filter(c -> !"Ready".equals(c.getType()))
+                            // copy any warnings or messages from the Kafka user into the ES CR
+                            .forEach(this::addToConditions);
+
+                        if (conditions.stream().noneMatch(c -> "Ready".equals(c.getType()) && "True".equals(c.getStatus()))) {
+                            return Future.failedFuture("Kafka user is not ready");
+                        }
+                    } else {
+                        return log.traceExit(Future.failedFuture("Failed to retrieve kafka user"));
+                    }
+                    return log.traceExit(Future.succeededFuture(this));
+                }));
+        }
+
         Future<ReconciliationState> createRestProducer(Supplier<Date> dateSupplier) {
             log.traceEntry(() -> dateSupplier);
             List<Future> restProducerFutures = new ArrayList<>();
@@ -637,7 +673,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         Future<ReconciliationState> createSchemaRegistry(Supplier<Date> dateSupplier) {
             log.traceEntry(() -> dateSupplier);
             List<Future> schemaRegistryFutures = new ArrayList<>();
-            SchemaRegistryModel schemaRegistry = new SchemaRegistryModel(instance, imageConfig, status.getKafkaListeners(), icpClusterData);
+            SchemaRegistryModel schemaRegistry = new SchemaRegistryModel(instance, imageConfig, status.getKafkaListeners(), icpClusterData, kafkaPrincipal);
             if (schemaRegistry.getCustomImage()) {
                 customImageCount++;
             }
@@ -1056,7 +1092,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             //  add the new condition to the status
             addCondition(previousConditions
                     .stream()
-                    .filter(c -> condition.getReason().equals(c.getReason()))
+                    .filter(c -> condition.getReason() != null && condition.getReason().equals(c.getReason()))
                     .findFirst()
                     .orElse(condition));
             log.traceExit();

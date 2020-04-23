@@ -14,15 +14,11 @@ package com.ibm.eventstreams.api.model;
 
 import com.ibm.eventstreams.api.spec.EventStreams;
 import io.strimzi.api.kafka.model.AclOperation;
-import io.strimzi.api.kafka.model.AclResourcePatternType;
 import io.strimzi.api.kafka.model.AclRule;
 import io.strimzi.api.kafka.model.AclRuleBuilder;
 import io.strimzi.api.kafka.model.KafkaUser;
+import io.strimzi.api.kafka.model.KafkaUserBuilder;
 import io.strimzi.api.kafka.model.KafkaUserSpecBuilder;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 public class InternalKafkaUserModel extends AbstractModel {
     public static final String COMPONENT_NAME = "kafka-user";
@@ -38,32 +34,28 @@ public class InternalKafkaUserModel extends AbstractModel {
 
         setOwnerReference(instance);
 
-        List<AclRule> aclList = new ArrayList<>();
         AclRule rule1 = new AclRuleBuilder()
-            .withNewAclRuleTopicResource()
-                .withName("my-topic")
-                .withPatternType(AclResourcePatternType.LITERAL)
-            .endAclRuleTopicResource()
-            .withOperation(AclOperation.READ)
-            .withHost("*")
-            .build();
-        AclRule rule2 = new AclRuleBuilder()
             .withNewAclRuleClusterResource()
             .endAclRuleClusterResource()
             .withOperation(AclOperation.DESCRIBE)
             .withHost("*")
             .build();
 
-        aclList.addAll(Arrays.asList(rule1, rule2));
-        
         kafkaUser = createKafkaUser(getInternalKafkaUserName(getInstanceName()),
                 new KafkaUserSpecBuilder()
                         .withNewKafkaUserTlsClientAuthentication()
                         .endKafkaUserTlsClientAuthentication()
-                        .withNewKafkaUserAuthorizationSimple()
-                            .withAcls(aclList)
-                        .endKafkaUserAuthorizationSimple()
                         .build());
+
+        if (authEnabled(instance)) {
+            kafkaUser = new KafkaUserBuilder(kafkaUser)
+                .editOrNewSpec()
+                    .withNewKafkaUserAuthorizationSimple()
+                        .withAcls(rule1)
+                    .endKafkaUserAuthorizationSimple()
+                .endSpec()
+                .build();
+        }
     }
 
     public String getInternalKafkaUserName() {

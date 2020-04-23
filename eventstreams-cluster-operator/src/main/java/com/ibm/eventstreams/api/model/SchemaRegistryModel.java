@@ -103,6 +103,7 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
     private final String icpClusterName;
     private final String iamServerURL;
     private final String ibmcloudCASecretName;
+    private final String internalKafkaUsername;
 
     private List<ListenerStatus> kafkaListeners;
 
@@ -114,16 +115,19 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
      * @param imageConfig
      * @param kafkaListeners
      * @param icpClusterData
+     * @param internalKafkaUsername
      */
     public SchemaRegistryModel(EventStreams instance,
                                EventStreamsOperatorConfig.ImageLookup imageConfig,
                                List<ListenerStatus> kafkaListeners,
-                               Map<String, String> icpClusterData) {
+                               Map<String, String> icpClusterData,
+                               String internalKafkaUsername) {
 
         super(instance, instance.getSpec().getSchemaRegistry(), COMPONENT_NAME, APPLICATION_NAME);
         this.kafkaListeners = kafkaListeners != null ? new ArrayList<>(kafkaListeners) : new ArrayList<>();
         this.icpClusterName = icpClusterData.getOrDefault("cluster_name", "null");
         this.iamServerURL = icpClusterData.getOrDefault("cluster_endpoint", "null");
+        this.internalKafkaUsername = internalKafkaUsername;
 
         ibmcloudCASecretName = ClusterSecretsModel.getIBMCloudSecretName(getInstanceName());
 
@@ -519,7 +523,7 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
             new EnvVarBuilder().withName("TRACE_SPEC").withValue(defaultProxyTraceString).build(),
             new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_SERVERS").withValue(internalBootstrap).build(),
             new EnvVarBuilder().withName("RUNAS_KAFKA_BOOTSTRAP_SERVERS").withValue(runasBootstrap).build(),
-            new EnvVarBuilder().withName("KAFKA_PRINCIPAL").withValue(InternalKafkaUserModel.getInternalKafkaUserSecretName(getInstanceName())).build(),
+            new EnvVarBuilder().withName("KAFKA_PRINCIPAL").withValue(internalKafkaUsername).build(),
             new EnvVarBuilder()
                 .withName("HMAC_SECRET")
                 .withNewValueFrom()
