@@ -259,11 +259,6 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
      */
     private List<EnvVar> getAdminApiEnvVars(EventStreams instance) {
 
-        String internalBootstrap = getInternalKafkaBootstrap(kafkaListeners);
-        String runasBootstrap = getRunAsKafkaBootstrap(kafkaListeners);
-        String kafkaBootstrapInternalPlainUrl = getInternalPlainKafkaBootstrap(kafkaListeners);
-        String kafkaBootstrapInternalTlsUrl = getInternalTlsKafkaBootstrap(kafkaListeners);
-        String kafkaBootstrapExternalUrl = getExternalKafkaBootstrap(kafkaListeners);
         String schemaRegistryEndpoint =  getInternalServiceName(getInstanceName(), SchemaRegistryModel.COMPONENT_NAME) + "." +  getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.getPodToPodPort(tlsEnabled());
         String zookeeperEndpoint = EventStreamsKafkaModel.getKafkaInstanceName(getInstanceName()) + "-" + EventStreamsKafkaModel.ZOOKEEPER_COMPONENT_NAME + "-client." + getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.ZOOKEEPER_PORT;
         String kafkaConnectRestEndpoint = "http://" + getInstanceName() + "-mirrormaker2-api." + getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + ReplicatorModel.REPLICATOR_PORT;
@@ -274,11 +269,6 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
             new EnvVarBuilder().withName("NAMESPACE").withValue(getNamespace()).build(),
             new EnvVarBuilder().withName("EVENTSTREAMS_API_GROUP").withValue(instance.getApiVersion()).build(),
             new EnvVarBuilder().withName("TRACE_SPEC").withValue(traceString).build(),
-            new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_SERVERS").withValue(internalBootstrap).build(),
-            new EnvVarBuilder().withName("RUNAS_KAFKA_BOOTSTRAP_SERVERS").withValue(runasBootstrap).build(),
-            new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_INTERNAL_PLAIN_URL").withValue(kafkaBootstrapInternalPlainUrl).build(),
-            new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_INTERNAL_TLS_URL").withValue(kafkaBootstrapInternalTlsUrl).build(),
-            new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_EXTERNAL_URL").withValue(kafkaBootstrapExternalUrl).build(),
             new EnvVarBuilder().withName("SCHEMA_REGISTRY_ENABLED").withValue(Boolean.toString(SchemaRegistryModel.isSchemaRegistryEnabled(instance))).build(),
             new EnvVarBuilder().withName("SCHEMA_REGISTRY_URL").withValue(schemaRegistryEndpoint).build(),
             new EnvVarBuilder().withName("ZOOKEEPER_CONNECT").withValue(zookeeperEndpoint).build(),
@@ -328,6 +318,22 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
                 .endValueFrom()
                 .build()
             ));
+
+        // Optionally add the kafka bootstrap URLs if present
+        getInternalKafkaBootstrap(kafkaListeners).ifPresent(internalBootstrap ->
+            envVars.add(new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_SERVERS").withValue(internalBootstrap).build()));
+
+        getRunAsKafkaBootstrap(kafkaListeners).ifPresent(runasBootstrap ->
+            envVars.add(new EnvVarBuilder().withName("RUNAS_KAFKA_BOOTSTRAP_SERVERS").withValue(runasBootstrap).build()));
+
+        getInternalPlainKafkaBootstrap(kafkaListeners).ifPresent(kafkaBootstrapInternalPlainUrl ->
+            envVars.add(new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_INTERNAL_PLAIN_URL").withValue(kafkaBootstrapInternalPlainUrl).build()));
+
+        getInternalTlsKafkaBootstrap(kafkaListeners).ifPresent(kafkaBootstrapInternalTlsUrl ->
+            envVars.add(new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_INTERNAL_TLS_URL").withValue(kafkaBootstrapInternalTlsUrl).build()));
+
+        getExternalKafkaBootstrap(kafkaListeners).ifPresent(kafkaBootstrapExternalUrl ->
+            envVars.add(new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_EXTERNAL_URL").withValue(kafkaBootstrapExternalUrl).build()));
 
         configureSecurityEnvVars(envVars);
 

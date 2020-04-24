@@ -80,6 +80,7 @@ import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -171,12 +172,10 @@ public class AdminApiModelTest {
     @Test
     public void testDefaultAdminApiEnvVars() {
         AdminApiModel adminApiModel = createDefaultAdminApiModel();
-        String kafkaBootstrap = instanceName + "-kafka-bootstrap." + adminApiModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_PORT;
         String schemaRegistryEndpoint = instanceName  + "-" + AbstractModel.APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME + "-" + INTERNAL_SERVICE_SUFFIX  + "." + adminApiModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.getPodToPodPort(adminApiModel.tlsEnabled());
         String zookeeperEndpoint = instanceName + "-" + EventStreamsKafkaModel.ZOOKEEPER_COMPONENT_NAME + "-client." + adminApiModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.ZOOKEEPER_PORT;
         String kafkaConnectRestEndpoint = "http://" + instanceName  + "-mirrormaker2-api." + adminApiModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + ReplicatorModel.REPLICATOR_PORT;
 
-        EnvVar kafkaBootstrapUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_SERVERS").withValue(kafkaBootstrap).build();
         EnvVar schemaRegistryUrlEnv = new EnvVarBuilder().withName("SCHEMA_REGISTRY_URL").withValue(schemaRegistryEndpoint).build();
         EnvVar zkConnectEnv = new EnvVarBuilder().withName("ZOOKEEPER_CONNECT").withValue(zookeeperEndpoint).build();
         EnvVar kafkaStsEnv = new EnvVarBuilder().withName("KAFKA_STS_NAME").withValue(instanceName + "-" + EventStreamsKafkaModel.KAFKA_COMPONENT_NAME).build();
@@ -196,7 +195,6 @@ public class AdminApiModelTest {
 
         Container adminApiContainer = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0);
         List<EnvVar> defaultEnvVars = adminApiContainer.getEnv();
-        assertThat(defaultEnvVars, hasItem(kafkaBootstrapUrlEnv));
         assertThat(defaultEnvVars, hasItem(zkConnectEnv));
         assertThat(defaultEnvVars, hasItem(schemaRegistryUrlEnv));
         assertThat(defaultEnvVars, hasItem(kafkaStsEnv));
@@ -218,12 +216,10 @@ public class AdminApiModelTest {
     @Test
     public void testAdminApiEnvVarsWithAuthentication() {
         AdminApiModel adminApiModel = createAdminApiModelWithAuthentication();
-        String kafkaBootstrap = instanceName + "-kafka-bootstrap." + adminApiModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_PORT;
         String schemaRegistryEndpoint = instanceName  + "-" + AbstractModel.APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME + "-" + INTERNAL_SERVICE_SUFFIX  + "." + adminApiModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.getPodToPodPort(adminApiModel.tlsEnabled());
         String zookeeperEndpoint = instanceName + "-" + EventStreamsKafkaModel.ZOOKEEPER_COMPONENT_NAME + "-client." + adminApiModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.ZOOKEEPER_PORT;
         String kafkaConnectRestEndpoint = "http://" + instanceName + "-mirrormaker2-api." + adminApiModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + ReplicatorModel.REPLICATOR_PORT;
 
-        EnvVar kafkaBootstrapUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_SERVERS").withValue(kafkaBootstrap).build();
         EnvVar schemaRegistryUrlEnv = new EnvVarBuilder().withName("SCHEMA_REGISTRY_URL").withValue(schemaRegistryEndpoint).build();
         EnvVar zkConnectEnv = new EnvVarBuilder().withName("ZOOKEEPER_CONNECT").withValue(zookeeperEndpoint).build();
         EnvVar kafkaStsEnv = new EnvVarBuilder().withName("KAFKA_STS_NAME").withValue(instanceName + "-" + EventStreamsKafkaModel.KAFKA_COMPONENT_NAME).build();
@@ -246,7 +242,6 @@ public class AdminApiModelTest {
 
         Container adminApiContainer = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0);
         List<EnvVar> defaultEnvVars = adminApiContainer.getEnv();
-        assertThat(defaultEnvVars, hasItem(kafkaBootstrapUrlEnv));
         assertThat(defaultEnvVars, hasItem(zkConnectEnv));
         assertThat(defaultEnvVars, hasItem(schemaRegistryUrlEnv));
         assertThat(defaultEnvVars, hasItem(kafkaStsEnv));
@@ -530,23 +525,6 @@ public class AdminApiModelTest {
     }
 
     @Test
-    public void testAdminApiContainerHasDefaultKafkaBootstrapEnvironmentVariables() {
-        EventStreams defaultEs = createDefaultEventStreams().build();
-        AdminApiModel adminApiModel = new AdminApiModel(defaultEs, imageConfig, listeners, mockIcpClusterDataMap, false);
-
-        String kafkaBootstrap = instanceName + "-kafka-bootstrap." + adminApiModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_PORT;
-
-        EnvVar kafkaBootstrapInternalPlainUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_INTERNAL_PLAIN_URL").withValue(kafkaBootstrap).build();
-        EnvVar kafkaBootstrapInternalTlsUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_INTERNAL_TLS_URL").withValue(kafkaBootstrap).build();
-        EnvVar kafkaBootstrapExternalUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_EXTERNAL_URL").withValue(kafkaBootstrap).build();
-
-        Container adminApiContainer = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0);
-        assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapInternalPlainUrlEnv));
-        assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapInternalTlsUrlEnv));
-        assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapExternalUrlEnv));
-    }
-
-    @Test
     public void testAdminApiContainerHasRoleBinding() {
         EventStreams defaultEs = createDefaultEventStreams().build();
         AdminApiModel adminApiModel = new AdminApiModel(defaultEs, imageConfig, listeners, mockIcpClusterDataMap, false);
@@ -566,7 +544,7 @@ public class AdminApiModelTest {
     }
 
     @Test
-    public void testAdminApiContainerHasPlainKafkaStatusKafkaBootstrapEnvironmentVariables() {
+    public void testAdminApiContainerWithPlainListenerHasPlainKafkaStatusKafkaBootstrapEnvironmentVariables() {
         final String kafkaPlainHost = "plainHost";
         final Integer kafkaPlainPort = 1234;
 
@@ -575,8 +553,6 @@ public class AdminApiModelTest {
 
         final String externalHost = "externalHost";
         final Integer externalPort = 9876;
-
-        final Integer runasPort = 8091;
 
         EventStreams defaultEs = createDefaultEventStreams().build();
 
@@ -588,14 +564,6 @@ public class AdminApiModelTest {
                 .endAddress()
                 .build();
 
-        ListenerStatus internalTlsListener = new ListenerStatusBuilder()
-            .withNewType("tls")
-            .addNewAddress()
-            .withHost(kafkaTlsHost)
-            .withPort(kafkaTlsPort)
-            .endAddress()
-            .build();
-
         ListenerStatus externalListener = new ListenerStatusBuilder()
                 .withNewType("external")
                 .addNewAddress()
@@ -606,16 +574,134 @@ public class AdminApiModelTest {
 
         List<ListenerStatus> listeners = new ArrayList<>();
         listeners.add(internalPlainListener);
-        listeners.add(internalTlsListener);
         listeners.add(externalListener);
 
         AdminApiModel adminApiModel = new AdminApiModel(defaultEs, imageConfig, listeners, mockIcpClusterDataMap, false);
 
+        EnvVar kafkaBootstrapServersEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_SERVERS").withValue(kafkaPlainHost + ":" + kafkaPlainPort).build();
         EnvVar kafkaBootstrapInternalPlainUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_INTERNAL_PLAIN_URL").withValue(kafkaPlainHost + ":" + kafkaPlainPort).build();
         EnvVar kafkaBootstrapInternalTlsUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_INTERNAL_TLS_URL").withValue(kafkaTlsHost + ":" + kafkaTlsPort).build();
         EnvVar kafkaBootstrapExternalUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_EXTERNAL_URL").withValue(externalHost + ":" + externalPort).build();
 
         Container adminApiContainer = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0);
+        assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapServersEnv));
+        assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapInternalPlainUrlEnv));
+        assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapExternalUrlEnv));
+
+        assertThat(adminApiContainer.getEnv(), not(hasItem(kafkaBootstrapInternalTlsUrlEnv)));
+    }
+
+    @Test
+    public void testAdminApiContainerWithTlsListenerHasTlsKafkaStatusKafkaBootstrapEnvironmentVariables() {
+        final String kafkaPlainHost = "plainHost";
+        final Integer kafkaPlainPort = 1234;
+
+        final String kafkaTlsHost = "tlsHost";
+        final Integer kafkaTlsPort = 5678;
+
+        final String externalHost = "externalHost";
+        final Integer externalPort = 9876;
+
+        EventStreams defaultEs = createDefaultEventStreams()
+            .editSpec()
+                .editOrNewSecurity()
+                    .withInternalTls(TlsVersion.TLS_V1_2)
+                .endSecurity()
+            .endSpec()
+            .build();
+
+        ListenerStatus internalTlsListener = new ListenerStatusBuilder()
+            .withNewType("tls")
+            .addNewAddress()
+            .withHost(kafkaTlsHost)
+            .withPort(kafkaTlsPort)
+            .endAddress()
+            .build();
+
+        ListenerStatus externalListener = new ListenerStatusBuilder()
+            .withNewType("external")
+            .addNewAddress()
+            .withHost(externalHost)
+            .withPort(externalPort)
+            .endAddress()
+            .build();
+
+        List<ListenerStatus> listeners = new ArrayList<>();
+        listeners.add(internalTlsListener);
+        listeners.add(externalListener);
+
+        AdminApiModel adminApiModel = new AdminApiModel(defaultEs, imageConfig, listeners, mockIcpClusterDataMap, false);
+
+        EnvVar kafkaBootstrapServersEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_SERVERS").withValue(kafkaTlsHost + ":" + kafkaTlsPort).build();
+        EnvVar kafkaBootstrapInternalPlainUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_INTERNAL_PLAIN_URL").withValue(kafkaPlainHost + ":" + kafkaPlainPort).build();
+        EnvVar kafkaBootstrapInternalTlsUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_INTERNAL_TLS_URL").withValue(kafkaTlsHost + ":" + kafkaTlsPort).build();
+        EnvVar kafkaBootstrapExternalUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_EXTERNAL_URL").withValue(externalHost + ":" + externalPort).build();
+
+        Container adminApiContainer = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0);
+        assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapServersEnv));
+        assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapInternalTlsUrlEnv));
+        assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapExternalUrlEnv));
+
+        assertThat(adminApiContainer.getEnv(), not(hasItem(kafkaBootstrapInternalPlainUrlEnv)));
+    }
+
+    @Test
+    public void testAdminApiContainerWithPlainAndTlsListenerHasTlsKafkaStatusKafkaBootstrapEnvironmentVariables() {
+        final String kafkaPlainHost = "plainHost";
+        final Integer kafkaPlainPort = 1234;
+
+        final String kafkaTlsHost = "tlsHost";
+        final Integer kafkaTlsPort = 5678;
+
+        final String externalHost = "externalHost";
+        final Integer externalPort = 9876;
+
+        EventStreams defaultEs = createDefaultEventStreams()
+            .editSpec()
+            .editOrNewSecurity()
+            .withInternalTls(TlsVersion.TLS_V1_2)
+            .endSecurity()
+            .endSpec()
+            .build();
+
+        ListenerStatus internalPlainListener = new ListenerStatusBuilder()
+            .withNewType("plain")
+            .addNewAddress()
+            .withHost(kafkaPlainHost)
+            .withPort(kafkaPlainPort)
+            .endAddress()
+            .build();
+
+        ListenerStatus internalTlsListener = new ListenerStatusBuilder()
+            .withNewType("tls")
+            .addNewAddress()
+            .withHost(kafkaTlsHost)
+            .withPort(kafkaTlsPort)
+            .endAddress()
+            .build();
+
+        ListenerStatus externalListener = new ListenerStatusBuilder()
+            .withNewType("external")
+            .addNewAddress()
+            .withHost(externalHost)
+            .withPort(externalPort)
+            .endAddress()
+            .build();
+
+        List<ListenerStatus> listeners = new ArrayList<>();
+        listeners.add(internalPlainListener);
+        listeners.add(internalTlsListener);
+        listeners.add(externalListener);
+
+        AdminApiModel adminApiModel = new AdminApiModel(defaultEs, imageConfig, listeners, mockIcpClusterDataMap, false);
+
+        EnvVar kafkaBootstrapServersEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_SERVERS").withValue(kafkaTlsHost + ":" + kafkaTlsPort).build();
+        EnvVar kafkaBootstrapInternalPlainUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_INTERNAL_PLAIN_URL").withValue(kafkaPlainHost + ":" + kafkaPlainPort).build();
+        EnvVar kafkaBootstrapInternalTlsUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_INTERNAL_TLS_URL").withValue(kafkaTlsHost + ":" + kafkaTlsPort).build();
+        EnvVar kafkaBootstrapExternalUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_EXTERNAL_URL").withValue(externalHost + ":" + externalPort).build();
+
+        Container adminApiContainer = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0);
+        assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapServersEnv));
         assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapInternalPlainUrlEnv));
         assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapInternalTlsUrlEnv));
         assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapExternalUrlEnv));
@@ -667,46 +753,6 @@ public class AdminApiModelTest {
         Container adminApiContainer = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0);
 
         assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapUrlEnv));
-    }
-
-    @Test
-    public void testDefaultBootstrapWhenNoKafkaStatusKafkaBootstrap() {
-
-        EventStreams defaultEs = createDefaultEventStreams().build();
-        ListenerStatus listener = new ListenerStatusBuilder().build();
-
-        List<ListenerStatus> listeners = new ArrayList<>();
-        listeners.add(listener);
-
-        AdminApiModel adminApiModel = new AdminApiModel(defaultEs, imageConfig, listeners, mockIcpClusterDataMap, false);
-        String expectedKafkaBootstrap = instanceName + "-kafka-bootstrap." + adminApiModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_PORT;
-
-        EnvVar kafkaBootstrapInternalPlainUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_INTERNAL_PLAIN_URL").withValue(expectedKafkaBootstrap).build();
-        EnvVar kafkaBootstrapInternalTlsUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_INTERNAL_TLS_URL").withValue(expectedKafkaBootstrap).build();
-        EnvVar kafkaBootstrapExternalUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_EXTERNAL_URL").withValue(expectedKafkaBootstrap).build();
-
-        Container adminApiContainer = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0);
-        assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapInternalPlainUrlEnv));
-        assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapInternalTlsUrlEnv));
-        assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapExternalUrlEnv));
-    }
-
-    @Test
-    public void testDefaultBootstrapWhenNullListeners() {
-
-        EventStreams defaultEs = createDefaultEventStreams().build();
-
-        AdminApiModel adminApiModel = new AdminApiModel(defaultEs, imageConfig, null, mockIcpClusterDataMap, false);
-        String expectedKafkaBootstrap = instanceName + "-kafka-bootstrap." + adminApiModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_PORT;
-
-        EnvVar kafkaBootstrapInternalPlainUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_INTERNAL_PLAIN_URL").withValue(expectedKafkaBootstrap).build();
-        EnvVar kafkaBootstrapInternalTlsUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_INTERNAL_TLS_URL").withValue(expectedKafkaBootstrap).build();
-        EnvVar kafkaBootstrapExternalUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_EXTERNAL_URL").withValue(expectedKafkaBootstrap).build();
-
-        Container adminApiContainer = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0);
-        assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapInternalPlainUrlEnv));
-        assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapInternalTlsUrlEnv));
-        assertThat(adminApiContainer.getEnv(), hasItem(kafkaBootstrapExternalUrlEnv));
     }
 
     @Test

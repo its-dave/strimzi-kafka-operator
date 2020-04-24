@@ -510,8 +510,6 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
      * @return A list of default EnvVars for the schema registry proxy container
      */
     private List<EnvVar> getSchemaRegistryProxyEnvVars() {
-        String internalBootstrap = getInternalKafkaBootstrap(kafkaListeners);
-        String runasBootstrap = getRunAsKafkaBootstrap(kafkaListeners);
 
         List<EnvVar> envVars = new ArrayList<>();
         envVars.addAll(Arrays.asList(
@@ -521,8 +519,6 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
             new EnvVarBuilder().withName("AUTHORIZATION_ENABLED").withValue(endpoints.stream()
                 .allMatch(ep -> ep.getAuthenticationMechanisms().isEmpty()) ? "false" : "true").build(),
             new EnvVarBuilder().withName("TRACE_SPEC").withValue(defaultProxyTraceString).build(),
-            new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_SERVERS").withValue(internalBootstrap).build(),
-            new EnvVarBuilder().withName("RUNAS_KAFKA_BOOTSTRAP_SERVERS").withValue(runasBootstrap).build(),
             new EnvVarBuilder().withName("KAFKA_PRINCIPAL").withValue(internalKafkaUsername).build(),
             new EnvVarBuilder()
                 .withName("HMAC_SECRET")
@@ -557,6 +553,13 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
                 .endValueFrom()
                 .build()
         ));
+
+        // Optionally add the kafka bootstrap URLs if present
+        getInternalKafkaBootstrap(kafkaListeners).ifPresent(internalBootstrap ->
+            envVars.add(new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_SERVERS").withValue(internalBootstrap).build()));
+
+        getRunAsKafkaBootstrap(kafkaListeners).ifPresent(runasBootstrap ->
+            envVars.add(new EnvVarBuilder().withName("RUNAS_KAFKA_BOOTSTRAP_SERVERS").withValue(runasBootstrap).build()));
 
         configureSecurityEnvVars(envVars);
 

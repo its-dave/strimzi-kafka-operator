@@ -166,16 +166,12 @@ public class RestProducerModel extends AbstractSecureEndpointsModel {
      * @return A list of default environment variables to go into the rest producer container
      */
     private List<EnvVar> getDefaultEnvVars() {
-        String internalBootstrap = getInternalKafkaBootstrap(kafkaListeners);
-        String runasBootstrap = getRunAsKafkaBootstrap(kafkaListeners);
         String schemaRegistryEndpoint =  getInternalServiceName(getInstanceName(), SchemaRegistryModel.COMPONENT_NAME) + "." +  getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.getPodToPodPort(tlsEnabled());
 
         ArrayList<EnvVar> envVars = new ArrayList<>(Arrays.asList(
             new EnvVarBuilder().withName("RELEASE").withValue(getInstanceName()).build(),
             new EnvVarBuilder().withName("LICENSE").withValue("accept").build(),
             new EnvVarBuilder().withName("NAMESPACE").withValue(getNamespace()).build(),
-            new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_SERVERS").withValue(internalBootstrap).build(),
-            new EnvVarBuilder().withName("RUNAS_KAFKA_BOOTSTRAP_SERVERS").withValue(runasBootstrap).build(),
             new EnvVarBuilder().withName("SCHEMA_REGISTRY_URL").withValue(schemaRegistryEndpoint).build(),
             new EnvVarBuilder().withName("SCHEMA_REGISTRY_SECURITY_PROTOCOL").withValue(getUrlProtocol()).build(),
             new EnvVarBuilder().withName("MAX_KEY_SIZE").withValue("4096").build(),
@@ -219,6 +215,14 @@ public class RestProducerModel extends AbstractSecureEndpointsModel {
                 .endValueFrom()
                 .build()
         ));
+
+        // Optionally add the kafka bootstrap URLs if present
+        getInternalKafkaBootstrap(kafkaListeners).ifPresent(internalBootstrap ->
+            envVars.add(new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_SERVERS").withValue(internalBootstrap).build()));
+
+        getRunAsKafkaBootstrap(kafkaListeners).ifPresent(runasBootstrap ->
+            envVars.add(new EnvVarBuilder().withName("RUNAS_KAFKA_BOOTSTRAP_SERVERS").withValue(runasBootstrap).build()));
+
         configureSecurityEnvVars(envVars);
 
         return envVars;

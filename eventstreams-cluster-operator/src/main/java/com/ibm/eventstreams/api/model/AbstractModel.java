@@ -132,6 +132,9 @@ public abstract class AbstractModel {
     private static final String CLOUDPAK_NAME = "IBM Cloud Pak for Integration";
     private static final String CLOUDPAK_VERSION = "2019.4.1";
     private static final String RUNAS_LISTENER_TYPE = "runas";
+    private static final String TLS_LISTENER_TYPE = "tls";
+    private static final String PLAIN_LISTENER_TYPE = "plain";
+    private static final String EXTERNAL_LISTENER_TYPE = "external";
 
     public static final String KAFKA_USER_SECRET_VOLUME_NAME = "kafka-user";
     public static final String CA_CERT = "ca.crt";
@@ -887,36 +890,36 @@ public abstract class AbstractModel {
             .withData(data)
             .build();
     }
-    
-    protected String getInternalKafkaBootstrap(List<ListenerStatus> kafkaListeners) {
+
+    protected Optional<String> getInternalKafkaBootstrap(List<ListenerStatus> kafkaListeners) {
         return tlsEnabled() ? getInternalTlsKafkaBootstrap(kafkaListeners) : getInternalPlainKafkaBootstrap(kafkaListeners);
     }
 
-    protected String getInternalPlainKafkaBootstrap(List<ListenerStatus> kafkaListeners) {
-        return getKafkaBootstrap(kafkaListeners, "plain");
+    protected Optional<String> getInternalPlainKafkaBootstrap(List<ListenerStatus> kafkaListeners) {
+        return getKafkaBootstrap(kafkaListeners, PLAIN_LISTENER_TYPE);
     }
 
-    protected String getInternalTlsKafkaBootstrap(List<ListenerStatus> kafkaListeners) {
-        return getKafkaBootstrap(kafkaListeners, "tls");
+    protected Optional<String> getInternalTlsKafkaBootstrap(List<ListenerStatus> kafkaListeners) {
+        return getKafkaBootstrap(kafkaListeners, TLS_LISTENER_TYPE);
     }
 
-    protected String getRunAsKafkaBootstrap(List<ListenerStatus> kafkaListeners) {
+    protected Optional<String> getRunAsKafkaBootstrap(List<ListenerStatus> kafkaListeners) {
         return getKafkaBootstrap(kafkaListeners, RUNAS_LISTENER_TYPE);
     }
 
-    protected String getExternalKafkaBootstrap(List<ListenerStatus> kafkaListeners) {
-        return getKafkaBootstrap(kafkaListeners, "external");
+    protected Optional<String> getExternalKafkaBootstrap(List<ListenerStatus> kafkaListeners) {
+        return getKafkaBootstrap(kafkaListeners, EXTERNAL_LISTENER_TYPE);
     }
 
-    private String getKafkaBootstrap(List<ListenerStatus> kafkaListeners, String listenerType) {
-        String kafkaBootstrap = EventStreamsKafkaModel.getKafkaInstanceName(getInstanceName()) + "-kafka-bootstrap." + getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + (tlsEnabled() ? EventStreamsKafkaModel.KAFKA_PORT_TLS : EventStreamsKafkaModel.KAFKA_PORT);
+    private Optional<String> getKafkaBootstrap(List<ListenerStatus> kafkaListeners, String listenerType) {
+        String kafkaBootstrap = null;
 
         Optional<ListenerAddress> listenerAddress = kafkaListeners
-                .stream()
-                .filter(listener -> listenerType.equals(listener.getType()))
-                .findFirst()
-                .map(ListenerStatus::getAddresses)
-                .map(addressList -> addressList.get(0));
+            .stream()
+            .filter(listener -> listenerType.equals(listener.getType()))
+            .findFirst()
+            .map(ListenerStatus::getAddresses)
+            .map(addressList -> addressList.get(0));
 
         if (listenerAddress.isPresent()) {
             kafkaBootstrap = listenerAddress.get().getHost() + ":" + listenerAddress.get().getPort();
@@ -924,7 +927,7 @@ public abstract class AbstractModel {
             kafkaBootstrap = EventStreamsKafkaModel.getKafkaInstanceName(getInstanceName()) + "-kafka-bootstrap." + getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_RUNAS_PORT;
         }
 
-        return kafkaBootstrap;
+        return  Optional.ofNullable(kafkaBootstrap);
     }
 
     public boolean isReplicatorInternalClientAuthForConnectEnabled(EventStreams instance) {
