@@ -86,7 +86,6 @@ build_scorecard:
 	# $(CP) ${INSTALL_DIR}/046-Crd-kafkabridge.yaml $(CRD_DIR)
 	$(CP) ${INSTALL_DIR}/047-Crd-kafkaconnector.yaml $(CRD_DIR)
 	$(CP) ${INSTALL_DIR}/048-Crd-kafkamirrormaker2.yaml $(CRD_DIR)
-	$(CP) ${INSTALL_DIR}/100-SecurityContextConstraints-eventstreams.yaml ${CRD_DIR}
 	$(CP) ${INSTALL_DIR}/122-ClusterRole-eventstreams-ui.yaml ${CRD_DIR}
 	$(CP) ${INSTALL_DIR}/123-ClusterRole-eventstreams-admin.yaml ${CRD_DIR}
 	$(CP) ${INSTALL_DIR}/140-Crd-eventstreams.yaml $(CRD_DIR)

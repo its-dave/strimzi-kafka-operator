@@ -38,7 +38,9 @@ seLinuxContext:
 supplementalGroups:
   type: RunAsAny
 groups:
-  - system:serviceaccounts:{{ .Release.Namespace }}
+  # If not running in the myproject namespace change this to the namespace of your installation or add an additional
+  # entry to the array
+  - system:serviceaccounts:myproject
 volumes:
   - configMap
   - downwardAPI

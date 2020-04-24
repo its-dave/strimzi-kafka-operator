@@ -76,7 +76,7 @@ For more details, follow the [Strimzi instructions](https://strimzi.io/docs/quic
 
 Apply EventStreams SCC by replacing the namespace to the custom namespace.
 ```
-oc apply -f install/ibm-eventstreams-operator/100-SecurityContextConstraints-eventstreams.yaml
+oc apply -f examples/eventstreams-extras/eventstreams-scc.yaml
 ```
 
 In the operator deployment `install/cluster-operator/150-Deployment-eventstreams-cluster-operator.yaml` set the
@@ -109,7 +109,7 @@ You **don't need a custom scc**, as the default `restricted` scc should work fin
 
 However, if you want to apply a custom SCC, a sample is available to get you started. You need to have the `strimzi-kafka-operator` directory locally.  The repository can be found [here](https://github.ibm.com/mhub/strimzi-kafka-operator)
 
-Make the following updates to `install/ibm-eventstreams-operator/100-SecurityContextConstraints-eventstreams.yaml`:
+Make the following updates to `examples/eventstreams-extras/eventstreams-scc.yaml`:
 1. Replace the namespace you have created (by default, the `myproject` namespace is used)
 ```
 groups:
