@@ -171,7 +171,7 @@ public class ReplicatorModelTest {
         assertThat(replicatorPodAnnotations.get("productID"),  is("ID"));
         assertThat(replicatorPodAnnotations.get("cloudpakId"),  is("c8b82d189e7545f0892db9ef2731b90d"));
         assertThat(replicatorPodAnnotations.get("productChargedContainers"),  is("georep"));
-        assertThat(replicatorPodAnnotations.get("prometheus.io/port"),  is("8081"));
+        assertThat(replicatorPodAnnotations.get("prometheus.io/port"),  is(AbstractModel.DEFAULT_PROMETHEUS_PORT));
 
     }
 

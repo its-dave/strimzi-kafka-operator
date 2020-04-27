@@ -110,7 +110,7 @@ public abstract class AbstractModel {
 
     public static final String APP_NAME = "ibm-es";
     public static final String APP_NAME_TRUNCATED = "es";
-    public static final String DEFAULT_PROMETHEUS_PORT = "8081";
+    public static final String DEFAULT_PROMETHEUS_PORT = "9404";
     public static final String DEFAULT_COMPONENT_NAME = "eventstreams";
     public static final int MAX_RESOURCE_NAME_LENGTH = 63;
 

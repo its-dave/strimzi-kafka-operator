@@ -80,7 +80,7 @@ public class EventStreamsKafkaModelTest {
         assertThat(kafkaPodAnnotations.get("productID"),  is("ID"));
         assertThat(kafkaPodAnnotations.get("cloudpakId"),  is("c8b82d189e7545f0892db9ef2731b90d"));
         assertThat(kafkaPodAnnotations.get("productChargedContainers"),  is("kafka"));
-        assertThat(kafkaPodAnnotations.get("prometheus.io/port"),  is("8081"));
+        assertThat(kafkaPodAnnotations.get("prometheus.io/port"),  is(AbstractModel.DEFAULT_PROMETHEUS_PORT));
 
         assertThat(zookeeperPodAnnotations.get("productID"),  is("ID"));
         assertThat(zookeeperPodAnnotations.get("cloudpakId"),  is("c8b82d189e7545f0892db9ef2731b90d"));
@@ -144,7 +144,7 @@ public class EventStreamsKafkaModelTest {
         assertThat(kafkaPodAnnotations.get("productID"),  is("ID"));
         assertThat(kafkaPodAnnotations.get("cloudpakId"),  is("c8b82d189e7545f0892db9ef2731b90d"));
         assertThat(kafkaPodAnnotations.get("productChargedContainers"),  is("kafka"));
-        assertThat(kafkaPodAnnotations.get("prometheus.io/port"),  is("8081"));
+        assertThat(kafkaPodAnnotations.get("prometheus.io/port"),  is(AbstractModel.DEFAULT_PROMETHEUS_PORT));
         assertThat(kafkaPodAnnotations.get(customAnnotationKey),  is(customAnnotationValue));
 
         assertThat(zookeeperPodAnnotations.get("productID"),  is("ID"));

@@ -38,6 +38,9 @@ spec:
         productMetric: VIRTUAL_PROCESSOR_CORE
         productName: eventstreams
         productVersion: version
+        prometheus.io/port: "8080"
+        prometheus.io/scheme: https
+        prometheus.io/scrape: "true"
       labels:
         name: eventstreams-cluster-operator
         eventstreams.ibm.com/kind: cluster-operator
