@@ -77,9 +77,9 @@ public class DefaultResourceRequirements {
 
     public static final ResourceRequirements REST_PRODUCER = new ResourceRequirementsBuilder()
         .addToRequests("cpu", new Quantity("500m"))
-        .addToRequests("memory", new Quantity("1Gi"))
+        .addToRequests("memory", new Quantity("512Mi"))
         .addToLimits("cpu", new Quantity("4000m"))
-        .addToLimits("memory", new Quantity("2Gi"))
+        .addToLimits("memory", new Quantity("1Gi"))
         .build();
 
     public static final ResourceRequirements SCHEMA_REGISTRY = new ResourceRequirementsBuilder()

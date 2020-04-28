@@ -35,8 +35,9 @@ public class Endpoint {
     private static final int DEFAULT_EXTERNAL_PLAIN_PORT = 9080;
     public static final String IAM_BEARER_KEY = "IAM-BEARER";
     public static final String SCRAM_SHA_512_KEY = "SCRAM-SHA-512";
+    public static final String MUTUAL_TLS_KEY = "TLS";
     public static final String MAC_KEY = "MAC";
-    private static final List<String> DEFAULT_EXTERNAL_AUTHENTICATION_MECHANISM = Arrays.asList(IAM_BEARER_KEY, SCRAM_SHA_512_KEY);
+    private static final List<String> DEFAULT_EXTERNAL_AUTHENTICATION_MECHANISM = Arrays.asList(IAM_BEARER_KEY, MUTUAL_TLS_KEY, SCRAM_SHA_512_KEY);
 
     public static final String DEFAULT_P2P_TLS_NAME = "p2ptls";
     public static final String DEFAULT_P2P_PLAIN_NAME = "pod2pod";

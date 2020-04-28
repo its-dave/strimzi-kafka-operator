@@ -480,7 +480,7 @@ public class AbstractSecureEndpointsModelTest {
         assertThat(envVars, hasSize(10));
 
         assertThat(envVars.get(0).getName(), is("AUTHENTICATION"));
-        assertThat(envVars.get(0).getValue(), is("9443:IAM-BEARER;SCRAM-SHA-512,7080"));
+        assertThat(envVars.get(0).getValue(), is("9443:IAM-BEARER;TLS;SCRAM-SHA-512,7080"));
         assertThat(envVars.get(1).getName(), is("ENDPOINTS"));
         assertThat(envVars.get(1).getValue(), is("9443:external,7080"));
         assertThat(envVars.get(2).getName(), is("TLS_VERSION"));

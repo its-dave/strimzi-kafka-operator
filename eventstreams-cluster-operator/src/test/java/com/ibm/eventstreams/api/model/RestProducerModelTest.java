@@ -127,9 +127,9 @@ public class RestProducerModelTest {
 
         ResourceRequirements resourceRequirements = restProducerModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getResources();
         assertThat(resourceRequirements.getRequests().get("cpu").getAmount(), is("500m"));
-        assertThat(resourceRequirements.getRequests().get("memory").getAmount(), is("1Gi"));
+        assertThat(resourceRequirements.getRequests().get("memory").getAmount(), is("512Mi"));
         assertThat(resourceRequirements.getLimits().get("cpu").getAmount(), is("4000m"));
-        assertThat(resourceRequirements.getLimits().get("memory").getAmount(), is("2Gi"));
+        assertThat(resourceRequirements.getLimits().get("memory").getAmount(), is("1Gi"));
     }
 
     @Test
@@ -151,7 +151,7 @@ public class RestProducerModelTest {
         assertThat(resourceRequirements.getRequests().get("cpu").getAmount(), is("500m"));
         assertThat(resourceRequirements.getRequests().get("memory").getAmount(), is("3Gi"));
         assertThat(resourceRequirements.getLimits().get("cpu").getAmount(), is("100m"));
-        assertThat(resourceRequirements.getLimits().get("memory").getAmount(), is("2Gi"));
+        assertThat(resourceRequirements.getLimits().get("memory").getAmount(), is("1Gi"));
     }
 
     @Test
@@ -394,7 +394,7 @@ public class RestProducerModelTest {
         RestProducerModel restProducerModel = new RestProducerModel(defaultEs, imageConfig, listeners, mockIcpClusterDataMap);
 
         String runasKafkaBootstrap = instanceName + "-kafka-bootstrap." + restProducerModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_RUNAS_PORT;
-        EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:SCRAM-SHA-512,7080").build();
+        EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:TLS;SCRAM-SHA-512,7080").build();
         EnvVar endpoints = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7080").build();
         EnvVar tlsVersion = new EnvVarBuilder().withName("TLS_VERSION").withValue("9443:TLSv1.2,7080").build();
         EnvVar runasKafkaBootstrapUrlEnv = new EnvVarBuilder().withName("RUNAS_KAFKA_BOOTSTRAP_SERVERS").withValue(runasKafkaBootstrap).build();
