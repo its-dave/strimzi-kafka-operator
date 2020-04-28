@@ -104,6 +104,7 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
     private final String iamServerURL;
     private final String ibmcloudCASecretName;
     private final String internalKafkaUsername;
+    private final boolean kafkaAuthorisationEnabled;
 
     private List<ListenerStatus> kafkaListeners;
 
@@ -128,6 +129,7 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
         this.icpClusterName = icpClusterData.getOrDefault("cluster_name", "null");
         this.iamServerURL = icpClusterData.getOrDefault("cluster_endpoint", "null");
         this.internalKafkaUsername = internalKafkaUsername;
+        this.kafkaAuthorisationEnabled = authorisationEnabled(instance);
 
         ibmcloudCASecretName = ClusterSecretsModel.getIBMCloudSecretName(getInstanceName());
 
@@ -516,8 +518,7 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
             new EnvVarBuilder().withName("RELEASE").withValue(getInstanceName()).build(),
             new EnvVarBuilder().withName("LICENSE").withValue("accept").build(),
             new EnvVarBuilder().withName("NAMESPACE").withValue(getNamespace()).build(),
-            new EnvVarBuilder().withName("AUTHORIZATION_ENABLED").withValue(endpoints.stream()
-                .allMatch(ep -> ep.getAuthenticationMechanisms().isEmpty()) ? "false" : "true").build(),
+            new EnvVarBuilder().withName("AUTHORIZATION_ENABLED").withValue(Boolean.toString(kafkaAuthorisationEnabled)).build(),
             new EnvVarBuilder().withName("TRACE_SPEC").withValue(defaultProxyTraceString).build(),
             new EnvVarBuilder().withName("KAFKA_PRINCIPAL").withValue(internalKafkaUsername).build(),
             new EnvVarBuilder()
@@ -675,12 +676,12 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
 
     @Override
     protected List<Endpoint> createDefaultEndpoints(boolean authEnabled) {
-        return new ArrayList<>(Collections.singletonList(Endpoint.createDefaultExternalEndpoint(authEnabled)));
+        return new ArrayList<>(Collections.singletonList(Endpoint.createDefaultExternalEndpoint()));
     }
 
     @Override
     public List<String> getP2PAuthenticationMechanisms(EventStreams instance) {
-        return authEnabled(instance) ? Arrays.asList(Endpoint.MAC_KEY, Endpoint.IAM_BEARER_KEY) : Collections.emptyList();
+        return authenticationEnabled(instance) ? Arrays.asList(Endpoint.MAC_KEY, Endpoint.IAM_BEARER_KEY) : Collections.emptyList();
     }
 
     /**

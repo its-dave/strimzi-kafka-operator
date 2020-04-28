@@ -352,6 +352,6 @@ public class RestProducerModel extends AbstractSecureEndpointsModel {
             Endpoint.DEFAULT_EXTERNAL_SERVICE_TYPE,
             Endpoint.DEFAULT_EXTERNAL_NAME,
             null,
-            authEnabled ? Arrays.asList(Endpoint.MUTUAL_TLS_KEY, Endpoint.SCRAM_SHA_512_KEY) : Collections.emptyList()));
+            Arrays.asList(Endpoint.MUTUAL_TLS_KEY, Endpoint.SCRAM_SHA_512_KEY)));
     }
 }

@@ -73,7 +73,7 @@ public class AbstractSecureEndpointsModelTest {
 
         @Override
         protected List<Endpoint> createDefaultEndpoints(boolean authEnabled) {
-            return Collections.singletonList(Endpoint.createDefaultExternalEndpoint(authEnabled));
+            return Collections.singletonList(Endpoint.createDefaultExternalEndpoint());
         }
     }
 
@@ -447,7 +447,7 @@ public class AbstractSecureEndpointsModelTest {
         assertThat(envVars, hasSize(10));
 
         assertThat(envVars.get(0).getName(), is("AUTHENTICATION"));
-        assertThat(envVars.get(0).getValue(), is("9443,7080"));
+        assertThat(envVars.get(0).getValue(), is("9443:IAM-BEARER;TLS;SCRAM-SHA-512,7080"));
         assertThat(envVars.get(1).getName(), is("ENDPOINTS"));
         assertThat(envVars.get(1).getValue(), is("9443:external,7080"));
         assertThat(envVars.get(2).getName(), is("TLS_VERSION"));
@@ -640,22 +640,9 @@ public class AbstractSecureEndpointsModelTest {
         assertThat(routes, aMapWithSize(1));
 
         routes.forEach((key, route) -> {
-            assertThat(route.getMetadata().getLabels(), hasEntry(AbstractModel.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + AUTHENTICATION_LABEL_NO_AUTH, "true"));
-            assertThat(route.getMetadata().getLabels(), hasEntry(AbstractModel.EVENTSTREAMS_PROTOCOL_LABEL, "https"));
-        });
-    }
-
-    @Test
-    public void testCreateRoutesWithAuthenticationHasAuthLabels() {
-        EventStreams instance = ModelUtils.createDefaultEventStreams(instanceName).build();
-        ComponentModel model = new ComponentModel(instance, new SecurityComponentSpec());
-
-        Map<String, Route> routes = model.createRoutesFromEndpoints();
-
-        assertThat(routes, aMapWithSize(1));
-
-        routes.forEach((key, route) -> {
-            assertThat(route.getMetadata().getLabels(), hasEntry(AbstractModel.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + AUTHENTICATION_LABEL_NO_AUTH, "true"));
+            assertThat(route.getMetadata().getLabels(), hasEntry(AbstractModel.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + "SCRAM-SHA-512", "true"));
+            assertThat(route.getMetadata().getLabels(), hasEntry(AbstractModel.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + "TLS", "true"));
+            assertThat(route.getMetadata().getLabels(), hasEntry(AbstractModel.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + "IAM-BEARER", "true"));
             assertThat(route.getMetadata().getLabels(), hasEntry(AbstractModel.EVENTSTREAMS_PROTOCOL_LABEL, "https"));
         });
     }

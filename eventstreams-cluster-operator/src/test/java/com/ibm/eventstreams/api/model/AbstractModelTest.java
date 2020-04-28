@@ -354,7 +354,7 @@ public class AbstractModelTest {
     public void testDefaultEventStreamsAuthenticationSetting() {
         EventStreams instance = ModelUtils.createDefaultEventStreams(instanceName).build();
         ComponentModel model = new ComponentModel(instance);
-        assertThat(model.authEnabled(instance), is(false));
+        assertThat(model.authenticationEnabled(instance), is(false));
     }
 
     @Test
@@ -373,7 +373,7 @@ public class AbstractModelTest {
             .build())
             .build();
         ComponentModel plainListener = new ComponentModel(plainAuthInstance);
-        assertThat(plainListener.authEnabled(plainAuthInstance), is(true));
+        assertThat(plainListener.authenticationEnabled(plainAuthInstance), is(true));
     }
 
     @Test
@@ -392,7 +392,7 @@ public class AbstractModelTest {
             .build())
             .build();
         ComponentModel externalListener = new ComponentModel(externalListenerInstance);
-        assertThat(externalListener.authEnabled(externalListenerInstance), is(true));
+        assertThat(externalListener.authenticationEnabled(externalListenerInstance), is(true));
     }
 
     @Test
@@ -411,6 +411,6 @@ public class AbstractModelTest {
             .build())
             .build();
         ComponentModel tlsListener = new ComponentModel(tlsAuthInstance);
-        assertThat(tlsListener.authEnabled(tlsAuthInstance), is(true));
+        assertThat(tlsListener.authenticationEnabled(tlsAuthInstance), is(true));
     }
 }

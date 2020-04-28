@@ -430,12 +430,12 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
 
     @Override
     protected List<Endpoint> createDefaultEndpoints(boolean authEnabled) {
-        return new ArrayList<>(Collections.singletonList(Endpoint.createDefaultExternalEndpoint(authEnabled)));
+        return new ArrayList<>(Collections.singletonList(Endpoint.createDefaultExternalEndpoint()));
     }
 
     @Override
     public List<String> getP2PAuthenticationMechanisms(EventStreams instance) {
-        return authEnabled(instance) ? Collections.singletonList(Endpoint.IAM_BEARER_KEY) : Collections.emptyList();
+        return authenticationEnabled(instance) ? Collections.singletonList(Endpoint.IAM_BEARER_KEY) : Collections.emptyList();
     }
 
     /**

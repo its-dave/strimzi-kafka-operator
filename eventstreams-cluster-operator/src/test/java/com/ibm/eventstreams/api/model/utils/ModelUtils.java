@@ -93,6 +93,27 @@ public class ModelUtils {
             .endSpec();
     }
 
+    public static EventStreamsBuilder createEventStreamsWithAuthorization(String instanceName) {
+        return ModelUtils.createDefaultEventStreams(instanceName)
+            .withMetadata(new ObjectMetaBuilder()
+                .withNewName(instanceName)
+                .build())
+            .editSpec()
+            .withStrimziOverrides(new KafkaSpecBuilder()
+                .withNewKafka()
+                    .withNewListeners()
+                        .withNewPlain()
+                            .withNewKafkaListenerAuthenticationTlsAuth()
+                            .endKafkaListenerAuthenticationTlsAuth()
+                        .endPlain()
+                    .endListeners()
+                    .withNewKafkaAuthorizationRunAs()
+                    .endKafkaAuthorizationRunAs()
+                .endKafka()
+            .build())
+            .endSpec();
+    }
+
     public static void assertCorrectImageOverridesOnContainers(List<Container> containers, Map<String, String> imageOverrides) {
         containers.forEach(container -> {
             String image = container.getImage();
@@ -205,7 +226,7 @@ public class ModelUtils {
 
         @Override
         protected List<Endpoint> createDefaultEndpoints(boolean authEnabled) {
-            return Collections.singletonList(Endpoint.createDefaultExternalEndpoint(authEnabled));
+            return Collections.singletonList(Endpoint.createDefaultExternalEndpoint());
         }
     }
 
