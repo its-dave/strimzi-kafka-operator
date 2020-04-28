@@ -5,7 +5,7 @@ set -e
 
 get_yq
 
-OPERATOR_SDK_VERSION=v0.15.1
+OPERATOR_SDK_VERSION=v0.17.0
 
 sudo pip3 install operator-courier
 sudo curl -vLo /usr/local/bin/operator-sdk https://github.com/operator-framework/operator-sdk/releases/download/$OPERATOR_SDK_VERSION/operator-sdk-$OPERATOR_SDK_VERSION-x86_64-linux-gnu

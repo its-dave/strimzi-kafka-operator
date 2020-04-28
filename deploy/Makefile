@@ -61,10 +61,24 @@ clean:
 	rm -f $(ROLE_BINDING_FILE)
 	rm -f $(SERVICE_ACCOUNT_FILE)
 
+get_opm:
+	# utility function for pulling patched version of OPM for build
+	curl -O -u $(ARTIFACTORY_USERNAME):$(ARTIFACTORY_PASSWORD) https://eu.artifactory.swg-devops.com:443/artifactory/hyc-qp-artifacts-generic-local/opm
+
 start_local_registry:
 	if [[ "$(shell docker ps --filter name=registry -q)" == "" ]]; then \
 		docker run -d -p $(LOCAL_REPO_PORT):$(LOCAL_REPO_PORT) --restart=always --name registry registry:2; \
 	fi;
+
+run_scorecard: build_csv
+
+	$(SED) -i s/"^kind: RoleBinding$$"/"kind: ClusterRoleBinding"/g $(ROLE_BINDING_FILE)
+	yq w -i ../examples/eventstreams/eventstreams-quickstart.yaml spec.license.accept true
+	cd .. && operator-sdk scorecard --verbose --config deploy/.osdk-scorecard.yaml 
+
+	# cleanup
+	yq w -i ../examples/eventstreams/eventstreams-quickstart.yaml spec.license.accept false
+
 
 .PHONY: .EXPORT_ALL_VARIABLES
 build_csv: .EXPORT_ALL_VARIABLES clean
