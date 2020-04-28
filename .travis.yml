@@ -51,7 +51,7 @@ matrix:
     - language: python
       env:
         - JOBNAME=VERIFY_GENERATED_SOURCES
-        - OPERATOR_SDK_VERSION=v0.15.1
+        - OPERATOR_SDK_VERSION=v0.17.0
         - HELM_VERSION="v2.12.3"
 
       services:

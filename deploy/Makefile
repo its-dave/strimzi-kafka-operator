@@ -25,12 +25,11 @@ KAFKA_MIRROR_MAKER_2_CRD_FILE := $(CRD_DIR)/eventstreams.ibm.com_kafkamirrormake
 
 BUNDLE_DIR = $(WORKING_DIR)/olm-catalog/$(OPERATOR_NAME)/$(CSV_VERSION)
 GENERATED_CSV := $(BUNDLE_DIR)/$(OPERATOR_NAME).v$(CSV_VERSION).clusterserviceversion.yaml
-OPERATOR_FILE := $(TEMP_DIR)/operator.yaml
-ROLE_FILE := $(TEMP_DIR)/role.yaml
-SCORECARD_OPERATOR_FILE := $(WORKING_DIR)/operator.yaml
-SCORECARD_ROLE_FILE := $(WORKING_DIR)/role.yaml
-SCORECARD_ROLE_BINDING_FILE := $(WORKING_DIR)/role_binding.yaml
-SCORECARD_SERVICE_ACCOUNT_FILE := $(WORKING_DIR)/service_account.yaml
+
+OPERATOR_FILE := operator.yaml
+ROLE_FILE := role.yaml
+ROLE_BINDING_FILE := role_binding.yaml
+SERVICE_ACCOUNT_FILE := service_account.yaml
 
 DATE := $(shell date "+%Y-%m-%dT%H:%M:%SZ")
 IMAGE_TAG := $(shell date "+%Y-%m-%d-%H.%M.%S")
@@ -38,7 +37,11 @@ IMAGE_BASE_NAME := local-operator-registry
 IMAGE_NAME := $(IMAGE_BASE_NAME):$(IMAGE_TAG)
 REMOTE_REGISTRY := $(shell oc registry info)
 MARKETPLACE_NAMESPACE := openshift-marketplace
-REPO_ADDR := $(REMOTE_REGISTRY)/${MARKETPLACE_NAMESPACE}/
+REPO_ADDR := $(REMOTE_REGISTRY)/$(MARKETPLACE_NAMESPACE)/
+
+LOCAL_REPO_PORT := 5000
+LOCAL_REPO_ADDR := localhost:$(LOCAL_REPO_PORT)/
+BUNDLE_IMAGE_NAME := olm-bundle:latest
 
 include ../Makefile.os
 .PHONY: all clean build_csv deploy delete_deploy verify docker_build docker_push
@@ -47,77 +50,45 @@ all: build_csv deploy
 
 verify: build_csv docker_build
 
-clean_crds:
-	rm -rf ${CRD_DIR};
-
-clean: clean_crds
-	rm -rf $(TEMP_DIR)
+clean:
 	rm -rf $(BUILD_DIR)
-	mkdir -p $(TEMP_DIR)
+	rm -rf $(CRD_DIR)
 	mkdir -p $(CRD_DIR)
 	mkdir -p $(BUILD_DIR)
 	touch $(BUILD_DIR)/Dockerfile
+	rm -f $(OPERATOR_FILE)
+	rm -f $(ROLE_FILE)
+	rm -f $(ROLE_BINDING_FILE)
+	rm -f $(SERVICE_ACCOUNT_FILE)
 
-build_scorecard:
-	if [ -d "${CRD_DIR}" ]; then \
-		rm -rf ${CRD_DIR}; \
-	fi
-
-	mkdir ${CRD_DIR}
-
-	# populate the crds folder with the contents of the install folder
-	$(CP) ${INSTALL_DIR}/010-ServiceAccount-strimzi-cluster-operator.yaml ${CRD_DIR}
-	$(CP) ${INSTALL_DIR}/020-ClusterRole-strimzi-cluster-operator-role.yaml ${CRD_DIR}
-	$(CP) ${INSTALL_DIR}/020-RoleBinding-strimzi-cluster-operator.yaml ${CRD_DIR}
-	$(CP) ${INSTALL_DIR}/021-ClusterRole-strimzi-cluster-operator-role.yaml ${CRD_DIR}
-	$(CP) ${INSTALL_DIR}/021-ClusterRoleBinding-strimzi-cluster-operator.yaml ${CRD_DIR}
-	$(CP) ${INSTALL_DIR}/030-ClusterRole-strimzi-kafka-broker.yaml ${CRD_DIR}
-	$(CP) ${INSTALL_DIR}/030-ClusterRoleBinding-strimzi-cluster-operator-kafka-broker-delegation.yaml ${CRD_DIR}
-	$(CP) ${INSTALL_DIR}/031-ClusterRole-strimzi-entity-operator.yaml ${CRD_DIR}
-	$(CP) ${INSTALL_DIR}/032-ClusterRole-strimzi-topic-operator.yaml ${CRD_DIR}
-	$(CP) ${INSTALL_DIR}/032-RoleBinding-strimzi-cluster-operator-topic-operator-delegation.yaml ${CRD_DIR}
-	$(CP) ${INSTALL_DIR}/040-Crd-kafka.yaml $(CRD_DIR)
-	$(CP) ${INSTALL_DIR}/041-Crd-kafkaconnect.yaml $(CRD_DIR)
-	$(CP) ${INSTALL_DIR}/042-Crd-kafkaconnects2i.yaml $(CRD_DIR)
-	$(CP) ${INSTALL_DIR}/043-Crd-kafkatopic.yaml $(CRD_DIR)
-	$(CP) ${INSTALL_DIR}/044-Crd-kafkauser.yaml $(CRD_DIR)
-	# ignoring Mirror Maker and Bridge CRDs as we don't use them in Event Streams
-	# $(CP) ${INSTALL_DIR}/045-Crd-kafkamirrormaker.yaml $(CRD_DIR)
-	# $(CP) ${INSTALL_DIR}/046-Crd-kafkabridge.yaml $(CRD_DIR)
-	$(CP) ${INSTALL_DIR}/047-Crd-kafkaconnector.yaml $(CRD_DIR)
-	$(CP) ${INSTALL_DIR}/048-Crd-kafkamirrormaker2.yaml $(CRD_DIR)
-	$(CP) ${INSTALL_DIR}/122-ClusterRole-eventstreams-ui.yaml ${CRD_DIR}
-	$(CP) ${INSTALL_DIR}/123-ClusterRole-eventstreams-admin.yaml ${CRD_DIR}
-	$(CP) ${INSTALL_DIR}/140-Crd-eventstreams.yaml $(CRD_DIR)
-	$(CP) ${INSTALL_DIR}/143-Crd-eventstreamsreplicator.yaml $(CRD_DIR)
-
-	# mandatory files in order for scorecard to work
-	$(CP) ${INSTALL_DIR}/020-ClusterRole-strimzi-cluster-operator-role.yaml $(SCORECARD_ROLE_FILE)
-	$(CP) ${INSTALL_DIR}/150-Deployment-eventstreams-cluster-operator.yaml $(SCORECARD_OPERATOR_FILE)
-	# keep the roleRef as namespaced, but change the kind to ClusterRoleBinding in order for the Scorecard to work
-	${SED} s/"RoleBinding.*"/"ClusterRoleBinding"/g ${CRD_DIR}/020-RoleBinding-strimzi-cluster-operator.yaml > ${SCORECARD_ROLE_BINDING_FILE}
-	$(CP) ${INSTALL_DIR}/010-ServiceAccount-strimzi-cluster-operator.yaml $(SCORECARD_SERVICE_ACCOUNT_FILE)
-
-	# prepare the operator.yaml file in order to accept the scorecard-proxy container and run the scorecard tests
-	# run with a script in order to avoid the complaints from the Makefile regarding the indentation since yq is very strict on that
-	${WORKING_DIR}/scorecard-preparation.sh
+start_local_registry:
+	if [[ "$(shell docker ps --filter name=registry -q)" == "" ]]; then \
+		docker run -d -p $(LOCAL_REPO_PORT):$(LOCAL_REPO_PORT) --restart=always --name registry registry:2; \
+	fi;
 
 .PHONY: .EXPORT_ALL_VARIABLES
 build_csv: .EXPORT_ALL_VARIABLES clean
 	./build_csv.sh
 
+build_bundle: build_csv start_local_registry
+	echo "Generating bundle & image"
+	cd .. && opm alpha bundle build --tag $(BUNDLE_IMAGE_NAME) --package $(OPERATOR_NAME) --directory deploy/olm-catalog/$(OPERATOR_NAME)/$(CSV_VERSION) --channels alpha --default alpha
+	docker tag $(BUNDLE_IMAGE_NAME) $(LOCAL_REPO_ADDR)$(BUNDLE_IMAGE_NAME)
+	docker push $(LOCAL_REPO_ADDR)$(BUNDLE_IMAGE_NAME)
+	opm alpha bundle validate --tag $(LOCAL_REPO_ADDR)$(BUNDLE_IMAGE_NAME) --image-builder docker
+	cd .. && opm index add --bundles $(LOCAL_REPO_ADDR)$(BUNDLE_IMAGE_NAME) --container-tool docker --tag $(IMAGE_NAME)
+
 docker_build: build_csv
-	docker build -t $(IMAGE_NAME) -f ${IMAGE_BASE_NAME}.Dockerfile .
 
 docker_push:
 	oc registry login --skip-check
 	docker login -u any -p $(shell oc whoami -t) $(REMOTE_REGISTRY)
 	docker tag $(IMAGE_NAME) $(REPO_ADDR)$(IMAGE_NAME)
 	docker push $(REPO_ADDR)$(IMAGE_NAME)
-	oc set image-lookup $(IMAGE_BASE_NAME) -n ${MARKETPLACE_NAMESPACE}
+	oc set image-lookup $(IMAGE_BASE_NAME) -n $(MARKETPLACE_NAMESPACE)
 
-deploy: docker_build docker_push
-	$(SED) s/@image@/$(IMAGE_NAME)/ local-operator-registry-deploy.yaml.template | oc apply -f -
+deploy: build_bundle docker_push
+	$(SED) s/@image@/$(IMAGE_NAME)/ custom-catalog-source.yaml.template | oc apply -f -
 
 delete_deploy:
-	$(SED) s/@image@/dummy/ local-operator-registry-deploy.yaml.template | oc delete -f -
+	$(SED) s/@image@/dummy/ custom-catalog-source.yaml.template | oc delete -f -

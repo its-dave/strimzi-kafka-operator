@@ -60,3 +60,4 @@ docker-images/kafka/stunnel-5.56.sh
 ibm-eventstreams-operator-*.tgz
 stable
 build/
+bundle.Dockerfile

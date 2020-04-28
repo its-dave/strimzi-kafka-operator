@@ -20,18 +20,27 @@ yq w -i "${EVENTSTREAMS_GEOREP_CRD_FILE}" spec.version v1beta1
 ${CP} ../examples/eventstreams/*.yaml "${CRD_DIR}"
 LAST_CREATED_DATE="$(yq r "${GENERATED_CSV}" metadata.annotations.createdAt)"
 ${CP} "${INSTALL_DIR}/020-ClusterRole-strimzi-cluster-operator-role.yaml" "${ROLE_FILE}"
+${CP} "${INSTALL_DIR}/020-RoleBinding-strimzi-cluster-operator.yaml" "${ROLE_BINDING_FILE}"
+${CP} "${INSTALL_DIR}/010-ServiceAccount-strimzi-cluster-operator.yaml" "${SERVICE_ACCOUNT_FILE}"
 ${CP} "${INSTALL_DIR}/150-Deployment-eventstreams-cluster-operator.yaml" "${OPERATOR_FILE}"
 yq r ${ROLE_FILE} metadata.name | xargs yq w -i ${OPERATOR_FILE} spec.template.spec.serviceAccountName
 ${SED} -i "s/metadata.namespace/metadata.annotations['olm.targetNamespaces']/" "${OPERATOR_FILE}"
 ${SED} -i "0,/metadata.annotations\['olm.targetNamespaces'\]/{s/metadata.annotations\['olm.targetNamespaces'\]/metadata.namespace/}" "${OPERATOR_FILE}"
 
+${CP} "${INSTALL_DIR}/031-ClusterRole-strimzi-entity-operator.yaml" "${BUNDLE_DIR}/entityoperator.clusterrole.yaml"
+${CP} "${INSTALL_DIR}/122-ClusterRole-eventstreams-ui.yaml" "${BUNDLE_DIR}/adminui.clusterrole.yaml"
+${CP} "${INSTALL_DIR}/123-ClusterRole-eventstreams-admin.yaml" "${BUNDLE_DIR}/adminapi.clusterrole.yaml"
+
 echo "Generating csv"
 cd ..
-operator-sdk generate csv --csv-version "${CSV_VERSION}" --operator-name "${OPERATOR_NAME}" --update-crds
+operator-sdk generate csv --csv-version "${CSV_VERSION}" --operator-name ${OPERATOR_NAME} --update-crds --make-manifests=false
 cd -
 
 echo "Deleting build directory"
 rm -rf "${BUILD_DIR}"
+
+yq d -i "${GENERATED_CSV}" spec.customresourcedefinitions.owned.*
+${SED} -i "s/owned: \[\]/owned:/" "${GENERATED_CSV}"
 
 yq m -ix "${GENERATED_CSV}" csv_manual_fields.yaml
 yq w -i "${GENERATED_CSV}" metadata.annotations.createdAt ${DATE}
@@ -94,10 +103,8 @@ for ((i=0;i<number_of_images;i++)); do
 
 done
 
-${CP} "${INSTALL_DIR}/031-ClusterRole-strimzi-entity-operator.yaml" "${BUNDLE_DIR}/entityoperator.clusterrole.yaml"
-${CP} "${INSTALL_DIR}/122-ClusterRole-eventstreams-ui.yaml" "${BUNDLE_DIR}/adminui.clusterrole.yaml"
-${CP} "${INSTALL_DIR}/123-ClusterRole-eventstreams-admin.yaml" "${BUNDLE_DIR}/adminapi.clusterrole.yaml"
-operator-courier verify "olm-catalog/${OPERATOR_NAME}"
+
+# operator-courier verify "olm-catalog/${OPERATOR_NAME}"
 
 # In travis reset the created date so we can perform a git status --porcelain
 if [ -n "${TRAVIS}" ]; then

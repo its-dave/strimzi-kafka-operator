@@ -1,5 +1,0 @@
-channels:
-- currentCSV: ibm-eventstreams-operator.v2020.2.1
-  name: alpha
-defaultChannel: alpha
-packageName: ibm-eventstreams-operator
