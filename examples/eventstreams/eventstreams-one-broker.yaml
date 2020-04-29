@@ -1,7 +1,7 @@
 apiVersion: eventstreams.ibm.com/v1beta1
 kind: EventStreams
 metadata:
-  name: secure
+  name: sample-one
 spec:
   license:
     accept: false

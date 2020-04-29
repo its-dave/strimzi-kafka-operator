@@ -119,6 +119,19 @@ public class AdminApiModelTest {
             .endSpec();
     }
 
+    public EventStreamsBuilder createDefaultEventStreamsWithNoInternalTLS() {
+        return ModelUtils.createDefaultEventStreams(instanceName)
+            .withApiVersion(apiVersion)
+            .editSpec()
+            .withNewSecurity()
+                .withInternalTls(TlsVersion.NONE)
+            .endSecurity()
+            .withNewAdminApi()
+                .withReplicas(defaultReplicas)
+            .endAdminApi()
+            .endSpec();
+    }
+
     private EventStreamsBuilder createEventStreams(EventStreamsSpec eventStreamsSpec) {
         return ModelUtils.createEventStreams(instanceName, eventStreamsSpec)
                 .editSpec()
@@ -180,9 +193,9 @@ public class AdminApiModelTest {
         EnvVar zkConnectEnv = new EnvVarBuilder().withName("ZOOKEEPER_CONNECT").withValue(zookeeperEndpoint).build();
         EnvVar kafkaStsEnv = new EnvVarBuilder().withName("KAFKA_STS_NAME").withValue(instanceName + "-" + EventStreamsKafkaModel.KAFKA_COMPONENT_NAME).build();
         EnvVar clientCaCertPath = new EnvVarBuilder().withName("CLIENT_CA_PATH").withValue("/certs/client/ca.crt").build();
-        EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:IAM-BEARER;TLS;SCRAM-SHA-512,7080").build();
-        EnvVar endpoints = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7080").build();
-        EnvVar tlsVersion = new EnvVarBuilder().withName("TLS_VERSION").withValue("9443:TLSv1.2,7080").build();
+        EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:IAM-BEARER;TLS;SCRAM-SHA-512,7443").build();
+        EnvVar endpoints = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7443:p2p/podtls").build();
+        EnvVar tlsVersion = new EnvVarBuilder().withName("TLS_VERSION").withValue("9443:TLSv1.2,7443:TLSv1.2").build();
         EnvVar kafkaConnectRestApiEnv = new EnvVarBuilder().withName("KAFKA_CONNECT_REST_API_ADDRESS").withValue(kafkaConnectRestEndpoint).build();
         EnvVar apiVersionEnv = new EnvVarBuilder().withName("EVENTSTREAMS_API_GROUP").withValue(apiVersion).build();
         EnvVar geoRepEnabledEnv = new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue("false").build();
@@ -224,9 +237,9 @@ public class AdminApiModelTest {
         EnvVar zkConnectEnv = new EnvVarBuilder().withName("ZOOKEEPER_CONNECT").withValue(zookeeperEndpoint).build();
         EnvVar kafkaStsEnv = new EnvVarBuilder().withName("KAFKA_STS_NAME").withValue(instanceName + "-" + EventStreamsKafkaModel.KAFKA_COMPONENT_NAME).build();
         EnvVar clientCaCertPath = new EnvVarBuilder().withName("CLIENT_CA_PATH").withValue("/certs/client/ca.crt").build();
-        EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:IAM-BEARER;TLS;SCRAM-SHA-512,7080:IAM-BEARER").build();
-        EnvVar endpoints = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7080").build();
-        EnvVar tlsVersion = new EnvVarBuilder().withName("TLS_VERSION").withValue("9443:TLSv1.2,7080").build();
+        EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:IAM-BEARER;TLS;SCRAM-SHA-512,7443:IAM-BEARER").build();
+        EnvVar endpoints = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7443:p2p/podtls").build();
+        EnvVar tlsVersion = new EnvVarBuilder().withName("TLS_VERSION").withValue("9443:TLSv1.2,7443:TLSv1.2").build();
         EnvVar kafkaConnectRestApiEnv = new EnvVarBuilder().withName("KAFKA_CONNECT_REST_API_ADDRESS").withValue(kafkaConnectRestEndpoint).build();
         EnvVar apiVersionEnv = new EnvVarBuilder().withName("EVENTSTREAMS_API_GROUP").withValue(apiVersion).build();
         EnvVar geoRepEnabledEnv = new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue("false").build();
@@ -544,7 +557,7 @@ public class AdminApiModelTest {
     }
 
     @Test
-    public void testAdminApiContainerWithPlainListenerHasPlainKafkaStatusKafkaBootstrapEnvironmentVariables() {
+    public void testAdminApiContainerWithNoInternalTLSAndPlainListenerHasPlainKafkaStatusKafkaBootstrapEnvironmentVariables() {
         final String kafkaPlainHost = "plainHost";
         final Integer kafkaPlainPort = 1234;
 
@@ -554,7 +567,7 @@ public class AdminApiModelTest {
         final String externalHost = "externalHost";
         final Integer externalPort = 9876;
 
-        EventStreams defaultEs = createDefaultEventStreams().build();
+        EventStreams defaultEs = createDefaultEventStreamsWithNoInternalTLS().build();
 
         ListenerStatus internalPlainListener = new ListenerStatusBuilder()
                 .withNewType("plain")

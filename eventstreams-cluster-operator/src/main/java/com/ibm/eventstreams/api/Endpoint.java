@@ -12,6 +12,7 @@
  */
 package com.ibm.eventstreams.api;
 
+import com.ibm.eventstreams.api.model.AbstractModel;
 import com.ibm.eventstreams.api.spec.EndpointSpec;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
@@ -24,10 +25,10 @@ import java.util.List;
 import java.util.Optional;
 
 public class Endpoint {
-    private static final boolean DEFAULT_TLS_SETTING = false;
-    private static final TlsVersion DEFAULT_P2P_TLS_VERSION = TlsVersion.NONE;
+    private static final boolean DEFAULT_TLS_SETTING = true;
     private static final boolean DEFAULT_EXTERNAL_ENDPOINT_TLS_SETTING = true;
-    public static final TlsVersion DEFAULT_TLS_VERSION = TlsVersion.TLS_V1_2;
+    public static final TlsVersion DEFAULT_TLS_VERSION = AbstractModel.DEFAULT_INTERNAL_TLS;
+    private static final TlsVersion DEFAULT_P2P_TLS_VERSION = AbstractModel.DEFAULT_INTERNAL_TLS;
 
     public static final String DEFAULT_EXTERNAL_NAME = "external";
     public static final int DEFAULT_EXTERNAL_TLS_PORT = 9443;

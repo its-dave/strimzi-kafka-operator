@@ -873,7 +873,7 @@ public class EventStreamsOperatorTest {
 
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
 
-        EventStreams eventStreams = createMinimalESInstance();
+        EventStreams eventStreams = createMinimalNoTLSESInstance();
         eventStreams.getSpec().getStrimziOverrides().getKafka().getListeners().setPlain(null);
 
         ArgumentCaptor<EventStreams> updatedEventStreams = ArgumentCaptor.forClass(EventStreams.class);
@@ -965,7 +965,7 @@ public class EventStreamsOperatorTest {
 
     @Test
     public void testKafkaBootstrapRetrievedFromStatus(VertxTestContext context) {
-        final String internalListenerType = "plain";
+        final String internalListenerType = "tls";
         final String internalHost = "internalHost";
         final Integer internalPort = 1234;
 
@@ -2525,9 +2525,9 @@ public class EventStreamsOperatorTest {
         when(cp4iResourceOperator.waitForCp4iServicesBindingStatusAndMaybeGetUrl(anyString(), anyString(), anyLong(), anyLong(), any()))
             .thenReturn(Future.succeededFuture(""));
 
-        boolean tlsEnabled = !AbstractModel.DEFAULT_INTERNAL_TLS.equals(TlsVersion.NONE);
-        String adminApiService =  "http://" + getInternalServiceName(CLUSTER_NAME, AdminApiModel.COMPONENT_NAME) + "." +  NAMESPACE + ".svc.cluster.local:" + Endpoint.getPodToPodPort(tlsEnabled);
-        String schemaRegistryService =  "http://" + getInternalServiceName(CLUSTER_NAME, SchemaRegistryModel.COMPONENT_NAME) + "." +  NAMESPACE + ".svc.cluster.local:" + Endpoint.getPodToPodPort(tlsEnabled);
+        boolean tlsEnabled = AbstractModel.DEFAULT_INTERNAL_TLS.equals(TlsVersion.TLS_V1_2);
+        String adminApiService =  "https://" + getInternalServiceName(CLUSTER_NAME, AdminApiModel.COMPONENT_NAME) + "." +  NAMESPACE + ".svc.cluster.local:" + Endpoint.getPodToPodPort(tlsEnabled);
+        String schemaRegistryService =  "https://" + getInternalServiceName(CLUSTER_NAME, SchemaRegistryModel.COMPONENT_NAME) + "." +  NAMESPACE + ".svc.cluster.local:" + Endpoint.getPodToPodPort(tlsEnabled);
 
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
@@ -2843,6 +2843,40 @@ public class EventStreamsOperatorTest {
             .withNewLicense()
                 .withAccept(true)
             .endLicense()
+            .withNewVersion(DEFAULT_VERSION)
+            .withStrimziOverrides(new KafkaSpecBuilder()
+                .withNewKafka()
+                .withReplicas(1)
+                .withNewListeners()
+                .withNewPlain()
+                .endPlain()
+                .endListeners()
+                .withNewEphemeralStorage()
+                .endEphemeralStorage()
+                .endKafka()
+                .withNewZookeeper()
+                .withReplicas(1)
+                .withNewEphemeralStorage()
+                .endEphemeralStorage()
+                .endZookeeper()
+                .build())
+            .endSpec()
+            .build();
+    }
+
+    private EventStreams createMinimalNoTLSESInstance() {
+        return new EventStreamsBuilder()
+            .withMetadata(new ObjectMetaBuilder()
+                .withNewName(CLUSTER_NAME)
+                .withNewNamespace(NAMESPACE)
+                .build())
+            .withNewSpec()
+            .withNewLicense()
+            .withAccept(true)
+            .endLicense()
+            .withNewSecurity()
+            .withInternalTls(TlsVersion.NONE)
+            .endSecurity()
             .withNewVersion(DEFAULT_VERSION)
             .withStrimziOverrides(new KafkaSpecBuilder()
                 .withNewKafka()

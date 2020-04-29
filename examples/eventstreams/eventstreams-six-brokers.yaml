@@ -13,8 +13,6 @@ spec:
     schemaRegistry:
         storage:
             type: ephemeral
-    security:
-        internalTls: "TLSv1.2"
     strimziOverrides:
         kafka:
             replicas: 6

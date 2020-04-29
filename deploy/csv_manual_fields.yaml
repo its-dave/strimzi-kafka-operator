@@ -9,6 +9,14 @@ metadata:
   alm-examples-metadata:
     quickstart:
       name: quickstart
+      description: Development cluster with security disabled, and a single Kafka broker
+      resources:
+        vpc: '1'
+        cpu: '4'
+        memory: '4 GB'
+    sample-one:
+      name: 1 broker
+      description: Secure development cluster with a single Kafka broker
       resources:
         vpc: '1'
         cpu: '4'

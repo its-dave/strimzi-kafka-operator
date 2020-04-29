@@ -57,7 +57,6 @@ public class ModelUtils {
                 .endSpec();
     }
 
-
     public static EventStreamsBuilder createEventStreams(String instanceName, EventStreamsSpec eventStreamsSpec) {
         return new EventStreamsBuilder()
                 .withMetadata(new ObjectMetaBuilder().withName(instanceName).build())

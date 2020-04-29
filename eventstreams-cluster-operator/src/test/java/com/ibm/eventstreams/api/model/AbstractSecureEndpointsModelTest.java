@@ -447,11 +447,11 @@ public class AbstractSecureEndpointsModelTest {
         assertThat(envVars, hasSize(10));
 
         assertThat(envVars.get(0).getName(), is("AUTHENTICATION"));
-        assertThat(envVars.get(0).getValue(), is("9443:IAM-BEARER;TLS;SCRAM-SHA-512,7080"));
+        assertThat(envVars.get(0).getValue(), is("9443:IAM-BEARER;TLS;SCRAM-SHA-512,7443"));
         assertThat(envVars.get(1).getName(), is("ENDPOINTS"));
-        assertThat(envVars.get(1).getValue(), is("9443:external,7080"));
+        assertThat(envVars.get(1).getValue(), is("9443:external,7443:p2p/podtls"));
         assertThat(envVars.get(2).getName(), is("TLS_VERSION"));
-        assertThat(envVars.get(2).getValue(), is("9443:TLSv1.2,7080"));
+        assertThat(envVars.get(2).getValue(), is("9443:TLSv1.2,7443:TLSv1.2"));
         assertThat(envVars.get(3).getName(), is(SSL_TRUSTSTORE_P12_PATH_ENV_KEY));
         assertThat(envVars.get(3).getValue(), is("/certs/cluster/ca.p12"));
         assertThat(envVars.get(4).getName(), is(SSL_TRUSTSTORE_CRT_PATH_ENV_KEY));
@@ -480,11 +480,11 @@ public class AbstractSecureEndpointsModelTest {
         assertThat(envVars, hasSize(10));
 
         assertThat(envVars.get(0).getName(), is("AUTHENTICATION"));
-        assertThat(envVars.get(0).getValue(), is("9443:IAM-BEARER;TLS;SCRAM-SHA-512,7080"));
+        assertThat(envVars.get(0).getValue(), is("9443:IAM-BEARER;TLS;SCRAM-SHA-512,7443"));
         assertThat(envVars.get(1).getName(), is("ENDPOINTS"));
-        assertThat(envVars.get(1).getValue(), is("9443:external,7080"));
+        assertThat(envVars.get(1).getValue(), is("9443:external,7443:p2p/podtls"));
         assertThat(envVars.get(2).getName(), is("TLS_VERSION"));
-        assertThat(envVars.get(2).getValue(), is("9443:TLSv1.2,7080"));
+        assertThat(envVars.get(2).getValue(), is("9443:TLSv1.2,7443:TLSv1.2"));
         assertThat(envVars.get(3).getName(), is(SSL_TRUSTSTORE_P12_PATH_ENV_KEY));
         assertThat(envVars.get(3).getValue(), is("/certs/cluster/ca.p12"));
         assertThat(envVars.get(4).getName(), is(SSL_TRUSTSTORE_CRT_PATH_ENV_KEY));
@@ -517,11 +517,11 @@ public class AbstractSecureEndpointsModelTest {
         assertThat(envVars, hasSize(10));
 
         assertThat(envVars.get(0).getName(), is("AUTHENTICATION"));
-        assertThat(envVars.get(0).getValue(), is("9443,7080"));
+        assertThat(envVars.get(0).getValue(), is("9443,7443"));
         assertThat(envVars.get(1).getName(), is("ENDPOINTS"));
-        assertThat(envVars.get(1).getValue(), is("9443:required-field,7080"));
+        assertThat(envVars.get(1).getValue(), is("9443:required-field,7443:p2p/podtls"));
         assertThat(envVars.get(2).getName(), is("TLS_VERSION"));
-        assertThat(envVars.get(2).getValue(), is("9443:TLSv1.2,7080"));
+        assertThat(envVars.get(2).getValue(), is("9443:TLSv1.2,7443:TLSv1.2"));
         assertThat(envVars.get(3).getName(), is(SSL_TRUSTSTORE_P12_PATH_ENV_KEY));
         assertThat(envVars.get(3).getValue(), is("/certs/cluster/ca.p12"));
         assertThat(envVars.get(4).getName(), is(SSL_TRUSTSTORE_CRT_PATH_ENV_KEY));
@@ -554,11 +554,11 @@ public class AbstractSecureEndpointsModelTest {
         assertThat(envVars, hasSize(10));
 
         assertThat(envVars.get(0).getName(), is("AUTHENTICATION"));
-        assertThat(envVars.get(0).getValue(), is("9080,8080:TLS,7080"));
+        assertThat(envVars.get(0).getValue(), is("9080,8080:TLS,7443"));
         assertThat(envVars.get(1).getName(), is("ENDPOINTS"));
-        assertThat(envVars.get(1).getValue(), is("9080,8080:fully-configured,7080"));
+        assertThat(envVars.get(1).getValue(), is("9080,8080:fully-configured,7443:p2p/podtls"));
         assertThat(envVars.get(2).getName(), is("TLS_VERSION"));
-        assertThat(envVars.get(2).getValue(), is("9080,8080:TLSv1.3,7080"));
+        assertThat(envVars.get(2).getValue(), is("9080,8080:TLSv1.3,7443:TLSv1.2"));
         assertThat(envVars.get(3).getName(), is(SSL_TRUSTSTORE_P12_PATH_ENV_KEY));
         assertThat(envVars.get(3).getValue(), is("/certs/cluster/ca.p12"));
         assertThat(envVars.get(4).getName(), is(SSL_TRUSTSTORE_CRT_PATH_ENV_KEY));

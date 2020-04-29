@@ -12,6 +12,7 @@
  */
 package com.ibm.eventstreams.rest;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -218,7 +219,7 @@ public class EndpointValidation extends AbstractValidation {
 
     private static boolean hasIAMBearerAuth(List<EndpointSpec> endpoints) {
         return endpoints.stream()
-            .anyMatch(endpoint -> endpoint.getAuthenticationMechanisms().contains(Endpoint.IAM_BEARER_KEY));
+            .anyMatch(endpoint -> Optional.ofNullable(endpoint.getAuthenticationMechanisms()).orElse(Collections.emptyList()).contains(Endpoint.IAM_BEARER_KEY));
     }
 
     private static ValidationResponse invalidIAMBearerEndpointResponse(String spec) {

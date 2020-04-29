@@ -117,8 +117,8 @@ public abstract class AbstractModel {
     public static final String CONFIG_MAP_SUFFIX = "-config";
 
     protected static final String TLS_VERSION_ENV_KEY = "TLS_VERSION";
-    public static final TlsVersion DEFAULT_INTERNAL_TLS = TlsVersion.NONE;
     protected static final TlsVersion DEFAULT_TLS_VERSION = TlsVersion.TLS_V1_2;
+    public static final TlsVersion DEFAULT_INTERNAL_TLS = DEFAULT_TLS_VERSION;
     public static final String AUTHENTICATION_LABEL_SEPARATOR = "-";
     public static final String AUTHENTICATION_LABEL_NO_AUTH = "NO-AUTHENTICATION";
 

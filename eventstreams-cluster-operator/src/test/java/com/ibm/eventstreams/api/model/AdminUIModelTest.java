@@ -172,9 +172,9 @@ public class AdminUIModelTest {
         assertThat(uiPodMetadata.getLabels(), hasEntry(Labels.KUBERNETES_INSTANCE_LABEL, instanceName));
 
         // confirm ui container has required envars
-        String adminApiService = "http://" + instanceName + "-" + AbstractModel.APP_NAME + "-" + AdminApiModel.COMPONENT_NAME + "-" + INTERNAL_SERVICE_SUFFIX + "." +  namespace + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.DEFAULT_P2P_PLAIN_PORT;
-        String schemaRegistryService = "http://" + instanceName + "-" + AbstractModel.APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME + "-" + INTERNAL_SERVICE_SUFFIX + "." +  namespace + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.DEFAULT_P2P_PLAIN_PORT;
-        String restProducerService = "http://" + instanceName + "-" + AbstractModel.APP_NAME + "-" + RestProducerModel.COMPONENT_NAME + "-" + ROUTE_SERVICE_SUFFIX + "." +  namespace + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.DEFAULT_P2P_PLAIN_PORT;
+        String adminApiService = "https://" + instanceName + "-" + AbstractModel.APP_NAME + "-" + AdminApiModel.COMPONENT_NAME + "-" + INTERNAL_SERVICE_SUFFIX + "." +  namespace + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.DEFAULT_P2P_TLS_PORT;
+        String schemaRegistryService = "https://" + instanceName + "-" + AbstractModel.APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME + "-" + INTERNAL_SERVICE_SUFFIX + "." +  namespace + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.DEFAULT_P2P_TLS_PORT;
+        String restProducerService = "https://" + instanceName + "-" + AbstractModel.APP_NAME + "-" + RestProducerModel.COMPONENT_NAME + "-" + ROUTE_SERVICE_SUFFIX + "." +  namespace + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.DEFAULT_P2P_TLS_PORT;
 
         assertThat(uiContainers.get(0).getEnv(), hasItems(
                 new EnvVarBuilder().withName("ID").withValue(instanceName).build(),
@@ -228,8 +228,8 @@ public class AdminUIModelTest {
         assertThat(uiPodMetadata.getLabels(), hasEntry(Labels.KUBERNETES_INSTANCE_LABEL, instanceName));
 
         // confirm ui container has required envars
-        String adminApiService = "http://" + instanceName + "-" + AbstractModel.APP_NAME + "-" + AdminApiModel.COMPONENT_NAME + "-" + INTERNAL_SERVICE_SUFFIX + "." +  namespace + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.DEFAULT_P2P_PLAIN_PORT;
-        String schemaRegistryService = "http://" + instanceName + "-" + AbstractModel.APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME + "-" + INTERNAL_SERVICE_SUFFIX + "." +  namespace + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.DEFAULT_P2P_PLAIN_PORT;
+        String adminApiService = "https://" + instanceName + "-" + AbstractModel.APP_NAME + "-" + AdminApiModel.COMPONENT_NAME + "-" + INTERNAL_SERVICE_SUFFIX + "." +  namespace + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.DEFAULT_P2P_TLS_PORT;
+        String schemaRegistryService = "https://" + instanceName + "-" + AbstractModel.APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME + "-" + INTERNAL_SERVICE_SUFFIX + "." +  namespace + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.DEFAULT_P2P_TLS_PORT;
 
         assertThat(uiContainers.get(0).getEnv(), hasItems(
                 new EnvVarBuilder().withName("ID").withValue(instanceName).build(),

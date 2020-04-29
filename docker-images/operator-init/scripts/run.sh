@@ -321,7 +321,7 @@ metadata:
     name: $OWNER_NAME
     uid: $OWNER_UID
 spec:
-  description: Small cluster for development use
+  description: Small cluster, with security disabled, for development use
   snippet: false
   targetResource:
     apiVersion: eventstreams.ibm.com/v1beta1
@@ -337,13 +337,27 @@ spec:
         license:
           accept: false
         version: 2020.2.1
-        adminApi: {}
+        adminApi:
+            endpoints:
+            - accessPort: 8080
+              name: external
+              tlsVersion: NONE
         adminUI: {}
         collector: {}
-        restProducer: {}
+        restProducer:
+            endpoints:
+            - accessPort: 8080
+              name: external
+              tlsVersion: NONE
         schemaRegistry:
+            endpoints:
+            - accessPort: 8080
+              name: external
+              tlsVersion: NONE
             storage:
                 type: ephemeral
+        security:
+            internalTls: NONE
         strimziOverrides:
             kafka:
                 replicas: 1
@@ -355,6 +369,65 @@ spec:
                 listeners:
                     external:
                         type: route
+                    plain: {}
+                    tls: {}
+                storage:
+                    type: ephemeral
+                metrics: {}
+            zookeeper:
+                replicas: 1
+                storage:
+                    type: ephemeral
+                metrics: {}
+---
+apiVersion: console.openshift.io/v1
+kind: ConsoleYAMLSample
+metadata:
+  name: eventstreams-sample-1-$EVENTSTREAMS_OPERATOR_NAMESPACE
+  ownerReferences:
+  - apiVersion: $OWNER_APIVERSION
+    kind: $OWNER_KIND
+    name: $OWNER_NAME
+    uid: $OWNER_UID
+spec:
+  description:  Small secured cluster for development use
+  snippet: false
+  targetResource:
+    apiVersion: eventstreams.ibm.com/v1beta1
+    kind: EventStreams
+  title: 1 Broker
+  yaml: |
+    apiVersion: eventstreams.ibm.com/v1beta1
+    kind: EventStreams
+    metadata:
+        name: sample-one
+        namespace: placeholder
+    spec:
+        license:
+          accept: false
+        version: 2020.2.1
+        adminApi: {}
+        adminUI: {}
+        collector: {}
+        restProducer: {}
+        schemaRegistry:
+            storage:
+                type: ephemeral
+        strimziOverrides:
+            kafka:
+                authorization:
+                    type: runas
+                replicas: 1
+                config:
+                    interceptor.class.names: com.ibm.eventstreams.interceptors.metrics.ProducerMetricsInterceptor
+                    offsets.topic.replication.factor: 1
+                    transaction.state.log.min.isr: 1
+                    transaction.state.log.replication.factor: 1
+                listeners:
+                    external:
+                        type: route
+                        authentication:
+                            type: scram-sha-512
                     plain: {}
                     tls: {}
                 storage:
@@ -582,6 +655,7 @@ EOF
 
 echo "Console YAML samples:"
 ! kubectl get ConsoleYAMLSample eventstreams-quickstart-$EVENTSTREAMS_OPERATOR_NAMESPACE -o yaml
+! kubectl get ConsoleYAMLSample eventstreams-sample-1-$EVENTSTREAMS_OPERATOR_NAMESPACE -o yaml
 ! kubectl get ConsoleYAMLSample eventstreams-sample-3-$EVENTSTREAMS_OPERATOR_NAMESPACE -o yaml
 ! kubectl get ConsoleYAMLSample eventstreams-sample-6-$EVENTSTREAMS_OPERATOR_NAMESPACE -o yaml
 ! kubectl get ConsoleYAMLSample eventstreams-sample-9-$EVENTSTREAMS_OPERATOR_NAMESPACE -o yaml

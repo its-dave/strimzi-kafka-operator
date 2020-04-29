@@ -36,9 +36,6 @@ metadata:
                 "type": "ephemeral"
               }
             },
-            "security": {
-              "internalTls": "TLSv1.2"
-            },
             "strimziOverrides": {
               "kafka": {
                 "authorization": {
@@ -95,58 +92,7 @@ metadata:
           "apiVersion": "eventstreams.ibm.com/v1beta1",
           "kind": "EventStreams",
           "metadata": {
-            "name": "quickstart"
-          },
-          "spec": {
-            "adminApi": {},
-            "adminUI": {},
-            "collector": {},
-            "license": {
-              "accept": false
-            },
-            "restProducer": {},
-            "schemaRegistry": {
-              "storage": {
-                "type": "ephemeral"
-              }
-            },
-            "strimziOverrides": {
-              "kafka": {
-                "config": {
-                  "interceptor.class.names": "com.ibm.eventstreams.interceptors.metrics.ProducerMetricsInterceptor",
-                  "offsets.topic.replication.factor": 1,
-                  "transaction.state.log.min.isr": 1,
-                  "transaction.state.log.replication.factor": 1
-                },
-                "listeners": {
-                  "external": {
-                    "type": "route"
-                  },
-                  "plain": {},
-                  "tls": {}
-                },
-                "metrics": {},
-                "replicas": 1,
-                "storage": {
-                  "type": "ephemeral"
-                }
-              },
-              "zookeeper": {
-                "metrics": {},
-                "replicas": 1,
-                "storage": {
-                  "type": "ephemeral"
-                }
-              }
-            },
-            "version": "2020.2.1"
-          }
-        },
-        {
-          "apiVersion": "eventstreams.ibm.com/v1beta1",
-          "kind": "EventStreams",
-          "metadata": {
-            "name": "secure"
+            "name": "sample-one"
           },
           "spec": {
             "adminApi": {},
@@ -203,6 +149,83 @@ metadata:
           "apiVersion": "eventstreams.ibm.com/v1beta1",
           "kind": "EventStreams",
           "metadata": {
+            "name": "quickstart"
+          },
+          "spec": {
+            "adminApi": {
+              "endpoints": [
+                {
+                  "accessPort": 8080,
+                  "name": "external",
+                  "tlsVersion": "NONE"
+                }
+              ]
+            },
+            "adminUI": {},
+            "collector": {},
+            "license": {
+              "accept": false
+            },
+            "restProducer": {
+              "endpoints": [
+                {
+                  "accessPort": 8080,
+                  "name": "external",
+                  "tlsVersion": "NONE"
+                }
+              ]
+            },
+            "schemaRegistry": {
+              "endpoints": [
+                {
+                  "accessPort": 8080,
+                  "name": "external",
+                  "tlsVersion": "NONE"
+                }
+              ],
+              "storage": {
+                "type": "ephemeral"
+              }
+            },
+            "security": {
+              "internalTls": "NONE"
+            },
+            "strimziOverrides": {
+              "kafka": {
+                "config": {
+                  "interceptor.class.names": "com.ibm.eventstreams.interceptors.metrics.ProducerMetricsInterceptor",
+                  "offsets.topic.replication.factor": 1,
+                  "transaction.state.log.min.isr": 1,
+                  "transaction.state.log.replication.factor": 1
+                },
+                "listeners": {
+                  "external": {
+                    "type": "route"
+                  },
+                  "plain": {},
+                  "tls": {}
+                },
+                "metrics": {},
+                "replicas": 1,
+                "storage": {
+                  "type": "ephemeral"
+                }
+              },
+              "zookeeper": {
+                "metrics": {},
+                "replicas": 1,
+                "storage": {
+                  "type": "ephemeral"
+                }
+              }
+            },
+            "version": "2020.2.1"
+          }
+        },
+        {
+          "apiVersion": "eventstreams.ibm.com/v1beta1",
+          "kind": "EventStreams",
+          "metadata": {
             "name": "sample-six"
           },
           "spec": {
@@ -217,9 +240,6 @@ metadata:
               "storage": {
                 "type": "ephemeral"
               }
-            },
-            "security": {
-              "internalTls": "TLSv1.2"
             },
             "strimziOverrides": {
               "kafka": {
@@ -292,9 +312,6 @@ metadata:
                 "type": "ephemeral"
               }
             },
-            "security": {
-              "internalTls": "TLSv1.2"
-            },
             "strimziOverrides": {
               "kafka": {
                 "authorization": {
@@ -352,7 +369,7 @@ metadata:
     categories: Streaming & Messaging
     certified: 'false'
     containerImage: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-operator-icp-linux:latest
-    createdAt: 2020-04-28T16:04:08Z
+    createdAt: 2020-04-29T11:13:22Z
     description: Kafka-based messaging platform for handling real-time data feeds.
     operators.operatorframework.io/internal-objects: '["kafkas.eventstreams.ibm.com","kafkamirrormaker2s.eventstreams.ibm.com"]'
     repository: https://github.ibm.com/mhub/qp-eventstreams-operator
@@ -362,6 +379,15 @@ metadata:
   alm-examples-metadata:
     quickstart:
       name: quickstart
+      description: Development cluster with security disabled, and a single Kafka
+        broker
+      resources:
+        vpc: '1'
+        cpu: '4'
+        memory: '4 GB'
+    sample-one:
+      name: 1 broker
+      description: Secure development cluster with a single Kafka broker
       resources:
         vpc: '1'
         cpu: '4'
@@ -1170,15 +1196,15 @@ spec:
                 - name: EVENTSTREAMS_DEFAULT_JMXTRANS_IMAGE
                   value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/jmxtrans:latest
                 - name: EVENTSTREAMS_DEFAULT_REST_PRODUCER_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-rest-producer-v2-icp-linux:2020-04-22-08.41.40-24a399c
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-rest-producer-v2-icp-linux:2020-04-24-12.38.14-17e095b
                 - name: EVENTSTREAMS_DEFAULT_ADMIN_API_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-admin-icp-linux:2020-04-22-14.28.04-44d4759
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-admin-icp-linux:2020-04-24-12.38.18-17e095b
                 - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_IMAGE
                   value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-schema-registry-icp-linux:2020-04-08-10.53.04-a549b6c-dev
                 - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_AVRO_IMAGE
                   value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-schema-registry-avro-icp-linux:2020-04-09-16.03.17-cd87238
                 - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_PROXY_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-schema-registry-v2-icp-linux:2020-04-22-08.41.46-24a399c
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-schema-registry-v2-icp-linux:2020-04-24-12.38.16-17e095b
                 - name: EVENTSTREAMS_DEFAULT_ADMIN_UI_IMAGE
                   value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-admin-ui-icp-linux:2020-04-15-14.42.19-3b45e8e-dev
                 - name: EVENTSTREAMS_DEFAULT_ADMIN_UI_REDIS_IMAGE
@@ -1288,16 +1314,16 @@ spec:
     image: cp.icr.io/cp/icp4i/es/strimzi-operator-latest@sha256:4097889236A2AF26C293033FEB964C4CF118C0224E0D063FEC0A89E9D0569EF2
   - name: strimzi-operator-init-latest
     image: cp.icr.io/cp/icp4i/es/strimzi-operator-init-latest@sha256:4097889236A2AF26C293033FEB964C4CF118C0224E0D063FEC0A89E9D0569EF2
-  - name: eventstreams-rest-producer-v2-icp-linux-2020-04-22-08.41.40-24a399c
-    image: cp.icr.io/cp/icp4i/es/eventstreams-rest-producer-v2-icp-linux-2020-04-22-08.41.40-24a399c@sha256:8187d263466a3965fdbff4312c91e0968e7d521071f53e29ae65b23167b0d91d
-  - name: eventstreams-admin-icp-linux-2020-04-22-14.28.04-44d4759
-    image: cp.icr.io/cp/icp4i/es/eventstreams-admin-icp-linux-2020-04-22-14.28.04-44d4759@sha256:4ead33330f4edcaf8a16b83b36e0594b40f3a49f2710c317a83eedb8d9df1741
+  - name: eventstreams-rest-producer-v2-icp-linux-2020-04-24-12.38.14-17e095b
+    image: cp.icr.io/cp/icp4i/es/eventstreams-rest-producer-v2-icp-linux-2020-04-24-12.38.14-17e095b@sha256:8ba6ec2b4fbfe0afa54062df9c6e1855cc55dc43acf5d135a5382ae8549b43b3
+  - name: eventstreams-admin-icp-linux-2020-04-24-12.38.18-17e095b
+    image: cp.icr.io/cp/icp4i/es/eventstreams-admin-icp-linux-2020-04-24-12.38.18-17e095b@sha256:33c6069f63d11fd5efb93ab7f5552657538fd0ef2bdf86f503259be464267849
   - name: eventstreams-schema-registry-icp-linux-2020-04-08-10.53.04-a549b6c-dev
     image: cp.icr.io/cp/icp4i/es/eventstreams-schema-registry-icp-linux-2020-04-08-10.53.04-a549b6c-dev@sha256:7e918061fe8d98f622ad87a3121a9bbbd9dc452e28c2c48312e7e6b67fd666f2
   - name: eventstreams-schema-registry-avro-icp-linux-2020-04-09-16.03.17-cd87238
     image: cp.icr.io/cp/icp4i/es/eventstreams-schema-registry-avro-icp-linux-2020-04-09-16.03.17-cd87238@sha256:300004da677dfd029b5429366c1a0251bd64c178922b3e5a857b02dbda231d26
-  - name: eventstreams-schema-registry-v2-icp-linux-2020-04-22-08.41.46-24a399c
-    image: cp.icr.io/cp/icp4i/es/eventstreams-schema-registry-v2-icp-linux-2020-04-22-08.41.46-24a399c@sha256:a040e773e0269d35840f3cf9d433d3d08c4d42c78a20a817b02d538e68074112
+  - name: eventstreams-schema-registry-v2-icp-linux-2020-04-24-12.38.16-17e095b
+    image: cp.icr.io/cp/icp4i/es/eventstreams-schema-registry-v2-icp-linux-2020-04-24-12.38.16-17e095b@sha256:0907cb3d6b2163cfe9344ac013d799aa1cd8ce3f71931c0338b28624f09e3224
   - name: eventstreams-admin-ui-icp-linux-2020-04-15-14.42.19-3b45e8e-dev
     image: cp.icr.io/cp/icp4i/es/eventstreams-admin-ui-icp-linux-2020-04-15-14.42.19-3b45e8e-dev@sha256:cf58fec5d0803a9320c561c9ed4b8d8955594cd3565038b42df8ac5ba3734400
   - name: eventstreams-session-store-icp-linux-2020-04-09-15.40.36-f32e234

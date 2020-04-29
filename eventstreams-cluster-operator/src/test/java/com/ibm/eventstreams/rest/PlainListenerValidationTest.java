@@ -117,6 +117,9 @@ public class PlainListenerValidationTest extends RestApiTest {
         EventStreams test = new EventStreamsBuilder()
             .withMetadata(new ObjectMetaBuilder().withName(instanceName).build())
             .withNewSpec()
+                .withNewSecurity()
+                    .withInternalTls(TlsVersion.NONE)
+                .endSecurity()
                 .withStrimziOverrides(new KafkaSpecBuilder()
                     .withNewKafka()
                         .withNewListeners()
@@ -138,43 +141,6 @@ public class PlainListenerValidationTest extends RestApiTest {
             assertThat(responseObj.getJsonObject("response").getBoolean("allowed"), is(false));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("status"), is("Failure"));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is(PlainListenerValidation.FAILURE_MISSING_PLAIN_LISTENER_REASON));
-            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getInteger("code"), is(400));
-            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("message"), is(PlainListenerValidation.FAILURE_MESSAGE));
-
-            async.flag();
-        })));
-    }
-
-    @Test
-    public void testWithKafkaPlainListenerAuthentication(VertxTestContext context) {
-        EventStreams test = new EventStreamsBuilder()
-            .withMetadata(new ObjectMetaBuilder().withName(instanceName).build())
-            .withNewSpec()
-                .withStrimziOverrides(new KafkaSpecBuilder()
-                    .withNewKafka()
-                        .withNewListeners()
-                            .withNewPlain()
-                                .withNewKafkaListenerAuthenticationTlsAuth()
-                                .endKafkaListenerAuthenticationTlsAuth()
-                            .endPlain()
-                        .endListeners()
-                    .endKafka()
-                .build())
-            .endSpec()
-            .build();
-
-        Map<String, Object> request = new HashMap<String, Object>();
-        request.put("object", test);
-
-        Map<String, Object> payload = new HashMap<String, Object>();
-        payload.put("request", request);
-        Checkpoint async = context.checkpoint();
-
-        WebClient.wrap(httpClient).post(EventStreamsVerticle.API_SERVER_PORT, "localhost", "/admissionwebhook/rejectinvalidlisteners").sendJson(payload, context.succeeding(resp -> context.verify(() -> {
-            JsonObject responseObj = resp.bodyAsJsonObject();
-            assertThat(responseObj.getJsonObject("response").getBoolean("allowed"), is(false));
-            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("status"), is("Failure"));
-            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is(PlainListenerValidation.FAILURE_CONFIGURED_PLAIN_LISTENER_AUTHENTICATION_REASON));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getInteger("code"), is(400));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("message"), is(PlainListenerValidation.FAILURE_MESSAGE));
 
