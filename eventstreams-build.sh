@@ -25,8 +25,12 @@ docker login -u="${ARTIFACTORY_USERNAME}" -p="${ARTIFACTORY_PASSWORD}" "${destin
 
 make eventstreams_build
 
-echo "Transfer Strimzi artifact to Artifactory..."
-mvn deploy -s ./eventstreams-settings.xml -DskipTests
+if [[ $TAG == *exp ]]; then
+  echo 'Docker tag ends with "exp" so not transfering Strimzi artifact to Artifactory'
+else
+  echo 'Docker tag does not end with "exp" so transfering Strimzi artifact to Artifactory...'
+  mvn deploy -s ./eventstreams-settings.xml -DskipTests
+fi
 
 KAFKA_IMAGE="${destination_registry}/strimzi/kafka-${B_ARCH}:${TAG}"
 KAFKA_IMAGE_LATEST="${destination_registry}/strimzi/kafka-${B_ARCH}:latest-kafka-$(get_kafka_versions)"
