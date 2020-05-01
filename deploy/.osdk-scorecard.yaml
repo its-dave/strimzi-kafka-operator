@@ -5,12 +5,12 @@ scorecard:
     - basic:
         cr-manifest:
           - "examples/eventstreams/01-eventstreams-quickstart.yaml"
-        csv-path: "deploy/olm-catalog/ibm-eventstreams-operator/2020.2.1/ibm-eventstreams-operator.v2020.2.1.clusterserviceversion.yaml"
+        csv-path: "deploy/olm-catalog/ibm-eventstreams/2.0.0/ibm-eventstreams.v2.0.0.clusterserviceversion.yaml"
         crds-dir: "deploy/crds/"
         init-timeout: 180
     - olm:
         cr-manifest:
           - "examples/eventstreams/01-eventstreams-quickstart.yaml"
-        csv-path: "deploy/olm-catalog/ibm-eventstreams-operator/2020.2.1/ibm-eventstreams-operator.v2020.2.1.clusterserviceversion.yaml"
+        csv-path: "deploy/olm-catalog/ibm-eventstreams/2.0.0/ibm-eventstreams.v2.0.0.clusterserviceversion.yaml"
         crds-dir: "deploy/crds/"
         init-timeout: 180

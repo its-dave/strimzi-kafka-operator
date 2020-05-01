@@ -1,7 +1,7 @@
 apiVersion: eventstreams.ibm.com/v1beta1
 kind: EventStreams
 metadata:
-    name: sample-six
+    name: six-broker-sample
 spec:
     license:
         accept: false
