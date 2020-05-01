@@ -1,9 +1,8 @@
-PROJECT_NAME=deploy
+OPERATOR_NAME := ibm-eventstreams
+CSV_VERSION = 2.0.0
+CHANNELS = "v2.0"
+DEFAULT_CHANNEL = v2.0
 
-CSV_VERSION = 2020.2.1
-
-# TODO verfy this is still true
-OPERATOR_NAME := ibm-eventstreams-operator
 INSTALL_DIR := ../install/ibm-eventstreams-operator
 
 WORKING_DIR := $(shell pwd)
@@ -88,7 +87,7 @@ build_csv: .EXPORT_ALL_VARIABLES clean
 
 build_bundle: build_csv start_local_registry
 	echo "Generating bundle & image"
-	cd .. && opm alpha bundle build --tag $(BUNDLE_IMAGE_NAME) --package $(OPERATOR_NAME) --directory deploy/olm-catalog/$(OPERATOR_NAME)/$(CSV_VERSION) --channels alpha --default alpha
+	cd .. && opm alpha bundle build --tag $(BUNDLE_IMAGE_NAME) --package $(OPERATOR_NAME) --directory deploy/olm-catalog/$(OPERATOR_NAME)/$(CSV_VERSION) --channels $(CHANNELS) --default $(DEFAULT_CHANNEL)
 	docker tag $(BUNDLE_IMAGE_NAME) $(LOCAL_REPO_ADDR)$(BUNDLE_IMAGE_NAME)
 	docker push $(LOCAL_REPO_ADDR)$(BUNDLE_IMAGE_NAME)
 	opm alpha bundle validate --tag $(LOCAL_REPO_ADDR)$(BUNDLE_IMAGE_NAME) --image-builder docker

@@ -1,6 +1,6 @@
 scorecard:
   output: text
-  bundle: "deploy/olm-catalog/ibm-eventstreams-operator"
+  bundle: "deploy/olm-catalog/ibm-eventstreams"
   plugins:
     - basic:
         cr-manifest:

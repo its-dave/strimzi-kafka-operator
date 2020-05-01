@@ -48,7 +48,7 @@ metadata:
         vpc: '1'
         cpu: '1'
         memory: '1.5 GB'
-  version: 2020.2.1
+  version: 2.0.0
 spec:
   customresourcedefinitions:
     owned:
@@ -248,7 +248,7 @@ spec:
     mediatype: image/png
   keywords: ['kafka', 'apachekafka', 'messaging', 'streams']
   labels:
-    name: ibm-eventstreams-operator
+    name: ibm-eventstreams
   links:
     - name: Website
       url: https://www.ibm.com/uk-en/cloud/event-streams
@@ -265,4 +265,4 @@ spec:
       email: eventstreams@uk.ibm.com
   selector:
     matchLabels:
-      name: ibm-eventstreams-operator
+      name: ibm-eventstreams

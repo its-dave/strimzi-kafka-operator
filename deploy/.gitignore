@@ -4,4 +4,4 @@ role.yaml
 role_binding.yaml
 operator.yaml
 service_account.yaml
-olm-catalog/ibm-eventstreams-operator/metadata
+olm-catalog/ibm-eventstreams/metadata
