@@ -51,3 +51,10 @@ rules:
   - routes
   verbs:
   - list
+- apiGroups:
+  - "eventstreams.ibm.com"
+  resources:
+  - kafkamirrormaker2s
+  verbs:
+  - get
+  - patch

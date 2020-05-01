@@ -649,6 +649,13 @@ spec:
           - routes
           verbs:
           - list
+        - apiGroups:
+          - eventstreams.ibm.com
+          resources:
+          - kafkamirrormaker2s
+          verbs:
+          - get
+          - patch
         serviceAccountName: eventstreams-admin-clusterrole
       - rules:
         - apiGroups:
