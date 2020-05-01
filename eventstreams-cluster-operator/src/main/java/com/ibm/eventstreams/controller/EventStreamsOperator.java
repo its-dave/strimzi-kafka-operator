@@ -637,7 +637,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         Future<ReconciliationState> createAdminApi(Supplier<Date> dateSupplier) {
             log.traceEntry(() -> dateSupplier);
             List<Future> adminApiFutures = new ArrayList<>();
-            AdminApiModel adminApi = new AdminApiModel(instance, imageConfig, status.getKafkaListeners(), icpClusterData, isGeoReplicationEnabled);
+            AdminApiModel adminApi = new AdminApiModel(instance, imageConfig, status.getKafkaListeners(), icpClusterData, isGeoReplicationEnabled, kafkaPrincipal);
             if (adminApi.getCustomImage()) {
                 customImageCount++;
             }

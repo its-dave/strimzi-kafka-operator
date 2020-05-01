@@ -90,6 +90,7 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
     private final NetworkPolicy networkPolicy;
     private final RoleBinding roleBinding;
     private final boolean isGeoReplicationEnabled;
+    private final String internalKafkaUsername;
 
     private static final Logger log = LogManager.getLogger(AdminApiModel.class.getName());
     private List<ListenerStatus> kafkaListeners;
@@ -105,7 +106,8 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
                          EventStreamsOperatorConfig.ImageLookup imageConfig,
                          List<ListenerStatus> kafkaListeners,
                          Map<String, String> icpClusterData,
-                         boolean isGeoReplicationEnabled) {
+                         boolean isGeoReplicationEnabled,
+                         String internalKafkaUsername) {
         super(instance, instance.getSpec().getAdminApi(), COMPONENT_NAME, APPLICATION_NAME);
         this.kafkaListeners = kafkaListeners != null ? new ArrayList<>(kafkaListeners) : new ArrayList<>();
 
@@ -115,6 +117,7 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
         this.iamServerURL = icpClusterData.getOrDefault("cluster_endpoint", "null");
 
         this.isGeoReplicationEnabled = isGeoReplicationEnabled;
+        this.internalKafkaUsername = internalKafkaUsername;
 
         ibmcloudCASecretName = ClusterSecretsModel.getIBMCloudSecretName(getInstanceName());
 
@@ -276,6 +279,7 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
             new EnvVarBuilder().withName("PROMETHEUS_PORT").withValue(prometheusPort).build(),
             new EnvVarBuilder().withName("KAFKA_STS_NAME").withValue(EventStreamsKafkaModel.getKafkaInstanceName(getInstanceName()) + "-" + EventStreamsKafkaModel.KAFKA_COMPONENT_NAME).build(),
             new EnvVarBuilder().withName("KAFKA_CONNECT_REST_API_ADDRESS").withValue(kafkaConnectRestEndpoint).build(),
+            new EnvVarBuilder().withName("KAFKA_PRINCIPAL").withValue(internalKafkaUsername).build(),
             new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue(Boolean.toString(isGeoReplicationEnabled)).build(),
             new EnvVarBuilder().withName("GEOREPLICATION_SECRET_NAME").withValue(getResourcePrefix() + "-" + ReplicatorSecretModel.REPLICATOR_SECRET_NAME).build(),
             new EnvVarBuilder().withName("GEOREPLICATION_INTERNAL_CLIENT_AUTH_ENABLED").withValue(Boolean.toString(isReplicatorInternalClientAuthForConnectEnabled(instance))).build(),
