@@ -6,80 +6,73 @@ metadata:
       [
         {
           "apiVersion": "eventstreams.ibm.com/v1beta1",
-          "kind": "EventStreamsGeoReplicator",
+          "kind": "EventStreams",
           "metadata": {
-            "labels": {
-              "eventstreams.ibm.com/cluster": "quickstart"
-            },
             "name": "quickstart"
           },
           "spec": {
-            "replicas": 1
-          }
-        },
-        {
-          "apiVersion": "eventstreams.ibm.com/v1beta1",
-          "kind": "EventStreams",
-          "metadata": {
-            "name": "sample-nine"
-          },
-          "spec": {
-            "adminApi": {},
+            "adminApi": {
+              "endpoints": [
+                {
+                  "accessPort": 8080,
+                  "name": "external",
+                  "tlsVersion": "NONE"
+                }
+              ]
+            },
             "adminUI": {},
             "collector": {},
             "license": {
               "accept": false
             },
-            "restProducer": {},
+            "restProducer": {
+              "endpoints": [
+                {
+                  "accessPort": 8080,
+                  "name": "external",
+                  "tlsVersion": "NONE"
+                }
+              ]
+            },
             "schemaRegistry": {
+              "endpoints": [
+                {
+                  "accessPort": 8080,
+                  "name": "external",
+                  "tlsVersion": "NONE"
+                }
+              ],
               "storage": {
                 "type": "ephemeral"
               }
             },
+            "security": {
+              "internalTls": "NONE"
+            },
             "strimziOverrides": {
               "kafka": {
-                "authorization": {
-                  "type": "runas"
-                },
                 "config": {
                   "interceptor.class.names": "com.ibm.eventstreams.interceptors.metrics.ProducerMetricsInterceptor",
-                  "log.cleaner.threads": 6,
-                  "num.io.threads": 24,
-                  "num.network.threads": 9,
-                  "num.replica.fetchers": 9
+                  "offsets.topic.replication.factor": 1,
+                  "transaction.state.log.min.isr": 1,
+                  "transaction.state.log.replication.factor": 1
                 },
                 "listeners": {
                   "external": {
-                    "authentication": {
-                      "type": "scram-sha-512"
-                    },
                     "type": "route"
                   },
-                  "tls": {
-                    "authentication": {
-                      "type": "tls"
-                    }
-                  }
+                  "plain": {},
+                  "tls": {}
                 },
                 "metrics": {},
-                "replicas": 9,
-                "resources": {
-                  "limits": {
-                    "cpu": "4000m",
-                    "memory": "8096Mi"
-                  },
-                  "requests": {
-                    "cpu": "4000m",
-                    "memory": "8096Mi"
-                  }
-                },
+                "replicas": 1,
                 "storage": {
                   "type": "ephemeral"
                 }
               },
               "zookeeper": {
                 "metrics": {},
-                "replicas": 3,
+                "replicas": 1,
                 "storage": {
                   "type": "ephemeral"
                 }
@@ -149,71 +142,65 @@ metadata:
           "apiVersion": "eventstreams.ibm.com/v1beta1",
           "kind": "EventStreams",
           "metadata": {
-            "name": "quickstart"
+            "name": "sample-three"
           },
           "spec": {
-            "adminApi": {
-              "endpoints": [
-                {
-                  "accessPort": 8080,
-                  "name": "external",
-                  "tlsVersion": "NONE"
-                }
-              ]
-            },
+            "adminApi": {},
             "adminUI": {},
             "collector": {},
             "license": {
               "accept": false
             },
-            "restProducer": {
-              "endpoints": [
-                {
-                  "accessPort": 8080,
-                  "name": "external",
-                  "tlsVersion": "NONE"
-                }
-              ]
-            },
+            "restProducer": {},
             "schemaRegistry": {
-              "endpoints": [
-                {
-                  "accessPort": 8080,
-                  "name": "external",
-                  "tlsVersion": "NONE"
-                }
-              ],
               "storage": {
                 "type": "ephemeral"
               }
             },
-            "security": {
-              "internalTls": "NONE"
-            },
             "strimziOverrides": {
               "kafka": {
+                "authorization": {
+                  "type": "runas"
+                },
                 "config": {
                   "interceptor.class.names": "com.ibm.eventstreams.interceptors.metrics.ProducerMetricsInterceptor",
-                  "offsets.topic.replication.factor": 1,
-                  "transaction.state.log.min.isr": 1,
-                  "transaction.state.log.replication.factor": 1
+                  "log.cleaner.threads": 6,
+                  "num.io.threads": 24,
+                  "num.network.threads": 9,
+                  "num.replica.fetchers": 3
                 },
                 "listeners": {
                   "external": {
+                    "authentication": {
+                      "type": "scram-sha-512"
+                    },
                     "type": "route"
                   },
-                  "plain": {},
-                  "tls": {}
+                  "tls": {
+                    "authentication": {
+                      "type": "tls"
+                    }
+                  }
                 },
                 "metrics": {},
-                "replicas": 1,
+                "replicas": 3,
+                "resources": {
+                  "limits": {
+                    "cpu": "4000m",
+                    "memory": "8096Mi"
+                  },
+                  "requests": {
+                    "cpu": "4000m",
+                    "memory": "8096Mi"
+                  }
+                },
                 "storage": {
                   "type": "ephemeral"
                 }
               },
               "zookeeper": {
                 "metrics": {},
-                "replicas": 1,
+                "replicas": 3,
                 "storage": {
                   "type": "ephemeral"
                 }
@@ -297,7 +284,7 @@ metadata:
           "apiVersion": "eventstreams.ibm.com/v1beta1",
           "kind": "EventStreams",
           "metadata": {
-            "name": "sample-three"
+            "name": "sample-nine"
           },
           "spec": {
             "adminApi": {},
@@ -322,7 +309,7 @@ metadata:
                   "log.cleaner.threads": 6,
                   "num.io.threads": 24,
                   "num.network.threads": 9,
-                  "num.replica.fetchers": 3
+                  "num.replica.fetchers": 9
                 },
                 "listeners": {
                   "external": {
@@ -338,7 +325,7 @@ metadata:
                   }
                 },
                 "metrics": {},
-                "replicas": 3,
+                "replicas": 9,
                 "resources": {
                   "limits": {
                     "cpu": "4000m",
@@ -363,13 +350,26 @@ metadata:
             },
             "version": "2020.2.1"
           }
+        },
+        {
+          "apiVersion": "eventstreams.ibm.com/v1beta1",
+          "kind": "EventStreamsGeoReplicator",
+          "metadata": {
+            "labels": {
+              "eventstreams.ibm.com/cluster": "quickstart"
+            },
+            "name": "quickstart"
+          },
+          "spec": {
+            "replicas": 1
+          }
         }
       ]
     capabilities: Basic Install
     categories: Streaming & Messaging
     certified: 'false'
     containerImage: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-operator-icp-linux:latest
-    createdAt: 2020-04-29T11:13:22Z
+    createdAt: 2020-05-01T11:28:08Z
     description: Kafka-based messaging platform for handling real-time data feeds.
     operators.operatorframework.io/internal-objects: '["kafkas.eventstreams.ibm.com","kafkamirrormaker2s.eventstreams.ibm.com"]'
     repository: https://github.ibm.com/mhub/qp-eventstreams-operator

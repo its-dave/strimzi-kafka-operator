@@ -75,11 +75,11 @@ start_local_registry:
 run_scorecard: build_csv
 
 	$(SED) -i s/"^kind: RoleBinding$$"/"kind: ClusterRoleBinding"/g $(ROLE_BINDING_FILE)
-	yq w -i ../examples/eventstreams/eventstreams-quickstart.yaml spec.license.accept true
+	$(FIND) ../examples/eventstreams -type f -name '01-*.yaml' -exec yq w -i {} spec.license.accept true \;
 	cd .. && operator-sdk scorecard --verbose --config deploy/.osdk-scorecard.yaml 
 
 	# cleanup
-	yq w -i ../examples/eventstreams/eventstreams-quickstart.yaml spec.license.accept false
+	$(FIND) ../examples/eventstreams -type f -name '01-*.yaml' -exec yq w -i {} spec.license.accept false \;
 
 
 .PHONY: .EXPORT_ALL_VARIABLES
