@@ -64,6 +64,8 @@ clean:
 get_opm:
 	# utility function for pulling patched version of OPM for build
 	curl -O -u $(ARTIFACTORY_USERNAME):$(ARTIFACTORY_PASSWORD) https://eu.artifactory.swg-devops.com:443/artifactory/hyc-qp-artifacts-generic-local/opm
+	chmod 755 opm
+	mv opm /usr/local/bin
 
 start_local_registry:
 	if [[ "$(shell docker ps --filter name=registry -q)" == "" ]]; then \

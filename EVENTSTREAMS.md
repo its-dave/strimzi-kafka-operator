@@ -10,17 +10,30 @@ This results in a single `Main` that runs two completely separate operators.
 ### Pre-reqs
 If building the whole project you will need:
 - all of the [pre-reqs listed for Strimzi](DEV_QUICK_START_MACOS.md#preparing-your-mac-for-work) or for [non-Mac users](DEV_QUICK_START.md#pre-requisites)
-- yq v2.4.1 [source repo](https://github.com/mikefarah/yq)
-- jq [source repo](https://stedolan.github.io/jq/)
-- operator-sdk [source repo](https://github.com/operator-framework/operator-sdk/blob/master/doc/user/install-operator-sdk.md)
+
+#### Brew packages
+- yq v3.2.1 [source repo](https://github.com/mikefarah/yq)
+- jq v1.6 [source repo](https://stedolan.github.io/jq/)
+- operator-sdk v0.17.0 [source repo](https://github.com/operator-framework/operator-sdk/blob/master/doc/user/install-operator-sdk.md)
 - python v3
-- gsed
+- gnu-sed v4.7
+
 ```
-brew install yq jq operator-sdk python3
+brew install yq jq operator-sdk python3 gnu-sed
 ```
-- operator-courier [source repo](https://github.com/operator-framework/operator-courier)
+##### Notes
+`brew upgrade <package>` can be used to upgrade any of your existing packages to latest.
+
+`brew` always installs the latest version of packages - the versions listed above are the versions we've tested with. If you discover `brew` has installed a newer version that causes problems, you can downgrade to a specific version using the following steps:
+
+- `brew log --oneline <package>` lists the commits to Homebrew that modify the package version. Copy the short commit id that has the message '<package>: update <version> bottle'
+- `brew unlink <package>` will remove the link to the newer version
+- `brew install https://raw.githubusercontent.com/Homebrew/homebrew-core/<short-commit>/Formula/<package>.rb`
+
+#### Pip3 packages
+- operator-courier v2.1.7 [source repo](https://github.com/operator-framework/operator-courier)
 ```
-pip3 install operator-courier
+pip3 install operator-courier==2.1.7
 ```
 
 ### Install
@@ -126,28 +139,6 @@ metadata:
 oc create secret docker-registry ibm-entitlement-key --docker-server=hyc-qp-stable-docker-local.artifactory.swg-devops.com --docker-username=<your_email> --docker-password=<Artifactory_API> --docker-email=<your_email> -n <name_of_your_namespace>
 ```
 
-
-### Update namespace fields
-In the `install/cluster-operator` directory
-
-Update the namespace fields to the namespace you have previously specified.
-Update the following files:
-
-* `020-RoleBinding-strimzi-cluster-operator.yaml`
-* `021-ClusterRoleBinding-strimzi-cluster-operator.yaml`
-* `030-ClusterRoleBinding-strimzi-cluster-operator-kafka-broker-delegation.yaml`
-* `031-RoleBinding-strimzi-cluster-operator-entity-operator-delegation.yaml`
-* `032-RoleBinding-strimzi-cluster-operator-topic-operator-delegation.yaml`
-
-By default, the namespace used in those files is `myproject`.
-An easy way to replace the namespace fields is to do a search and replace of `myproject` in the `install/cluster-operator` directory with the name of your namespace.
-
-You can now install your operator.
-Apply all the files within the `install/cluster-operator` directory:
-```
-oc apply -f install/cluster-operator -n <name_of_your_namespace>
-```
-
 ### Install Common Services
 Follow the [instructions](https://github.ibm.com/ICP-DevOps/tf_openshift_4_tools/tree/master/fyre/ceph_and_inception_install) to install Common Services in your OpenShift Cluster.
 
@@ -196,8 +187,12 @@ _(This can take about 5-10 minutes, cluster can become inaccessible while this h
 Copy the output of `oc registry login --skip-check` into your docker insecure registries (`Preferences > Daemon > Insecure Registries`)
 Note: If you have a newer version of docker installed, this will need to be added to `Preferences > Docker Engine` instead.
 
+### (PreReq) Install patched OPM tool
+- Export ARTIFACTORY_USERNAME and ARTIFACTORY_PASSWORD as env vars (if not already in your bash profile).
+- Run `make -C deploy get_opm` which downloads `opm` from artifactory and installs it into `/usr/local/bin`
+
 ### Build operator registry with our operator bundle, push to OpenShift registry
-Run `make build_csv deploy  -C deploy` this will build and verify the OLM bundle, build a catalog source and push it to your OpenShift
+Run `make -C deploy deploy` this will build and verify the OLM bundle, build a catalog source and push it to your OpenShift
 
 To verify that local-operator has been correctly deployed:
 ```
@@ -245,7 +240,7 @@ This can be used to deploy an instance of the operator and create new Event Stre
 
 
 ## Deploying Event Streams Custom Resources
-For an OpenShift user *without* the administrator roll, a cluster administrator will need to do the following steps:
+For an OpenShift user *without* the administrator role, a cluster administrator will need to do the following steps:
 1. Apply a ClusterRole with the required create permissions to the cluster. An example can be found at `examples/eventstreams-cluster-roles/eventstreams-cluster-admin.yaml`
 This can be applied by running:
 ```
