@@ -104,6 +104,11 @@ kafkaConnects2i:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: strimzi/kafka
     tagPrefix: latest
+cruiseControl:
+  image:
+    repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
+    name: strimzi/kafka
+    tagPrefix: latest
 topicOperator:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
@@ -130,6 +135,11 @@ tlsSidecarKafka:
     name: strimzi/kafka
     tagPrefix: latest
 tlsSidecarEntityOperator:
+  image:
+    repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
+    name: strimzi/kafka
+    tagPrefix: latest
+tlsSidecarCruiseControl:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: strimzi/kafka

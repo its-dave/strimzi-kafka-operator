@@ -369,7 +369,7 @@ metadata:
     categories: Streaming & Messaging
     certified: 'false'
     containerImage: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-operator-icp-linux:latest
-    createdAt: 2020-04-30T14:35:28Z
+    createdAt: 2020-05-03T21:59:58Z
     description: Kafka-based messaging platform for handling real-time data feeds.
     operators.operatorframework.io/internal-objects: '["kafkas.eventstreams.ibm.com","kafkamirrormaker2s.eventstreams.ibm.com"]'
     repository: https://github.ibm.com/mhub/qp-eventstreams-operator
@@ -1178,6 +1178,10 @@ spec:
                 - name: EVENTSTREAMS_DEFAULT_TLS_SIDECAR_ZOOKEEPER_IMAGE
                   value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:latest-kafka-2.4.0
                 - name: EVENTSTREAMS_DEFAULT_KAFKA_EXPORTER_IMAGE
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:latest-kafka-2.4.0
+                - name: EVENTSTREAMS_DEFAULT_CRUISE_CONTROL_IMAGE
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:latest-kafka-2.4.0
+                - name: EVENTSTREAMS_DEFAULT_TLS_SIDECAR_CRUISE_CONTROL_IMAGE
                   value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:latest-kafka-2.4.0
                 - name: EVENTSTREAMS_KAFKA_IMAGES
                   value: |
