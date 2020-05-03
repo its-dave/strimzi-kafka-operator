@@ -57,8 +57,7 @@ public class ReplicatorModel extends AbstractModel {
 
 
     public static final String COMPONENT_NAME = "georep";
-    public static final String APPLICATION_NAME = "geo-replicator";
-    public static final String REPLICATOR_APPLICATION_NAME = "kafka-mirror-maker-2";
+    public static final String APPLICATION_NAME = "kafka-mirror-maker-2";
     public static final int REPLICATOR_PORT = 8083;
     public static final String REPLICATOR_CLUSTER_NAME = "georep-cluster";
     protected static final String CONFIG_STORAGE_TOPIC_NAME = "__eventstreams_georeplicator_configs";
@@ -227,7 +226,7 @@ public class ReplicatorModel extends AbstractModel {
         List<NetworkPolicyIngressRule> ingressRules = new ArrayList<>(1);
         ingressRules.add(createCustomReplicatorConnectIngressRule());
         List<NetworkPolicyEgressRule> egressRules = new ArrayList<>(0);
-        return super.createNetworkPolicy(createLabelSelector(REPLICATOR_APPLICATION_NAME), ingressRules, egressRules);
+        return super.createNetworkPolicy(createLabelSelector(APPLICATION_NAME), ingressRules, egressRules);
     }
 
 

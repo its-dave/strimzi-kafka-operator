@@ -221,7 +221,7 @@ public class ReplicatorModelTest {
 
         assertThat(replicatorSecretLabels,  allOf(
                 aMapWithSize(7),
-                hasEntry(Labels.KUBERNETES_NAME_LABEL, "geo-replicator"),
+                hasEntry(Labels.KUBERNETES_NAME_LABEL, "kafka-mirror-maker-2"),
                 hasEntry(Labels.KUBERNETES_INSTANCE_LABEL, instanceName),
                 hasEntry(Labels.KUBERNETES_MANAGED_BY_LABEL, "eventstreams-cluster-operator"),
                 hasEntry(Labels.KUBERNETES_PART_OF_LABEL, "eventstreams-" + instanceName),
