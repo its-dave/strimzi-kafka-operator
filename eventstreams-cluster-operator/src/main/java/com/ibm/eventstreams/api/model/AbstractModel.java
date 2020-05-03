@@ -153,6 +153,7 @@ public abstract class AbstractModel {
     private String apiVersion;
     private String uid;
     private String componentName;
+    private String applicationName;
     private List<ContainerEnvVar> envVars;
     private String instanceName;
     private String namespace;
@@ -180,6 +181,7 @@ public abstract class AbstractModel {
         this.instanceName = resource.getMetadata().getName();
         this.namespace = resource.getMetadata().getNamespace();
         this.componentName = componentName;
+        this.applicationName = applicationName;
 
         this.labels = Labels.generateDefaultLabels(resource, applicationName, OPERATOR_NAME);
         // If the component is not part of the parent application (eventstreams), then override Strimzi name label
@@ -193,6 +195,10 @@ public abstract class AbstractModel {
 
     public String getComponentName() {
         return componentName;
+    }
+
+    public String getApplicationName() {
+        return applicationName;
     }
 
     protected List<LocalObjectReference> getGlobalPullSecrets() {
@@ -354,7 +360,7 @@ public abstract class AbstractModel {
         this.uid = instance.getMetadata().getUid();
     }
 
-    private List<LocalObjectReference> getPullSecrets() {
+    public List<LocalObjectReference> getPullSecrets() {
 
         return Stream.of(Optional.ofNullable(podTemplate).map(PodTemplate::getImagePullSecrets),
                          Optional.ofNullable(globalPullSecrets))

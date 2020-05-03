@@ -14,6 +14,7 @@ package com.ibm.eventstreams.controller;
 
 import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.EndpointServiceType;
+import com.ibm.eventstreams.api.model.AbstractModel;
 import com.ibm.eventstreams.api.model.AbstractSecureEndpointsModel;
 import com.ibm.eventstreams.api.model.AdminApiModel;
 import com.ibm.eventstreams.api.model.AdminUIModel;
@@ -148,7 +149,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                                 MetricsProvider metricsProvider,
                                 long kafkaStatusReadyTimeoutMs) {
         super(vertx, kind, esResourceOperator, metricsProvider);
-        log.traceEntry(() -> vertx, () -> client, () -> kind, () -> pfa, () -> esResourceOperator, 
+        log.traceEntry(() -> vertx, () -> client, () -> kind, () -> pfa, () -> esResourceOperator,
             () -> cp4iResourceOperator, () -> imageConfig, () -> routeOperator,
             () -> kafkaStatusReadyTimeoutMs);
         log.info("Creating EventStreamsOperator");
@@ -492,11 +493,14 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         Future<ReconciliationState> createKafkaCustomResource() {
             log.traceEntry();
             EventStreamsKafkaModel kafka = new EventStreamsKafkaModel(instance);
-            Future<Kafka> createdKafka = toFuture(() -> Crds.kafkaOperation(client)
-                .inNamespace(namespace)
-                .createOrReplace(kafka.getKafka()));
 
-            return log.traceExit(createdKafka.map(v -> this));
+            List<Future> kafkaFutures = new ArrayList<>();
+            kafkaFutures.add(toFuture(() -> Crds.kafkaOperation(client)
+                    .inNamespace(namespace)
+                    .createOrReplace(kafka.getKafka())));
+
+            return log.traceExit(CompositeFuture.join(kafkaFutures)
+                    .map(this));
         }
 
         Future<ReconciliationState> waitForKafkaStatus() {
@@ -622,6 +626,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 restProducerFutures.add(serviceOperator.reconcile(namespace, restProducer.getServiceName(type), restProducer.getSecurityService(type)));
             }
             restProducerFutures.add(networkPolicyOperator.reconcile(namespace, restProducer.getDefaultResourceName(), restProducer.getNetworkPolicy()));
+            restProducerFutures.add(checkPullSecrets(restProducer));
             return log.traceExit(CompositeFuture.join(restProducerFutures)
                 .compose(v -> reconcileRoutes(restProducer, restProducer.getRoutes()))
                 .compose(routesMap -> reconcileCerts(restProducer, routesMap, dateSupplier))
@@ -649,6 +654,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
 
             adminApiFutures.add(networkPolicyOperator.createOrUpdate(adminApi.getNetworkPolicy()));
             adminApiFutures.add(roleBindingOperator.createOrUpdate(adminApi.getRoleBinding()));
+            adminApiFutures.add(checkPullSecrets(adminApi));
             return log.traceExit(CompositeFuture.join(adminApiFutures)
                     .compose(v -> reconcileRoutes(adminApi, adminApi.getRoutes()))
                     .compose(routesHostMap -> {
@@ -686,6 +692,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 schemaRegistryFutures.add(serviceOperator.reconcile(namespace, schemaRegistry.getServiceName(type), schemaRegistry.getSecurityService(type)));
             }
             schemaRegistryFutures.add(networkPolicyOperator.reconcile(namespace, schemaRegistry.getDefaultResourceName(), schemaRegistry.getNetworkPolicy()));
+            schemaRegistryFutures.add(checkPullSecrets(schemaRegistry));
 
             return log.traceExit(CompositeFuture.join(schemaRegistryFutures)
                     .compose(v -> reconcileRoutes(schemaRegistry, schemaRegistry.getRoutes()))
@@ -729,6 +736,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             adminUIFutures.add(roleBindingOperator.reconcile(namespace, ui.getDefaultResourceName(), ui.getRoleBinding()));
             adminUIFutures.add(serviceOperator.reconcile(namespace, ui.getDefaultResourceName(), ui.getService()));
             adminUIFutures.add(networkPolicyOperator.reconcile(namespace, ui.getDefaultResourceName(), ui.getNetworkPolicy()));
+            adminUIFutures.add(checkPullSecrets(ui));
 
             if (pfa.hasRoutes() && routeOperator != null) {
                 adminUIFutures.add(routeOperator.reconcile(namespace, ui.getRouteName(), ui.getRoute()).compose(route -> {
@@ -763,6 +771,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             collectorFutures.add(serviceAccountOperator.reconcile(namespace, collector.getDefaultResourceName(), collector.getServiceAccount()));
             collectorFutures.add(serviceOperator.reconcile(namespace, collector.getDefaultResourceName(), collector.getService()));
             collectorFutures.add(networkPolicyOperator.reconcile(namespace, collector.getDefaultResourceName(), collector.getNetworkPolicy()));
+            collectorFutures.add(checkPullSecrets(collector));
             return log.traceExit(CompositeFuture.join(collectorFutures)
                     .map(v -> this));
         }
@@ -932,6 +941,54 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         }
 
         /**
+         * Helper method which verifies if the pull secrets that a component is configured
+         * with actually exist. If the secrets are missing, a warning is added to the
+         * instance status, as an explanation to the user if component(s) fail to start.
+         *
+         * All of the secrets don't need to exist for an image to be pulled, so this only
+         * creates a warning if *all* configured secrets (operator env var, CR-level secret,
+         * component-level override) do not exist.
+         *
+         * Because pull secrets can be configured separately for each individual component,
+         * the checking (and creation of warnings) is done on a per-component basis.
+         *
+         * This is only a warning and not an error state as the images may be pulled from
+         * a public registry, or a private registry that does not require authentication.
+         */
+        Future<Void> checkPullSecrets(AbstractModel component) {
+            log.traceEntry(() -> component.getComponentName());
+            Promise<Void> checkSecretsPromise = Promise.promise();
+
+            List<Future> getPullSecrets = component.getPullSecrets()
+                    .stream()
+                    .map(secret -> secretOperator.getAsync(namespace, secret.getName()))
+                    .collect(Collectors.toList());
+
+            CompositeFuture.all(getPullSecrets).setHandler(res -> {
+                if (res.succeeded()) {
+                    boolean allPullSecretsMissing = getPullSecrets.stream()
+                        .allMatch(future -> future.result() == null);
+
+                    if (allPullSecretsMissing) {
+                        addToConditions(new ConditionBuilder()
+                                .withLastTransitionTime(ModelUtils.formatTimestamp(dateSupplier()))
+                                .withType("Warning")
+                                .withStatus("True")
+                                .withReason("MissingPullSecret")
+                                .withMessage(String.format("None of the pull secrets specified for %s exist",
+                                                           component.getApplicationName()))
+                                .build());
+                    }
+
+                    checkSecretsPromise.complete();
+                } else {
+                    checkSecretsPromise.fail(res.cause());
+                }
+            });
+            return log.traceExit(checkSecretsPromise.future());
+        }
+
+        /**
          * Helper method which updates the cert and key in the model for a given endpoint. Will always set the key and
          * cert in case a future endpoint requires a regeneration of the secret.
          * @param certSecret Existing secret that a previous reconcile has created
@@ -1092,7 +1149,9 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             //  add the new condition to the status
             addCondition(previousConditions
                     .stream()
-                    .filter(c -> condition.getReason() != null && condition.getReason().equals(c.getReason()))
+                    .filter(c -> condition.getReason() != null &&
+                                 condition.getReason().equals(c.getReason()) &&
+                                 condition.getMessage().equals(c.getMessage()))
                     .findFirst()
                     .orElse(condition));
             log.traceExit();
