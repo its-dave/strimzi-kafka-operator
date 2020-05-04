@@ -1,8 +1,8 @@
 # Makefile.eventstreams contains the tasks for the Event Streams build pipeline
 EVENTSTREAMS_PROJECT_NAME=eventstreams-cluster-operator
 
-KAFKA_VERSION ?= 2.12-2.4.0
-KAFKA_TAG ?= 2020-04-01-14.45.58-7558c77
+KAFKA_VERSION ?= 2.12-2.5.0
+KAFKA_TAG ?= 2020-04-30-09.08.40-0c90825
 JAVA_IMAGE_TAG_UBI7_OPENJDK8_JRE ?= latest
 B_REGISTRY ?= hyc-qp-stable-docker-local.artifactory.swg-devops.com
 B_PLATFORM ?= icp

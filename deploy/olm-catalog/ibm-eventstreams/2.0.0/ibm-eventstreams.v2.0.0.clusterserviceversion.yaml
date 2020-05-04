@@ -369,7 +369,7 @@ metadata:
     categories: Streaming & Messaging
     certified: 'false'
     containerImage: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-operator-icp-linux:latest
-    createdAt: 2020-05-04T10:19:29Z
+    createdAt: 2020-05-04T13:37:57Z
     description: Kafka-based messaging platform for handling real-time data feeds.
     operators.operatorframework.io/internal-objects: '["kafkas.eventstreams.ibm.com","kafkamirrormaker2s.eventstreams.ibm.com"]'
     repository: https://github.ibm.com/mhub/qp-eventstreams-operator
@@ -1172,32 +1172,32 @@ spec:
                     fieldRef:
                       fieldPath: metadata.name
                 - name: EVENTSTREAMS_DEFAULT_TLS_SIDECAR_ENTITY_OPERATOR_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:latest-kafka-2.4.0
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:latest-kafka-2.5.0
                 - name: EVENTSTREAMS_DEFAULT_TLS_SIDECAR_KAFKA_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:latest-kafka-2.4.0
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:latest-kafka-2.5.0
                 - name: EVENTSTREAMS_DEFAULT_TLS_SIDECAR_ZOOKEEPER_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:latest-kafka-2.4.0
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:latest-kafka-2.5.0
                 - name: EVENTSTREAMS_DEFAULT_KAFKA_EXPORTER_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:latest-kafka-2.4.0
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:latest-kafka-2.5.0
                 - name: EVENTSTREAMS_DEFAULT_CRUISE_CONTROL_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:latest-kafka-2.4.0
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:latest-kafka-2.5.0
                 - name: EVENTSTREAMS_DEFAULT_TLS_SIDECAR_CRUISE_CONTROL_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:latest-kafka-2.4.0
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:latest-kafka-2.5.0
                 - name: EVENTSTREAMS_KAFKA_IMAGES
                   value: |
-                    2.4.0=hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:latest-kafka-2.4.0
+                    2.5.0=hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:latest-kafka-2.5.0
                 - name: EVENTSTREAMS_KAFKA_CONNECT_IMAGES
                   value: |
-                    2.4.0=hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:latest-kafka-2.4.0
+                    2.5.0=hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:latest-kafka-2.5.0
                 - name: EVENTSTREAMS_KAFKA_CONNECT_S2I_IMAGES
                   value: |
-                    2.4.0=hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:latest-kafka-2.4.0
+                    2.5.0=hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:latest-kafka-2.5.0
                 - name: EVENTSTREAMS_KAFKA_MIRROR_MAKER_IMAGES
                   value: |
-                    2.4.0=hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:latest-kafka-2.4.0
+                    2.5.0=hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:latest-kafka-2.5.0
                 - name: EVENTSTREAMS_KAFKA_MIRROR_MAKER_2_IMAGES
                   value: |
-                    2.4.0=hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:latest-kafka-2.4.0
+                    2.5.0=hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:latest-kafka-2.5.0
                 - name: EVENTSTREAMS_DEFAULT_TOPIC_OPERATOR_IMAGE
                   value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator:latest
                 - name: EVENTSTREAMS_DEFAULT_USER_OPERATOR_IMAGE
@@ -1207,15 +1207,15 @@ spec:
                 - name: EVENTSTREAMS_DEFAULT_JMXTRANS_IMAGE
                   value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/jmxtrans:latest
                 - name: EVENTSTREAMS_DEFAULT_REST_PRODUCER_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-rest-producer-v2-icp-linux:2020-04-24-12.38.14-17e095b
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-rest-producer-v2-icp-linux:2020-05-01-09.55.06-70d8f46
                 - name: EVENTSTREAMS_DEFAULT_ADMIN_API_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-admin-icp-linux:2020-04-24-12.38.18-17e095b
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-admin-icp-linux:2020-05-01-09.54.59-70d8f46
                 - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-schema-registry-icp-linux:2020-04-08-10.53.04-a549b6c-dev
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-schema-registry-icp-linux:2020-05-01-09.46.24-21cd0a7-dev
                 - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_AVRO_IMAGE
                   value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-schema-registry-avro-icp-linux:2020-04-09-16.03.17-cd87238
                 - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_PROXY_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-schema-registry-v2-icp-linux:2020-04-24-12.38.16-17e095b
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-schema-registry-v2-icp-linux:2020-05-01-09.55.03-70d8f46
                 - name: EVENTSTREAMS_DEFAULT_ADMIN_UI_IMAGE
                   value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-admin-ui-icp-linux:2020-05-01-14.45.21-4ffc2c8-dev
                 - name: EVENTSTREAMS_DEFAULT_ADMIN_UI_REDIS_IMAGE
@@ -1325,16 +1325,16 @@ spec:
     image: cp.icr.io/cp/icp4i/es/strimzi-operator-latest@sha256:4097889236A2AF26C293033FEB964C4CF118C0224E0D063FEC0A89E9D0569EF2
   - name: strimzi-operator-init-latest
     image: cp.icr.io/cp/icp4i/es/strimzi-operator-init-latest@sha256:4097889236A2AF26C293033FEB964C4CF118C0224E0D063FEC0A89E9D0569EF2
-  - name: eventstreams-rest-producer-v2-icp-linux-2020-04-24-12.38.14-17e095b
-    image: cp.icr.io/cp/icp4i/es/eventstreams-rest-producer-v2-icp-linux-2020-04-24-12.38.14-17e095b@sha256:8ba6ec2b4fbfe0afa54062df9c6e1855cc55dc43acf5d135a5382ae8549b43b3
-  - name: eventstreams-admin-icp-linux-2020-04-24-12.38.18-17e095b
-    image: cp.icr.io/cp/icp4i/es/eventstreams-admin-icp-linux-2020-04-24-12.38.18-17e095b@sha256:33c6069f63d11fd5efb93ab7f5552657538fd0ef2bdf86f503259be464267849
-  - name: eventstreams-schema-registry-icp-linux-2020-04-08-10.53.04-a549b6c-dev
-    image: cp.icr.io/cp/icp4i/es/eventstreams-schema-registry-icp-linux-2020-04-08-10.53.04-a549b6c-dev@sha256:7e918061fe8d98f622ad87a3121a9bbbd9dc452e28c2c48312e7e6b67fd666f2
+  - name: eventstreams-rest-producer-v2-icp-linux-2020-05-01-09.55.06-70d8f46
+    image: cp.icr.io/cp/icp4i/es/eventstreams-rest-producer-v2-icp-linux-2020-05-01-09.55.06-70d8f46@sha256:79562feeda107514754ba299200954a6ec775f779f8aa367508dd637039288bd
+  - name: eventstreams-admin-icp-linux-2020-05-01-09.54.59-70d8f46
+    image: cp.icr.io/cp/icp4i/es/eventstreams-admin-icp-linux-2020-05-01-09.54.59-70d8f46@sha256:7b12345ca7aa24ccf36e07e89fe87ddaaa43946d763d41ae29b9919ef2d42cd9
+  - name: eventstreams-schema-registry-icp-linux-2020-05-01-09.46.24-21cd0a7-dev
+    image: cp.icr.io/cp/icp4i/es/eventstreams-schema-registry-icp-linux-2020-05-01-09.46.24-21cd0a7-dev@sha256:dffa70b4670140e4c9324ee11378586d74875480c36b59664476378278cbabba
   - name: eventstreams-schema-registry-avro-icp-linux-2020-04-09-16.03.17-cd87238
     image: cp.icr.io/cp/icp4i/es/eventstreams-schema-registry-avro-icp-linux-2020-04-09-16.03.17-cd87238@sha256:300004da677dfd029b5429366c1a0251bd64c178922b3e5a857b02dbda231d26
-  - name: eventstreams-schema-registry-v2-icp-linux-2020-04-24-12.38.16-17e095b
-    image: cp.icr.io/cp/icp4i/es/eventstreams-schema-registry-v2-icp-linux-2020-04-24-12.38.16-17e095b@sha256:0907cb3d6b2163cfe9344ac013d799aa1cd8ce3f71931c0338b28624f09e3224
+  - name: eventstreams-schema-registry-v2-icp-linux-2020-05-01-09.55.03-70d8f46
+    image: cp.icr.io/cp/icp4i/es/eventstreams-schema-registry-v2-icp-linux-2020-05-01-09.55.03-70d8f46@sha256:53133429383c6e9d451e2d8fccd989811e5173d71ea6be514c89f9ffb24d99e3
   - name: eventstreams-admin-ui-icp-linux-2020-05-01-14.45.21-4ffc2c8-dev
     image: cp.icr.io/cp/icp4i/es/eventstreams-admin-ui-icp-linux-2020-05-01-14.45.21-4ffc2c8-dev@sha256:653b472e865b7146355dd29325cb76f4b449a952905afb69c81245f024a2cc12
   - name: eventstreams-session-store-icp-linux-2020-04-09-15.40.36-f32e234
