@@ -26,6 +26,7 @@ import com.ibm.eventstreams.api.spec.ExternalAccess;
 import com.ibm.eventstreams.api.spec.ExternalAccessBuilder;
 import com.ibm.eventstreams.api.spec.ImagesSpec;
 import com.ibm.eventstreams.api.spec.SecuritySpec;
+import com.ibm.eventstreams.api.status.EventStreamsStatus;
 import com.ibm.eventstreams.api.status.EventStreamsVersions;
 import com.ibm.eventstreams.controller.EventStreamsOperatorConfig;
 import com.ibm.iam.api.model.ClientModel;
@@ -65,8 +66,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-
-import static com.ibm.eventstreams.api.model.AbstractSecureEndpointsModel.getExternalServiceName;
 import static com.ibm.eventstreams.api.model.AbstractSecureEndpointsModel.getInternalServiceName;
 
 public class AdminUIModel extends AbstractModel {
@@ -260,6 +259,17 @@ public class AdminUIModel extends AbstractModel {
         return Arrays.asList(getUIContainer(instance), getRedisContainer());
     }
 
+    private Optional<String> getRouteFromStatus(EventStreams instance, String componentName) {
+        return Optional.of(instance)
+            .map(EventStreams::getStatus)
+            .map(EventStreamsStatus::getRoutes)
+            .flatMap(map -> map.entrySet().stream()
+                .filter(entry -> entry.getKey().contains(componentName))
+                .findFirst())
+            .map(Map.Entry::getValue)
+            .map(route -> getUrlProtocol(crTlsVersionValue) + route);
+    }
+
     /**
      * 
      * @return The Admin UI container
@@ -274,7 +284,8 @@ public class AdminUIModel extends AbstractModel {
 
         String adminApiService = getUrlProtocol(crTlsVersionValue) + getInternalServiceName(getInstanceName(), AdminApiModel.COMPONENT_NAME) + "." +  getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.getPodToPodPort(isSecurityEnabled);
         String schemaRegistryService = getUrlProtocol(crTlsVersionValue) + getInternalServiceName(getInstanceName(), SchemaRegistryModel.COMPONENT_NAME) + "." +  getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.getPodToPodPort(isSecurityEnabled);
-        String restProducerService = getUrlProtocol(crTlsVersionValue) + getExternalServiceName(getInstanceName(), RestProducerModel.COMPONENT_NAME) + "." +  getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.getPodToPodPort(isSecurityEnabled);
+        Optional<String> externalRestProducerRoute = getRouteFromStatus(instance, RestProducerModel.COMPONENT_NAME);
+        Optional<String> externalSchemaRegistryRoute = getRouteFromStatus(instance, SchemaRegistryModel.COMPONENT_NAME);
 
         List<EnvVar> envVarDefaults = new ArrayList<>();
 
@@ -336,7 +347,9 @@ public class AdminUIModel extends AbstractModel {
         envVarDefaults.add(new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue("true").build());
         envVarDefaults.add(new EnvVarBuilder().withName("SCHEMA_REGISTRY_ENABLED").withValue(Boolean.toString(SchemaRegistryModel.isSchemaRegistryEnabled(instance))).build());
         envVarDefaults.add(new EnvVarBuilder().withName("SCHEMA_REGISTRY_URL").withValue(schemaRegistryService).build());
-        envVarDefaults.add(new EnvVarBuilder().withName("REST_PRODUCER_URL").withValue(restProducerService).build());
+        externalRestProducerRoute.ifPresent(route -> envVarDefaults.add(new EnvVarBuilder().withName("EXTERNAL_REST_PRODUCER_URL").withValue(route).build()));
+        externalSchemaRegistryRoute.ifPresent(route -> envVarDefaults.add(new EnvVarBuilder().withName("EXTERNAL_SCHEMA_REGISTRY_URL").withValue(route).build()));
+
 
         envVarDefaults.add(
             new EnvVarBuilder()

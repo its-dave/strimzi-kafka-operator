@@ -57,7 +57,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.ibm.eventstreams.api.model.AbstractSecureEndpointsModel.INTERNAL_SERVICE_SUFFIX;
-import static com.ibm.eventstreams.api.model.AbstractSecureEndpointsModel.ROUTE_SERVICE_SUFFIX;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.startsWith;
@@ -79,21 +78,40 @@ public class AdminUIModelTest {
     private final String componentPrefix = instanceName + "-" + AbstractModel.APP_NAME + "-" + AdminUIModel.COMPONENT_NAME;
     private final int defaultReplicas = 1;
     private final String namespace = "test-namespace";
+    private final String restProducerHost = "rest-producer.route.os.com";
+    private final String schemaRegistryHost = "schema-registry.route.os.com";
 
     @Mock
     private EventStreamsOperatorConfig.ImageLookup imageConfig;
 
     private EventStreamsBuilder createDefaultEventStreams() {
         return ModelUtils.createDefaultEventStreams(instanceName)
-                .withMetadata(new ObjectMetaBuilder()
-                        .withNewName(instanceName)
-                        .withNewNamespace(namespace)
-                        .build())
-                .editSpec()
-                    .withNewAdminUI()
-                        .withReplicas(defaultReplicas)
-                    .endAdminUI()
-                .endSpec();
+            .withMetadata(new ObjectMetaBuilder()
+                .withNewName(instanceName)
+                .withNewNamespace(namespace)
+                .build())
+            .editSpec()
+                .withNewAdminUI()
+                    .withReplicas(defaultReplicas)
+                .endAdminUI()
+            .endSpec()
+            .withNewStatus()
+                .addToRoutes(RestProducerModel.COMPONENT_NAME + "-test-route", restProducerHost)
+                .addToRoutes(SchemaRegistryModel.COMPONENT_NAME + "-test-route", schemaRegistryHost)
+            .endStatus();
+    }
+
+    private EventStreamsBuilder createEventStreamsWithoutStatus() {
+        return ModelUtils.createDefaultEventStreams(instanceName)
+            .withMetadata(new ObjectMetaBuilder()
+                .withNewName(instanceName)
+                .withNewNamespace(namespace)
+                .build())
+            .editSpec()
+                .withNewAdminUI()
+                    .withReplicas(defaultReplicas)
+                .endAdminUI()
+            .endSpec();
     }
 
     private EventStreamsBuilder createEventStreamsWithAuthentication() {
@@ -127,6 +145,11 @@ public class AdminUIModelTest {
 
     private AdminUIModel createDefaultAdminUIModel() {
         EventStreams instance = createDefaultEventStreams().build();
+        return new AdminUIModel(instance, imageConfig, false, null);
+    }
+
+    private AdminUIModel createAdminUIModelWithoutStatus() {
+        EventStreams instance = createEventStreamsWithoutStatus().build();
         return new AdminUIModel(instance, imageConfig, false, null);
     }
 
@@ -174,7 +197,6 @@ public class AdminUIModelTest {
         // confirm ui container has required envars
         String adminApiService = "https://" + instanceName + "-" + AbstractModel.APP_NAME + "-" + AdminApiModel.COMPONENT_NAME + "-" + INTERNAL_SERVICE_SUFFIX + "." +  namespace + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.DEFAULT_P2P_TLS_PORT;
         String schemaRegistryService = "https://" + instanceName + "-" + AbstractModel.APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME + "-" + INTERNAL_SERVICE_SUFFIX + "." +  namespace + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.DEFAULT_P2P_TLS_PORT;
-        String restProducerService = "https://" + instanceName + "-" + AbstractModel.APP_NAME + "-" + RestProducerModel.COMPONENT_NAME + "-" + ROUTE_SERVICE_SUFFIX + "." +  namespace + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.DEFAULT_P2P_TLS_PORT;
 
         assertThat(uiContainers.get(0).getEnv(), hasItems(
                 new EnvVarBuilder().withName("ID").withValue(instanceName).build(),
@@ -185,7 +207,8 @@ public class AdminUIModelTest {
                 new EnvVarBuilder().withName("ICP_USER_MGMT_PORT").withValue("443").build(),
                 new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue("true").build(),
                 new EnvVarBuilder().withName("SCHEMA_REGISTRY_URL").withValue(schemaRegistryService).build(),
-                new EnvVarBuilder().withName("REST_PRODUCER_URL").withValue(restProducerService).build(),
+                new EnvVarBuilder().withName("EXTERNAL_REST_PRODUCER_URL").withValue("https://" + restProducerHost).build(),
+                new EnvVarBuilder().withName("EXTERNAL_SCHEMA_REGISTRY_URL").withValue("https://" + schemaRegistryHost).build(),
                 new EnvVarBuilder().withName(AbstractModel.TLS_VERSION_ENV_KEY).withValue("TLSv1.2").build(),
                 new EnvVarBuilder().withName("ICP_USER_MGMT_HIGHEST_ROLE_FOR_CRN").withValue("idmgmt/identity/api/v1/teams/highestRole").build()));
 
@@ -194,6 +217,17 @@ public class AdminUIModelTest {
 
         Route userInterfaceRoute = adminUIModel.getRoute();
         assertThat(userInterfaceRoute.getMetadata().getName(), startsWith(componentPrefix));
+    }
+
+    @Test
+    public void testAdminUIModelWithoutRoutesInStatus() {
+        AdminUIModel adminUIModel = createAdminUIModelWithoutStatus();
+
+        final PodSpec uiPodSpec = adminUIModel.getDeployment().getSpec().getTemplate().getSpec();
+        final List<Container> uiContainers = uiPodSpec.getContainers();
+
+        assertThat(uiContainers.get(0).getEnv().stream().anyMatch(envVar -> envVar.getName().equals("EXTERNAL_REST_PRODUCER_URL")), is(false));
+        assertThat(uiContainers.get(0).getEnv().stream().anyMatch(envVar -> envVar.getName().equals("EXTERNAL_SCHEMA_REGISTRY_URL")), is(false));
     }
 
     @Test
