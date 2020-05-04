@@ -125,3 +125,21 @@ matrix:
             git diff
             travis_terminate 1
           fi
+
+    - language: node_js
+      env:
+        - JOBNAME=OSSC_SCAN
+      if: branch IN (master-ibm)
+
+      node_js:
+        - '10'
+
+      script:
+        - REPO="strimzi-kafka-operator"
+        # Install and run the qp-tools ossc scanner
+        # N.b we've already installed helm in the initial install list
+        - git clone --depth 1 https://$GITHUB_TOKEN@github.ibm.com/mhub/qp-tools.git
+        # Create effective pom
+        - mvn help:effective-pom -Doutput=effective-pom.xml
+        # Use script for scan + report
+        - ./qp-tools/scripts/scanrepo.sh ${REPO} https://hyc-qp-stable-docker-local.artifactory.swg-devops.com/artifactory/hyc-qp-artifacts-generic-local ${ARTIFACTORY_USERNAME} ${ARTIFACTORY_PASSWORD}
