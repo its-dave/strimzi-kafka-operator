@@ -66,8 +66,8 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
     // static variables
     public static final String COMPONENT_NAME = "schema";
     public static final String APPLICATION_NAME = "schema-registry";
-    public static final String AVRO_SERVICE_CONTAINER_NAME = "avro-service";
-    public static final String SCHEMA_REGISTRY_PROXY_CONTAINER_NAME = "schema-proxy";
+    public static final String AVRO_SERVICE_CONTAINER_NAME = "avro";
+    public static final String SCHEMA_REGISTRY_PROXY_CONTAINER_NAME = "proxy";
     public static final int SCHEMA_REGISTRY_PORT = 3000;
     public static final int AVRO_SERVICE_PORT = 3080;
     public static final int DEFAULT_REPLICAS = 1;
