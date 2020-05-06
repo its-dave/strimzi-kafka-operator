@@ -24,47 +24,31 @@ helm init -c
 docker login -u="${ARTIFACTORY_USERNAME}" -p="${ARTIFACTORY_PASSWORD}" "${destination_registry}"
 
 make eventstreams_build
+make -C deploy get_opm
+make -C deploy build_bundle
 
 if [[ $TAG == *exp ]]; then
-  echo 'Docker tag ends with "exp" so not transfering Strimzi artifact to Artifactory'
+  echo 'Docker tag ends with "exp" so not transferring Strimzi artifact to Artifactory'
 else
-  echo 'Docker tag does not end with "exp" so transfering Strimzi artifact to Artifactory...'
+  echo 'Docker tag does not end with "exp" so transferring Strimzi artifact to Artifactory...'
   mvn deploy -s ./eventstreams-settings.xml -DskipTests
 fi
 
-KAFKA_IMAGE="${destination_registry}/strimzi/kafka-${B_ARCH}:${TAG}"
-KAFKA_IMAGE_LATEST="${destination_registry}/strimzi/kafka-${B_ARCH}:latest-kafka-$(get_kafka_versions)"
-
-OPERATOR_IMAGE="${destination_registry}/strimzi/operator-${B_ARCH}:${TAG}"
-OPERATOR_IMAGE_LATEST="${destination_registry}/strimzi/operator-${B_ARCH}:latest"
-
-OPERATOR_INIT_IMAGE="${destination_registry}/strimzi/operator-init-${B_ARCH}:${TAG}"
-OPERATOR_INIT_IMAGE_LATEST="${destination_registry}/strimzi/operator-init-${B_ARCH}:latest"
-
-echo "Retagging strimzi/kafka:latest to ${KAFKA_IMAGE}..."
-docker tag "strimzi/kafka:latest" "${KAFKA_IMAGE}"
-echo "Retagging strimzi/kafka:latest to ${KAFKA_IMAGE_LATEST}..."
-docker tag "strimzi/kafka:latest" "${KAFKA_IMAGE_LATEST}"
-
-echo "Retagging strimzi/operator:latest to ${OPERATOR_IMAGE}..."
-docker tag "strimzi/operator:latest" "${OPERATOR_IMAGE}"
-echo "Retagging strimzi/operator:latest to ${OPERATOR_IMAGE_LATEST}..."
-docker tag "strimzi/operator:latest" "${OPERATOR_IMAGE_LATEST}"
-
-echo "Retagging strimzi/operator-init:latest to ${OPERATOR_INIT_IMAGE}..."
-docker tag "strimzi/operator-init:latest" "${OPERATOR_INIT_IMAGE}"
-echo "Retagging strimzi/operator-init:latest to ${OPERATOR_INIT_IMAGE_LATEST}..."
-docker tag "strimzi/operator-init:latest" "${OPERATOR_INIT_IMAGE_LATEST}"
-
-echo "Pushing images to ${destination_registry}..."
-docker push "${KAFKA_IMAGE}"
-docker push "${OPERATOR_IMAGE}"
-docker push "${OPERATOR_INIT_IMAGE}"
-if [[ $TAG == *exp ]]; then
-  echo 'Docker tag ends with "exp" so not pushing latest images'
-else
-  echo 'Docker tag does not end with "exp" so pushing latest images'
-  docker push "${KAFKA_IMAGE_LATEST}"
-  docker push "${OPERATOR_IMAGE_LATEST}"
-  docker push "${OPERATOR_INIT_IMAGE_LATEST}"
-fi
+sourceImageNameSuffixes=("strimzi/kafka" "strimzi/operator" "strimzi/operator-init" "strimzi/jmxtrans" "local-operator-registry" "olm-bundle")
+targetImageNameSuffixes=("strimzi/kafka" "strimzi/operator" "strimzi/operator-init" "strimzi/jmxtrans" "operator-index" "operator-bundle")
+targetImageLatestTagOverride=("latest-kafka-$(get_kafka_versions)" "" "" "" "" "")
+for ((i=0; i<${#sourceImageNameSuffixes[*]}; i++)); do
+  sourceImage="${sourceImageNameSuffixes[i]}:latest"
+  targetImageName="${destination_registry}/${targetImageNameSuffixes[i]}-${B_ARCH}"
+  echo "Retagging ${sourceImage} and pushing to ${targetImageName}:${TAG}"
+  docker tag "${sourceImage}" "${targetImageName}:${TAG}"
+  docker push "${targetImageName}:${TAG}"
+  if [[ ${TAG} == *exp ]]; then
+    echo 'Docker tag ends with "exp" so not pushing latest images'
+  else
+    echo 'Docker tag does not end with "exp" so pushing latest images'
+    targetLatestImage="${targetImageName}:${targetImageLatestTagOverride[i]:-"latest"}"
+    docker tag "${sourceImage}" "${targetLatestImage}"
+    docker push "${targetLatestImage}"
+  fi
+done

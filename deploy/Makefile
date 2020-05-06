@@ -31,12 +31,13 @@ ROLE_BINDING_FILE := role_binding.yaml
 SERVICE_ACCOUNT_FILE := service_account.yaml
 
 DATE := $(shell date "+%Y-%m-%dT%H:%M:%SZ")
-IMAGE_TAG := $(shell date "+%Y-%m-%d-%H.%M.%S")
+IMAGE_TAG := latest
 IMAGE_BASE_NAME := local-operator-registry
 IMAGE_NAME := $(IMAGE_BASE_NAME):$(IMAGE_TAG)
 REMOTE_REGISTRY := $(shell oc registry info)
 MARKETPLACE_NAMESPACE := openshift-marketplace
 REPO_ADDR := $(REMOTE_REGISTRY)/$(MARKETPLACE_NAMESPACE)/
+B_OS ?= macos
 
 LOCAL_REPO_PORT := 5000
 LOCAL_REPO_ADDR := localhost:$(LOCAL_REPO_PORT)/
@@ -62,9 +63,9 @@ clean:
 
 get_opm:
 	# utility function for pulling patched version of OPM for build
-	curl -O -u $(ARTIFACTORY_USERNAME):$(ARTIFACTORY_PASSWORD) https://eu.artifactory.swg-devops.com:443/artifactory/hyc-qp-artifacts-generic-local/opm
+	curl -o opm -u $(ARTIFACTORY_USERNAME):$(ARTIFACTORY_PASSWORD) https://eu.artifactory.swg-devops.com:443/artifactory/hyc-qp-artifacts-generic-local/opm-$(B_OS)
 	chmod 755 opm
-	mv opm /usr/local/bin
+	sudo mv opm /usr/local/bin
 
 start_local_registry:
 	if [[ "$(shell docker ps --filter name=registry -q)" == "" ]]; then \
