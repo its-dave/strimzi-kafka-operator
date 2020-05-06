@@ -13,11 +13,9 @@
 package com.ibm.eventstreams.api.spec;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import io.strimzi.api.kafka.model.KafkaMirrorMaker2Spec;
 import io.strimzi.crdgenerator.annotations.Description;
 import io.strimzi.crdgenerator.annotations.Minimum;
 import io.sundr.builder.annotations.Buildable;
@@ -35,7 +33,6 @@ public class ReplicatorSpec implements Serializable  {
     private static final long serialVersionUID = 1L;
 
     private Integer replicas = 1;
-    private KafkaMirrorMaker2Spec mirrorMaker2Spec;
 
     @Description("The number of connect replicas to start for Event Streams replication")
     @Minimum(1)
@@ -45,15 +42,6 @@ public class ReplicatorSpec implements Serializable  {
 
     public void setReplicas(Integer replicas) {
         this.replicas = replicas;
-    }
-
-    @JsonProperty(required = false)
-    public KafkaMirrorMaker2Spec getMirrorMaker2Spec() {
-        return mirrorMaker2Spec;
-    }
-
-    public void setMirrorMaker2Spec(KafkaMirrorMaker2Spec mirrorMaker2Spec) {
-        this.mirrorMaker2Spec = mirrorMaker2Spec;
     }
 
 }

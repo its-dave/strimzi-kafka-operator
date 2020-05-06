@@ -135,13 +135,8 @@ public class ReplicatorModelTest {
         assertThat(clusterSpec.getConfig().get("key.converter"), is(ReplicatorModel.BYTE_ARRAY_CONVERTER_NAME));
         assertThat(clusterSpec.getConfig().get("value.converter"), is(ReplicatorModel.BYTE_ARRAY_CONVERTER_NAME));
 
-        assertThat(replicator.getSpec().getConnectCluster(), is(nonDefaultConnectClusterName));
-
-        assertThat(clusterSpec.getAlias(), is(nonDefaultConnectClusterName));
-        assertThat(clusterSpec.getBootstrapServers(), is(nonDefaultBootstrap));
         assertThat(clusterSpec.getAuthentication().getType(), is("tls"));
         assertThat(clusterSpec.getTls().getTrustedCertificates().size(), is(1));
-
     }
 
 
@@ -290,7 +285,6 @@ public class ReplicatorModelTest {
                         .build())
                 .editSpec()
                      .withReplicas(nonDefaultReplicas)
-                     .withMirrorMaker2Spec(mm2Spec)
                 .endSpec();
 
     }
@@ -346,7 +340,8 @@ public class ReplicatorModelTest {
 
         replicatorCredentials.setReplicatorClientAuth(replicatorConnectSecret);
         replicatorCredentials.setReplicatorTrustStore(replicatorConnectSecret);
-        return new ReplicatorModel(replicatorInstance, instance, replicatorCredentials);
+        KafkaMirrorMaker2 mm2 = null;
+        return new ReplicatorModel(replicatorInstance, instance, replicatorCredentials, mm2);
     }
 
     private ReplicatorSecretModel createDefaultReplicatorSecretModel() {

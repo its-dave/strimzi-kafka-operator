@@ -13,6 +13,7 @@
 package com.ibm.eventstreams.api.model;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -78,14 +79,14 @@ public class ReplicatorModel extends AbstractModel {
      * @param instance
      * @param replicatorCredentials
      */
-    public ReplicatorModel(EventStreamsReplicator replicatorInstance, EventStreams instance, ReplicatorCredentials replicatorCredentials) {
+    public ReplicatorModel(EventStreamsReplicator replicatorInstance, EventStreams instance, ReplicatorCredentials replicatorCredentials, KafkaMirrorMaker2 mirrorMaker2) {
         //always set the namespace to be that of the owning EventStreams instance
         super(instance, COMPONENT_NAME, APPLICATION_NAME);
 
         setOwnerReference(replicatorInstance);
         
         if (isReplicatorEnabled(replicatorInstance)) {
-            kafkaMirrorMaker2 = createMirrorMaker2(replicatorInstance, instance, replicatorCredentials);
+            kafkaMirrorMaker2 = createMirrorMaker2(replicatorInstance, instance, replicatorCredentials, mirrorMaker2);
             networkPolicy = createNetworkPolicy();
         } else {
             kafkaMirrorMaker2 = null;
@@ -94,54 +95,47 @@ public class ReplicatorModel extends AbstractModel {
 
     }
 
-    private KafkaMirrorMaker2 createMirrorMaker2(EventStreamsReplicator replicatorInstance, EventStreams instance,  ReplicatorCredentials replicatorCredentials) {
+    private KafkaMirrorMaker2 createMirrorMaker2(EventStreamsReplicator replicatorInstance, EventStreams instance,  ReplicatorCredentials replicatorCredentials, KafkaMirrorMaker2 mirrorMaker2) {
 
         Optional<ReplicatorSpec> eventStreamsreplicatorSpec = Optional.ofNullable(replicatorInstance.getSpec());
+        KafkaMirrorMaker2Spec mm2Spec = mirrorMaker2 == null || mirrorMaker2.getSpec() == null ? new KafkaMirrorMaker2Spec() : mirrorMaker2.getSpec();
 
-
-        int replicas = eventStreamsreplicatorSpec.map(ReplicatorSpec::getReplicas)
-                .orElse(0);
+        int replicas = eventStreamsreplicatorSpec.map(ReplicatorSpec::getReplicas).orElse(0);
+        mm2Spec.setReplicas(replicas);
 
         KafkaMirrorMaker2Tls caCert = replicatorCredentials.getReplicatorConnectTrustStore();
         KafkaClientAuthentication clientAuthentication = replicatorCredentials.getReplicatorConnectClientAuth();
         KafkaListenerTls internalTlsKafkaListener = getInternalTlsKafkaListener(instance);
 
+        String connectClusterName = ReplicatorModel.getDefaultReplicatorClusterName(getInstanceName());
+        mm2Spec.setConnectCluster(connectClusterName);
 
-        KafkaMirrorMaker2Spec mm2Spec = Optional
-                .ofNullable(replicatorInstance)
-                .map(EventStreamsReplicator::getSpec)
-                .map(ReplicatorSpec::getMirrorMaker2Spec)
-                .orElse(new KafkaMirrorMaker2Spec());
-
-        String connectClusterName = Optional.ofNullable(mm2Spec.getConnectCluster())
-                .orElse(ReplicatorModel.getDefaultReplicatorClusterName(getInstanceName()));
-
-
-        String bootstrap = Optional.ofNullable(mm2Spec.getClusters())
-                .filter(list -> !list.isEmpty())
-                .flatMap(populatedList -> populatedList
-                        .stream()
-                        .filter(item -> connectClusterName.equals(item.getAlias()))
-                        .findFirst()
-                        .map(KafkaMirrorMaker2ClusterSpec::getBootstrapServers))
-                .orElse(getDefaultBootstrap(internalTlsKafkaListener));
-
-
+        String bootstrap = getDefaultBootstrap(internalTlsKafkaListener);
         int kafkaReplicas = instance.getSpec().getStrimziOverrides().getKafka().getReplicas();
 
         // Maximum number of replicas for ConnectConfig topics is 3
         int connectConfigTopicReplicas = (kafkaReplicas >= 3) ? 3 : kafkaReplicas;
 
+
         Map<String, Object> kafkaMirrorMaker2Config = new HashMap<>();
-        kafkaMirrorMaker2Config.put("config.storage.replication.factor", connectConfigTopicReplicas);
-        kafkaMirrorMaker2Config.put("offset.storage.replication.factor", connectConfigTopicReplicas);
-        kafkaMirrorMaker2Config.put("status.storage.replication.factor", connectConfigTopicReplicas);
-        kafkaMirrorMaker2Config.put("config.storage.topic", CONFIG_STORAGE_TOPIC_NAME);
-        kafkaMirrorMaker2Config.put("offset.storage.topic", OFFSET_STORAGE_TOPIC_NAME);
-        kafkaMirrorMaker2Config.put("status.storage.topic", STATUS_STORAGE_TOPIC_NAME);
-        kafkaMirrorMaker2Config.put("key.converter", BYTE_ARRAY_CONVERTER_NAME);
-        kafkaMirrorMaker2Config.put("value.converter", BYTE_ARRAY_CONVERTER_NAME);
-        kafkaMirrorMaker2Config.put("group.id", getDefaultReplicatorClusterName(getInstanceName()));
+        //don't overwrite any existing config that's been set for the connectCluster
+        if (mm2Spec.getClusters() != null) {
+            final Optional<KafkaMirrorMaker2ClusterSpec> existingClusterSpec = Optional.ofNullable(mm2Spec)
+                    .map(KafkaMirrorMaker2Spec::getClusters)
+                    .filter(list -> !list.isEmpty())
+                    .flatMap(populatedList -> populatedList
+                            .stream()
+                            .filter(item -> connectClusterName.equals(item.getAlias()))
+                            .findFirst());
+
+            if (existingClusterSpec.isPresent()) {
+                kafkaMirrorMaker2Config = existingClusterSpec.get().getConfig();
+            } else {
+                addConfigToProperties(kafkaMirrorMaker2Config, connectConfigTopicReplicas);
+            }
+        } else {
+            addConfigToProperties(kafkaMirrorMaker2Config, connectConfigTopicReplicas);
+        }
 
         Labels labels = labelsWithoutResourceGroup();
 
@@ -158,16 +152,32 @@ public class ReplicatorModel extends AbstractModel {
                     .endMetadata()
                 .endPod()
                 .build();
+        mm2Spec.setTemplate(kafkaMirrorMaker2Template);
 
         //if no security set then caCert and clientAuthentication are null and just not set on the connect object
         //if we have an oauth config then the bootstrap will be the TLS port, but the clientAuthentication will be null so the connection will fail (and we log earlier that oauth is unsupported)
-        KafkaMirrorMaker2ClusterSpec kafkaMirrorMaker2ClusterSpec = new KafkaMirrorMaker2ClusterSpecBuilder()
+        KafkaMirrorMaker2ClusterSpec newKafkaMirrorMaker2ClusterSpec = new KafkaMirrorMaker2ClusterSpecBuilder()
                 .withBootstrapServers(bootstrap)
                 .withTls(caCert)
                 .withAuthentication(clientAuthentication)
                 .withAlias(connectClusterName)
                 .withConfig(kafkaMirrorMaker2Config)
                 .build();
+
+        if (mm2Spec.getClusters() != null) {
+
+            Optional.ofNullable(mm2Spec)
+                    .map(KafkaMirrorMaker2Spec::getClusters)
+                    .filter(list -> !list.isEmpty())
+                    .map(populatedList -> populatedList.removeIf(item -> connectClusterName.equals(item.getAlias())));
+
+            mm2Spec.getClusters().add(newKafkaMirrorMaker2ClusterSpec);
+
+        } else {
+
+            mm2Spec.setClusters(Collections.singletonList(newKafkaMirrorMaker2ClusterSpec));
+        }
+
 
         ExternalConfiguration externalConfiguration = new ExternalConfigurationBuilder()
                 .withVolumes(new ExternalConfigurationVolumeSourceBuilder()
@@ -177,6 +187,8 @@ public class ReplicatorModel extends AbstractModel {
                                 .build())
                         .build())
                 .build();
+        mm2Spec.setExternalConfiguration(externalConfiguration);
+
 
         return new KafkaMirrorMaker2Builder()
                 .withApiVersion(KafkaMirrorMaker2.RESOURCE_GROUP + "/" + KafkaMirrorMaker2.V1ALPHA1)
@@ -187,13 +199,22 @@ public class ReplicatorModel extends AbstractModel {
                     .addToLabels(labels.toMap())
                 .endMetadata()
                 .withNewSpecLike(mm2Spec)
-                    .withReplicas(replicas)
-                    .withTemplate(kafkaMirrorMaker2Template)
-                    .withConnectCluster(connectClusterName)
-                    .withClusters(kafkaMirrorMaker2ClusterSpec)
-                    .withExternalConfiguration(externalConfiguration)
                 .endSpec()
                 .build();
+    }
+
+    private void addConfigToProperties(Map<String, Object> kafkaMirrorMaker2Config, int connectConfigTopicReplicas) {
+
+        kafkaMirrorMaker2Config.put("config.storage.replication.factor", connectConfigTopicReplicas);
+        kafkaMirrorMaker2Config.put("offset.storage.replication.factor", connectConfigTopicReplicas);
+        kafkaMirrorMaker2Config.put("status.storage.replication.factor", connectConfigTopicReplicas);
+        kafkaMirrorMaker2Config.put("config.storage.topic", CONFIG_STORAGE_TOPIC_NAME);
+        kafkaMirrorMaker2Config.put("offset.storage.topic", OFFSET_STORAGE_TOPIC_NAME);
+        kafkaMirrorMaker2Config.put("status.storage.topic", STATUS_STORAGE_TOPIC_NAME);
+        kafkaMirrorMaker2Config.put("key.converter", BYTE_ARRAY_CONVERTER_NAME);
+        kafkaMirrorMaker2Config.put("value.converter", BYTE_ARRAY_CONVERTER_NAME);
+        kafkaMirrorMaker2Config.put("group.id", getDefaultReplicatorClusterName(getInstanceName()));
+
     }
 
     private String getDefaultBootstrap(KafkaListenerTls internalTlsKafkaListener) {

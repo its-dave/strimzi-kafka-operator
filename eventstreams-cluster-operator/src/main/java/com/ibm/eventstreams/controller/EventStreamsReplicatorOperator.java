@@ -146,19 +146,20 @@ public class EventStreamsReplicatorOperator extends AbstractOperator<EventStream
 
             log.debug("Create replicator called {} ", eventStreamsInstanceName);
 
-            return resourceOperator.getAsync(namespace, eventStreamsInstanceName).compose(instance -> {
-                if (instance != null) {
-                    ReplicatorCredentials replicatorCredentials = new ReplicatorCredentials(instance);
-                    ReplicatorDestinationUsersModel replicatorUsersModel = new ReplicatorDestinationUsersModel(replicatorInstance, instance);
-                    return kafkaUserOperator.reconcile(namespace, replicatorUsersModel.getConnectKafkaUserName(), replicatorUsersModel.getConnectKafkaUser())
+            return resourceOperator.getAsync(namespace, eventStreamsInstanceName)
+                    .compose(instance -> {
+                        if (instance != null) {
+                            ReplicatorCredentials replicatorCredentials = new ReplicatorCredentials(instance);
+                            ReplicatorDestinationUsersModel replicatorUsersModel = new ReplicatorDestinationUsersModel(replicatorInstance, instance);
+                            return kafkaUserOperator.reconcile(namespace, replicatorUsersModel.getConnectKafkaUserName(), replicatorUsersModel.getConnectKafkaUser())
                             .compose(state -> kafkaUserOperator.reconcile(namespace, replicatorUsersModel.getTargetConnectorKafkaUserName(), replicatorUsersModel.getTargetConnectorKafkaUser()))
                             .compose(state -> kafkaUserOperator.reconcile(namespace, replicatorUsersModel.getConnectExternalKafkaUserName(), replicatorUsersModel.getConnectExternalKafkaUser()))
                             .compose(state -> setTrustStoreForReplicator(replicatorCredentials, instance))
                             .compose(state -> setClientAuthForReplicator(replicatorCredentials, replicatorInstance, instance))
-
+                            .compose(state -> kafkaMirrorMaker2Operator.getAsync(namespace, instance.getMetadata().getName()))
                             //Can't make the ReplicatorModel until after setTrustStoreForReplicator and setClientAuthForReplicator have completed
-                            .compose(state -> {
-                                ReplicatorModel replicatorModel = new ReplicatorModel(replicatorInstance, instance, replicatorCredentials);
+                            .compose(mirrorMaker2 -> {
+                                ReplicatorModel replicatorModel = new ReplicatorModel(replicatorInstance, instance, replicatorCredentials, mirrorMaker2);
                                 List<Future> replicatorFutures = new ArrayList<>();
                                 replicatorFutures.add(networkPolicyOperator.reconcile(namespace, replicatorModel.getDefaultResourceName(), replicatorModel.getNetworkPolicy()));
                                 replicatorFutures.add(kafkaMirrorMaker2Operator.reconcile(namespace, replicatorModel.getReplicatorName(), replicatorModel.getReplicator()));
@@ -167,14 +168,14 @@ public class EventStreamsReplicatorOperator extends AbstractOperator<EventStream
                             .map(cf -> this);
 
 
-                } else {
+                        } else {
                     //TODO update status too
-                    log.error("Can't find Event Streams instance {} in namespace {} ", eventStreamsInstanceName, namespace);
-                    return Future.failedFuture("EventStreams instance "
-                            + replicatorInstance.getMetadata().getLabels().get(Labels.STRIMZI_CLUSTER_LABEL)
-                            + " not available. Ensure the Event Streams instance is created before deploying the Event Streams Replicator ").map(rr -> this);
-                }
-            });
+                            log.error("Can't find Event Streams instance {} in namespace {} ", eventStreamsInstanceName, namespace);
+                            return Future.failedFuture("EventStreams instance "
+                                + replicatorInstance.getMetadata().getLabels().get(Labels.STRIMZI_CLUSTER_LABEL)
+                                + " not available. Ensure the Event Streams instance is created before deploying the Event Streams Replicator ").map(rr -> this);
+                        }
+                    });
 
         }
 
