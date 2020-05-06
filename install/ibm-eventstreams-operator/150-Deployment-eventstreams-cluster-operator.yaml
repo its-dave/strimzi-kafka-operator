@@ -95,8 +95,6 @@ spec:
           value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:latest-kafka-2.5.0
         - name: EVENTSTREAMS_DEFAULT_TLS_SIDECAR_KAFKA_IMAGE
           value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:latest-kafka-2.5.0
-        - name: EVENTSTREAMS_DEFAULT_TLS_SIDECAR_ZOOKEEPER_IMAGE
-          value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:latest-kafka-2.5.0
         - name: EVENTSTREAMS_DEFAULT_KAFKA_EXPORTER_IMAGE
           value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:latest-kafka-2.5.0
         - name: EVENTSTREAMS_DEFAULT_CRUISE_CONTROL_IMAGE
