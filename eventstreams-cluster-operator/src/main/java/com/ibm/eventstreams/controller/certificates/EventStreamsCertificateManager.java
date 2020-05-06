@@ -116,7 +116,9 @@ public class EventStreamsCertificateManager {
 
     private String getSecretDataForKey(Secret secret, String key)  {
         Map<String, String> secretData = secret.getData();
-        return Optional.ofNullable(secretData.get(key)).orElse("");
+        return Optional.ofNullable(secretData)
+                .map(data -> data.get(key))
+                .orElse("");
     }
 
     private void delete(File file) {

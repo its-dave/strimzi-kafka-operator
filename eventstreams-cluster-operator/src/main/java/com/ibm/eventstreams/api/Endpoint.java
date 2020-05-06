@@ -38,6 +38,7 @@ public class Endpoint {
     public static final String SCRAM_SHA_512_KEY = "SCRAM-SHA-512";
     public static final String MUTUAL_TLS_KEY = "TLS";
     public static final String MAC_KEY = "MAC";
+    public static final String RUNAS_ANONYMOUS_KEY = "RUNAS-ANONYMOUS";
     private static final List<String> DEFAULT_EXTERNAL_AUTHENTICATION_MECHANISM = Arrays.asList(IAM_BEARER_KEY, MUTUAL_TLS_KEY, SCRAM_SHA_512_KEY);
 
     public static final String DEFAULT_P2P_TLS_NAME = "p2ptls";
@@ -69,16 +70,17 @@ public class Endpoint {
      * Creates a default endpoint object which contains all the configurations needed for all Event Streams components
      * to talk externally to the endpoint through. Creates a plain/tls externally accessible endpoint based on
      * overall security of CR.
+     * @param kafkaAuthenticationEnabled - true if any Kafka listeners have an authentication attribute
      * @return external endpoint
      */
-    public static Endpoint createDefaultExternalEndpoint() {
+    public static Endpoint createDefaultExternalEndpoint(boolean kafkaAuthenticationEnabled) {
         return new Endpoint(DEFAULT_EXTERNAL_NAME,
                             DEFAULT_EXTERNAL_TLS_PORT,
                             DEFAULT_TLS_VERSION,
                             DEFAULT_EXTERNAL_SERVICE_TYPE,
                             DEFAULT_EXTERNAL_NAME,
                             null,
-                            DEFAULT_EXTERNAL_AUTHENTICATION_MECHANISM);
+                            kafkaAuthenticationEnabled ? DEFAULT_EXTERNAL_AUTHENTICATION_MECHANISM : Collections.singletonList(RUNAS_ANONYMOUS_KEY));
     }
 
     /**
@@ -96,7 +98,7 @@ public class Endpoint {
                             EndpointServiceType.INTERNAL,
                             isTls ? DEFAULT_P2P_PATH : null,
                             null,
-                            podToPodAuth);
+                            podToPodAuth.isEmpty() ? Collections.singletonList(RUNAS_ANONYMOUS_KEY) : podToPodAuth);
     }
 
     /**
@@ -200,7 +202,8 @@ public class Endpoint {
      */
     private static List<String> getAuthenticationMechanismsOrDefault(EndpointSpec spec) {
         return Optional.ofNullable(spec.getAuthenticationMechanisms())
-            .orElse(Collections.emptyList());
+                .map(list -> list.isEmpty() ? Collections.singletonList(RUNAS_ANONYMOUS_KEY) : list) // if set empty use RUNAS-ANONYMOUS, otherwise use list
+                .orElse(DEFAULT_EXTERNAL_AUTHENTICATION_MECHANISM); // if authenticationMechanisms not set use default
     }
 
     /**

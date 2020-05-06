@@ -354,7 +354,7 @@ public class AbstractModelTest {
     public void testDefaultEventStreamsAuthenticationSetting() {
         EventStreams instance = ModelUtils.createDefaultEventStreams(instanceName).build();
         ComponentModel model = new ComponentModel(instance);
-        assertThat(model.authenticationEnabled(instance), is(false));
+        assertThat(model.isKafkaAuthenticationEnabled(instance), is(false));
     }
 
     @Test
@@ -373,7 +373,7 @@ public class AbstractModelTest {
             .build())
             .build();
         ComponentModel plainListener = new ComponentModel(plainAuthInstance);
-        assertThat(plainListener.authenticationEnabled(plainAuthInstance), is(true));
+        assertThat(plainListener.isKafkaAuthenticationEnabled(plainAuthInstance), is(true));
     }
 
     @Test
@@ -392,7 +392,7 @@ public class AbstractModelTest {
             .build())
             .build();
         ComponentModel externalListener = new ComponentModel(externalListenerInstance);
-        assertThat(externalListener.authenticationEnabled(externalListenerInstance), is(true));
+        assertThat(externalListener.isKafkaAuthenticationEnabled(externalListenerInstance), is(true));
     }
 
     @Test
@@ -411,6 +411,6 @@ public class AbstractModelTest {
             .build())
             .build();
         ComponentModel tlsListener = new ComponentModel(tlsAuthInstance);
-        assertThat(tlsListener.authenticationEnabled(tlsAuthInstance), is(true));
+        assertThat(tlsListener.isKafkaAuthenticationEnabled(tlsAuthInstance), is(true));
     }
 }

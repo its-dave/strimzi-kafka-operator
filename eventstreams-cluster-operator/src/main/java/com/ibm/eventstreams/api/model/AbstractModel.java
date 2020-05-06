@@ -276,13 +276,13 @@ public abstract class AbstractModel {
         }
     }
 
-    protected Boolean authenticationEnabled(EventStreams instance) {
+    protected Boolean isKafkaAuthenticationEnabled(EventStreams instance) {
         return isListenerAuthenticated(instance, ListenerType.PLAIN) ||
             isListenerAuthenticated(instance, ListenerType.EXTERNAL) ||
             isListenerAuthenticated(instance, ListenerType.TLS);
     }
 
-    protected boolean authorisationEnabled(EventStreams instance) {
+    protected boolean isKafkaAuthorizationEnabled(EventStreams instance) {
         return Optional.of(instance)
             .map(EventStreams::getSpec)
             .map(EventStreamsSpec::getStrimziOverrides)

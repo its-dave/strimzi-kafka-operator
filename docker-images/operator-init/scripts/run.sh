@@ -264,19 +264,6 @@ webhooks:
         name: eventstreams-cluster-operator
         path: /admissionwebhook/rejectinvalidusers
       caBundle: "$cabundle"
-  - name: eventstreams.ibm.com.rejectinvalidlisteners
-    rules:
-      - apiGroups: ["eventstreams.ibm.com"]
-        apiVersions: ["v1beta1"]
-        operations: ["CREATE", "UPDATE"]
-        resources: ["eventstreams"]
-    failurePolicy: Ignore
-    clientConfig:
-      service:
-        namespace: $EVENTSTREAMS_OPERATOR_NAMESPACE
-        name: eventstreams-cluster-operator
-        path: /admissionwebhook/rejectinvalidlisteners
-      caBundle: "$cabundle"
   - name: eventstreams.ibm.com.rejectinvalidendpoints
     rules:
       - apiGroups: ["eventstreams.ibm.com"]
@@ -337,23 +324,11 @@ spec:
         license:
           accept: false
         version: 2020.2.1
-        adminApi:
-            endpoints:
-            - accessPort: 8080
-              name: external
-              tlsVersion: NONE
+        adminApi: {}
         adminUI: {}
         collector: {}
-        restProducer:
-            endpoints:
-            - accessPort: 8080
-              name: external
-              tlsVersion: NONE
+        restProducer: {}
         schemaRegistry:
-            endpoints:
-            - accessPort: 8080
-              name: external
-              tlsVersion: NONE
             storage:
                 type: ephemeral
         security:

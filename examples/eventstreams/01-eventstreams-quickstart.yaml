@@ -6,29 +6,20 @@ spec:
   license:
     accept: false
   version: 2020.2.1
-  adminApi:
-    endpoints:
-    - accessPort: 8080
-      name: external
-      tlsVersion: NONE
+  adminApi: {}
   adminUI: {}
   collector: {}
-  restProducer:
-    endpoints:
-    - accessPort: 8080
-      name: external
-      tlsVersion: NONE
+  restProducer: {}
   schemaRegistry:
-    endpoints:
-    - accessPort: 8080
-      name: external
-      tlsVersion: NONE
     storage:
       type: ephemeral
   security:
     internalTls: NONE
   strimziOverrides:
     kafka:
+#      uncomment to enable security
+#      authorization:
+#        type: runas
       replicas: 1
       config:
         interceptor.class.names: com.ibm.eventstreams.interceptors.metrics.ProducerMetricsInterceptor
@@ -38,6 +29,9 @@ spec:
       listeners:
         external:
           type: route
+#          uncomment to enable security
+#          authentication:
+#            type: scram-sha-512
         plain: {}
         tls: {}
       storage:

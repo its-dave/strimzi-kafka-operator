@@ -125,7 +125,7 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
         List<Endpoint> publicEndpoints = Optional.ofNullable(spec)
             .map(SecurityComponentSpec::getEndpoints)
             .map(endpointSpecs -> endpointSpecs.stream().map(Endpoint::createEndpointFromSpec).collect(Collectors.toList()))
-            .orElse(createDefaultEndpoints(authenticationEnabled(instance)));
+            .orElse(createDefaultEndpoints(isKafkaAuthenticationEnabled(instance)));
 
         List<Endpoint> endpoints = new ArrayList<>(publicEndpoints);
         endpoints.add(Endpoint.createP2PEndpoint(instance, podToPodAuth));

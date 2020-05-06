@@ -47,7 +47,7 @@ public class InternalKafkaUserModel extends AbstractModel {
                         .endKafkaUserTlsClientAuthentication()
                         .build());
 
-        if (authenticationEnabled(instance)) {
+        if (isKafkaAuthenticationEnabled(instance)) {
             kafkaUser = new KafkaUserBuilder(kafkaUser)
                 .editOrNewSpec()
                     .withNewKafkaUserAuthorizationSimple()

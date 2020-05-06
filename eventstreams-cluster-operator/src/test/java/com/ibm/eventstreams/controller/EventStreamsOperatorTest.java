@@ -50,7 +50,6 @@ import com.ibm.eventstreams.controller.utils.ConditionUtils;
 import com.ibm.eventstreams.controller.utils.ControllerUtils;
 import com.ibm.eventstreams.controller.utils.MetricsUtils;
 import com.ibm.eventstreams.rest.AuthenticationValidation;
-import com.ibm.eventstreams.rest.PlainListenerValidation;
 import com.ibm.iam.api.controller.Cp4iServicesBindingResourceOperator;
 import com.ibm.iam.api.spec.Cp4iServicesBinding;
 import com.ibm.iam.api.spec.Cp4iServicesBindingDoneable;
@@ -862,31 +861,6 @@ public class EventStreamsOperatorTest {
                 assertThat("Status is incorrect, found status : " + updatedEventStreams.getValue().getStatus(),
                         updatedEventStreams.getValue().getStatus().getConditions().get(0).getMessage(),
                         is("Listener client authentication unsupported for Geo Replication. Supported versions are TLS and SCRAM"));
-                async.flag();
-            })));
-    }
-
-    @Test
-    public void testEventStreamsInvalidPlainListenerThrows(VertxTestContext context) {
-        mockRoutes();
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
-
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
-
-        EventStreams eventStreams = createMinimalNoTLSESInstance();
-        eventStreams.getSpec().getStrimziOverrides().getKafka().getListeners().setPlain(null);
-
-        ArgumentCaptor<EventStreams> updatedEventStreams = ArgumentCaptor.forClass(EventStreams.class);
-
-        Checkpoint async = context.checkpoint();
-        esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), eventStreams)
-            .onComplete(context.failing(e -> context.verify(() -> {
-                assertThat(e.getMessage(), is("Invalid Event Streams specification: further details in the status conditions"));
-                // check status
-                verify(esResourceOperator, times(2)).updateEventStreamsStatus(updatedEventStreams.capture());
-                assertThat("Status is incorrect, found status : " + updatedEventStreams.getValue().getStatus(),
-                    updatedEventStreams.getValue().getStatus().getConditions().get(0).getMessage(),
-                    is(PlainListenerValidation.FAILURE_MISSING_PLAIN_LISTENER_REASON));
                 async.flag();
             })));
     }

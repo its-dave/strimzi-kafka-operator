@@ -41,7 +41,6 @@ import com.ibm.eventstreams.rest.AuthenticationValidation;
 import com.ibm.eventstreams.rest.EndpointValidation;
 import com.ibm.eventstreams.rest.LicenseValidation;
 import com.ibm.eventstreams.rest.NameValidation;
-import com.ibm.eventstreams.rest.PlainListenerValidation;
 import com.ibm.eventstreams.rest.ValidationResponsePayload.ValidationResponse;
 import com.ibm.eventstreams.rest.VersionValidation;
 import com.ibm.iam.api.controller.Cp4iServicesBindingResourceOperator;
@@ -290,10 +289,6 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             }
             if (!ReplicatorSourceUsersModel.isValidInstance(instance)) {
                 addNotReadyCondition("UnsupportedAuthorization", "Listener client authentication unsupported for Geo Replication. Supported versions are TLS and SCRAM");
-                isValidCR = false;
-            }
-            if (PlainListenerValidation.shouldReject(instance)) {
-                addNotReadyCondition("InvalidSecurityConfiguration", PlainListenerValidation.getRejectionReason(instance));
                 isValidCR = false;
             }
             if (AuthenticationValidation.shouldWarn(instance)) {

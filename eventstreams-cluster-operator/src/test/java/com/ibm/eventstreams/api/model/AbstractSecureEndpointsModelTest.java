@@ -40,7 +40,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-import static com.ibm.eventstreams.api.model.AbstractModel.AUTHENTICATION_LABEL_NO_AUTH;
 import static com.ibm.eventstreams.api.model.AbstractModel.AUTHENTICATION_LABEL_SEPARATOR;
 import static com.ibm.eventstreams.api.model.AbstractModel.KAFKA_USER_SECRET_VOLUME_NAME;
 import static com.ibm.eventstreams.api.model.AbstractSecureEndpointsModel.CLIENT_CA_PATH_ENV_KEY;
@@ -73,12 +72,18 @@ public class AbstractSecureEndpointsModelTest {
 
         @Override
         protected List<Endpoint> createDefaultEndpoints(boolean authEnabled) {
-            return Collections.singletonList(Endpoint.createDefaultExternalEndpoint());
+            return Collections.singletonList(Endpoint.createDefaultExternalEndpoint(authEnabled));
         }
     }
 
     private EndpointSpec basicEndpointSpec = new EndpointSpecBuilder()
         .withName("required-field")
+        .build();
+
+    private EndpointSpec basicEndpointSpecNoAuth = new EndpointSpecBuilder()
+        .withName("no-auth")
+        .withAccessPort(9444)
+        .withAuthenticationMechanisms(Collections.emptyList())
         .build();
 
     private EndpointSpec basicPlainEndpointSpec = new EndpointSpecBuilder()
@@ -436,7 +441,7 @@ public class AbstractSecureEndpointsModelTest {
     }
 
     @Test
-    public void testCreationOfEnvVarsWithNoOverides() {
+    public void testCreationOfEnvVarsWithNoOverrides() {
         EventStreams instance = ModelUtils.createDefaultEventStreams(instanceName).build();
 
         ComponentModel model = new ComponentModel(instance, new SecurityComponentSpec());
@@ -447,7 +452,7 @@ public class AbstractSecureEndpointsModelTest {
         assertThat(envVars, hasSize(10));
 
         assertThat(envVars.get(0).getName(), is("AUTHENTICATION"));
-        assertThat(envVars.get(0).getValue(), is("9443:IAM-BEARER;TLS;SCRAM-SHA-512,7443"));
+        assertThat(envVars.get(0).getValue(), is("9443:RUNAS-ANONYMOUS,7443:RUNAS-ANONYMOUS"));
         assertThat(envVars.get(1).getName(), is("ENDPOINTS"));
         assertThat(envVars.get(1).getValue(), is("9443:external,7443:p2p/podtls"));
         assertThat(envVars.get(2).getName(), is("TLS_VERSION"));
@@ -480,7 +485,7 @@ public class AbstractSecureEndpointsModelTest {
         assertThat(envVars, hasSize(10));
 
         assertThat(envVars.get(0).getName(), is("AUTHENTICATION"));
-        assertThat(envVars.get(0).getValue(), is("9443:IAM-BEARER;TLS;SCRAM-SHA-512,7443"));
+        assertThat(envVars.get(0).getValue(), is("9443:IAM-BEARER;TLS;SCRAM-SHA-512,7443:RUNAS-ANONYMOUS"));
         assertThat(envVars.get(1).getName(), is("ENDPOINTS"));
         assertThat(envVars.get(1).getValue(), is("9443:external,7443:p2p/podtls"));
         assertThat(envVars.get(2).getName(), is("TLS_VERSION"));
@@ -506,7 +511,7 @@ public class AbstractSecureEndpointsModelTest {
         EventStreams instance = ModelUtils.createDefaultEventStreams(instanceName).build();
 
         SecurityComponentSpec securityComponentSpec = new SecurityComponentSpecBuilder()
-            .withEndpoints(basicEndpointSpec)
+            .withEndpoints(basicEndpointSpec, basicEndpointSpecNoAuth)
             .build();
 
         ComponentModel model = new ComponentModel(instance, securityComponentSpec);
@@ -517,11 +522,11 @@ public class AbstractSecureEndpointsModelTest {
         assertThat(envVars, hasSize(10));
 
         assertThat(envVars.get(0).getName(), is("AUTHENTICATION"));
-        assertThat(envVars.get(0).getValue(), is("9443,7443"));
+        assertThat(envVars.get(0).getValue(), is("9443:IAM-BEARER;TLS;SCRAM-SHA-512,9444:RUNAS-ANONYMOUS,7443:RUNAS-ANONYMOUS"));
         assertThat(envVars.get(1).getName(), is("ENDPOINTS"));
-        assertThat(envVars.get(1).getValue(), is("9443:required-field,7443:p2p/podtls"));
+        assertThat(envVars.get(1).getValue(), is("9443:required-field,9444:no-auth,7443:p2p/podtls"));
         assertThat(envVars.get(2).getName(), is("TLS_VERSION"));
-        assertThat(envVars.get(2).getValue(), is("9443:TLSv1.2,7443:TLSv1.2"));
+        assertThat(envVars.get(2).getValue(), is("9443:TLSv1.2,9444:TLSv1.2,7443:TLSv1.2"));
         assertThat(envVars.get(3).getName(), is(SSL_TRUSTSTORE_P12_PATH_ENV_KEY));
         assertThat(envVars.get(3).getValue(), is("/certs/cluster/ca.p12"));
         assertThat(envVars.get(4).getName(), is(SSL_TRUSTSTORE_CRT_PATH_ENV_KEY));
@@ -554,7 +559,7 @@ public class AbstractSecureEndpointsModelTest {
         assertThat(envVars, hasSize(10));
 
         assertThat(envVars.get(0).getName(), is("AUTHENTICATION"));
-        assertThat(envVars.get(0).getValue(), is("9080,8080:TLS,7443"));
+        assertThat(envVars.get(0).getValue(), is("9080:IAM-BEARER;TLS;SCRAM-SHA-512,8080:TLS,7443:RUNAS-ANONYMOUS"));
         assertThat(envVars.get(1).getName(), is("ENDPOINTS"));
         assertThat(envVars.get(1).getValue(), is("9080,8080:fully-configured,7443:p2p/podtls"));
         assertThat(envVars.get(2).getName(), is("TLS_VERSION"));
@@ -633,6 +638,21 @@ public class AbstractSecureEndpointsModelTest {
     @Test
     public void testCreateRoutesHasDefaultLabels() {
         EventStreams instance = ModelUtils.createDefaultEventStreams(instanceName).build();
+        ComponentModel model = new ComponentModel(instance, new SecurityComponentSpec());
+
+        Map<String, Route> routes = model.createRoutesFromEndpoints();
+
+        assertThat(routes, aMapWithSize(1));
+
+        routes.forEach((key, route) -> {
+            assertThat(route.getMetadata().getLabels(), hasEntry(AbstractModel.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + "RUNAS-ANONYMOUS", "true"));
+            assertThat(route.getMetadata().getLabels(), hasEntry(AbstractModel.EVENTSTREAMS_PROTOCOL_LABEL, "https"));
+        });
+    }
+
+    @Test
+    public void testCreateRoutesHasDefaultLabelsWithAuth() {
+        EventStreams instance = ModelUtils.createEventStreamsWithAuthentication(instanceName).build();
         ComponentModel model = new ComponentModel(instance, new SecurityComponentSpec());
 
         Map<String, Route> routes = model.createRoutesFromEndpoints();
@@ -720,6 +740,7 @@ public class AbstractSecureEndpointsModelTest {
             .withAccessPort(8080)
             .withType(EndpointServiceType.ROUTE)
             .withTlsVersion(TlsVersion.NONE)
+            .withAuthenticationMechanisms(Collections.emptyList())
             .withCertOverrides(new CertAndKeySecretSourceBuilder()
                 .withCertificate("random-cert")
                 .withKey("random-key")
@@ -737,7 +758,7 @@ public class AbstractSecureEndpointsModelTest {
 
         assertThat(routes, aMapWithSize(1));
         routes.forEach((key, route) -> {
-            assertThat(route.getMetadata().getLabels(), hasEntry(AbstractModel.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + AUTHENTICATION_LABEL_NO_AUTH, "true"));
+            assertThat(route.getMetadata().getLabels(), hasEntry(AbstractModel.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + "RUNAS-ANONYMOUS", "true"));
             assertThat(route.getMetadata().getLabels(), hasEntry(AbstractModel.EVENTSTREAMS_PROTOCOL_LABEL, "http"));
         });
     }

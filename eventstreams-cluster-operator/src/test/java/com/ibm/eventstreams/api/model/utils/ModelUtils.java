@@ -225,7 +225,7 @@ public class ModelUtils {
 
         @Override
         protected List<Endpoint> createDefaultEndpoints(boolean authEnabled) {
-            return Collections.singletonList(Endpoint.createDefaultExternalEndpoint());
+            return Collections.singletonList(Endpoint.createDefaultExternalEndpoint(authEnabled));
         }
     }
 

@@ -433,13 +433,13 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
     }
 
     @Override
-    protected List<Endpoint> createDefaultEndpoints(boolean authEnabled) {
-        return new ArrayList<>(Collections.singletonList(Endpoint.createDefaultExternalEndpoint()));
+    protected List<Endpoint> createDefaultEndpoints(boolean kafkaAuthenticationEnabled) {
+        return new ArrayList<>(Collections.singletonList(Endpoint.createDefaultExternalEndpoint(kafkaAuthenticationEnabled)));
     }
 
     @Override
     public List<String> getP2PAuthenticationMechanisms(EventStreams instance) {
-        return authenticationEnabled(instance) ? Collections.singletonList(Endpoint.IAM_BEARER_KEY) : Collections.emptyList();
+        return isKafkaAuthenticationEnabled(instance) ? Collections.singletonList(Endpoint.IAM_BEARER_KEY) : Collections.emptyList();
     }
 
     /**
