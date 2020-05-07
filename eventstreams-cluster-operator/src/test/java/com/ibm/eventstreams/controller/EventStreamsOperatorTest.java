@@ -1058,7 +1058,7 @@ public class EventStreamsOperatorTest {
         reconciliationState.icpClusterData = Collections.emptyMap();
 
         ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, new SecurityComponentSpec(), componentName, "endpoint-component-label");
-        List<Endpoint> endpoints = endpointModel.createEndpoints(esCluster, new SecurityComponentSpec(), Collections.emptyList());
+        List<Endpoint> endpoints = endpointModel.createEndpoints(esCluster, new SecurityComponentSpec());
 
         Endpoint endpoint = endpoints.get(0);
         String routeName = endpointModel.getRouteName(endpoint.getName());
@@ -1102,7 +1102,7 @@ public class EventStreamsOperatorTest {
 
         ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, spec, componentName, "endpoint-component-label");
 
-        reconciliationState.reconcileCerts(endpointModel, Collections.emptyMap(), Date::new).setHandler(ar -> {
+        reconciliationState.reconcileCerts(endpointModel, Collections.emptyMap(), Date::new).setHandler(ar -> context.verify(() -> {
             assertThat("Number of secrets do not match " + mockClient.secrets().list().getItems(), mockClient.secrets().list().getItems().size(), is(4));
             Secret secret = mockClient.secrets().withName(endpointModel.getCertificateSecretName()).get();
             assertThat("The expected secret is created", secret, is(notNullValue()));
@@ -1110,13 +1110,13 @@ public class EventStreamsOperatorTest {
             assertThat("There is a key file data entry for tls internal endpoint", secret.getData().get(endpointModel.getCertSecretKeyID(internal.getName())).length(), greaterThan(0));
             assertThat("There is a cert file data entry for tls internal endpoint", secret.getData().get(endpointModel.getCertSecretCertID(internal.getName())).length(), greaterThan(0));
 
-            assertThat("There is no key file data entry for tls P2P port ", secret.getData().get(endpointModel.getCertSecretKeyID(Endpoint.DEFAULT_P2P_TLS_NAME)), is(nullValue()));
-            assertThat("There is no cert file data entry for tls P2P port", secret.getData().get(endpointModel.getCertSecretCertID(Endpoint.DEFAULT_P2P_TLS_NAME)), is(nullValue()));
+            assertThat("There is a key file data entry for tls P2P port ", secret.getData().get(endpointModel.getCertSecretKeyID(Endpoint.DEFAULT_P2P_TLS_NAME)).length(), greaterThan(0));
+            assertThat("There is a cert file data entry for tls P2P port", secret.getData().get(endpointModel.getCertSecretCertID(Endpoint.DEFAULT_P2P_TLS_NAME)).length(), greaterThan(0));
 
             X509Certificate certificate = ControllerUtils.checkCertificate(reconciliationState.certificateManager, certAndKey);
             ControllerUtils.checkSans(context, reconciliationState.certificateManager, certificate, endpointModel.getSecurityService(internal.getType()), "", componentName);
             async.flag();
-        });
+        }));
     }
 
     @Test
@@ -1143,13 +1143,15 @@ public class EventStreamsOperatorTest {
 
         ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, spec, "endpoint-component", "endpoint-component-label");
 
-        reconciliationState.reconcileCerts(endpointModel, Collections.emptyMap(), Date::new).setHandler(ar -> {
+        reconciliationState.reconcileCerts(endpointModel, Collections.emptyMap(), Date::new).setHandler(ar -> context.verify(() -> {
             assertThat("Number of secrets do not match " + mockClient.secrets().list().getItems(), mockClient.secrets().list().getItems().size(), is(4));
             Secret secret = mockClient.secrets().withName(endpointModel.getCertificateSecretName()).get();
             assertThat("The expected secret is created", secret, is(notNullValue()));
-            assertThat("The secret has no data", secret.getData().size(), is(0));
+            assertThat("The secret has pod to pod data", secret.getData().size(), is(2));
+            assertThat("The secret has pod to pod cert", secret.getData().keySet(), hasItem("p2ptls.crt"));
+            assertThat("The secret has pod to pod key", secret.getData().keySet(), hasItem("p2ptls.key"));
             async.flag();
-        });
+        }));
     }
 
     @Test
@@ -1603,7 +1605,7 @@ public class EventStreamsOperatorTest {
 
         EndpointSpec internalTlsBearer = new EndpointSpecBuilder()
             .withName("bearer")
-            .withAccessPort(7777)
+            .withAccessPort(8887)
             .withType(EndpointServiceType.INTERNAL)
             .withAuthenticationMechanisms(Collections.singletonList("BEARER"))
             .build();
@@ -1711,7 +1713,7 @@ public class EventStreamsOperatorTest {
 
         EndpointSpec internalTlsBearer = new EndpointSpecBuilder()
             .withName("bearer")
-            .withAccessPort(7777)
+            .withAccessPort(8887)
             .withType(EndpointServiceType.INTERNAL)
             .withAuthenticationMechanisms(Collections.singletonList("BEARER"))
             .build();

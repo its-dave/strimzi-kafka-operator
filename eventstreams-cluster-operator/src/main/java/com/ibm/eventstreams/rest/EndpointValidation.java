@@ -116,12 +116,12 @@ public class EndpointValidation extends AbstractValidation {
 
     private static boolean hasEndpointsOnReservedPorts(List<EndpointSpec> endpoints) {
         return endpoints.stream()
-            .anyMatch(endpoint -> endpoint.getAccessPort() == Endpoint.DEFAULT_P2P_PLAIN_PORT || endpoint.getAccessPort() == Endpoint.DEFAULT_P2P_TLS_PORT);
+            .anyMatch(endpoint -> endpoint.getAccessPort() >= 7000 && endpoint.getAccessPort() <= 7999); // reserve 7000 - 7999 to give us some space
     }
 
     private static ValidationResponse reservedEndpointResponse(String spec) {
         return ValidationResponsePayload.createFailureResponse(
-            spec + " endpoint configuration has requested access on a reserved port 7080/7443",
+            spec + " endpoint configuration has requested access on a reserved port 7000 <= port <= 7999",
             FAILURE_REASON);
     }
 

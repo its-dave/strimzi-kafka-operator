@@ -72,7 +72,7 @@ public class EndpointValidationTest extends RestApiTest {
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is(EndpointValidation.FAILURE_REASON));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getInteger("code"), is(400));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("message"),
-                        is("adminApi endpoint configuration has requested access on a reserved port 7080/7443"));
+                        is("adminApi endpoint configuration has requested access on a reserved port 7000 <= port <= 7999"));
             async.flag();
         })));
     }

@@ -599,7 +599,7 @@ public class AdminUIModel extends AbstractModel {
      */
     private NetworkPolicy createNetworkPolicy() {
         List<NetworkPolicyIngressRule> ingressRules = new ArrayList<>(1);
-        ingressRules.add(createIngressRule(UI_SERVICE_PORT, new HashMap<>()));
+        ingressRules.add(createIngressRule(UI_SERVICE_PORT, Collections.emptyList()));
 
         return createNetworkPolicy(createLabelSelector(APPLICATION_NAME), ingressRules, null);
     }

@@ -19,7 +19,6 @@ import com.ibm.eventstreams.api.spec.ContainerSpec;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.spec.ImagesSpec;
-import com.ibm.eventstreams.api.spec.SecuritySpec;
 import com.ibm.eventstreams.controller.EventStreamsOperatorConfig;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.ContainerBuilder;
@@ -87,10 +86,7 @@ public class CollectorModel extends AbstractModel {
             setPodTemplate(collectorSpec.map(ComponentSpec::getTemplate)
                             .map(ComponentTemplate::getPod)
                             .orElseGet(PodTemplate::new));
-            setTlsVersion(Optional.ofNullable(instance.getSpec())
-                            .map(EventStreamsSpec::getSecurity)
-                            .map(SecuritySpec::getInternalTls)
-                            .orElse(DEFAULT_INTERNAL_TLS));
+            setTlsVersion(getInternalTlsVersion(instance));
             setGlobalPullSecrets(Optional.ofNullable(instance.getSpec())
                                     .map(EventStreamsSpec::getImages)
                                     .map(ImagesSpec::getPullSecrets)
@@ -147,8 +143,8 @@ public class CollectorModel extends AbstractModel {
             new EnvVarBuilder().withName("API_PORT").withValue(Integer.toString(API_PORT)).build(),
             new EnvVarBuilder().withName("METRICS_PORT").withValue(Integer.toString(METRICS_PORT)).build(),
             new EnvVarBuilder().withName("TLS_ENABLED").withValue(String.valueOf(tlsEnabled())).build(),
-            new EnvVarBuilder().withName("TLS_CERT").withValue("/etc/ssl/certs/podtls.crt").build(),
-            new EnvVarBuilder().withName("TLS_KEY").withValue("/etc/ssl/certs/podtls.key").build(),
+            new EnvVarBuilder().withName("TLS_CERT").withValue("/etc/ssl/certs/" + AbstractModel.USER_CERT).build(),
+            new EnvVarBuilder().withName("TLS_KEY").withValue("/etc/ssl/certs/" + AbstractModel.USER_KEY).build(),
             new EnvVarBuilder().withName("LICENSE").withValue("accept").build(),
             new EnvVarBuilder().withName("CIPHER_SUITES").withValue(DEFAULT_CIPHER_SUITES_NODE).build(),
             new EnvVarBuilder().withName("NAMESPACE").withValue(getNamespace()).build(),

@@ -74,6 +74,13 @@ public class AbstractSecureEndpointsModelTest {
         protected List<Endpoint> createDefaultEndpoints(boolean authEnabled) {
             return Collections.singletonList(Endpoint.createDefaultExternalEndpoint(authEnabled));
         }
+
+        @Override
+        protected List<Endpoint> createP2PEndpoints(EventStreams instance) {
+            List<Endpoint> endpoints = new ArrayList<>();
+            endpoints.add(Endpoint.createP2PEndpoint(instance, Collections.emptyList(), Collections.singletonList(uniqueInstanceLabels())));
+            return endpoints;
+        }
     }
 
     private EndpointSpec basicEndpointSpec = new EndpointSpecBuilder()
@@ -349,11 +356,11 @@ public class AbstractSecureEndpointsModelTest {
         assertThat(volumes.get(3).getSecret().getSecretName(), is(String.format("%s-ibm-es-kafka-user", instanceName)));
         assertThat(volumes.get(3).getSecret().getItems(), hasSize(3));
         assertThat(volumes.get(3).getSecret().getItems().get(0).getKey(), is("user.crt"));
-        assertThat(volumes.get(3).getSecret().getItems().get(0).getPath(), is("podtls.crt"));
+        assertThat(volumes.get(3).getSecret().getItems().get(0).getPath(), is("user.crt"));
         assertThat(volumes.get(3).getSecret().getItems().get(1).getKey(), is("user.key"));
-        assertThat(volumes.get(3).getSecret().getItems().get(1).getPath(), is("podtls.key"));
+        assertThat(volumes.get(3).getSecret().getItems().get(1).getPath(), is("user.key"));
         assertThat(volumes.get(3).getSecret().getItems().get(2).getKey(), is("user.p12"));
-        assertThat(volumes.get(3).getSecret().getItems().get(2).getPath(), is("podtls.p12"));
+        assertThat(volumes.get(3).getSecret().getItems().get(2).getPath(), is("user.p12"));
     }
 
     @Test
@@ -395,11 +402,11 @@ public class AbstractSecureEndpointsModelTest {
         assertThat(volumes.get(3).getSecret().getSecretName(), is(String.format("%s-ibm-es-kafka-user", instanceName)));
         assertThat(volumes.get(3).getSecret().getItems(), hasSize(3));
         assertThat(volumes.get(3).getSecret().getItems().get(0).getKey(), is("user.crt"));
-        assertThat(volumes.get(3).getSecret().getItems().get(0).getPath(), is("podtls.crt"));
+        assertThat(volumes.get(3).getSecret().getItems().get(0).getPath(), is("user.crt"));
         assertThat(volumes.get(3).getSecret().getItems().get(1).getKey(), is("user.key"));
-        assertThat(volumes.get(3).getSecret().getItems().get(1).getPath(), is("podtls.key"));
+        assertThat(volumes.get(3).getSecret().getItems().get(1).getPath(), is("user.key"));
         assertThat(volumes.get(3).getSecret().getItems().get(2).getKey(), is("user.p12"));
-        assertThat(volumes.get(3).getSecret().getItems().get(2).getPath(), is("podtls.p12"));
+        assertThat(volumes.get(3).getSecret().getItems().get(2).getPath(), is("user.p12"));
     }
 
     @Test
@@ -436,7 +443,7 @@ public class AbstractSecureEndpointsModelTest {
         assertThat(container.getVolumeMounts().get(2).getReadOnly(), is(true));
 
         assertThat(container.getVolumeMounts().get(3).getName(), is("kafka-user"));
-        assertThat(container.getVolumeMounts().get(3).getMountPath(), is("/certs/p2p"));
+        assertThat(container.getVolumeMounts().get(3).getMountPath(), is("/certs/user"));
         assertThat(container.getVolumeMounts().get(3).getReadOnly(), is(true));
     }
 
@@ -454,7 +461,7 @@ public class AbstractSecureEndpointsModelTest {
         assertThat(envVars.get(0).getName(), is("AUTHENTICATION"));
         assertThat(envVars.get(0).getValue(), is("9443:RUNAS-ANONYMOUS,7443:RUNAS-ANONYMOUS"));
         assertThat(envVars.get(1).getName(), is("ENDPOINTS"));
-        assertThat(envVars.get(1).getValue(), is("9443:external,7443:p2p/podtls"));
+        assertThat(envVars.get(1).getValue(), is("9443:external,7443:p2ptls"));
         assertThat(envVars.get(2).getName(), is("TLS_VERSION"));
         assertThat(envVars.get(2).getValue(), is("9443:TLSv1.2,7443:TLSv1.2"));
         assertThat(envVars.get(3).getName(), is(SSL_TRUSTSTORE_P12_PATH_ENV_KEY));
@@ -466,7 +473,7 @@ public class AbstractSecureEndpointsModelTest {
         assertThat(envVars.get(6).getName(), is(SSL_TRUSTSTORE_P12_PASSWORD_ENV_KEY));
         assertThat(envVars.get(6).getValueFrom().getSecretKeyRef().getName(), is(EventStreamsKafkaModel.getKafkaClusterCaCertName(instanceName)));
         assertThat(envVars.get(7).getName(), is(SSL_KEYSTORE_PATH_ENV_KEY));
-        assertThat(envVars.get(7).getValue(), is("/certs/p2p/podtls.p12"));
+        assertThat(envVars.get(7).getValue(), is("/certs/user/user.p12"));
         assertThat(envVars.get(8).getName(), is(SSL_KEYSTORE_PASSWORD_PATH_ENV_KEY));
         assertThat(envVars.get(8).getValueFrom().getSecretKeyRef().getName(), is(InternalKafkaUserModel.getInternalKafkaUserSecretName(instanceName)));
         assertThat(envVars.get(9).getName(), is(SSL_ENABLED_ENV_KEY));
@@ -487,7 +494,7 @@ public class AbstractSecureEndpointsModelTest {
         assertThat(envVars.get(0).getName(), is("AUTHENTICATION"));
         assertThat(envVars.get(0).getValue(), is("9443:IAM-BEARER;TLS;SCRAM-SHA-512,7443:RUNAS-ANONYMOUS"));
         assertThat(envVars.get(1).getName(), is("ENDPOINTS"));
-        assertThat(envVars.get(1).getValue(), is("9443:external,7443:p2p/podtls"));
+        assertThat(envVars.get(1).getValue(), is("9443:external,7443:p2ptls"));
         assertThat(envVars.get(2).getName(), is("TLS_VERSION"));
         assertThat(envVars.get(2).getValue(), is("9443:TLSv1.2,7443:TLSv1.2"));
         assertThat(envVars.get(3).getName(), is(SSL_TRUSTSTORE_P12_PATH_ENV_KEY));
@@ -499,7 +506,7 @@ public class AbstractSecureEndpointsModelTest {
         assertThat(envVars.get(6).getName(), is(SSL_TRUSTSTORE_P12_PASSWORD_ENV_KEY));
         assertThat(envVars.get(6).getValueFrom().getSecretKeyRef().getName(), is(EventStreamsKafkaModel.getKafkaClusterCaCertName(instanceName)));
         assertThat(envVars.get(7).getName(), is(SSL_KEYSTORE_PATH_ENV_KEY));
-        assertThat(envVars.get(7).getValue(), is("/certs/p2p/podtls.p12"));
+        assertThat(envVars.get(7).getValue(), is("/certs/user/user.p12"));
         assertThat(envVars.get(8).getName(), is(SSL_KEYSTORE_PASSWORD_PATH_ENV_KEY));
         assertThat(envVars.get(8).getValueFrom().getSecretKeyRef().getName(), is(InternalKafkaUserModel.getInternalKafkaUserSecretName(instanceName)));
         assertThat(envVars.get(9).getName(), is(SSL_ENABLED_ENV_KEY));
@@ -524,7 +531,7 @@ public class AbstractSecureEndpointsModelTest {
         assertThat(envVars.get(0).getName(), is("AUTHENTICATION"));
         assertThat(envVars.get(0).getValue(), is("9443:IAM-BEARER;TLS;SCRAM-SHA-512,9444:RUNAS-ANONYMOUS,7443:RUNAS-ANONYMOUS"));
         assertThat(envVars.get(1).getName(), is("ENDPOINTS"));
-        assertThat(envVars.get(1).getValue(), is("9443:required-field,9444:no-auth,7443:p2p/podtls"));
+        assertThat(envVars.get(1).getValue(), is("9443:required-field,9444:no-auth,7443:p2ptls"));
         assertThat(envVars.get(2).getName(), is("TLS_VERSION"));
         assertThat(envVars.get(2).getValue(), is("9443:TLSv1.2,9444:TLSv1.2,7443:TLSv1.2"));
         assertThat(envVars.get(3).getName(), is(SSL_TRUSTSTORE_P12_PATH_ENV_KEY));
@@ -536,7 +543,7 @@ public class AbstractSecureEndpointsModelTest {
         assertThat(envVars.get(6).getName(), is(SSL_TRUSTSTORE_P12_PASSWORD_ENV_KEY));
         assertThat(envVars.get(6).getValueFrom().getSecretKeyRef().getName(), is(EventStreamsKafkaModel.getKafkaClusterCaCertName(instanceName)));
         assertThat(envVars.get(7).getName(), is(SSL_KEYSTORE_PATH_ENV_KEY));
-        assertThat(envVars.get(7).getValue(), is("/certs/p2p/podtls.p12"));
+        assertThat(envVars.get(7).getValue(), is("/certs/user/user.p12"));
         assertThat(envVars.get(8).getName(), is(SSL_KEYSTORE_PASSWORD_PATH_ENV_KEY));
         assertThat(envVars.get(8).getValueFrom().getSecretKeyRef().getName(), is(InternalKafkaUserModel.getInternalKafkaUserSecretName(instanceName)));
         assertThat(envVars.get(9).getName(), is(SSL_ENABLED_ENV_KEY));
@@ -561,7 +568,7 @@ public class AbstractSecureEndpointsModelTest {
         assertThat(envVars.get(0).getName(), is("AUTHENTICATION"));
         assertThat(envVars.get(0).getValue(), is("9080:IAM-BEARER;TLS;SCRAM-SHA-512,8080:TLS,7443:RUNAS-ANONYMOUS"));
         assertThat(envVars.get(1).getName(), is("ENDPOINTS"));
-        assertThat(envVars.get(1).getValue(), is("9080,8080:fully-configured,7443:p2p/podtls"));
+        assertThat(envVars.get(1).getValue(), is("9080,8080:fully-configured,7443:p2ptls"));
         assertThat(envVars.get(2).getName(), is("TLS_VERSION"));
         assertThat(envVars.get(2).getValue(), is("9080,8080:TLSv1.3,7443:TLSv1.2"));
         assertThat(envVars.get(3).getName(), is(SSL_TRUSTSTORE_P12_PATH_ENV_KEY));
@@ -573,7 +580,7 @@ public class AbstractSecureEndpointsModelTest {
         assertThat(envVars.get(6).getName(), is(SSL_TRUSTSTORE_P12_PASSWORD_ENV_KEY));
         assertThat(envVars.get(6).getValueFrom().getSecretKeyRef().getName(), is(EventStreamsKafkaModel.getKafkaClusterCaCertName(instanceName)));
         assertThat(envVars.get(7).getName(), is(SSL_KEYSTORE_PATH_ENV_KEY));
-        assertThat(envVars.get(7).getValue(), is("/certs/p2p/podtls.p12"));
+        assertThat(envVars.get(7).getValue(), is("/certs/user/user.p12"));
         assertThat(envVars.get(8).getName(), is(SSL_KEYSTORE_PASSWORD_PATH_ENV_KEY));
         assertThat(envVars.get(8).getValueFrom().getSecretKeyRef().getName(), is(InternalKafkaUserModel.getInternalKafkaUserSecretName(instanceName)));
         assertThat(envVars.get(9).getName(), is(SSL_ENABLED_ENV_KEY));

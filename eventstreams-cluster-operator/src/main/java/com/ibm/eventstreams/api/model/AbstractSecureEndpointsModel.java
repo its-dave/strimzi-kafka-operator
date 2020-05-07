@@ -63,7 +63,7 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
     public static final String CLIENT_CA_VOLUME_MOUNT_NAME = "client-ca";
     public static final String CLUSTER_CA_VOLUME_MOUNT_NAME = "cluster-ca";
     public static final String CERTIFICATE_PATH = "/certs";
-    public static final String KAFKA_USER_CERTIFICATE_PATH = CERTIFICATE_PATH + "/p2p";
+    public static final String KAFKA_USER_CERTIFICATE_PATH = CERTIFICATE_PATH + "/user";
     public static final String CLUSTER_CERTIFICATE_PATH = CERTIFICATE_PATH + "/cluster";
     public static final String CLIENT_CA_CERTIFICATE_PATH = CERTIFICATE_PATH + "/client";
     public static final String IBMCLOUD_CA_CERTIFICATE_PATH = CERTIFICATE_PATH + File.separator + "ibmcloud";
@@ -95,7 +95,7 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
         super(instance, componentName, applicationName);
         this.certificateSecretModel = new CertificateSecretModel(instance, componentName, applicationName);
         this.routes = new HashMap<>();
-        this.endpoints = createEndpoints(instance, spec, getP2PAuthenticationMechanisms(instance));
+        this.endpoints = createEndpoints(instance, spec);
     }
 
     /**
@@ -106,12 +106,11 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
      * @param instance The spec of the Event Streams CR
      * @param spec The list of endpoints passed into the component. This needs to be passed in to determine which
      *             component's endpoint (schema registry, admin rest, or rest producer) to configure.
-     * @param podToPodAuthenticationMechanisms A list of pod to pod authentication mechanisms
      * @return list of secure endpoints
      */
-    public List<Endpoint> createEndpoints(EventStreams instance, SecurityComponentSpec spec, List<String> podToPodAuthenticationMechanisms) {
+    public List<Endpoint> createEndpoints(EventStreams instance, SecurityComponentSpec spec) {
         return Optional.ofNullable(spec)
-            .map(securityComponentSpec -> getEndpoints(instance, securityComponentSpec, podToPodAuthenticationMechanisms))
+            .map(securityComponentSpec -> getEndpoints(instance, securityComponentSpec))
             .orElse(Collections.emptyList());
     }
 
@@ -121,17 +120,19 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
      * @param spec the SecurityComponent which contains the endpoints to create
      * @return A list of endpoints
      */
-    private List<Endpoint> getEndpoints(EventStreams instance, SecurityComponentSpec spec, List<String> podToPodAuth) {
+    private List<Endpoint> getEndpoints(EventStreams instance, SecurityComponentSpec spec) {
         List<Endpoint> publicEndpoints = Optional.ofNullable(spec)
             .map(SecurityComponentSpec::getEndpoints)
             .map(endpointSpecs -> endpointSpecs.stream().map(Endpoint::createEndpointFromSpec).collect(Collectors.toList()))
             .orElse(createDefaultEndpoints(isKafkaAuthenticationEnabled(instance)));
 
         List<Endpoint> endpoints = new ArrayList<>(publicEndpoints);
-        endpoints.add(Endpoint.createP2PEndpoint(instance, podToPodAuth));
+        endpoints.addAll(createP2PEndpoints(instance));
 
         return endpoints;
     }
+
+    protected abstract List<Endpoint> createP2PEndpoints(EventStreams instance);
 
     protected abstract List<Endpoint> createDefaultEndpoints(boolean authEnabled);
 
@@ -159,10 +160,6 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
      */
     public String getServiceName(EndpointServiceType type) {
         return getDefaultResourceNameWithSuffix(getServiceSuffix(type));
-    }
-
-    public List<String> getP2PAuthenticationMechanisms(EventStreams instance) {
-        return Collections.emptyList();
     }
 
     /**
@@ -354,7 +351,7 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
                 .endSecretKeyRef()
                 .endValueFrom()
                 .build(),
-            new EnvVarBuilder().withName(SSL_KEYSTORE_PATH_ENV_KEY).withValue(KAFKA_USER_CERTIFICATE_PATH + File.separator + "podtls.p12").build(),
+            new EnvVarBuilder().withName(SSL_KEYSTORE_PATH_ENV_KEY).withValue(KAFKA_USER_CERTIFICATE_PATH + File.separator + USER_P12).build(),
             new EnvVarBuilder()
                 .withName(SSL_KEYSTORE_PASSWORD_PATH_ENV_KEY)
                 .withNewValueFrom()
@@ -388,7 +385,7 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
     private Function<Endpoint, String> getEndpointsEnvValue() {
         return endpoint -> {
             if (endpoint.isTls()) {
-                return String.format("%d%s%s", endpoint.getPort(), KEY_VALUE_SEPARATOR, endpoint.getPath());
+                return String.format("%d%s%s", endpoint.getPort(), KEY_VALUE_SEPARATOR, endpoint.getName());
             } else {
                 return Integer.toString(endpoint.getPort());
             }
@@ -409,11 +406,10 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
      * Returns a list of TLS endpoints that are not named the Pod to Pod Tls name.
      * @return a filtered list of endpoints
      */
-    public List<Endpoint> getTlsNonP2PEndpoints() {
+    public List<Endpoint> getTlsEndpoints() {
         return endpoints
             .stream()
             .filter(Endpoint::isTls)
-            .filter(endpoint -> !endpoint.getName().matches(Endpoint.DEFAULT_P2P_TLS_NAME))
             .collect(Collectors.toList());
     }
 

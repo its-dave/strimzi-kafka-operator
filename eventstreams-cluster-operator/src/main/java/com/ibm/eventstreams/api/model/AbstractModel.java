@@ -183,14 +183,7 @@ public abstract class AbstractModel {
         this.componentName = componentName;
         this.applicationName = applicationName;
 
-        this.labels = Labels.generateDefaultLabels(resource, applicationName, OPERATOR_NAME);
-        // If the component is not part of the parent application (eventstreams), then override Strimzi name label
-        // to use resource name including the resource prefix (this matches Strimzi convention)
-        // This check stops the default resource name prefix being added to eventstreams (e.g. my-es-ibm-es-eventstreams)
-        // to match Strimzi convention
-        if (!applicationName.equals(Labels.APPLICATION_NAME)) {
-            this.labels = labels.withStrimziName(getDefaultResourceName());
-        }
+        this.labels = generateDefaultLabels(resource, applicationName, componentName);
     }
 
     public String getComponentName() {
@@ -247,6 +240,14 @@ public abstract class AbstractModel {
 
     protected TlsVersion getTlsVersion() {
         return tlsVersion;
+    }
+
+    public static TlsVersion getInternalTlsVersion(EventStreams instance) {
+        return Optional.ofNullable(instance)
+                .map(EventStreams::getSpec)
+                .map(EventStreamsSpec::getSecurity)
+                .map(SecuritySpec::getInternalTls)
+                .orElse(DEFAULT_INTERNAL_TLS);
     }
 
     protected io.strimzi.api.kafka.model.Probe getLivenessProbe() {
@@ -526,6 +527,20 @@ public abstract class AbstractModel {
     }
 
     /**
+     * Use this function to create a set of labels matching all of the components
+     * in the instance
+     * @return the component instance and managed-by labels
+     */
+    protected Labels uniqueInstanceLabels() {
+        return Labels.fromMap(
+                labels().toMap()
+                    .entrySet()
+                    .stream()
+                    .filter(entry -> entry.getKey().equals(Labels.KUBERNETES_INSTANCE_LABEL) || entry.getKey().equals(Labels.KUBERNETES_MANAGED_BY_LABEL))
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+    }
+
+    /**
      * @param isTls boolean on whether the component is using tls
      * @param authenticationMechanisms a list of a mechanisms that are concatenated into a label
      * @return a valid map of labels used for EventStreams security
@@ -540,6 +555,18 @@ public abstract class AbstractModel {
             labels.put(EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + AUTHENTICATION_LABEL_NO_AUTH, "true");
         }
         labels.put(EVENTSTREAMS_PROTOCOL_LABEL, isTls ? "https" : "http");
+        return labels;
+    }
+
+    public static Labels generateDefaultLabels(HasMetadata resource, String applicationName, String componentName) {
+        Labels labels = Labels.generateDefaultLabels(resource, applicationName, OPERATOR_NAME);
+        // If the component is not part of the parent application (eventstreams), then override Strimzi name label
+        // to use resource name including the resource prefix (this matches Strimzi convention)
+        // This check stops the default resource name prefix being added to eventstreams (e.g. my-es-ibm-es-eventstreams)
+        // to match Strimzi convention
+        if (!applicationName.equals(Labels.APPLICATION_NAME)) {
+            labels = labels.withStrimziName(getDefaultResourceName(resource.getMetadata().getName(), componentName));
+        }
         return labels;
     }
 
@@ -857,23 +884,25 @@ public abstract class AbstractModel {
             .withNewName(KAFKA_USER_SECRET_VOLUME_NAME)
             .withNewSecret()
                 .withNewSecretName(InternalKafkaUserModel.getInternalKafkaUserSecretName(getInstanceName()))
-                .addNewItem().withNewKey(USER_CERT).withNewPath("podtls.crt").endItem()
-                .addNewItem().withNewKey(USER_KEY).withNewPath("podtls.key").endItem()
-                .addNewItem().withNewKey(USER_P12).withNewPath("podtls.p12").endItem()
+                .addNewItem().withNewKey(USER_CERT).withNewPath(USER_CERT).endItem()
+                .addNewItem().withNewKey(USER_KEY).withNewPath(USER_KEY).endItem()
+                .addNewItem().withNewKey(USER_P12).withNewPath(USER_P12).endItem()
             .endSecret()
             .build();
     }
 
-    protected NetworkPolicyIngressRule createIngressRule(int port, Map<String, String> componentNames) {
+    protected NetworkPolicyIngressRule createIngressRule(int port, List<Labels> matchLabels) {
  
         NetworkPolicyIngressRuleBuilder policyBuilder = new NetworkPolicyIngressRuleBuilder()
             .addNewPort().withNewPort(port).endPort();
 
-        componentNames.forEach((k, v) -> policyBuilder.addNewFrom()
-            .withNewPodSelector()
-                .addToMatchLabels(k, v)
-            .endPodSelector()
-            .endFrom());
+        matchLabels.forEach(labels -> {
+            policyBuilder.addNewFrom()
+                        .withNewPodSelector()
+                            .withMatchLabels(labels.toMap())
+                        .endPodSelector()
+                    .endFrom();
+        });
 
         return policyBuilder.build();
     }

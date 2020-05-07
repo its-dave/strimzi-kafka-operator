@@ -22,7 +22,6 @@ import com.ibm.eventstreams.api.spec.ContainerSpec;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.spec.ImagesSpec;
-import com.ibm.eventstreams.api.spec.SecuritySpec;
 import com.ibm.eventstreams.controller.EventStreamsOperatorConfig;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.ContainerBuilder;
@@ -45,7 +44,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -104,10 +102,7 @@ public class RestProducerModel extends AbstractSecureEndpointsModel {
             setPodTemplate(restProducerSpec.map(ComponentSpec::getTemplate)
                             .map(ComponentTemplate::getPod)
                             .orElseGet(PodTemplate::new));
-            setTlsVersion(Optional.ofNullable(instance.getSpec())
-                            .map(EventStreamsSpec::getSecurity)
-                            .map(SecuritySpec::getInternalTls)
-                            .orElse(DEFAULT_INTERNAL_TLS));
+            setTlsVersion(getInternalTlsVersion(instance));
             setGlobalPullSecrets(Optional.ofNullable(instance.getSpec())
                                     .map(EventStreamsSpec::getImages)
                                     .map(ImagesSpec::getPullSecrets)
@@ -166,14 +161,18 @@ public class RestProducerModel extends AbstractSecureEndpointsModel {
      * @return A list of default environment variables to go into the rest producer container
      */
     private List<EnvVar> getDefaultEnvVars() {
-        String schemaRegistryEndpoint =  getInternalServiceName(getInstanceName(), SchemaRegistryModel.COMPONENT_NAME) + "." +  getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.getPodToPodPort(tlsEnabled());
+        String schemaRegistryEndpoint = String.format("%s.%s.svc.%s:%d",
+                getInternalServiceName(getInstanceName(), SchemaRegistryModel.COMPONENT_NAME),
+                getNamespace(),
+                Main.CLUSTER_NAME,
+                SchemaRegistryModel.HTTP_HMAC_PORT);
 
         ArrayList<EnvVar> envVars = new ArrayList<>(Arrays.asList(
             new EnvVarBuilder().withName("RELEASE").withValue(getInstanceName()).build(),
             new EnvVarBuilder().withName("LICENSE").withValue("accept").build(),
             new EnvVarBuilder().withName("NAMESPACE").withValue(getNamespace()).build(),
             new EnvVarBuilder().withName("SCHEMA_REGISTRY_URL").withValue(schemaRegistryEndpoint).build(),
-            new EnvVarBuilder().withName("SCHEMA_REGISTRY_SECURITY_PROTOCOL").withValue(getUrlProtocol()).build(),
+            new EnvVarBuilder().withName("SCHEMA_REGISTRY_SECURITY_PROTOCOL").withValue("http://").build(),
             new EnvVarBuilder().withName("MAX_KEY_SIZE").withValue("4096").build(),
             new EnvVarBuilder().withName("MAX_MESSAGE_SIZE").withValue("65536").build(),
             new EnvVarBuilder().withName("PRODUCER_CACHE_SIZE").withValue("10").build(),
@@ -339,7 +338,7 @@ public class RestProducerModel extends AbstractSecureEndpointsModel {
     private NetworkPolicy createNetworkPolicy() {
         List<NetworkPolicyIngressRule> ingressRules = new ArrayList<>();
 
-        endpoints.forEach(endpoint -> ingressRules.add(createIngressRule(endpoint.getPort(), new HashMap<>())));
+        endpoints.forEach(endpoint -> ingressRules.add(createIngressRule(endpoint.getPort(), endpoint.getEndpointIngressLabels())));
 
         return createNetworkPolicy(createLabelSelector(APPLICATION_NAME), ingressRules, null);
     }
@@ -350,8 +349,15 @@ public class RestProducerModel extends AbstractSecureEndpointsModel {
             Endpoint.DEFAULT_EXTERNAL_TLS_PORT,
             Endpoint.DEFAULT_TLS_VERSION,
             Endpoint.DEFAULT_EXTERNAL_SERVICE_TYPE,
-            Endpoint.DEFAULT_EXTERNAL_NAME,
             null,
-            authEnabled ? Arrays.asList(Endpoint.MUTUAL_TLS_KEY, Endpoint.SCRAM_SHA_512_KEY) : Collections.singletonList(Endpoint.RUNAS_ANONYMOUS_KEY)));
+            authEnabled ? Arrays.asList(Endpoint.MUTUAL_TLS_KEY, Endpoint.SCRAM_SHA_512_KEY) : Collections.singletonList(Endpoint.RUNAS_ANONYMOUS_KEY),
+            Collections.emptyList()));
+    }
+
+    @Override
+    protected List<Endpoint> createP2PEndpoints(EventStreams instance) {
+        List<Endpoint> endpoints = new ArrayList<>();
+        endpoints.add(Endpoint.createP2PEndpoint(instance, Collections.emptyList(), Collections.singletonList(uniqueInstanceLabels())));
+        return endpoints;
     }
 }

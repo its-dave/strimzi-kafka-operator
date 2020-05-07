@@ -16,6 +16,7 @@ import com.ibm.eventstreams.Main;
 import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.EndpointServiceType;
 import com.ibm.eventstreams.api.TlsVersion;
+import com.ibm.eventstreams.api.model.utils.CustomMatchers;
 import com.ibm.eventstreams.api.model.utils.ModelUtils;
 import com.ibm.eventstreams.api.spec.EndpointSpec;
 import com.ibm.eventstreams.api.spec.EndpointSpecBuilder;
@@ -31,6 +32,7 @@ import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.EnvVarBuilder;
 import io.fabric8.kubernetes.api.model.EnvVarSource;
 import io.fabric8.kubernetes.api.model.EnvVarSourceBuilder;
+import io.fabric8.kubernetes.api.model.IntOrString;
 import io.fabric8.kubernetes.api.model.LocalObjectReference;
 import io.fabric8.kubernetes.api.model.LocalObjectReferenceBuilder;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
@@ -43,7 +45,8 @@ import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.VolumeMount;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicy;
-import io.fabric8.kubernetes.api.model.networking.NetworkPolicyPeer;
+import io.fabric8.kubernetes.api.model.networking.NetworkPolicyIngressRule;
+import io.fabric8.kubernetes.api.model.networking.NetworkPolicyIngressRuleBuilder;
 import io.fabric8.kubernetes.api.model.rbac.RoleRef;
 import io.fabric8.kubernetes.api.model.rbac.Subject;
 import io.fabric8.openshift.api.model.Route;
@@ -53,6 +56,7 @@ import io.strimzi.api.kafka.model.KafkaSpecBuilder;
 import io.strimzi.api.kafka.model.status.ListenerStatus;
 import io.strimzi.api.kafka.model.status.ListenerStatusBuilder;
 import io.strimzi.api.kafka.model.template.PodTemplateBuilder;
+import io.strimzi.operator.common.model.Labels;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -65,7 +69,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import static com.ibm.eventstreams.api.model.AbstractSecureEndpointsModel.INTERNAL_SERVICE_SUFFIX;
 import static org.hamcrest.CoreMatchers.endsWith;
@@ -75,11 +78,9 @@ import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.emptyIterableOf;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasKey;
-import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -195,7 +196,7 @@ public class AdminApiModelTest {
         EnvVar kafkaStsEnv = new EnvVarBuilder().withName("KAFKA_STS_NAME").withValue(instanceName + "-" + EventStreamsKafkaModel.KAFKA_COMPONENT_NAME).build();
         EnvVar clientCaCertPath = new EnvVarBuilder().withName("CLIENT_CA_PATH").withValue("/certs/client/ca.crt").build();
         EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:RUNAS-ANONYMOUS,7443:RUNAS-ANONYMOUS").build();
-        EnvVar endpoints = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7443:p2p/podtls").build();
+        EnvVar endpoints = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7443:p2ptls").build();
         EnvVar tlsVersion = new EnvVarBuilder().withName("TLS_VERSION").withValue("9443:TLSv1.2,7443:TLSv1.2").build();
         EnvVar kafkaConnectRestApiEnv = new EnvVarBuilder().withName("KAFKA_CONNECT_REST_API_ADDRESS").withValue(kafkaConnectRestEndpoint).build();
         EnvVar apiVersionEnv = new EnvVarBuilder().withName("EVENTSTREAMS_API_GROUP").withValue(apiVersion).build();
@@ -239,7 +240,7 @@ public class AdminApiModelTest {
         EnvVar kafkaStsEnv = new EnvVarBuilder().withName("KAFKA_STS_NAME").withValue(instanceName + "-" + EventStreamsKafkaModel.KAFKA_COMPONENT_NAME).build();
         EnvVar clientCaCertPath = new EnvVarBuilder().withName("CLIENT_CA_PATH").withValue("/certs/client/ca.crt").build();
         EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:IAM-BEARER;TLS;SCRAM-SHA-512,7443:IAM-BEARER").build();
-        EnvVar endpoints = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7443:p2p/podtls").build();
+        EnvVar endpoints = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7443:p2ptls").build();
         EnvVar tlsVersion = new EnvVarBuilder().withName("TLS_VERSION").withValue("9443:TLSv1.2,7443:TLSv1.2").build();
         EnvVar kafkaPrincipalEnv = new EnvVarBuilder().withName("KAFKA_PRINCIPAL").withValue(kafkaPrincipal).build();
         EnvVar kafkaConnectRestApiEnv = new EnvVarBuilder().withName("KAFKA_CONNECT_REST_API_ADDRESS").withValue(kafkaConnectRestEndpoint).build();
@@ -331,13 +332,26 @@ public class AdminApiModelTest {
         assertThat(networkPolicy.getKind(), is("NetworkPolicy"));
 
         assertThat(networkPolicy.getSpec().getIngress().size(), is(adminApiModel.getEndpoints().size()));
-        List<Integer> endpointPorts = adminApiModel.getEndpoints().stream().map(Endpoint::getPort).collect(Collectors.toList());
 
-        networkPolicy.getSpec().getIngress().forEach(ingress -> {
-            assertThat(ingress.getFrom(), is(emptyIterableOf(NetworkPolicyPeer.class)));
-            assertThat(ingress.getPorts(), hasSize(1));
-            assertThat(endpointPorts, hasItem(ingress.getPorts().get(0).getPort().getIntVal()));
-        });
+        NetworkPolicyIngressRule defaultP2PIngressRule = new NetworkPolicyIngressRuleBuilder()
+                .addNewPort()
+                    .withPort(new IntOrString(7443))
+                .endPort()
+                .addNewFrom()
+                    .withNewPodSelector()
+                        .addToMatchLabels(Labels.KUBERNETES_INSTANCE_LABEL, instanceName)
+                        .addToMatchLabels(Labels.KUBERNETES_MANAGED_BY_LABEL, AbstractModel.OPERATOR_NAME)
+                    .endPodSelector()
+                .endFrom()
+                .build();
+
+        NetworkPolicyIngressRule defaultEndpointRule = new NetworkPolicyIngressRuleBuilder()
+                .addNewPort()
+                    .withPort(new IntOrString(9443))
+                .endPort()
+                .build();
+
+        assertThat(networkPolicy.getSpec().getIngress(), CustomMatchers.containsIngressRulesInAnyOrder(defaultEndpointRule, defaultP2PIngressRule));
     }
 
     @Test
@@ -353,7 +367,7 @@ public class AdminApiModelTest {
                             .build(),
                         new EndpointSpecBuilder()
                             .withName("second-endpoint")
-                            .withAccessPort(9999)
+                            .withAccessPort(9998)
                             .build())
                     .build())
                 .endSpec()
@@ -364,14 +378,33 @@ public class AdminApiModelTest {
         assertThat(networkPolicy.getMetadata().getName(), is(componentPrefix));
         assertThat(networkPolicy.getKind(), is("NetworkPolicy"));
 
-        assertThat(networkPolicy.getSpec().getIngress().size(), is(3));
-        List<Integer> endpointPorts = adminApiModel.getEndpoints().stream().map(Endpoint::getPort).collect(Collectors.toList());
+        assertThat(networkPolicy.getSpec().getIngress().size(), is(adminApiModel.endpoints.size()));
 
-        networkPolicy.getSpec().getIngress().forEach(ingress -> {
-            assertThat(ingress.getFrom(), is(emptyIterableOf(NetworkPolicyPeer.class)));
-            assertThat(ingress.getPorts().size(), is(1));
-            assertThat(endpointPorts, hasItem(ingress.getPorts().get(0).getPort().getIntVal()));
-        });
+        NetworkPolicyIngressRule defaultP2PIngressRule = new NetworkPolicyIngressRuleBuilder()
+                .addNewPort()
+                    .withPort(new IntOrString(7443))
+                .endPort()
+                .addNewFrom()
+                    .withNewPodSelector()
+                        .addToMatchLabels(Labels.KUBERNETES_INSTANCE_LABEL, instanceName)
+                        .addToMatchLabels(Labels.KUBERNETES_MANAGED_BY_LABEL, AbstractModel.OPERATOR_NAME)
+                    .endPodSelector()
+                .endFrom()
+                .build();
+
+        NetworkPolicyIngressRule customEndpointRule1 = new NetworkPolicyIngressRuleBuilder()
+                .addNewPort()
+                    .withPort(new IntOrString(9999))
+                .endPort()
+                .build();
+
+        NetworkPolicyIngressRule customEndpointRule2 = new NetworkPolicyIngressRuleBuilder()
+                .addNewPort()
+                    .withPort(new IntOrString(9998))
+                .endPort()
+                .build();
+
+        assertThat(networkPolicy.getSpec().getIngress(), CustomMatchers.containsIngressRulesInAnyOrder(customEndpointRule1, customEndpointRule2, defaultP2PIngressRule));
     }
 
     @Test
@@ -827,7 +860,7 @@ public class AdminApiModelTest {
     @Test
     public void testSSLTrustAndKeystoreEnvVars() {
 
-        final String userCertPath = "/certs/p2p";
+        final String userCertPath = "/certs/user";
         final String clusterCertPath = "/certs/cluster";
 
         EventStreams eventStreams = createDefaultEventStreams().build();
@@ -835,7 +868,7 @@ public class AdminApiModelTest {
 
         EnvVar expectedTruststoreP12Path = new EnvVarBuilder().withName("SSL_TRUSTSTORE_P12_PATH").withValue(clusterCertPath + File.separator + "ca.p12").build();
         EnvVar expectedTruststoreCrtPath = new EnvVarBuilder().withName("SSL_TRUSTSTORE_CRT_PATH").withValue(clusterCertPath + File.separator + "ca.crt").build();
-        EnvVar expectedEnvVarKeyStorePath = new EnvVarBuilder().withName("SSL_KEYSTORE_PATH").withValue(userCertPath + File.separator + "podtls.p12").build();
+        EnvVar expectedEnvVarKeyStorePath = new EnvVarBuilder().withName("SSL_KEYSTORE_PATH").withValue(userCertPath + File.separator + "user.p12").build();
         List<EnvVar> actualEnvVars = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getEnv();
         assertThat(actualEnvVars, hasItem(expectedTruststoreP12Path));
         assertThat(actualEnvVars, hasItem(expectedTruststoreCrtPath));

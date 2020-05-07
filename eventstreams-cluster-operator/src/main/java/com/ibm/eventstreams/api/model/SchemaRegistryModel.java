@@ -16,6 +16,7 @@ import com.ibm.eventstreams.Main;
 import com.ibm.eventstreams.api.DefaultResourceRequirements;
 import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.EndpointServiceType;
+import com.ibm.eventstreams.api.TlsVersion;
 import com.ibm.eventstreams.api.spec.ComponentSpec;
 import com.ibm.eventstreams.api.spec.ComponentTemplate;
 import com.ibm.eventstreams.api.spec.ContainerSpec;
@@ -23,7 +24,6 @@ import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.spec.ImagesSpec;
 import com.ibm.eventstreams.api.spec.SchemaRegistrySpec;
-import com.ibm.eventstreams.api.spec.SecuritySpec;
 import com.ibm.eventstreams.controller.EventStreamsOperatorConfig;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.ContainerBuilder;
@@ -51,6 +51,7 @@ import io.strimzi.api.kafka.model.storage.EphemeralStorage;
 import io.strimzi.api.kafka.model.storage.PersistentClaimStorage;
 import io.strimzi.api.kafka.model.storage.Storage;
 import io.strimzi.api.kafka.model.template.PodTemplate;
+import io.strimzi.operator.common.model.Labels;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -70,6 +71,8 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
     public static final String SCHEMA_REGISTRY_PROXY_CONTAINER_NAME = "proxy";
     public static final int SCHEMA_REGISTRY_PORT = 3000;
     public static final int AVRO_SERVICE_PORT = 3080;
+    public static final String HTTP_HAMC_NAME = "http-hmac";
+    public static final int HTTP_HMAC_PORT = 7081;
     public static final int DEFAULT_REPLICAS = 1;
     public static final String TEMP_DIR_NAME = "tempdir";
     public static final String SHARED_VOLUME_MOUNT_NAME = "shared";
@@ -148,10 +151,7 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
                         .map(EventStreamsSpec::getImages)
                         .map(ImagesSpec::getPullSecrets)
                         .orElseGet(imageConfig::getPullSecrets));
-            setTlsVersion(Optional.ofNullable(instance.getSpec())
-                        .map(EventStreamsSpec::getSecurity)
-                        .map(SecuritySpec::getInternalTls)
-                        .orElse(DEFAULT_INTERNAL_TLS));
+            setTlsVersion(getInternalTlsVersion(instance));
 
             storage = schemaRegistrySpec.map(SchemaRegistrySpec::getStorage)
                     .orElseGet(EphemeralStorage::new);
@@ -676,12 +676,33 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
 
     @Override
     protected List<Endpoint> createDefaultEndpoints(boolean kafkaAuthenticationEnabled) {
-        return new ArrayList<>(Collections.singletonList(Endpoint.createDefaultExternalEndpoint(kafkaAuthenticationEnabled)));
+        List<Endpoint> endpoints = new ArrayList<>();
+        endpoints.add(Endpoint.createDefaultExternalEndpoint(kafkaAuthenticationEnabled));
+        return endpoints;
     }
 
     @Override
+    protected List<Endpoint> createP2PEndpoints(EventStreams instance) {
+        List<Endpoint> endpoints = new ArrayList<>();
+
+        List<Labels> allowedComponentLabels = new ArrayList<>();
+        allowedComponentLabels.add(AbstractModel.generateDefaultLabels(instance, AdminApiModel.APPLICATION_NAME, AdminApiModel.COMPONENT_NAME));
+        allowedComponentLabels.add(AbstractModel.generateDefaultLabels(instance, RestProducerModel.APPLICATION_NAME, RestProducerModel.COMPONENT_NAME));
+        Endpoint httpHMACEndpoint = new Endpoint(HTTP_HAMC_NAME,
+                HTTP_HMAC_PORT,
+                TlsVersion.NONE,
+                EndpointServiceType.INTERNAL,
+                null,
+                Collections.singletonList(Endpoint.MAC_KEY),
+                allowedComponentLabels);
+
+        endpoints.add(httpHMACEndpoint);
+        endpoints.add(Endpoint.createP2PEndpoint(instance, getP2PAuthenticationMechanisms(instance), Collections.singletonList(uniqueInstanceLabels())));
+        return endpoints;
+    }
+
     public List<String> getP2PAuthenticationMechanisms(EventStreams instance) {
-        return isKafkaAuthenticationEnabled(instance) ? Arrays.asList(Endpoint.MAC_KEY, Endpoint.IAM_BEARER_KEY) : Collections.emptyList();
+        return isKafkaAuthenticationEnabled(instance) ? Collections.singletonList(Endpoint.IAM_BEARER_KEY) : Collections.emptyList();
     }
 
     /**
@@ -708,7 +729,7 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
     private NetworkPolicy createNetworkPolicy() {
         List<NetworkPolicyIngressRule> ingressRules = new ArrayList<>();
 
-        endpoints.forEach(endpoint -> ingressRules.add(createIngressRule(endpoint.getPort(), new HashMap<>())));
+        endpoints.forEach(endpoint -> ingressRules.add(createIngressRule(endpoint.getPort(), endpoint.getEndpointIngressLabels())));
 
         return createNetworkPolicy(createLabelSelector(APPLICATION_NAME), ingressRules, null);
     }

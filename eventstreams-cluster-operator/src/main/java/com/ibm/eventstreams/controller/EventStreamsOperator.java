@@ -914,7 +914,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             try {
                 boolean regenSecret = false;
                 Optional<Secret> certSecret = certificateManager.getSecret(model.getCertificateSecretName());
-                for (Endpoint endpoint : model.getTlsNonP2PEndpoints()) {
+                for (Endpoint endpoint : model.getTlsEndpoints()) {
                     regenSecret = updateCertAndKeyInModel(certSecret, model, endpoint, additionalHosts, dateSupplier) || regenSecret;
                 }
                 // Create secret if any services are not null

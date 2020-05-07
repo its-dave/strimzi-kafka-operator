@@ -36,6 +36,7 @@ import io.strimzi.operator.cluster.model.AbstractModel;
 import io.strimzi.operator.cluster.model.Ca;
 import io.strimzi.operator.common.model.Labels;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -226,6 +227,13 @@ public class ModelUtils {
         @Override
         protected List<Endpoint> createDefaultEndpoints(boolean authEnabled) {
             return Collections.singletonList(Endpoint.createDefaultExternalEndpoint(authEnabled));
+        }
+
+        @Override
+        protected List<Endpoint> createP2PEndpoints(EventStreams instance) {
+            List<Endpoint> endpoints = new ArrayList<>();
+            endpoints.add(Endpoint.createP2PEndpoint(instance, Collections.emptyList(), Collections.singletonList(uniqueInstanceLabels())));
+            return endpoints;
         }
     }
 

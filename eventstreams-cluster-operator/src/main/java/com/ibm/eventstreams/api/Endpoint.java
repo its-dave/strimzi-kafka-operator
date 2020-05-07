@@ -18,6 +18,7 @@ import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.spec.SecuritySpec;
 import io.strimzi.api.kafka.model.CertAndKeySecretSource;
+import io.strimzi.operator.common.model.Labels;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -44,26 +45,25 @@ public class Endpoint {
     public static final String DEFAULT_P2P_TLS_NAME = "p2ptls";
     public static final String DEFAULT_P2P_PLAIN_NAME = "pod2pod";
     public static final int DEFAULT_P2P_TLS_PORT = 7443;
-    private static final String DEFAULT_P2P_TLS_MOUNT = "p2p";
     public static final int DEFAULT_P2P_PLAIN_PORT = 7080;
-    private static final String DEFAULT_P2P_PATH = DEFAULT_P2P_TLS_MOUNT + "/podtls";
 
     private String name;
     private int port;
     private TlsVersion tlsVersion;
     private EndpointServiceType type;
-    private String path;
     private CertAndKeySecretSource certificateAndKeyOverride;
     private List<String> authenticationMechanisms;
+    // This is a list of Label configurations for identify pods that can communicate with this endpoint
+    private List<Labels> endpointIngressLabels;
 
-    public Endpoint(String name, int port, TlsVersion tlsVersion, EndpointServiceType type, String path, CertAndKeySecretSource certificateAndKeyOverride, List<String> authenticationMechanisms) {
+    public Endpoint(String name, int port, TlsVersion tlsVersion, EndpointServiceType type, CertAndKeySecretSource certificateAndKeyOverride, List<String> authenticationMechanisms, List<Labels> endpointIngressLabels) {
         this.name = name;
         this.port = port;
         this.tlsVersion = tlsVersion;
         this.type = type;
-        this.path = path;
         this.certificateAndKeyOverride = certificateAndKeyOverride;
         this.authenticationMechanisms = authenticationMechanisms;
+        this.endpointIngressLabels = endpointIngressLabels;
     }
 
     /**
@@ -78,9 +78,9 @@ public class Endpoint {
                             DEFAULT_EXTERNAL_TLS_PORT,
                             DEFAULT_TLS_VERSION,
                             DEFAULT_EXTERNAL_SERVICE_TYPE,
-                            DEFAULT_EXTERNAL_NAME,
                             null,
-                            kafkaAuthenticationEnabled ? DEFAULT_EXTERNAL_AUTHENTICATION_MECHANISM : Collections.singletonList(RUNAS_ANONYMOUS_KEY));
+                            kafkaAuthenticationEnabled ? DEFAULT_EXTERNAL_AUTHENTICATION_MECHANISM : Collections.singletonList(RUNAS_ANONYMOUS_KEY),
+                            Collections.emptyList());
     }
 
     /**
@@ -89,16 +89,16 @@ public class Endpoint {
      * @param instance
      * @return A Plain/TCP Pod To Pod endpoint based on the overall security configuration of the CR.
      */
-    public static Endpoint createP2PEndpoint(EventStreams instance, List<String> podToPodAuth) {
+    public static Endpoint createP2PEndpoint(EventStreams instance, List<String> podToPodAuth, List<Labels> endpointIngressLabels) {
         boolean isTls = isTls(instance);
 
         return new Endpoint(isTls ? DEFAULT_P2P_TLS_NAME : DEFAULT_P2P_PLAIN_NAME,
                             isTls ? DEFAULT_P2P_TLS_PORT : DEFAULT_P2P_PLAIN_PORT,
                             getP2PTlsVersion(instance),
                             EndpointServiceType.INTERNAL,
-                            isTls ? DEFAULT_P2P_PATH : null,
                             null,
-                            podToPodAuth.isEmpty() ? Collections.singletonList(RUNAS_ANONYMOUS_KEY) : podToPodAuth);
+                            podToPodAuth.isEmpty() ? Collections.singletonList(RUNAS_ANONYMOUS_KEY) : podToPodAuth,
+                            endpointIngressLabels);
     }
 
     /**
@@ -111,9 +111,9 @@ public class Endpoint {
                                     getPortOrDefault(spec),
                                     getTlsVersionOrDefault(spec),
                                     getTypeOrDefault(spec),
-                                    getPathOrDefault(spec),
                                     spec.getCertOverrides(),
-                                    getAuthenticationMechanismsOrDefault(spec));
+                                    getAuthenticationMechanismsOrDefault(spec),
+                                    getEndpointIngressLabels(spec));
 
     }
 
@@ -143,11 +143,7 @@ public class Endpoint {
      * @return Pod to Pod TLS Version
      */
     private static TlsVersion getP2PTlsVersion(EventStreams instance) {
-        return Optional.ofNullable(instance)
-            .map(EventStreams::getSpec)
-            .map(EventStreamsSpec::getSecurity)
-            .map(SecuritySpec::getInternalTls)
-            .orElse(DEFAULT_P2P_TLS_VERSION);
+        return AbstractModel.getInternalTlsVersion(instance);
     }
 
     /**
@@ -169,16 +165,6 @@ public class Endpoint {
         return Optional.ofNullable(spec.getTlsVersion())
             .map(tlsVersion -> !TlsVersion.NONE.equals(tlsVersion))
             .orElse(DEFAULT_EXTERNAL_ENDPOINT_TLS_SETTING);
-    }
-
-    /**
-     * Gets the path to where the certificate is mounted or null if no certificate is mounted.
-     * @param spec the user configured endpoint CR
-     * @return the path to the cert for the endpoint.
-     */
-    private static String getPathOrDefault(EndpointSpec spec) {
-        boolean isTls = getTlsOrDefault(spec);
-        return isTls ? spec.getName() : null;
     }
 
     /**
@@ -204,6 +190,15 @@ public class Endpoint {
         return Optional.ofNullable(spec.getAuthenticationMechanisms())
                 .map(list -> list.isEmpty() ? Collections.singletonList(RUNAS_ANONYMOUS_KEY) : list) // if set empty use RUNAS-ANONYMOUS, otherwise use list
                 .orElse(DEFAULT_EXTERNAL_AUTHENTICATION_MECHANISM); // if authenticationMechanisms not set use default
+    }
+
+    /**
+     * Gets any labels that will restrict ingress to this port via a network policy
+     * @param spec the user configured endpoint CR
+     * @return the labels of the components allowed to talk to this port
+     */
+    private static List<Labels> getEndpointIngressLabels(EndpointSpec spec) {
+        return Collections.emptyList();
     }
 
     /**
@@ -256,14 +251,6 @@ public class Endpoint {
     }
 
     /**
-     * Gets the path of where the certificate will be stored in the component to configure which certificate is presented to the client.
-     * @return the path to where the certificate has been stored to configure what certificate is presented to the client
-     */
-    public String getPath() {
-        return path;
-    }
-
-    /**
      * Determines whether or not the user has specified a specific certificate and key they want to present at this endpoint
      * @return the object that references where the user specified cert and key is.
      */
@@ -285,5 +272,9 @@ public class Endpoint {
 
     public boolean isRoute() {
         return this.type == EndpointServiceType.ROUTE;
+    }
+
+    public List<Labels> getEndpointIngressLabels() {
+        return endpointIngressLabels;
     }
 }

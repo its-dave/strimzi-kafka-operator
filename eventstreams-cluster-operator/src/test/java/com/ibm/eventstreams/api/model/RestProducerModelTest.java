@@ -16,6 +16,7 @@ import com.ibm.eventstreams.Main;
 import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.EndpointServiceType;
 import com.ibm.eventstreams.api.TlsVersion;
+import com.ibm.eventstreams.api.model.utils.CustomMatchers;
 import com.ibm.eventstreams.api.model.utils.ModelUtils;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
@@ -23,6 +24,7 @@ import com.ibm.eventstreams.controller.EventStreamsOperatorConfig;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.EnvVarBuilder;
+import io.fabric8.kubernetes.api.model.IntOrString;
 import io.fabric8.kubernetes.api.model.LocalObjectReference;
 import io.fabric8.kubernetes.api.model.LocalObjectReferenceBuilder;
 import io.fabric8.kubernetes.api.model.Quantity;
@@ -33,7 +35,8 @@ import io.fabric8.kubernetes.api.model.Volume;
 import io.fabric8.kubernetes.api.model.VolumeMount;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicy;
-import io.fabric8.kubernetes.api.model.networking.NetworkPolicyPeer;
+import io.fabric8.kubernetes.api.model.networking.NetworkPolicyIngressRule;
+import io.fabric8.kubernetes.api.model.networking.NetworkPolicyIngressRuleBuilder;
 import io.fabric8.openshift.api.model.Route;
 import io.strimzi.api.kafka.model.status.ListenerStatus;
 import io.strimzi.api.kafka.model.status.ListenerStatusBuilder;
@@ -51,7 +54,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
@@ -61,7 +63,6 @@ import static org.hamcrest.Matchers.aMapWithSize;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.emptyIterableOf;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasItem;
 import static org.mockito.Mockito.when;
@@ -204,18 +205,30 @@ public class RestProducerModelTest {
         RestProducerModel restProducerModel = createDefaultRestProducerModel();
 
         NetworkPolicy restProducerNetworkPolicy = restProducerModel.getNetworkPolicy();
-        String expectedNetworkPolicyName = componentPrefix;
-        assertThat(restProducerNetworkPolicy.getMetadata().getName(), is(expectedNetworkPolicyName));
+        assertThat(restProducerNetworkPolicy.getMetadata().getName(), is(componentPrefix));
         assertThat(restProducerNetworkPolicy.getKind(), is("NetworkPolicy"));
 
         assertThat(restProducerNetworkPolicy.getSpec().getIngress().size(), is(restProducerModel.getEndpoints().size()));
-        List<Integer> endpointPorts = restProducerModel.getEndpoints().stream().map(Endpoint::getPort).collect(Collectors.toList());
 
-        restProducerNetworkPolicy.getSpec().getIngress().forEach(ingress -> {
-            assertThat(ingress.getFrom(), is(emptyIterableOf(NetworkPolicyPeer.class)));
-            assertThat(ingress.getPorts().size(), is(1));
-            assertThat(endpointPorts, hasItem(ingress.getPorts().get(0).getPort().getIntVal()));
-        });
+        NetworkPolicyIngressRule defaultP2PIngressRule = new NetworkPolicyIngressRuleBuilder()
+                .addNewPort()
+                    .withPort(new IntOrString(7443))
+                .endPort()
+                .addNewFrom()
+                    .withNewPodSelector()
+                        .addToMatchLabels(Labels.KUBERNETES_INSTANCE_LABEL, instanceName)
+                        .addToMatchLabels(Labels.KUBERNETES_MANAGED_BY_LABEL, AbstractModel.OPERATOR_NAME)
+                    .endPodSelector()
+                .endFrom()
+                .build();
+
+        NetworkPolicyIngressRule defaultEndpointRule = new NetworkPolicyIngressRuleBuilder()
+                .addNewPort()
+                    .withPort(new IntOrString(9443))
+                .endPort()
+                .build();
+
+        assertThat(restProducerNetworkPolicy.getSpec().getIngress(), CustomMatchers.containsIngressRulesInAnyOrder(defaultEndpointRule, defaultP2PIngressRule));
 
         assertThat(restProducerNetworkPolicy.getSpec().getPodSelector().getMatchLabels(), allOf(
                 aMapWithSize(2),
@@ -376,7 +389,7 @@ public class RestProducerModelTest {
 
         String runasKafkaBootstrap = instanceName + "-kafka-bootstrap." + restProducerModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_RUNAS_PORT;
         EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:RUNAS-ANONYMOUS,7443:RUNAS-ANONYMOUS").build();
-        EnvVar endpoints = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7443:p2p/podtls").build();
+        EnvVar endpoints = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7443:p2ptls").build();
         EnvVar tlsVersion = new EnvVarBuilder().withName("TLS_VERSION").withValue("9443:TLSv1.2,7443:TLSv1.2").build();
         EnvVar runasKafkaBootstrapUrlEnv = new EnvVarBuilder().withName("RUNAS_KAFKA_BOOTSTRAP_SERVERS").withValue(runasKafkaBootstrap).build();
         Container adminApiContainer = restProducerModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0);
@@ -395,7 +408,7 @@ public class RestProducerModelTest {
 
         String runasKafkaBootstrap = instanceName + "-kafka-bootstrap." + restProducerModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_RUNAS_PORT;
         EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:TLS;SCRAM-SHA-512,7443:RUNAS-ANONYMOUS").build();
-        EnvVar endpoints = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7443:p2p/podtls").build();
+        EnvVar endpoints = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7443:p2ptls").build();
         EnvVar tlsVersion = new EnvVarBuilder().withName("TLS_VERSION").withValue("9443:TLSv1.2,7443:TLSv1.2").build();
         EnvVar runasKafkaBootstrapUrlEnv = new EnvVarBuilder().withName("RUNAS_KAFKA_BOOTSTRAP_SERVERS").withValue(runasKafkaBootstrap).build();
         Container adminApiContainer = restProducerModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0);

@@ -14,6 +14,7 @@ package com.ibm.eventstreams.api.model;
 
 import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.EndpointServiceType;
+import com.ibm.eventstreams.api.model.utils.CustomMatchers;
 import com.ibm.eventstreams.api.model.utils.ModelUtils;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
@@ -21,6 +22,7 @@ import com.ibm.eventstreams.controller.EventStreamsOperatorConfig;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.EnvVarBuilder;
+import io.fabric8.kubernetes.api.model.IntOrString;
 import io.fabric8.kubernetes.api.model.LabelSelector;
 import io.fabric8.kubernetes.api.model.LocalObjectReference;
 import io.fabric8.kubernetes.api.model.LocalObjectReferenceBuilder;
@@ -33,7 +35,8 @@ import io.fabric8.kubernetes.api.model.Volume;
 import io.fabric8.kubernetes.api.model.VolumeMount;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicy;
-import io.fabric8.kubernetes.api.model.networking.NetworkPolicyPeer;
+import io.fabric8.kubernetes.api.model.networking.NetworkPolicyIngressRule;
+import io.fabric8.kubernetes.api.model.networking.NetworkPolicyIngressRuleBuilder;
 import io.fabric8.openshift.api.model.Route;
 import io.strimzi.api.kafka.model.ExternalLogging;
 import io.strimzi.api.kafka.model.InlineLogging;
@@ -66,7 +69,6 @@ import static org.hamcrest.Matchers.aMapWithSize;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.emptyIterableOf;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasItems;
@@ -137,15 +139,56 @@ public class SchemaRegistryModelTest {
         assertThat(schemaRegistryNetworkPolicy.getMetadata().getName(), is(componentPrefix));
         assertThat(schemaRegistryNetworkPolicy.getKind(), is("NetworkPolicy"));
 
-        assertThat(schemaRegistryNetworkPolicy.getSpec().getIngress().size(), is(2));
         assertThat(schemaRegistryNetworkPolicy.getSpec().getIngress().size(), is(schemaRegistryModel.getEndpoints().size()));
-        List<Integer> endpointPorts = schemaRegistryModel.getEndpoints().stream().map(Endpoint::getPort).collect(Collectors.toList());
 
-        schemaRegistryNetworkPolicy.getSpec().getIngress().forEach(ingress -> {
-            assertThat(ingress.getFrom(), is(emptyIterableOf(NetworkPolicyPeer.class)));
-            assertThat(ingress.getPorts().size(), is(1));
-            assertThat(endpointPorts, hasItem(ingress.getPorts().get(0).getPort().getIntVal()));
-        });
+        NetworkPolicyIngressRule defaultP2PIngressRule = new NetworkPolicyIngressRuleBuilder()
+                .addNewPort()
+                    .withPort(new IntOrString(7443))
+                .endPort()
+                .addNewFrom()
+                    .withNewPodSelector()
+                        .addToMatchLabels(Labels.KUBERNETES_INSTANCE_LABEL, instanceName)
+                        .addToMatchLabels(Labels.KUBERNETES_MANAGED_BY_LABEL, AbstractModel.OPERATOR_NAME)
+                    .endPodSelector()
+                .endFrom()
+                .build();
+
+        NetworkPolicyIngressRule httpHMACIngressRule = new NetworkPolicyIngressRuleBuilder()
+                .addNewPort()
+                    .withPort(new IntOrString(7081))
+                .endPort()
+                .addNewFrom()
+                    .withNewPodSelector()
+                        .addToMatchLabels(Labels.STRIMZI_NAME_LABEL, instanceName + "-" + AbstractModel.APP_NAME + "-" + RestProducerModel.COMPONENT_NAME)
+                        .addToMatchLabels(Labels.KUBERNETES_MANAGED_BY_LABEL, AbstractModel.OPERATOR_NAME)
+                        .addToMatchLabels(Labels.KUBERNETES_NAME_LABEL, RestProducerModel.APPLICATION_NAME)
+                        .addToMatchLabels(Labels.STRIMZI_KIND_LABEL, EventStreams.RESOURCE_KIND)
+                        .addToMatchLabels(Labels.STRIMZI_CLUSTER_LABEL, instanceName)
+                        .addToMatchLabels(Labels.KUBERNETES_PART_OF_LABEL, "eventstreams-" + instanceName)
+                        .addToMatchLabels(Labels.KUBERNETES_INSTANCE_LABEL, instanceName)
+                    .endPodSelector()
+                .endFrom()
+                .addNewFrom()
+                    .withNewPodSelector()
+                        .addToMatchLabels(Labels.STRIMZI_NAME_LABEL, instanceName + "-" + AbstractModel.APP_NAME + "-" + AdminApiModel.COMPONENT_NAME)
+                        .addToMatchLabels(Labels.KUBERNETES_MANAGED_BY_LABEL, AbstractModel.OPERATOR_NAME)
+                        .addToMatchLabels(Labels.KUBERNETES_NAME_LABEL, AdminApiModel.APPLICATION_NAME)
+                        .addToMatchLabels(Labels.STRIMZI_CLUSTER_LABEL, instanceName)
+                        .addToMatchLabels(Labels.STRIMZI_KIND_LABEL, EventStreams.RESOURCE_KIND)
+                        .addToMatchLabels(Labels.KUBERNETES_PART_OF_LABEL, "eventstreams-" + instanceName)
+                        .addToMatchLabels(Labels.KUBERNETES_INSTANCE_LABEL, instanceName)
+                    .endPodSelector()
+                .endFrom()
+                .build();
+
+        NetworkPolicyIngressRule defaultEndpointRule = new NetworkPolicyIngressRuleBuilder()
+                .addNewPort()
+                .withPort(new IntOrString(9443))
+                .endPort()
+                .build();
+
+        assertThat(schemaRegistryNetworkPolicy.getSpec().getIngress(), CustomMatchers.containsIngressRulesInAnyOrder(defaultEndpointRule, defaultP2PIngressRule, httpHMACIngressRule));
+
         assertThat(schemaRegistryNetworkPolicy.getSpec().getEgress().size(), is(0));
 
         assertThat(schemaRegistryNetworkPolicy.getSpec().getPodSelector().getMatchLabels(), allOf(
@@ -399,9 +442,9 @@ public class SchemaRegistryModelTest {
         EventStreams defaultEs = createDefaultEventStreams().build();
         SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockIcpClusterDataMap, kafkaPrincipal);
 
-        EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:RUNAS-ANONYMOUS,7443:RUNAS-ANONYMOUS").build();
-        EnvVar endpoints = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7443:p2p/podtls").build();
-        EnvVar tlsVersion = new EnvVarBuilder().withName("TLS_VERSION").withValue("9443:TLSv1.2,7443:TLSv1.2").build();
+        EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:RUNAS-ANONYMOUS,7081:MAC,7443:RUNAS-ANONYMOUS").build();
+        EnvVar endpoints = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7081,7443:p2ptls").build();
+        EnvVar tlsVersion = new EnvVarBuilder().withName("TLS_VERSION").withValue("9443:TLSv1.2,7081,7443:TLSv1.2").build();
         EnvVar authEnabled  = new EnvVarBuilder().withName("AUTHORIZATION_ENABLED").withValue("false").build();
 
         List<EnvVar> envVars = schemaRegistryModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().stream().filter(container -> SchemaRegistryModel.SCHEMA_REGISTRY_PROXY_CONTAINER_NAME.equals(container.getName())).findFirst().get().getEnv();
@@ -414,9 +457,9 @@ public class SchemaRegistryModelTest {
         EventStreams defaultEs = createEventStreamsWithAuthorization().build();
         SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockIcpClusterDataMap, kafkaPrincipal);
 
-        EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:IAM-BEARER;TLS;SCRAM-SHA-512,7443:MAC;IAM-BEARER").build();
-        EnvVar endpoints = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7443:p2p/podtls").build();
-        EnvVar tlsVersion = new EnvVarBuilder().withName("TLS_VERSION").withValue("9443:TLSv1.2,7443:TLSv1.2").build();
+        EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:IAM-BEARER;TLS;SCRAM-SHA-512,7081:MAC,7443:IAM-BEARER").build();
+        EnvVar endpoints = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7081,7443:p2ptls").build();
+        EnvVar tlsVersion = new EnvVarBuilder().withName("TLS_VERSION").withValue("9443:TLSv1.2,7081,7443:TLSv1.2").build();
         EnvVar authEnabled  = new EnvVarBuilder().withName("AUTHORIZATION_ENABLED").withValue("true").build();
 
         List<EnvVar> envVars = schemaRegistryModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().stream().filter(container -> SchemaRegistryModel.SCHEMA_REGISTRY_PROXY_CONTAINER_NAME.equals(container.getName())).findFirst().get().getEnv();

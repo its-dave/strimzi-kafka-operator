@@ -22,7 +22,6 @@ import com.ibm.eventstreams.api.spec.ContainerSpec;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.spec.ImagesSpec;
-import com.ibm.eventstreams.api.spec.SecuritySpec;
 import com.ibm.eventstreams.controller.EventStreamsOperatorConfig;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.ContainerBuilder;
@@ -53,7 +52,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -74,7 +72,6 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
     public static final String ADMIN_CLUSTERROLE_NAME = "eventstreams-admin-clusterrole";
 
     public static final String CERTIFICATE_PATH = "/certs";
-    public static final String KAFKA_USER_CERTIFICATE_PATH = CERTIFICATE_PATH + File.separator + "p2p";
     public static final String CLUSTER_CERTIFICATE_PATH = CERTIFICATE_PATH + File.separator + "cluster";
     public static final String CLIENT_CA_CERTIFICATE_PATH = CERTIFICATE_PATH + File.separator + "client";
 
@@ -131,10 +128,7 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
         setPodTemplate(adminApiSpec.map(ComponentSpec::getTemplate)
                             .map(ComponentTemplate::getPod)
                             .orElseGet(PodTemplate::new));
-        setTlsVersion(Optional.ofNullable(instance.getSpec())
-                            .map(EventStreamsSpec::getSecurity)
-                            .map(SecuritySpec::getInternalTls)
-                            .orElse(DEFAULT_INTERNAL_TLS));
+        setTlsVersion(getInternalTlsVersion(instance));
         setGlobalPullSecrets(Optional.ofNullable(instance.getSpec())
                                 .map(EventStreamsSpec::getImages)
                                 .map(ImagesSpec::getPullSecrets)
@@ -438,6 +432,12 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
     }
 
     @Override
+    protected List<Endpoint> createP2PEndpoints(EventStreams instance) {
+        List<Endpoint> endpoints = new ArrayList<>();
+        endpoints.add(Endpoint.createP2PEndpoint(instance, getP2PAuthenticationMechanisms(instance), Collections.singletonList(uniqueInstanceLabels())));
+        return endpoints;
+    }
+
     public List<String> getP2PAuthenticationMechanisms(EventStreams instance) {
         return isKafkaAuthenticationEnabled(instance) ? Collections.singletonList(Endpoint.IAM_BEARER_KEY) : Collections.emptyList();
     }
@@ -473,7 +473,7 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
     private NetworkPolicy createNetworkPolicy() {
         List<NetworkPolicyIngressRule> ingressRules = new ArrayList<>();
 
-        endpoints.forEach(endpoint -> ingressRules.add(createIngressRule(endpoint.getPort(), new HashMap<>())));
+        endpoints.forEach(endpoint -> ingressRules.add(createIngressRule(endpoint.getPort(), endpoint.getEndpointIngressLabels())));
 
         return createNetworkPolicy(createLabelSelector(APPLICATION_NAME), ingressRules, null);
     }
