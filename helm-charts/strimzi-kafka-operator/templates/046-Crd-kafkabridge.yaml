@@ -280,8 +280,10 @@ spec:
               properties:
                 limits:
                   type: object
+                  x-kubernetes-preserve-unknown-fields: true
                 requests:
                   type: object
+                  x-kubernetes-preserve-unknown-fields: true
               description: CPU and memory resources to reserve.
             jvmOptions:
               type: object
@@ -606,6 +608,7 @@ spec:
                                                     type: string
                                           matchLabels:
                                             type: object
+                                            x-kubernetes-preserve-unknown-fields: true
                                       namespaces:
                                         type: array
                                         items:
@@ -637,6 +640,7 @@ spec:
                                                 type: string
                                       matchLabels:
                                         type: object
+                                        x-kubernetes-preserve-unknown-fields: true
                                   namespaces:
                                     type: array
                                     items:
@@ -672,6 +676,7 @@ spec:
                                                     type: string
                                           matchLabels:
                                             type: object
+                                            x-kubernetes-preserve-unknown-fields: true
                                       namespaces:
                                         type: array
                                         items:
@@ -703,6 +708,7 @@ spec:
                                                 type: string
                                       matchLabels:
                                         type: object
+                                        x-kubernetes-preserve-unknown-fields: true
                                   namespaces:
                                     type: array
                                     items:

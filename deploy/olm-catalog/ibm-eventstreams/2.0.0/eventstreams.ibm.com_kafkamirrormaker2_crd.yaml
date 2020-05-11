@@ -337,8 +337,10 @@ spec:
               properties:
                 limits:
                   type: object
+                  x-kubernetes-preserve-unknown-fields: true
                 requests:
                   type: object
+                  x-kubernetes-preserve-unknown-fields: true
               description: The maximum limits for CPU and memory resources and the
                 requested initial resources.
             livenessProbe:
@@ -533,6 +535,7 @@ spec:
                                             type: string
                                   matchLabels:
                                     type: object
+                                    x-kubernetes-preserve-unknown-fields: true
                               namespaces:
                                 type: array
                                 items:
@@ -564,6 +567,7 @@ spec:
                                         type: string
                               matchLabels:
                                 type: object
+                                x-kubernetes-preserve-unknown-fields: true
                           namespaces:
                             type: array
                             items:
@@ -599,6 +603,7 @@ spec:
                                             type: string
                                   matchLabels:
                                     type: object
+                                    x-kubernetes-preserve-unknown-fields: true
                               namespaces:
                                 type: array
                                 items:
@@ -630,6 +635,7 @@ spec:
                                         type: string
                               matchLabels:
                                 type: object
+                                x-kubernetes-preserve-unknown-fields: true
                           namespaces:
                             type: array
                             items:
@@ -900,6 +906,7 @@ spec:
                                                     type: string
                                           matchLabels:
                                             type: object
+                                            x-kubernetes-preserve-unknown-fields: true
                                       namespaces:
                                         type: array
                                         items:
@@ -931,6 +938,7 @@ spec:
                                                 type: string
                                       matchLabels:
                                         type: object
+                                        x-kubernetes-preserve-unknown-fields: true
                                   namespaces:
                                     type: array
                                     items:
@@ -966,6 +974,7 @@ spec:
                                                     type: string
                                           matchLabels:
                                             type: object
+                                            x-kubernetes-preserve-unknown-fields: true
                                       namespaces:
                                         type: array
                                         items:
@@ -997,6 +1006,7 @@ spec:
                                                 type: string
                                       matchLabels:
                                         type: object
+                                        x-kubernetes-preserve-unknown-fields: true
                                   namespaces:
                                     type: array
                                     items:

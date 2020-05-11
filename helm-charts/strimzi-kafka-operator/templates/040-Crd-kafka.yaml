@@ -360,6 +360,7 @@ spec:
                                             type: string
                                   matchLabels:
                                     type: object
+                                    x-kubernetes-preserve-unknown-fields: true
                               podSelector:
                                 type: object
                                 properties:
@@ -378,6 +379,7 @@ spec:
                                             type: string
                                   matchLabels:
                                     type: object
+                                    x-kubernetes-preserve-unknown-fields: true
                           description: List of peers which should be able to connect
                             to this listener. Peers in this list are combined using
                             a logical OR operation. If this field is empty or missing,
@@ -588,6 +590,7 @@ spec:
                                             type: string
                                   matchLabels:
                                     type: object
+                                    x-kubernetes-preserve-unknown-fields: true
                               podSelector:
                                 type: object
                                 properties:
@@ -606,6 +609,7 @@ spec:
                                             type: string
                                   matchLabels:
                                     type: object
+                                    x-kubernetes-preserve-unknown-fields: true
                           description: List of peers which should be able to connect
                             to this listener. Peers in this list are combined using
                             a logical OR operation. If this field is empty or missing,
@@ -872,6 +876,7 @@ spec:
                                             type: string
                                   matchLabels:
                                     type: object
+                                    x-kubernetes-preserve-unknown-fields: true
                               podSelector:
                                 type: object
                                 properties:
@@ -890,6 +895,7 @@ spec:
                                             type: string
                                   matchLabels:
                                     type: object
+                                    x-kubernetes-preserve-unknown-fields: true
                           description: List of peers which should be able to connect
                             to this listener. Peers in this list are combined using
                             a logical OR operation. If this field is empty or missing,
@@ -1120,6 +1126,7 @@ spec:
                                                 type: string
                                       matchLabels:
                                         type: object
+                                        x-kubernetes-preserve-unknown-fields: true
                                   namespaces:
                                     type: array
                                     items:
@@ -1151,6 +1158,7 @@ spec:
                                             type: string
                                   matchLabels:
                                     type: object
+                                    x-kubernetes-preserve-unknown-fields: true
                               namespaces:
                                 type: array
                                 items:
@@ -1186,6 +1194,7 @@ spec:
                                                 type: string
                                       matchLabels:
                                         type: object
+                                        x-kubernetes-preserve-unknown-fields: true
                                   namespaces:
                                     type: array
                                     items:
@@ -1217,6 +1226,7 @@ spec:
                                             type: string
                                   matchLabels:
                                     type: object
+                                    x-kubernetes-preserve-unknown-fields: true
                               namespaces:
                                 type: array
                                 items:
@@ -1350,8 +1360,10 @@ spec:
                   properties:
                     limits:
                       type: object
+                      x-kubernetes-preserve-unknown-fields: true
                     requests:
                       type: object
+                      x-kubernetes-preserve-unknown-fields: true
                   description: CPU and memory resources to reserve.
                 metrics:
                   type: object
@@ -1456,8 +1468,10 @@ spec:
                       properties:
                         limits:
                           type: object
+                          x-kubernetes-preserve-unknown-fields: true
                         requests:
                           type: object
+                          x-kubernetes-preserve-unknown-fields: true
                       description: CPU and memory resources to reserve.
                   description: TLS sidecar configuration.
                 template:
@@ -1680,6 +1694,7 @@ spec:
                                                         type: string
                                               matchLabels:
                                                 type: object
+                                                x-kubernetes-preserve-unknown-fields: true
                                           namespaces:
                                             type: array
                                             items:
@@ -1711,6 +1726,7 @@ spec:
                                                     type: string
                                           matchLabels:
                                             type: object
+                                            x-kubernetes-preserve-unknown-fields: true
                                       namespaces:
                                         type: array
                                         items:
@@ -1746,6 +1762,7 @@ spec:
                                                         type: string
                                               matchLabels:
                                                 type: object
+                                                x-kubernetes-preserve-unknown-fields: true
                                           namespaces:
                                             type: array
                                             items:
@@ -1777,6 +1794,7 @@ spec:
                                                     type: string
                                           matchLabels:
                                             type: object
+                                            x-kubernetes-preserve-unknown-fields: true
                                       namespaces:
                                         type: array
                                         items:
@@ -2466,6 +2484,7 @@ spec:
                                                 type: string
                                       matchLabels:
                                         type: object
+                                        x-kubernetes-preserve-unknown-fields: true
                                   namespaces:
                                     type: array
                                     items:
@@ -2497,6 +2516,7 @@ spec:
                                             type: string
                                   matchLabels:
                                     type: object
+                                    x-kubernetes-preserve-unknown-fields: true
                               namespaces:
                                 type: array
                                 items:
@@ -2532,6 +2552,7 @@ spec:
                                                 type: string
                                       matchLabels:
                                         type: object
+                                        x-kubernetes-preserve-unknown-fields: true
                                   namespaces:
                                     type: array
                                     items:
@@ -2563,6 +2584,7 @@ spec:
                                             type: string
                                   matchLabels:
                                     type: object
+                                    x-kubernetes-preserve-unknown-fields: true
                               namespaces:
                                 type: array
                                 items:
@@ -2678,8 +2700,10 @@ spec:
                   properties:
                     limits:
                       type: object
+                      x-kubernetes-preserve-unknown-fields: true
                     requests:
                       type: object
+                      x-kubernetes-preserve-unknown-fields: true
                   description: CPU and memory resources to reserve.
                 metrics:
                   type: object
@@ -2926,6 +2950,7 @@ spec:
                                                         type: string
                                               matchLabels:
                                                 type: object
+                                                x-kubernetes-preserve-unknown-fields: true
                                           namespaces:
                                             type: array
                                             items:
@@ -2957,6 +2982,7 @@ spec:
                                                     type: string
                                           matchLabels:
                                             type: object
+                                            x-kubernetes-preserve-unknown-fields: true
                                       namespaces:
                                         type: array
                                         items:
@@ -2992,6 +3018,7 @@ spec:
                                                         type: string
                                               matchLabels:
                                                 type: object
+                                                x-kubernetes-preserve-unknown-fields: true
                                           namespaces:
                                             type: array
                                             items:
@@ -3023,6 +3050,7 @@ spec:
                                                     type: string
                                           matchLabels:
                                             type: object
+                                            x-kubernetes-preserve-unknown-fields: true
                                       namespaces:
                                         type: array
                                         items:
@@ -3361,8 +3389,10 @@ spec:
                       properties:
                         limits:
                           type: object
+                          x-kubernetes-preserve-unknown-fields: true
                         requests:
                           type: object
+                          x-kubernetes-preserve-unknown-fields: true
                       description: CPU and memory resources to reserve.
                   description: TLS sidecar configuration. The TLS sidecar is not used
                     anymore and this option will be ignored.
@@ -3492,6 +3522,7 @@ spec:
                                                 type: string
                                       matchLabels:
                                         type: object
+                                        x-kubernetes-preserve-unknown-fields: true
                                   namespaces:
                                     type: array
                                     items:
@@ -3523,6 +3554,7 @@ spec:
                                             type: string
                                   matchLabels:
                                     type: object
+                                    x-kubernetes-preserve-unknown-fields: true
                               namespaces:
                                 type: array
                                 items:
@@ -3558,6 +3590,7 @@ spec:
                                                 type: string
                                       matchLabels:
                                         type: object
+                                        x-kubernetes-preserve-unknown-fields: true
                                   namespaces:
                                     type: array
                                     items:
@@ -3589,6 +3622,7 @@ spec:
                                             type: string
                                   matchLabels:
                                     type: object
+                                    x-kubernetes-preserve-unknown-fields: true
                               namespaces:
                                 type: array
                                 items:
@@ -3601,8 +3635,10 @@ spec:
                   properties:
                     limits:
                       type: object
+                      x-kubernetes-preserve-unknown-fields: true
                     requests:
                       type: object
+                      x-kubernetes-preserve-unknown-fields: true
                   description: CPU and memory resources to reserve.
                 topicMetadataMaxAttempts:
                   type: integer
@@ -3686,8 +3722,10 @@ spec:
                       properties:
                         limits:
                           type: object
+                          x-kubernetes-preserve-unknown-fields: true
                         requests:
                           type: object
+                          x-kubernetes-preserve-unknown-fields: true
                       description: CPU and memory resources to reserve.
                   description: TLS sidecar configuration.
                 logging:
@@ -3877,8 +3915,10 @@ spec:
                       properties:
                         limits:
                           type: object
+                          x-kubernetes-preserve-unknown-fields: true
                         requests:
                           type: object
+                          x-kubernetes-preserve-unknown-fields: true
                       description: CPU and memory resources to reserve.
                     topicMetadataMaxAttempts:
                       type: integer
@@ -4014,8 +4054,10 @@ spec:
                       properties:
                         limits:
                           type: object
+                          x-kubernetes-preserve-unknown-fields: true
                         requests:
                           type: object
+                          x-kubernetes-preserve-unknown-fields: true
                       description: CPU and memory resources to reserve.
                     logging:
                       type: object
@@ -4176,6 +4218,7 @@ spec:
                                                 type: string
                                       matchLabels:
                                         type: object
+                                        x-kubernetes-preserve-unknown-fields: true
                                   namespaces:
                                     type: array
                                     items:
@@ -4207,6 +4250,7 @@ spec:
                                             type: string
                                   matchLabels:
                                     type: object
+                                    x-kubernetes-preserve-unknown-fields: true
                               namespaces:
                                 type: array
                                 items:
@@ -4242,6 +4286,7 @@ spec:
                                                 type: string
                                       matchLabels:
                                         type: object
+                                        x-kubernetes-preserve-unknown-fields: true
                                   namespaces:
                                     type: array
                                     items:
@@ -4273,6 +4318,7 @@ spec:
                                             type: string
                                   matchLabels:
                                     type: object
+                                    x-kubernetes-preserve-unknown-fields: true
                               namespaces:
                                 type: array
                                 items:
@@ -4374,8 +4420,10 @@ spec:
                       properties:
                         limits:
                           type: object
+                          x-kubernetes-preserve-unknown-fields: true
                         requests:
                           type: object
+                          x-kubernetes-preserve-unknown-fields: true
                       description: CPU and memory resources to reserve.
                   description: TLS sidecar configuration.
                 template:
@@ -4590,6 +4638,7 @@ spec:
                                                         type: string
                                               matchLabels:
                                                 type: object
+                                                x-kubernetes-preserve-unknown-fields: true
                                           namespaces:
                                             type: array
                                             items:
@@ -4621,6 +4670,7 @@ spec:
                                                     type: string
                                           matchLabels:
                                             type: object
+                                            x-kubernetes-preserve-unknown-fields: true
                                       namespaces:
                                         type: array
                                         items:
@@ -4656,6 +4706,7 @@ spec:
                                                         type: string
                                               matchLabels:
                                                 type: object
+                                                x-kubernetes-preserve-unknown-fields: true
                                           namespaces:
                                             type: array
                                             items:
@@ -4687,6 +4738,7 @@ spec:
                                                     type: string
                                           matchLabels:
                                             type: object
+                                            x-kubernetes-preserve-unknown-fields: true
                                       namespaces:
                                         type: array
                                         items:
@@ -4995,6 +5047,7 @@ spec:
                     webserver.session.path, webserver.accesslog., two.step., request.reason.required,metric.reporter.sampler.bootstrap.servers,
                     metric.reporter.topic, partition.metric.sample.store.topic, broker.metric.sample.store.topic,capacity.config.file,
                     self.healing., anomaly.detection., ssl.'
+                  x-kubernetes-preserve-unknown-fields: true
                 livenessProbe:
                   type: object
                   properties:
@@ -5087,8 +5140,10 @@ spec:
                   properties:
                     limits:
                       type: object
+                      x-kubernetes-preserve-unknown-fields: true
                     requests:
                       type: object
+                      x-kubernetes-preserve-unknown-fields: true
                   description: CPU and memory resources to reserve for the Cruise
                     Control container.
                 logging:
@@ -5189,8 +5244,10 @@ spec:
                       properties:
                         limits:
                           type: object
+                          x-kubernetes-preserve-unknown-fields: true
                         requests:
                           type: object
+                          x-kubernetes-preserve-unknown-fields: true
                       description: CPU and memory resources to reserve.
                   description: TLS sidecar configuration.
                 template:
@@ -5405,6 +5462,7 @@ spec:
                                                         type: string
                                               matchLabels:
                                                 type: object
+                                                x-kubernetes-preserve-unknown-fields: true
                                           namespaces:
                                             type: array
                                             items:
@@ -5436,6 +5494,7 @@ spec:
                                                     type: string
                                           matchLabels:
                                             type: object
+                                            x-kubernetes-preserve-unknown-fields: true
                                       namespaces:
                                         type: array
                                         items:
@@ -5471,6 +5530,7 @@ spec:
                                                         type: string
                                               matchLabels:
                                                 type: object
+                                                x-kubernetes-preserve-unknown-fields: true
                                           namespaces:
                                             type: array
                                             items:
@@ -5502,6 +5562,7 @@ spec:
                                                     type: string
                                           matchLabels:
                                             type: object
+                                            x-kubernetes-preserve-unknown-fields: true
                                       namespaces:
                                         type: array
                                         items:
@@ -5832,8 +5893,10 @@ spec:
                   properties:
                     limits:
                       type: object
+                      x-kubernetes-preserve-unknown-fields: true
                     requests:
                       type: object
+                      x-kubernetes-preserve-unknown-fields: true
                   description: CPU and memory resources to reserve.
                 template:
                   type: object
@@ -6047,6 +6110,7 @@ spec:
                                                         type: string
                                               matchLabels:
                                                 type: object
+                                                x-kubernetes-preserve-unknown-fields: true
                                           namespaces:
                                             type: array
                                             items:
@@ -6078,6 +6142,7 @@ spec:
                                                     type: string
                                           matchLabels:
                                             type: object
+                                            x-kubernetes-preserve-unknown-fields: true
                                       namespaces:
                                         type: array
                                         items:
@@ -6113,6 +6178,7 @@ spec:
                                                         type: string
                                               matchLabels:
                                                 type: object
+                                                x-kubernetes-preserve-unknown-fields: true
                                           namespaces:
                                             type: array
                                             items:
@@ -6144,6 +6210,7 @@ spec:
                                                     type: string
                                           matchLabels:
                                             type: object
+                                            x-kubernetes-preserve-unknown-fields: true
                                       namespaces:
                                         type: array
                                         items:
@@ -6268,8 +6335,10 @@ spec:
                   properties:
                     limits:
                       type: object
+                      x-kubernetes-preserve-unknown-fields: true
                     requests:
                       type: object
+                      x-kubernetes-preserve-unknown-fields: true
                   description: CPU and memory resources to reserve.
                 logging:
                   type: string
@@ -6492,6 +6561,7 @@ spec:
                                                         type: string
                                               matchLabels:
                                                 type: object
+                                                x-kubernetes-preserve-unknown-fields: true
                                           namespaces:
                                             type: array
                                             items:
@@ -6523,6 +6593,7 @@ spec:
                                                     type: string
                                           matchLabels:
                                             type: object
+                                            x-kubernetes-preserve-unknown-fields: true
                                       namespaces:
                                         type: array
                                         items:
@@ -6558,6 +6629,7 @@ spec:
                                                         type: string
                                               matchLabels:
                                                 type: object
+                                                x-kubernetes-preserve-unknown-fields: true
                                           namespaces:
                                             type: array
                                             items:
@@ -6589,6 +6661,7 @@ spec:
                                                     type: string
                                           matchLabels:
                                             type: object
+                                            x-kubernetes-preserve-unknown-fields: true
                                       namespaces:
                                         type: array
                                         items:

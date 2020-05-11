@@ -527,7 +527,17 @@ public class CrdGenerator {
             result.put("description", DocGenerator.getDescription(description));
         }
     }
-    private void addPreserveUnknownFields(ObjectNode result, AnnotatedElement element) {
+    private void addPreserveUnknownFields(ObjectNode result, Property element) {
+        // Try to convert class to a map, if it is a map set preserve-unknown-fields to true
+        try {
+            element.getType().getType().asSubclass(Map.class);
+            // Above line throws if not valid
+            // implements map means we set preserve-unknown-fields to true
+            result.put("x-kubernetes-preserve-unknown-fields", true);
+        } catch (ClassCastException e) {
+            // If Class throws ClassCastException, Class does not implement map, so do not override
+        }
+
         if (element.isAnnotationPresent(PreserveUnknownFields.class)) {
             PreserveUnknownFields preserve = element.getAnnotation(PreserveUnknownFields.class);
             result.put("x-kubernetes-preserve-unknown-fields", preserve.value());
