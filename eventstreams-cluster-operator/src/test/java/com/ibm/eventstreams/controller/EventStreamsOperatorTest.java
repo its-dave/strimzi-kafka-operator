@@ -454,7 +454,7 @@ public class EventStreamsOperatorTest {
                 .withReplicas(1)
                 .withEndpoints(new EndpointSpecBuilder()
                     .withNewName("auth")
-                    .withAccessPort(9999)
+                    .withContainerPort(9999)
                     .withAuthenticationMechanisms("TEST_AUTH")
                 .build())
             .endAdminApi()
@@ -494,7 +494,7 @@ public class EventStreamsOperatorTest {
                     .editSpec()
                         .withNewAdminApi()
                             .withEndpoints(new EndpointSpecBuilder()
-                                .withAccessPort(9999)
+                                .withContainerPort(9999)
                                 .withNewName("access")
                                 .withAuthenticationMechanisms(Collections.emptyList())
                             .build())
@@ -1095,7 +1095,7 @@ public class EventStreamsOperatorTest {
 
         EndpointSpec internal = new EndpointSpecBuilder()
             .withName("internal")
-            .withAccessPort(9990)
+            .withContainerPort(9990)
             .withType(EndpointServiceType.INTERNAL)
             .build();
 
@@ -1135,7 +1135,7 @@ public class EventStreamsOperatorTest {
 
         EndpointSpec internal = new EndpointSpecBuilder()
             .withName("internal")
-            .withAccessPort(9990)
+            .withContainerPort(9990)
             .withTlsVersion(TlsVersion.NONE)
             .withType(EndpointServiceType.INTERNAL)
             .build();
@@ -1174,14 +1174,14 @@ public class EventStreamsOperatorTest {
         EndpointSpec plainInternal = new EndpointSpecBuilder()
             .withName("route")
             .withTlsVersion(TlsVersion.NONE)
-            .withAccessPort(9990)
+            .withContainerPort(9990)
             .withType(EndpointServiceType.ROUTE)
             .build();
 
         EndpointSpec plainNodePort = new EndpointSpecBuilder()
             .withName("node-port")
             .withTlsVersion(TlsVersion.NONE)
-            .withAccessPort(9990)
+            .withContainerPort(9990)
             .withType(EndpointServiceType.NODE_PORT)
             .build();
 
@@ -1218,20 +1218,20 @@ public class EventStreamsOperatorTest {
         EndpointSpec route = new EndpointSpecBuilder()
             .withName("route")
             .withTlsVersion(TlsVersion.TLS_V1_2)
-            .withAccessPort(9990)
+            .withContainerPort(9990)
             .build();
 
         EndpointSpec nodePort = new EndpointSpecBuilder()
             .withName("node-port")
             .withTlsVersion(TlsVersion.TLS_V1_2)
-            .withAccessPort(8080)
+            .withContainerPort(8080)
             .withType(EndpointServiceType.NODE_PORT)
             .build();
 
         EndpointSpec internal = new EndpointSpecBuilder()
             .withName("internal")
             .withTlsVersion(TlsVersion.TLS_V1_2)
-            .withAccessPort(1234)
+            .withContainerPort(1234)
             .withType(EndpointServiceType.INTERNAL)
             .build();
 
@@ -1271,7 +1271,7 @@ public class EventStreamsOperatorTest {
         EndpointSpec tlsInternal = new EndpointSpecBuilder()
             .withName("internal")
             .withTlsVersion(TlsVersion.TLS_V1_2)
-            .withAccessPort(9990)
+            .withContainerPort(9990)
             .withType(EndpointServiceType.INTERNAL)
             .build();
 
@@ -1309,7 +1309,7 @@ public class EventStreamsOperatorTest {
         EndpointSpec tlsInternal = new EndpointSpecBuilder()
             .withName("internal")
             .withTlsVersion(TlsVersion.TLS_V1_2)
-            .withAccessPort(9990)
+            .withContainerPort(9990)
             .withType(EndpointServiceType.INTERNAL)
             .build();
 
@@ -1347,7 +1347,7 @@ public class EventStreamsOperatorTest {
         EndpointSpec tlsInternal = new EndpointSpecBuilder()
             .withName("internal")
             .withTlsVersion(TlsVersion.TLS_V1_2)
-            .withAccessPort(9990)
+            .withContainerPort(9990)
             .withType(EndpointServiceType.INTERNAL)
             .build();
 
@@ -1388,14 +1388,14 @@ public class EventStreamsOperatorTest {
         EndpointSpec tlsRoute = new EndpointSpecBuilder()
             .withName("route")
             .withTlsVersion(TlsVersion.TLS_V1_2)
-            .withAccessPort(9990)
+            .withContainerPort(9990)
             .withType(EndpointServiceType.ROUTE)
             .build();
 
         EndpointSpec tlsInternal = new EndpointSpecBuilder()
             .withName("internal")
             .withTlsVersion(TlsVersion.TLS_V1_2)
-            .withAccessPort(9990)
+            .withContainerPort(9990)
             .withType(EndpointServiceType.INTERNAL)
             .build();
 
@@ -1459,7 +1459,7 @@ public class EventStreamsOperatorTest {
         EndpointSpec tlsRoute = new EndpointSpecBuilder()
             .withName("route")
             .withTlsVersion(TlsVersion.TLS_V1_2)
-            .withAccessPort(9990)
+            .withContainerPort(9990)
             .withType(EndpointServiceType.ROUTE)
             .withCertOverrides(certOverrides)
             .build();
@@ -1467,7 +1467,7 @@ public class EventStreamsOperatorTest {
         EndpointSpec tlsInternal = new EndpointSpecBuilder()
             .withName("internal")
             .withTlsVersion(TlsVersion.TLS_V1_2)
-            .withAccessPort(9990)
+            .withContainerPort(9990)
             .withType(EndpointServiceType.INTERNAL)
             .withCertOverrides(certOverrides)
             .build();
@@ -1524,7 +1524,7 @@ public class EventStreamsOperatorTest {
         EndpointSpec tlsInternal = new EndpointSpecBuilder()
             .withName("internal")
             .withTlsVersion(TlsVersion.TLS_V1_2)
-            .withAccessPort(9990)
+            .withContainerPort(9990)
             .withType(EndpointServiceType.INTERNAL)
             .withCertOverrides(certOverrides)
             .build();
@@ -1610,20 +1610,20 @@ public class EventStreamsOperatorTest {
 
         EndpointSpec internalTlsBearer = new EndpointSpecBuilder()
             .withName("bearer")
-            .withAccessPort(8887)
+            .withContainerPort(8887)
             .withType(EndpointServiceType.INTERNAL)
             .withAuthenticationMechanisms(Collections.singletonList("BEARER"))
             .build();
 
         EndpointSpec internalTlsMutualTls = new EndpointSpecBuilder()
             .withName("mutual")
-            .withAccessPort(8888)
+            .withContainerPort(8888)
             .withType(EndpointServiceType.INTERNAL)
             .build();
 
         EndpointSpec internalTlsNone = new EndpointSpecBuilder()
             .withName("none")
-            .withAccessPort(9999)
+            .withContainerPort(9999)
             .withType(EndpointServiceType.INTERNAL)
             .build();
 
@@ -1718,20 +1718,20 @@ public class EventStreamsOperatorTest {
 
         EndpointSpec internalTlsBearer = new EndpointSpecBuilder()
             .withName("bearer")
-            .withAccessPort(8887)
+            .withContainerPort(8887)
             .withType(EndpointServiceType.INTERNAL)
             .withAuthenticationMechanisms(Collections.singletonList("BEARER"))
             .build();
 
         EndpointSpec internalTlsMutualTls = new EndpointSpecBuilder()
             .withName("mutual")
-            .withAccessPort(8888)
+            .withContainerPort(8888)
             .withType(EndpointServiceType.INTERNAL)
             .build();
 
         EndpointSpec internalTlsNone = new EndpointSpecBuilder()
             .withName("none")
-            .withAccessPort(9999)
+            .withContainerPort(9999)
             .withType(EndpointServiceType.INTERNAL)
             .build();
 
@@ -1845,7 +1845,7 @@ public class EventStreamsOperatorTest {
 
         EndpointSpec internalTlsMutualTls = new EndpointSpecBuilder()
             .withName("mutual")
-            .withAccessPort(9999)
+            .withContainerPort(9999)
             .withType(EndpointServiceType.INTERNAL)
             .build();
 
@@ -3074,7 +3074,7 @@ public class EventStreamsOperatorTest {
 
         EndpointSpec secureRouteMutualTls = new EndpointSpecBuilder()
             .withName("secure-mutual")
-            .withAccessPort(9999)
+            .withContainerPort(9999)
             .withTlsVersion(TlsVersion.TLS_V1_2)
             .withType(EndpointServiceType.ROUTE)
             .withAuthenticationMechanisms(Collections.singletonList(TLS_LABEL))
@@ -3130,7 +3130,7 @@ public class EventStreamsOperatorTest {
 
         EndpointSpec secureRouteBearer = new EndpointSpecBuilder()
             .withName("secure-bearer")
-            .withAccessPort(9999)
+            .withContainerPort(9999)
             .withType(EndpointServiceType.ROUTE)
             .withTlsVersion(TlsVersion.TLS_V1_2)
             .withAuthenticationMechanisms(Collections.singletonList(IAM_BEARER_LABEL))
@@ -3138,7 +3138,7 @@ public class EventStreamsOperatorTest {
 
         EndpointSpec secureRouteMutualTls = new EndpointSpecBuilder()
             .withName("secure-mutual")
-            .withAccessPort(9998)
+            .withContainerPort(9998)
             .withTlsVersion(TlsVersion.TLS_V1_2)
             .withType(EndpointServiceType.ROUTE)
             .withAuthenticationMechanisms(Collections.singletonList(TLS_LABEL))
@@ -3146,7 +3146,7 @@ public class EventStreamsOperatorTest {
 
         EndpointSpec insecureRouteMutualTls = new EndpointSpecBuilder()
             .withName("insecure-mutual")
-            .withAccessPort(9999)
+            .withContainerPort(9999)
             .withTlsVersion(TlsVersion.NONE)
             .withType(EndpointServiceType.ROUTE)
             .withAuthenticationMechanisms(Collections.singletonList(TLS_LABEL))
@@ -3154,7 +3154,7 @@ public class EventStreamsOperatorTest {
 
         EndpointSpec insecureRouteBearer = new EndpointSpecBuilder()
             .withName("insecure-bearer")
-            .withAccessPort(9998)
+            .withContainerPort(9998)
             .withTlsVersion(TlsVersion.NONE)
             .withType(EndpointServiceType.ROUTE)
             .withAuthenticationMechanisms(Collections.singletonList(IAM_BEARER_LABEL))

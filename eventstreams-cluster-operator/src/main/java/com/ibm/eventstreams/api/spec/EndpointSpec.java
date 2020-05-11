@@ -31,14 +31,14 @@ import java.util.Optional;
 @JsonDeserialize(using = JsonDeserializer.None.class)
 @Buildable(editableEnabled = false, generateBuilderPackage = false, builderPackage = "io.fabric8.kubernetes.api.builder")
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({"name", "type", "accessPort", "tls", "tlsVersion", "certOverrides", "authenticationMechanisms"})
+@JsonPropertyOrder({"name", "type", "containerPort", "tls", "tlsVersion", "certOverrides", "authenticationMechanisms"})
 @EqualsAndHashCode
 public class EndpointSpec implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private String name;
     private EndpointServiceType type;
-    private Integer accessPort;
+    private Integer containerPort;
     private TlsVersion tlsVersion;
     private CertAndKeySecretSource certOverrides;
     private List<String> authenticationMechanisms;
@@ -64,12 +64,12 @@ public class EndpointSpec implements Serializable {
 
     @JsonProperty(required = true)
     @Description("Defines what port will be opened up for the client to communicate with.")
-    public Integer getAccessPort() {
-        return accessPort;
+    public Integer getContainerPort() {
+        return containerPort;
     }
 
-    public void setAccessPort(Integer accessPort) {
-        this.accessPort = accessPort;
+    public void setContainerPort(Integer containerPort) {
+        this.containerPort = containerPort;
     }
 
     @Description("Defines which TLS version or no TLS version if that will be used for the endpoint.")

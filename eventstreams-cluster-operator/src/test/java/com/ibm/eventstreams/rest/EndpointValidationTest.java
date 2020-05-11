@@ -45,7 +45,7 @@ public class EndpointValidationTest extends RestApiTest {
 
         EndpointSpec endpoint = new EndpointSpecBuilder()
             .withName("test-endpoint")
-            .withAccessPort(7080)
+            .withContainerPort(7080)
             .build();
         
         EventStreams test = ModelUtils.createDefaultEventStreams("test-es")
@@ -82,11 +82,11 @@ public class EndpointValidationTest extends RestApiTest {
 
         EndpointSpec endpoint1 = new EndpointSpecBuilder()
             .withName("test-endpoint")
-            .withAccessPort(8888)
+            .withContainerPort(8888)
             .build();
         EndpointSpec endpoint2 = new EndpointSpecBuilder()
             .withName("test-endpoint")
-            .withAccessPort(9999)
+            .withContainerPort(9999)
             .build();
         
         EventStreams test = ModelUtils.createDefaultEventStreams("test-es")
@@ -124,11 +124,11 @@ public class EndpointValidationTest extends RestApiTest {
 
         EndpointSpec endpoint1 = new EndpointSpecBuilder()
             .withName("test-endpoint1")
-            .withAccessPort(8888)
+            .withContainerPort(8888)
             .build();
         EndpointSpec endpoint2 = new EndpointSpecBuilder()
             .withName("test-endpoint2")
-            .withAccessPort(8888)
+            .withContainerPort(8888)
             .build();
         
         EventStreams test = ModelUtils.createDefaultEventStreams("test-es")
@@ -156,7 +156,7 @@ public class EndpointValidationTest extends RestApiTest {
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is(EndpointValidation.FAILURE_REASON));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getInteger("code"), is(400));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("message"),
-                        is("adminApi endpoint configuration has endpoints with the same accessPort"));
+                        is("adminApi endpoint configuration has endpoints with the same containerPort"));
             async.flag();
         })));
     }
@@ -167,7 +167,7 @@ public class EndpointValidationTest extends RestApiTest {
 
         EndpointSpec endpoint = new EndpointSpecBuilder()
             .withName("test-endpoint")
-            .withAccessPort(8888)
+            .withContainerPort(8888)
             .withType(EndpointServiceType.NODE_PORT)
             .build();
         
@@ -206,7 +206,7 @@ public class EndpointValidationTest extends RestApiTest {
 
         EndpointSpec endpoint = new EndpointSpecBuilder()
             .withName("Bad-EndpoInt")
-            .withAccessPort(8888)
+            .withContainerPort(8888)
             .build();
 
         EventStreams test = ModelUtils.createDefaultEventStreams("test-es")
@@ -244,7 +244,7 @@ public class EndpointValidationTest extends RestApiTest {
 
         EndpointSpec endpoint = new EndpointSpecBuilder()
             .withName("good-endpoint-1")
-            .withAccessPort(8888)
+            .withContainerPort(8888)
             .build();
 
         EventStreams test = ModelUtils.createDefaultEventStreams("test-es")
@@ -314,7 +314,7 @@ public class EndpointValidationTest extends RestApiTest {
 
         EndpointSpec endpoint = new EndpointSpecBuilder()
             .withName("test-endpoint")
-            .withAccessPort(8888)
+            .withContainerPort(8888)
             .addToAuthenticationMechanisms("SCRAM-SHA-512", "IAM-BEARER")
             .build();
 
@@ -353,7 +353,7 @@ public class EndpointValidationTest extends RestApiTest {
 
         EndpointSpec endpoint = new EndpointSpecBuilder()
             .withName("test-endpoint")
-            .withAccessPort(8888)
+            .withContainerPort(8888)
             .addToAuthenticationMechanisms("SCRAM-SHA-512", "IAM-BEARER")
             .build();
 

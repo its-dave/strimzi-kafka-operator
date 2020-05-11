@@ -90,7 +90,7 @@ public class AbstractSecureEndpointsModelTest {
 
     private EndpointSpec basicEndpointSpecNoAuth = new EndpointSpecBuilder()
         .withName("no-auth")
-        .withAccessPort(9444)
+        .withContainerPort(9444)
         .withAuthenticationMechanisms(Collections.emptyList())
         .build();
 
@@ -101,7 +101,7 @@ public class AbstractSecureEndpointsModelTest {
 
     private EndpointSpec configuredEndpointsSpec = new EndpointSpecBuilder()
         .withName("fully-configured")
-        .withAccessPort(8080)
+        .withContainerPort(8080)
         .withType(EndpointServiceType.NODE_PORT)
         .withTlsVersion(TlsVersion.TLS_V1_3)
         .withCertOverrides(new CertAndKeySecretSourceBuilder()
@@ -163,7 +163,7 @@ public class AbstractSecureEndpointsModelTest {
 
         EndpointSpec minimalSpec = new EndpointSpecBuilder()
             .withName("minimal")
-            .withAccessPort(9999)
+            .withContainerPort(9999)
             .build();
 
         SecurityComponentSpec securityComponentSpec = new SecurityComponentSpecBuilder()
@@ -177,7 +177,7 @@ public class AbstractSecureEndpointsModelTest {
         assertThat(endpoint, hasSize(2));
 
         assertThat(endpoint.get(0).getName(), is(minimalSpec.getName()));
-        assertThat(endpoint.get(0).getPort(), is(minimalSpec.getAccessPort()));
+        assertThat(endpoint.get(0).getPort(), is(minimalSpec.getContainerPort()));
         assertThat(endpoint.get(0).isTls(), is(true));
         assertThat(endpoint.get(0).getType(), is(EndpointServiceType.ROUTE));
 
@@ -249,7 +249,7 @@ public class AbstractSecureEndpointsModelTest {
         List<Service> services = model.getSecurityServices();
 
         assertThat(services, hasSize(3));
-        assertThat(services.get(0).getSpec().getPorts().get(0).getPort(), is(configuredEndpointsSpec.getAccessPort()));
+        assertThat(services.get(0).getSpec().getPorts().get(0).getPort(), is(configuredEndpointsSpec.getContainerPort()));
         assertThat(services.get(0).getSpec().getPorts().get(0).getName(), is(configuredEndpointsSpec.getName()));
         assertThat(services.get(0).getSpec().getPorts().get(0).getProtocol(), is("TCP"));
         assertThat(services.get(0).getSpec().getPorts().get(0).getNodePort(), is(nullValue()));
@@ -293,7 +293,7 @@ public class AbstractSecureEndpointsModelTest {
         assertThat(services, hasSize(3));
 
         assertThat(services.get(0).getSpec().getPorts(), hasSize(1));
-        assertThat(services.get(0).getSpec().getPorts().get(0).getPort(), is(configuredEndpointsSpec.getAccessPort()));
+        assertThat(services.get(0).getSpec().getPorts().get(0).getPort(), is(configuredEndpointsSpec.getContainerPort()));
         assertThat(services.get(0).getSpec().getPorts().get(0).getName(), is(configuredEndpointsSpec.getName()));
         assertThat(services.get(0).getSpec().getPorts().get(0).getProtocol(), is("TCP"));
         assertThat(services.get(0).getSpec().getPorts().get(0).getNodePort(), is(nullValue()));
@@ -606,7 +606,7 @@ public class AbstractSecureEndpointsModelTest {
 
         EndpointSpec longNameRouteSpec = new EndpointSpecBuilder()
             .withName("long-name")
-            .withAccessPort(343)
+            .withContainerPort(343)
             .withTlsVersion(TlsVersion.TLS_V1_2)
             .build();
 
@@ -681,7 +681,7 @@ public class AbstractSecureEndpointsModelTest {
 
         EndpointSpec configuredEndpointsSpec = new EndpointSpecBuilder()
             .withName("fully-configured")
-            .withAccessPort(8080)
+            .withContainerPort(8080)
             .withType(EndpointServiceType.ROUTE)
             .withTlsVersion(TlsVersion.TLS_V1_2)
             .withCertOverrides(new CertAndKeySecretSourceBuilder()
@@ -713,7 +713,7 @@ public class AbstractSecureEndpointsModelTest {
 
         EndpointSpec configuredEndpointsSpec = new EndpointSpecBuilder()
             .withName("fully-configured-without-tls")
-            .withAccessPort(8080)
+            .withContainerPort(8080)
             .withType(EndpointServiceType.ROUTE)
             .withTlsVersion(TlsVersion.NONE)
             .withCertOverrides(new CertAndKeySecretSourceBuilder()
@@ -745,7 +745,7 @@ public class AbstractSecureEndpointsModelTest {
 
         EndpointSpec configuredEndpointsSpec = new EndpointSpecBuilder()
             .withName("configured-without-authentication")
-            .withAccessPort(8080)
+            .withContainerPort(8080)
             .withType(EndpointServiceType.ROUTE)
             .withTlsVersion(TlsVersion.NONE)
             .withAuthenticationMechanisms(Collections.emptyList())

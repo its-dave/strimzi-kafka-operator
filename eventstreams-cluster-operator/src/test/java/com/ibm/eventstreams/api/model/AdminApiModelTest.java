@@ -363,11 +363,11 @@ public class AdminApiModelTest {
                     .withEndpoints(
                         new EndpointSpecBuilder()
                             .withName("first-endpoint")
-                            .withAccessPort(9999)
+                            .withContainerPort(9999)
                             .build(),
                         new EndpointSpecBuilder()
                             .withName("second-endpoint")
-                            .withAccessPort(9998)
+                            .withContainerPort(9998)
                             .build())
                     .build())
                 .endSpec()
@@ -928,7 +928,7 @@ public class AdminApiModelTest {
         String routeName = "Non-tls-route";
         EndpointSpec endpointSpec = new EndpointSpecBuilder()
             .withName(routeName)
-            .withAccessPort(9999)
+            .withContainerPort(9999)
             .withTlsVersion(TlsVersion.NONE)
             .build();
 

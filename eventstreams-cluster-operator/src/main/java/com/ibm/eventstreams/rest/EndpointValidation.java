@@ -12,13 +12,6 @@
  */
 package com.ibm.eventstreams.rest;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.regex.Pattern;
-
 import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.EndpointServiceType;
 import com.ibm.eventstreams.api.spec.EndpointSpec;
@@ -27,16 +20,21 @@ import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.spec.SchemaRegistrySpec;
 import com.ibm.eventstreams.api.spec.SecurityComponentSpec;
 import com.ibm.eventstreams.rest.ValidationResponsePayload.ValidationResponse;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import io.strimzi.api.kafka.model.KafkaClusterSpec;
 import io.strimzi.api.kafka.model.KafkaSpec;
 import io.strimzi.api.kafka.model.listener.KafkaListenerExternal;
 import io.strimzi.api.kafka.model.listener.KafkaListeners;
 import io.vertx.core.json.Json;
 import io.vertx.ext.web.RoutingContext;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.regex.Pattern;
 
 
 public class EndpointValidation extends AbstractValidation {
@@ -116,7 +114,7 @@ public class EndpointValidation extends AbstractValidation {
 
     private static boolean hasEndpointsOnReservedPorts(List<EndpointSpec> endpoints) {
         return endpoints.stream()
-            .anyMatch(endpoint -> endpoint.getAccessPort() >= 7000 && endpoint.getAccessPort() <= 7999); // reserve 7000 - 7999 to give us some space
+            .anyMatch(endpoint -> endpoint.getContainerPort() >= 7000 && endpoint.getContainerPort() <= 7999); // reserve 7000 - 7999 to give us some space
     }
 
     private static ValidationResponse reservedEndpointResponse(String spec) {
@@ -181,13 +179,13 @@ public class EndpointValidation extends AbstractValidation {
     }
     private static boolean hasUniquePorts(List<EndpointSpec> endpoints) {
         Set<Integer> ports = new HashSet<Integer>();
-        endpoints.forEach(endpoint -> ports.add(endpoint.getAccessPort()));
+        endpoints.forEach(endpoint -> ports.add(endpoint.getContainerPort()));
         return ports.size() == endpoints.size();
     }
 
     private static ValidationResponse nonUniquePortResponse(String spec) {
         return ValidationResponsePayload.createFailureResponse(
-            spec + " endpoint configuration has endpoints with the same accessPort",
+            spec + " endpoint configuration has endpoints with the same containerPort",
             FAILURE_REASON);
     }
 

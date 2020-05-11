@@ -124,7 +124,7 @@ public class Endpoint {
      * @return a port number
      */
     private static int getPortOrDefault(EndpointSpec spec) {
-        return Optional.ofNullable(spec.getAccessPort())
+        return Optional.ofNullable(spec.getContainerPort())
             .orElse(getTlsOrDefault(spec) ? DEFAULT_EXTERNAL_TLS_PORT : DEFAULT_EXTERNAL_PLAIN_PORT);
     }
 

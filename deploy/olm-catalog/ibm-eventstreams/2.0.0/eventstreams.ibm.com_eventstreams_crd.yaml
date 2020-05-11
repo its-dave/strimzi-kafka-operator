@@ -86,7 +86,7 @@ spec:
                         - Internal
                         description: Defines what type of service/route the operator
                           will lay down for this endpoint.
-                      accessPort:
+                      containerPort:
                         type: integer
                         description: Defines what port will be opened up for the client
                           to communicate with.
@@ -124,7 +124,7 @@ spec:
                           used to authenticate a client using this endpoint.
                     required:
                     - name
-                    - accessPort
+                    - containerPort
                   description: 'Defines endpoints that will be created to communicate
                     with the component. If nothing is specified, a default endpoint
                     is created that is externally accessible via a Route with Bearer
@@ -1567,7 +1567,7 @@ spec:
                         - Internal
                         description: Defines what type of service/route the operator
                           will lay down for this endpoint.
-                      accessPort:
+                      containerPort:
                         type: integer
                         description: Defines what port will be opened up for the client
                           to communicate with.
@@ -1605,7 +1605,7 @@ spec:
                           used to authenticate a client using this endpoint.
                     required:
                     - name
-                    - accessPort
+                    - containerPort
                   description: 'Defines endpoints that will be created to communicate
                     with the component. If nothing is specified, a default endpoint
                     is created that is externally accessible via a Route with Bearer
@@ -2399,7 +2399,7 @@ spec:
                         - Internal
                         description: Defines what type of service/route the operator
                           will lay down for this endpoint.
-                      accessPort:
+                      containerPort:
                         type: integer
                         description: Defines what port will be opened up for the client
                           to communicate with.
@@ -2437,7 +2437,7 @@ spec:
                           used to authenticate a client using this endpoint.
                     required:
                     - name
-                    - accessPort
+                    - containerPort
                   description: 'Defines endpoints that will be created to communicate
                     with the component. If nothing is specified, a default endpoint
                     is created that is externally accessible via a Route with Bearer

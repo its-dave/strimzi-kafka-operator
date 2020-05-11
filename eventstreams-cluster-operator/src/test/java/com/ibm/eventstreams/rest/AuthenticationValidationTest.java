@@ -28,13 +28,13 @@ public class AuthenticationValidationTest {
 
     private final EndpointSpec authenticatedEndpoint = new EndpointSpecBuilder()
         .withNewName("authenticated")
-        .withAccessPort(9999)
+        .withContainerPort(9999)
         .withAuthenticationMechanisms(Collections.singletonList("TEST_AUTH"))
         .build();
 
     private final EndpointSpec unauthenticatedEndpoint = new EndpointSpecBuilder()
         .withNewName("unauthenticated")
-        .withAccessPort(9999)
+        .withContainerPort(9999)
         .withAuthenticationMechanisms(Collections.emptyList())
         .build();
 
