@@ -127,7 +127,7 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
                                Map<String, String> icpClusterData,
                                String internalKafkaUsername) {
 
-        super(instance, instance.getSpec().getSchemaRegistry(), COMPONENT_NAME, APPLICATION_NAME);
+        super(instance, COMPONENT_NAME, APPLICATION_NAME);
         this.kafkaListeners = kafkaListeners != null ? new ArrayList<>(kafkaListeners) : new ArrayList<>();
         this.icpClusterName = icpClusterData.getOrDefault("cluster_name", "null");
         this.iamServerURL = icpClusterData.getOrDefault("cluster_endpoint", "null");
@@ -191,11 +191,12 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
             schemaRegistryProxyResourceRequirements = schemaRegistryProxySpec.map(ContainerSpec::getResources).orElseGet(ResourceRequirements::new);
             setCustomImages(imageConfig.getSchemaRegistryImage(), imageConfig.getSchemaRegistryAvroImage(), imageConfig.getSchemaRegistryProxyImage());
 
+            endpoints = createEndpoints(instance, schemaRegistrySpec.orElse(null));
             deployment = createDeployment(getContainers(), getVolumes());
 
-            createService(EndpointServiceType.INTERNAL);
-            createService(EndpointServiceType.ROUTE);
-            createService(EndpointServiceType.NODE_PORT);
+            createService(EndpointServiceType.INTERNAL, Collections.emptyMap());
+            createService(EndpointServiceType.ROUTE, Collections.emptyMap());
+            createService(EndpointServiceType.NODE_PORT, Collections.emptyMap());
             routes = createRoutesFromEndpoints();
 
             serviceAccount = createServiceAccount();

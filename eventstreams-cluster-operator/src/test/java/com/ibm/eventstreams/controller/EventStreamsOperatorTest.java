@@ -147,15 +147,18 @@ import static com.ibm.eventstreams.api.model.AbstractModel.APP_NAME;
 import static com.ibm.eventstreams.api.model.AbstractModel.AUTHENTICATION_LABEL_SEPARATOR;
 import static com.ibm.eventstreams.api.model.AbstractSecureEndpointsModel.getInternalServiceName;
 import static com.ibm.eventstreams.api.model.InternalKafkaUserModel.getInternalKafkaUserName;
+import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.aMapWithSize;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.IsNull.notNullValue;
@@ -1147,9 +1150,11 @@ public class EventStreamsOperatorTest {
             assertThat("Number of secrets do not match " + mockClient.secrets().list().getItems(), mockClient.secrets().list().getItems().size(), is(4));
             Secret secret = mockClient.secrets().withName(endpointModel.getCertificateSecretName()).get();
             assertThat("The expected secret is created", secret, is(notNullValue()));
-            assertThat("The secret has pod to pod data", secret.getData().size(), is(2));
-            assertThat("The secret has pod to pod cert", secret.getData().keySet(), hasItem("p2ptls.crt"));
-            assertThat("The secret has pod to pod key", secret.getData().keySet(), hasItem("p2ptls.key"));
+            assertThat("The secret has pod to pod data", secret.getData(), allOf(
+                    aMapWithSize(2),
+                    hasKey("p2ptls.crt"),
+                    hasKey("p2ptls.key")
+                ));
             async.flag();
         }));
     }
@@ -2158,7 +2163,8 @@ public class EventStreamsOperatorTest {
         String serviceAccountName = defaultComponentResourceName;
         String networkPolicyName = defaultComponentResourceName;
         String deploymentName = defaultComponentResourceName;
-        String serviceName = defaultComponentResourceName;
+        String serviceName = defaultComponentResourceName + "-internal";
+        String secretName = defaultComponentResourceName + "-cert";
 
         Checkpoint async = context.checkpoint(3);
 
@@ -2168,6 +2174,7 @@ public class EventStreamsOperatorTest {
                     verifyContainsResource(context, networkPolicyName, KubeResourceType.NETWORK_POLICYS, false);
                     verifyContainsResource(context, deploymentName, KubeResourceType.DEPLOYMENTS, false);
                     verifyContainsResource(context, serviceName, KubeResourceType.SERVICES, false);
+                    verifyContainsResource(context, secretName, KubeResourceType.SECRETS, false);
                     async.flag();
                 }))
                 .compose(v -> esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), instance))
@@ -2176,6 +2183,7 @@ public class EventStreamsOperatorTest {
                     verifyContainsResource(context, networkPolicyName, KubeResourceType.NETWORK_POLICYS, true);
                     verifyContainsResource(context, deploymentName, KubeResourceType.DEPLOYMENTS, true);
                     verifyContainsResource(context, serviceName, KubeResourceType.SERVICES, true);
+                    verifyContainsResource(context, secretName, KubeResourceType.SECRETS, true);
                     async.flag();
                 }))
                 .compose(v -> esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), minimalInstance))
@@ -2184,6 +2192,7 @@ public class EventStreamsOperatorTest {
                     verifyContainsResource(context, networkPolicyName, KubeResourceType.NETWORK_POLICYS, false);
                     verifyContainsResource(context, deploymentName, KubeResourceType.DEPLOYMENTS, false);
                     verifyContainsResource(context, serviceName, KubeResourceType.SERVICES, false);
+                    verifyContainsResource(context, secretName, KubeResourceType.SECRETS, false);
                     async.flag();
                 }));
     }
@@ -2695,7 +2704,7 @@ public class EventStreamsOperatorTest {
         expectedServices.add(clusterName + "-" + APP_NAME + "-" + RestProducerModel.COMPONENT_NAME + "-" + AbstractSecureEndpointsModel.INTERNAL_SERVICE_SUFFIX);
         expectedServices.add(clusterName + "-" + APP_NAME + "-" + AdminApiModel.COMPONENT_NAME + "-" + AbstractSecureEndpointsModel.INTERNAL_SERVICE_SUFFIX);
         expectedServices.add(clusterName + "-" + APP_NAME + "-" + AdminUIModel.COMPONENT_NAME);
-        expectedServices.add(clusterName + "-" + APP_NAME + "-" + CollectorModel.COMPONENT_NAME);
+        expectedServices.add(clusterName + "-" + APP_NAME + "-" + CollectorModel.COMPONENT_NAME + "-" + AbstractSecureEndpointsModel.INTERNAL_SERVICE_SUFFIX);
         return expectedServices;
     }
 
@@ -2726,6 +2735,7 @@ public class EventStreamsOperatorTest {
         expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + RestProducerModel.COMPONENT_NAME + "-" + CertificateSecretModel.CERT_SECRET_NAME_POSTFIX);
         expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME + "-" + CertificateSecretModel.CERT_SECRET_NAME_POSTFIX);
         expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + AdminApiModel.COMPONENT_NAME + "-" + CertificateSecretModel.CERT_SECRET_NAME_POSTFIX);
+        expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + CollectorModel.COMPONENT_NAME + "-" + CertificateSecretModel.CERT_SECRET_NAME_POSTFIX);
         expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + ClusterSecretsModel.COMPONENT_NAME);
         expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + ReplicatorSourceUsersModel.SOURCE_CONNECTOR_KAFKA_USER_NAME);
 

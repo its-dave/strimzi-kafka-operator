@@ -65,7 +65,8 @@ public class AbstractSecureEndpointsModelTest {
         public static final String COMPONENT_NAME = "test";
 
         public ComponentModel(EventStreams instance, SecurityComponentSpec spec) {
-            super(instance, spec, COMPONENT_NAME, "testlongname");
+            super(instance, COMPONENT_NAME, "testlongname");
+            endpoints = createEndpoints(instance, spec);
             setTlsVersion(TlsVersion.TLS_V1_2);
             setOwnerReference(instance);
         }
@@ -126,9 +127,9 @@ public class AbstractSecureEndpointsModelTest {
 
         ComponentModel model = new ComponentModel(instance, securityComponentSpec);
 
-        model.createService(EndpointServiceType.INTERNAL);
-        model.createService(EndpointServiceType.ROUTE);
-        model.createService(EndpointServiceType.NODE_PORT);
+        model.createService(EndpointServiceType.INTERNAL, Collections.emptyMap());
+        model.createService(EndpointServiceType.ROUTE, Collections.emptyMap());
+        model.createService(EndpointServiceType.NODE_PORT, Collections.emptyMap());
         List<Service> services = model.getSecurityServices();
 
         assertThat(services, hasSize(3));
@@ -202,9 +203,9 @@ public class AbstractSecureEndpointsModelTest {
 
         ComponentModel model = new ComponentModel(instance, securityComponentSpec);
 
-        model.createService(EndpointServiceType.INTERNAL);
-        model.createService(EndpointServiceType.ROUTE);
-        model.createService(EndpointServiceType.NODE_PORT);
+        model.createService(EndpointServiceType.INTERNAL, Collections.emptyMap());
+        model.createService(EndpointServiceType.ROUTE, Collections.emptyMap());
+        model.createService(EndpointServiceType.NODE_PORT, Collections.emptyMap());
 
         List<Service> services = model.getSecurityServices();
 
@@ -242,9 +243,9 @@ public class AbstractSecureEndpointsModelTest {
 
         ComponentModel model = new ComponentModel(instance, securityComponentSpec);
 
-        model.createService(EndpointServiceType.INTERNAL);
-        model.createService(EndpointServiceType.ROUTE);
-        model.createService(EndpointServiceType.NODE_PORT);
+        model.createService(EndpointServiceType.INTERNAL, Collections.emptyMap());
+        model.createService(EndpointServiceType.ROUTE, Collections.emptyMap());
+        model.createService(EndpointServiceType.NODE_PORT, Collections.emptyMap());
         List<Service> services = model.getSecurityServices();
 
         assertThat(services, hasSize(3));
@@ -284,9 +285,9 @@ public class AbstractSecureEndpointsModelTest {
 
         ComponentModel model = new ComponentModel(instance, securityComponentSpec);
 
-        model.createService(EndpointServiceType.INTERNAL);
-        model.createService(EndpointServiceType.ROUTE);
-        model.createService(EndpointServiceType.NODE_PORT);
+        model.createService(EndpointServiceType.INTERNAL, Collections.emptyMap());
+        model.createService(EndpointServiceType.ROUTE, Collections.emptyMap());
+        model.createService(EndpointServiceType.NODE_PORT, Collections.emptyMap());
         List<Service> services = model.getSecurityServices();
 
         assertThat(services, hasSize(3));

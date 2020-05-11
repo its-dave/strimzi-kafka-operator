@@ -21,6 +21,7 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 
 import com.ibm.eventstreams.api.DefaultResourceRequirements;
+import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.spec.KafkaMetricsJMXRule;
@@ -118,12 +119,16 @@ public class EventStreamsKafkaModel extends AbstractModel {
      */
     @SuppressWarnings({"checkstyle:MethodLength"})
     private Kafka createKafka(KafkaSpec strimziOverrides) {
+        String collectorEndpoint = String.format("%s.%s.svc",
+                AbstractSecureEndpointsModel.getInternalServiceName(getInstanceName(), CollectorModel.COMPONENT_NAME),
+                getNamespace());
 
         List<EnvVar> kafkaEnvVars = Arrays.asList(
-            new EnvVarBuilder().withName("COLLECTOR_PORT").withValue(Integer.toString(CollectorModel.API_PORT)).build(),
-            new EnvVarBuilder().withName("COLLECTOR_HOST").withValue(getResourcePrefix() + "-" + CollectorModel.COMPONENT_NAME).build(),
+            new EnvVarBuilder().withName("COLLECTOR_PORT").withValue(Integer.toString(Endpoint.getPodToPodPort(tlsEnabled()))).build(),
+            new EnvVarBuilder().withName("COLLECTOR_HOST").withValue(collectorEndpoint).build(),
             new EnvVarBuilder().withName("COLLECTOR_TLS_ENABLED").withValue(String.valueOf(tlsEnabled())).build(),
-            new EnvVarBuilder().withName("COLLECTOR_HOSTNAME_VERIFICATION").withValue("false").build()
+            new EnvVarBuilder().withName("COLLECTOR_CERT_PATH").withValue("/opt/kafka/cluster-ca-certs/ca.crt").build(),
+            new EnvVarBuilder().withName("COLLECTOR_HOSTNAME_VERIFICATION").withValue("true").build()
         );
 
         kafkaEnvVars = combineEnvVarListsNoDuplicateKeys(

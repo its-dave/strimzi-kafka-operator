@@ -22,6 +22,7 @@ import com.ibm.eventstreams.api.spec.ContainerSpec;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.spec.ImagesSpec;
+import com.ibm.eventstreams.api.spec.SecurityComponentSpec;
 import com.ibm.eventstreams.controller.EventStreamsOperatorConfig;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.ContainerBuilder;
@@ -84,7 +85,7 @@ public class RestProducerModel extends AbstractSecureEndpointsModel {
                              EventStreamsOperatorConfig.ImageLookup imageConfig,
                              List<ListenerStatus> kafkaListeners,
                              Map<String, String> icpClusterData) {
-        super(instance, instance.getSpec().getRestProducer(), COMPONENT_NAME, APPLICATION_NAME);
+        super(instance, COMPONENT_NAME, APPLICATION_NAME);
         this.kafkaListeners = kafkaListeners != null ? new ArrayList<>(kafkaListeners) : new ArrayList<>();
 
         this.icpClusterName = icpClusterData.getOrDefault("cluster_name", "null");
@@ -92,7 +93,7 @@ public class RestProducerModel extends AbstractSecureEndpointsModel {
 
         ibmcloudCASecretName = ClusterSecretsModel.getIBMCloudSecretName(getInstanceName());
 
-        Optional<ComponentSpec> restProducerSpec = Optional.ofNullable(instance.getSpec()).map(EventStreamsSpec::getRestProducer);
+        Optional<SecurityComponentSpec> restProducerSpec = Optional.ofNullable(instance.getSpec()).map(EventStreamsSpec::getRestProducer);
 
         if (restProducerSpec.isPresent()) {
             setOwnerReference(instance);
@@ -117,13 +118,14 @@ public class RestProducerModel extends AbstractSecureEndpointsModel {
             setReadinessProbe(restProducerSpec.map(ComponentSpec::getReadinessProbe)
                     .orElseGet(io.strimzi.api.kafka.model.Probe::new));
 
+            endpoints = createEndpoints(instance, restProducerSpec.orElse(null));
             deployment = createDeployment(getContainers(), getVolumes());
             serviceAccount = createServiceAccount();
             networkPolicy = createNetworkPolicy();
 
-            createService(EndpointServiceType.INTERNAL);
-            createService(EndpointServiceType.ROUTE);
-            createService(EndpointServiceType.NODE_PORT);
+            createService(EndpointServiceType.INTERNAL, Collections.emptyMap());
+            createService(EndpointServiceType.ROUTE, Collections.emptyMap());
+            createService(EndpointServiceType.NODE_PORT, Collections.emptyMap());
             routes = createRoutesFromEndpoints();
         }
     }

@@ -217,11 +217,12 @@ public class ModelUtils {
 
     public static class EndpointsModel extends AbstractSecureEndpointsModel {
         public EndpointsModel(EventStreams instance, SecurityComponentSpec spec, String componentName, String applicationName) {
-            super(instance, spec, componentName, applicationName);
+            super(instance, componentName, applicationName);
             setTlsVersion(TlsVersion.TLS_V1_2);
-            createService(EndpointServiceType.INTERNAL);
-            createService(EndpointServiceType.ROUTE);
-            createService(EndpointServiceType.NODE_PORT);
+            endpoints = createEndpoints(instance, spec);
+            createService(EndpointServiceType.INTERNAL, Collections.emptyMap());
+            createService(EndpointServiceType.ROUTE, Collections.emptyMap());
+            createService(EndpointServiceType.NODE_PORT, Collections.emptyMap());
         }
 
         @Override

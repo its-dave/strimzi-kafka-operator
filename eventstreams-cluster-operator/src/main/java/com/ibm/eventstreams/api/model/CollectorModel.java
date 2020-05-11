@@ -13,6 +13,9 @@
 package com.ibm.eventstreams.api.model;
 
 import com.ibm.eventstreams.api.DefaultResourceRequirements;
+import com.ibm.eventstreams.api.Endpoint;
+import com.ibm.eventstreams.api.EndpointServiceType;
+import com.ibm.eventstreams.api.TlsVersion;
 import com.ibm.eventstreams.api.spec.ComponentSpec;
 import com.ibm.eventstreams.api.spec.ComponentTemplate;
 import com.ibm.eventstreams.api.spec.ContainerSpec;
@@ -30,8 +33,6 @@ import io.fabric8.kubernetes.api.model.ProbeBuilder;
 import io.fabric8.kubernetes.api.model.ResourceRequirements;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.ServiceAccount;
-import io.fabric8.kubernetes.api.model.ServicePort;
-import io.fabric8.kubernetes.api.model.ServicePortBuilder;
 import io.fabric8.kubernetes.api.model.Volume;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicy;
@@ -44,17 +45,17 @@ import io.strimzi.api.kafka.model.template.PodTemplate;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public class CollectorModel extends AbstractModel {
+public class CollectorModel extends AbstractSecureEndpointsModel {
 
     public static final String COMPONENT_NAME = "metrics";
     public static final String APPLICATION_NAME = "metrics";
-    public static final int METRICS_PORT = 8888; // no tls for prometheus
-    public static final int API_PORT = 6888; // optionally tls secured for internal communication
+    public static final int METRICS_PORT = 7888; // no tls for prometheus
     public static final int DEFAULT_REPLICAS = 1;
     private static final String DEFAULT_IBMCOM_IMAGE = "ibmcom/collector:latest";
     private String traceLevel = "0";
@@ -63,8 +64,8 @@ public class CollectorModel extends AbstractModel {
 
     private ServiceAccount serviceAccount;
     private Deployment deployment;
-    private Service service;
     private NetworkPolicy networkPolicy;
+    private boolean enableProducerMetrics = false;
 
     /**
      * This class is used to model all the kube resources required for correct deployment of the Collector component
@@ -76,7 +77,7 @@ public class CollectorModel extends AbstractModel {
         super(instance, COMPONENT_NAME, APPLICATION_NAME);
         Optional<ComponentSpec> collectorSpec = Optional.ofNullable(instance.getSpec())
             .map(EventStreamsSpec::getCollector);
-        
+
         if (collectorSpec.isPresent()) {
 
             setOwnerReference(instance);
@@ -102,15 +103,16 @@ public class CollectorModel extends AbstractModel {
                     .orElseGet(io.strimzi.api.kafka.model.Probe::new));
             setTraceLevel(collectorSpec.map(ComponentSpec::getLogging).orElse(null));
 
-            Boolean enableProducerMetrics = Optional.ofNullable(instance.getSpec())
+            enableProducerMetrics = Optional.ofNullable(instance.getSpec())
                 .map(EventStreamsSpec::getStrimziOverrides)
                 .map(KafkaSpec::getKafka)
                 .map(KafkaClusterSpec::getConfig)
                 .filter(map -> map.containsKey("interceptor.class.names"))
                 .isPresent();
-                                
+
+            endpoints = createEndpoints(instance, null);
             deployment = createDeployment(getContainers(instance), getVolumes());
-            service = createService(enableProducerMetrics);
+            createService();
             networkPolicy = createNetworkPolicy();
             serviceAccount = createServiceAccount();
         }
@@ -122,7 +124,7 @@ public class CollectorModel extends AbstractModel {
      * @return The list of volumes to put into the Collector pod
      */
     private List<Volume> getVolumes() {
-        return Arrays.asList(createKafkaUserCertVolume());
+        return Arrays.asList(getCertsVolume());
     }
 
     /**
@@ -140,11 +142,11 @@ public class CollectorModel extends AbstractModel {
     private Container getCollectorContainer(EventStreams instance) {
         List<EnvVar> envVarDefaults = Arrays.asList(
             new EnvVarBuilder().withName("TRACE_LEVEL").withValue(traceLevel).build(),
-            new EnvVarBuilder().withName("API_PORT").withValue(Integer.toString(API_PORT)).build(),
+            new EnvVarBuilder().withName("API_PORT").withValue(Integer.toString(Endpoint.getPodToPodPort(tlsEnabled()))).build(),
             new EnvVarBuilder().withName("METRICS_PORT").withValue(Integer.toString(METRICS_PORT)).build(),
             new EnvVarBuilder().withName("TLS_ENABLED").withValue(String.valueOf(tlsEnabled())).build(),
-            new EnvVarBuilder().withName("TLS_CERT").withValue("/etc/ssl/certs/" + AbstractModel.USER_CERT).build(),
-            new EnvVarBuilder().withName("TLS_KEY").withValue("/etc/ssl/certs/" + AbstractModel.USER_KEY).build(),
+            new EnvVarBuilder().withName("TLS_CERT").withValue("/etc/ssl/certs/p2ptls.crt").build(),
+            new EnvVarBuilder().withName("TLS_KEY").withValue("/etc/ssl/certs/p2ptls.key").build(),
             new EnvVarBuilder().withName("LICENSE").withValue("accept").build(),
             new EnvVarBuilder().withName("CIPHER_SUITES").withValue(DEFAULT_CIPHER_SUITES_NODE).build(),
             new EnvVarBuilder().withName("NAMESPACE").withValue(getNamespace()).build(),
@@ -160,7 +162,7 @@ public class CollectorModel extends AbstractModel {
             .withSecurityContext(getSecurityContext(false))
             .withResources(getResourceRequirements(DefaultResourceRequirements.COLLECTOR))
             .addNewVolumeMount()
-                .withNewName(KAFKA_USER_SECRET_VOLUME_NAME)
+                .withNewName(CERTS_VOLUME_MOUNT_NAME)
                 .withMountPath("/etc/ssl/certs")
                 .withNewReadOnly(true)
             .endVolumeMount()
@@ -170,7 +172,7 @@ public class CollectorModel extends AbstractModel {
             .endPort()
             .addNewPort()
                 .withName("api")
-                .withContainerPort(API_PORT)
+                .withContainerPort(Endpoint.getPodToPodPort(tlsEnabled()))
             .endPort()
             .withLivenessProbe(createLivenessProbe())
             .withReadinessProbe(createReadinessProbe())
@@ -185,7 +187,7 @@ public class CollectorModel extends AbstractModel {
         Probe defaultLivenessProbe = new ProbeBuilder()
                 .withNewHttpGet()
                 .withPath("/health")
-                .withNewPort(API_PORT)
+                .withNewPort(Endpoint.getPodToPodPort(tlsEnabled()))
                 .withScheme(getHealthCheckProtocol())
                 .withHttpHeaders(new HTTPHeaderBuilder()
                         .withName("Accept")
@@ -207,7 +209,7 @@ public class CollectorModel extends AbstractModel {
         Probe defaultReadinessProbe = new ProbeBuilder()
                 .withNewHttpGet()
                 .withPath("/health")
-                .withNewPort(API_PORT)
+                .withNewPort(Endpoint.getPodToPodPort(tlsEnabled()))
                 .withScheme(getHealthCheckProtocol())
                 .withHttpHeaders(new HTTPHeaderBuilder()
                         .withName("Accept")
@@ -228,47 +230,45 @@ public class CollectorModel extends AbstractModel {
      * @return The network policy for the Collector pod
      */
     private NetworkPolicy createNetworkPolicy() {
-        List<NetworkPolicyIngressRule> ingressRules = new ArrayList<>(1);
-        ingressRules.add(new NetworkPolicyIngressRule());
+        List<NetworkPolicyIngressRule> ingressRules = new ArrayList<>();
+
+        endpoints.forEach(endpoint -> ingressRules.add(createIngressRule(endpoint.getPort(), endpoint.getEndpointIngressLabels())));
 
         return createNetworkPolicy(createLabelSelector(APPLICATION_NAME), ingressRules, null);
     }
 
     /**
-     * 
-     * @param enabledProducerMetrics if true the service will be created with a metrics port
+     * if producer metrics are enabled the service will be created with a metrics port
      * and annotated with the prometheus annotations
      * @return the service associated with the Collector pod
      */
-    private Service createService(boolean enabledProducerMetrics) {
-        List<ServicePort> svcPorts = new ArrayList<>();
+    private Service createService() {
         Map<String, String> annotations = new HashMap<>();
-        svcPorts.add(createServicePort(API_PORT));
-        if (enabledProducerMetrics) {
-            svcPorts.add(new ServicePortBuilder()
-                    .withPort(METRICS_PORT)
-                    .withNewName("metrics")
-                    .withNewProtocol("TCP")
-                    .build());
+        if (enableProducerMetrics) {
             annotations.put("prometheus.io/scrape", "true");
             annotations.put("prometheus.io/port", String.valueOf(METRICS_PORT));
             annotations.put("prometheus.io/path", "/metrics");
         }
-        return createService(getDefaultResourceName(), svcPorts, annotations);
+        return createService(EndpointServiceType.INTERNAL, annotations);
     }
 
     /**
-     * @return Deployment return the deployment
+     * @return Deployment return the deployment with the specified generation id this is used
+     * to control rolling updates, for example when the cert secret changes.
+     */
+    public Deployment getDeployment(String certGenerationID) {
+        if (certGenerationID != null && deployment != null) {
+            deployment.getMetadata().getLabels().put(CERT_GENERATION_KEY, certGenerationID);
+            deployment.getSpec().getTemplate().getMetadata().getLabels().put(CERT_GENERATION_KEY, certGenerationID);
+        }
+        return deployment;
+    }
+
+    /**
+     * @return Deployment return the deployment with an empty generation id
      */
     public Deployment getDeployment() {
-        return this.deployment;
-    }
-
-    /**
-     * @return Service return the service
-     */
-    public Service getService() {
-        return this.service;
+        return getDeployment("");
     }
 
     /**
@@ -293,5 +293,26 @@ public class CollectorModel extends AbstractModel {
                 traceLevel = loggers.get(firstKey);
             }
         }
+    }
+
+    @Override
+    protected List<Endpoint> createP2PEndpoints(EventStreams instance) {
+        List<Endpoint> endpoints = new ArrayList<>();
+        endpoints.add(Endpoint.createP2PEndpoint(instance, Collections.emptyList(), Collections.singletonList(uniqueInstanceLabels())));
+        if (enableProducerMetrics) {
+            endpoints.add(new Endpoint("metrics",
+                    METRICS_PORT,
+                    TlsVersion.NONE,
+                    EndpointServiceType.INTERNAL,
+                    null,
+                    Collections.emptyList(),
+                    Collections.emptyList()));
+        }
+        return endpoints;
+    }
+
+    @Override
+    protected List<Endpoint> createDefaultEndpoints(boolean authEnabled) {
+        return Collections.emptyList();
     }
 }

@@ -81,7 +81,7 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
 
     private final CertificateSecretModel certificateSecretModel;
 
-    protected List<Endpoint> endpoints;
+    protected List<Endpoint> endpoints = Collections.emptyList();
     protected Map<String, Route> routes;
 
     private Service internalService;
@@ -91,11 +91,10 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
     // private Service ingressService = null;
 
 
-    public AbstractSecureEndpointsModel(EventStreams instance, SecurityComponentSpec spec, String componentName, String applicationName) {
+    public AbstractSecureEndpointsModel(EventStreams instance, String componentName, String applicationName) {
         super(instance, componentName, applicationName);
         this.certificateSecretModel = new CertificateSecretModel(instance, componentName, applicationName);
         this.routes = new HashMap<>();
-        this.endpoints = createEndpoints(instance, spec);
     }
 
     /**
@@ -103,24 +102,12 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
      * with. If user has not configured endpoints, then a default endpoint will be created for the user which
      * will enable all Event Streams capabilities. A Pod-To-Pod endpoint is always created for Event Streams components
      * to communicate with one another.
-     * @param instance The spec of the Event Streams CR
+     * @param instance the current EventStreams CR
      * @param spec The list of endpoints passed into the component. This needs to be passed in to determine which
      *             component's endpoint (schema registry, admin rest, or rest producer) to configure.
-     * @return list of secure endpoints
-     */
-    public List<Endpoint> createEndpoints(EventStreams instance, SecurityComponentSpec spec) {
-        return Optional.ofNullable(spec)
-            .map(securityComponentSpec -> getEndpoints(instance, securityComponentSpec))
-            .orElse(Collections.emptyList());
-    }
-
-    /**
-     * Creates a list of endpoints given the Eventstreams CR and the specified SecurityComponents endpoints
-     * @param instance the current EventStreams CR
-     * @param spec the SecurityComponent which contains the endpoints to create
      * @return A list of endpoints
      */
-    private List<Endpoint> getEndpoints(EventStreams instance, SecurityComponentSpec spec) {
+    public List<Endpoint> createEndpoints(EventStreams instance, SecurityComponentSpec spec) {
         List<Endpoint> publicEndpoints = Optional.ofNullable(spec)
             .map(SecurityComponentSpec::getEndpoints)
             .map(endpointSpecs -> endpointSpecs.stream().map(Endpoint::createEndpointFromSpec).collect(Collectors.toList()))
@@ -140,7 +127,7 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
      * Creates a single service per type of Service with all access ports of the same Service type configured
      * @param type the specified EndpointServiceType service.
      */
-    protected void createService(EndpointServiceType type) {
+    protected Service createService(EndpointServiceType type, Map<String, String> annotations) {
         List<ServicePort> ports = endpoints.stream()
             .filter(endpoint -> endpoint.getType() == type)
             .map(endpoint -> new ServicePortBuilder()
@@ -150,7 +137,7 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
                 .build())
             .collect(Collectors.toList());
 
-        updateServiceValueFromType(type, createService(type.toServiceValue(), getServiceName(type), ports, Collections.emptyMap()));
+        return updateServiceValueFromType(type, createService(type.toServiceValue(), getServiceName(type), ports, annotations));
     }
 
     /**
@@ -216,7 +203,7 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
      * LoadBalancer and Ingress are specified.
      * @param type the EndpointServiceType of service wanted
      */
-    private void updateServiceValueFromType(EndpointServiceType type, Service value) {
+    private Service updateServiceValueFromType(EndpointServiceType type, Service value) {
         value = value.getSpec().getPorts().size() > 0 ? value : null;
         switch (type) {
             case NODE_PORT:
@@ -228,6 +215,7 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
             default:
                 internalService = value;
         }
+        return value;
     }
 
     /**
@@ -255,12 +243,7 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
     protected List<Volume> getSecurityVolumes() {
         List<Volume> volumes = new ArrayList<>();
 
-        volumes.add(new VolumeBuilder()
-            .withNewName(CERTS_VOLUME_MOUNT_NAME)
-            .withNewSecret()
-            .withNewSecretName(getCertificateSecretName()) //mount everything in the secret into this volume
-            .endSecret()
-            .build());
+        volumes.add(getCertsVolume());
 
         volumes.add(new VolumeBuilder()
             .withNewName(CLUSTER_CA_VOLUME_MOUNT_NAME)
@@ -283,6 +266,15 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
         volumes.add(createKafkaUserCertVolume());
 
         return volumes;
+    }
+
+    protected Volume getCertsVolume() {
+        return new VolumeBuilder()
+                .withNewName(CERTS_VOLUME_MOUNT_NAME)
+                .withNewSecret()
+                .withNewSecretName(getCertificateSecretName()) //mount everything in the secret into this volume
+                .endSecret()
+                .build();
     }
 
     /**

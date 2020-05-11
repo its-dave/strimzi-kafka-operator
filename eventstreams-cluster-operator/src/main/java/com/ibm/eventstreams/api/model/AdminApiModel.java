@@ -22,6 +22,7 @@ import com.ibm.eventstreams.api.spec.ContainerSpec;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.spec.ImagesSpec;
+import com.ibm.eventstreams.api.spec.SecurityComponentSpec;
 import com.ibm.eventstreams.controller.EventStreamsOperatorConfig;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.ContainerBuilder;
@@ -105,7 +106,7 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
                          Map<String, String> icpClusterData,
                          boolean isGeoReplicationEnabled,
                          String internalKafkaUsername) {
-        super(instance, instance.getSpec().getAdminApi(), COMPONENT_NAME, APPLICATION_NAME);
+        super(instance, COMPONENT_NAME, APPLICATION_NAME);
         this.kafkaListeners = kafkaListeners != null ? new ArrayList<>(kafkaListeners) : new ArrayList<>();
 
         this.prometheusHost = icpClusterData.getOrDefault("cluster_address", "null");
@@ -118,7 +119,7 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
 
         ibmcloudCASecretName = ClusterSecretsModel.getIBMCloudSecretName(getInstanceName());
 
-        Optional<ComponentSpec> adminApiSpec = Optional.ofNullable(instance.getSpec())
+        Optional<SecurityComponentSpec> adminApiSpec = Optional.ofNullable(instance.getSpec())
                 .map(EventStreamsSpec::getAdminApi);
 
         setOwnerReference(instance);
@@ -145,13 +146,14 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
                 .orElseGet(io.strimzi.api.kafka.model.Probe::new));
         setTraceString(adminApiSpec.map(ComponentSpec::getLogging).orElse(null));
 
+        endpoints = createEndpoints(instance, adminApiSpec.orElse(null));
         deployment = createDeployment(getContainers(instance), getVolumes(instance));
         serviceAccount = createServiceAccount();
 
         roleBinding = createAdminApiRoleBinding();
-        createService(EndpointServiceType.INTERNAL);
-        createService(EndpointServiceType.ROUTE);
-        createService(EndpointServiceType.NODE_PORT);
+        createService(EndpointServiceType.INTERNAL, Collections.emptyMap());
+        createService(EndpointServiceType.ROUTE, Collections.emptyMap());
+        createService(EndpointServiceType.NODE_PORT, Collections.emptyMap());
         routes = createRoutesFromEndpoints();
 
         networkPolicy = createNetworkPolicy();

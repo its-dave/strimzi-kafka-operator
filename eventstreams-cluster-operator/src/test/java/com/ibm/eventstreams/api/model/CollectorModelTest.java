@@ -12,6 +12,8 @@
  */
 package com.ibm.eventstreams.api.model;
 
+import com.ibm.eventstreams.api.EndpointServiceType;
+import com.ibm.eventstreams.api.model.utils.CustomMatchers;
 import com.ibm.eventstreams.api.model.utils.ModelUtils;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
@@ -19,15 +21,24 @@ import com.ibm.eventstreams.controller.EventStreamsOperatorConfig;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.EnvVarBuilder;
+import io.fabric8.kubernetes.api.model.IntOrString;
 import io.fabric8.kubernetes.api.model.LocalObjectReference;
 import io.fabric8.kubernetes.api.model.LocalObjectReferenceBuilder;
 import io.fabric8.kubernetes.api.model.Quantity;
 import io.fabric8.kubernetes.api.model.ResourceRequirements;
 import io.fabric8.kubernetes.api.model.ResourceRequirementsBuilder;
+import io.fabric8.kubernetes.api.model.Service;
+import io.fabric8.kubernetes.api.model.ServicePort;
+import io.fabric8.kubernetes.api.model.Volume;
+import io.fabric8.kubernetes.api.model.VolumeMount;
+import io.fabric8.kubernetes.api.model.networking.NetworkPolicy;
+import io.fabric8.kubernetes.api.model.networking.NetworkPolicyIngressRule;
+import io.fabric8.kubernetes.api.model.networking.NetworkPolicyIngressRuleBuilder;
 import io.strimzi.api.kafka.model.ExternalLogging;
 import io.strimzi.api.kafka.model.InlineLogging;
 import io.strimzi.api.kafka.model.KafkaSpecBuilder;
 import io.strimzi.api.kafka.model.template.PodTemplateBuilder;
+import io.strimzi.operator.common.model.Labels;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -38,9 +49,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.aMapWithSize;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.hasEntry;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -52,6 +68,7 @@ import static org.mockito.Mockito.when;
 public class CollectorModelTest {
 
     private final String instanceName = "test";
+    private final String componentPrefix = instanceName + "-" + AbstractModel.APP_NAME + "-" + CollectorModel.COMPONENT_NAME;
     private final int defaultReplicas = 1;
 
     @Mock
@@ -351,7 +368,7 @@ public class CollectorModelTest {
         assertThat(envVars, hasItem(expectedEnvVar));
     }
     @Test
-    public void testAnnotationsPresentWhenKafkaIsUsingInterceptor() {
+    public void testServiceWhenKafkaIsUsingInterceptor() {
         Map<String, Object> config = new HashMap<>();
         config.put("interceptor.class.names", "com.ibm.eventstreams.interceptors.metrics.ProducerMetricsInterceptor");
         
@@ -367,18 +384,172 @@ public class CollectorModelTest {
             .build();
 
         CollectorModel collector = new CollectorModel(es, imageConfig);
-        assertThat(collector.getService().getMetadata().getAnnotations().get("prometheus.io/scrape"), is("true"));
-        assertThat(collector.getService().getMetadata().getAnnotations().get("prometheus.io/port"), is(String.valueOf(CollectorModel.METRICS_PORT)));
-        assertThat(collector.getService().getMetadata().getAnnotations().get("prometheus.io/path"), is("/metrics"));
+        Service service = collector.getSecurityService(EndpointServiceType.INTERNAL);
+
+        assertThat(service.getSpec().getPorts(), hasSize(2));
+        assertThat(service.getSpec().getPorts().stream().map(ServicePort::getPort).collect(Collectors.toList()), containsInAnyOrder(7443, 7888));
+        assertThat(service.getMetadata().getAnnotations().get("prometheus.io/scrape"), is("true"));
+        assertThat(service.getMetadata().getAnnotations().get("prometheus.io/port"), is(String.valueOf(CollectorModel.METRICS_PORT)));
+        assertThat(service.getMetadata().getAnnotations().get("prometheus.io/path"), is("/metrics"));
     }
     @Test
-    public void testAnnotationsNotPresentWhenNoKafkaInterceptor() {
+    public void testServiceWhenNoKafkaInterceptor() {
         EventStreams es = createDefaultEventStreams()
             .build();
 
         CollectorModel collector = new CollectorModel(es, imageConfig);
-        assertThat(collector.getService().getMetadata().getAnnotations().get("prometheus.io/scrape"), is(nullValue()));
-        assertThat(collector.getService().getMetadata().getAnnotations().get("prometheus.io/port"), is(nullValue()));
-        assertThat(collector.getService().getMetadata().getAnnotations().get("prometheus.io/path"), is(nullValue()));
+        Service service = collector.getSecurityService(EndpointServiceType.INTERNAL);
+
+        assertThat(service.getSpec().getPorts(), hasSize(1));
+        assertThat(service.getSpec().getPorts().stream().map(ServicePort::getPort).collect(Collectors.toList()), containsInAnyOrder(7443));
+        assertThat(service.getMetadata().getAnnotations().get("prometheus.io/scrape"), is(nullValue()));
+        assertThat(service.getMetadata().getAnnotations().get("prometheus.io/port"), is(nullValue()));
+        assertThat(service.getMetadata().getAnnotations().get("prometheus.io/path"), is(nullValue()));
+    }
+
+    @Test
+    public void testNetworkPolicyWhenKafkaIsUsingInterceptor() {
+        Map<String, Object> config = new HashMap<>();
+        config.put("interceptor.class.names", "com.ibm.eventstreams.interceptors.metrics.ProducerMetricsInterceptor");
+
+        EventStreams es = createDefaultEventStreams()
+            .editSpec()
+                .withStrimziOverrides(
+                    new KafkaSpecBuilder()
+                        .withNewKafka()
+                            .withConfig(config)
+                        .endKafka()
+                    .build())
+            .endSpec()
+            .build();
+
+        CollectorModel collectorModel = new CollectorModel(es, imageConfig);
+
+        NetworkPolicy networkPolicy = collectorModel.getNetworkPolicy();
+        assertThat(networkPolicy.getMetadata().getName(), is(componentPrefix));
+        assertThat(networkPolicy.getKind(), is("NetworkPolicy"));
+
+        assertThat(networkPolicy.getSpec().getIngress().size(), is(collectorModel.getEndpoints().size()));
+
+        NetworkPolicyIngressRule defaultP2PIngressRule = new NetworkPolicyIngressRuleBuilder()
+                .addNewPort()
+                .withPort(new IntOrString(7443))
+                .endPort()
+                .addNewFrom()
+                .withNewPodSelector()
+                .addToMatchLabels(Labels.KUBERNETES_INSTANCE_LABEL, instanceName)
+                .addToMatchLabels(Labels.KUBERNETES_MANAGED_BY_LABEL, AbstractModel.OPERATOR_NAME)
+                .endPodSelector()
+                .endFrom()
+                .build();
+
+        NetworkPolicyIngressRule metricsIngressRule = new NetworkPolicyIngressRuleBuilder()
+                .addNewPort()
+                .withPort(new IntOrString(7888))
+                .endPort()
+                .build();
+
+        assertThat(networkPolicy.getSpec().getIngress(), CustomMatchers.containsIngressRulesInAnyOrder(metricsIngressRule, defaultP2PIngressRule));
+
+        assertThat(networkPolicy.getSpec().getPodSelector().getMatchLabels(), allOf(
+                aMapWithSize(2),
+                hasEntry(Labels.KUBERNETES_NAME_LABEL, CollectorModel.APPLICATION_NAME),
+                hasEntry(Labels.KUBERNETES_INSTANCE_LABEL, instanceName)
+        ));
+    }
+
+    @Test
+    public void testNetworkPolicyWhenNoKafkaInterceptor() {
+        EventStreams es = createDefaultEventStreams().build();
+
+        CollectorModel collectorModel = new CollectorModel(es, imageConfig);
+
+        NetworkPolicy networkPolicy = collectorModel.getNetworkPolicy();
+        assertThat(networkPolicy.getMetadata().getName(), is(componentPrefix));
+        assertThat(networkPolicy.getKind(), is("NetworkPolicy"));
+
+        assertThat(networkPolicy.getSpec().getIngress().size(), is(collectorModel.getEndpoints().size()));
+
+        NetworkPolicyIngressRule defaultP2PIngressRule = new NetworkPolicyIngressRuleBuilder()
+                .addNewPort()
+                .withPort(new IntOrString(7443))
+                .endPort()
+                .addNewFrom()
+                .withNewPodSelector()
+                .addToMatchLabels(Labels.KUBERNETES_INSTANCE_LABEL, instanceName)
+                .addToMatchLabels(Labels.KUBERNETES_MANAGED_BY_LABEL, AbstractModel.OPERATOR_NAME)
+                .endPodSelector()
+                .endFrom()
+                .build();
+
+        assertThat(networkPolicy.getSpec().getIngress(), CustomMatchers.containsIngressRulesInAnyOrder(defaultP2PIngressRule));
+
+        assertThat(networkPolicy.getSpec().getPodSelector().getMatchLabels(), allOf(
+                aMapWithSize(2),
+                hasEntry(Labels.KUBERNETES_NAME_LABEL, CollectorModel.APPLICATION_NAME),
+                hasEntry(Labels.KUBERNETES_INSTANCE_LABEL, instanceName)
+        ));
+    }
+
+    @Test
+    public void testVolumeMounts() {
+        EventStreams es = createDefaultEventStreams().build();
+        CollectorModel collectorModel = new CollectorModel(es, imageConfig);
+
+        List<VolumeMount> volumeMounts = collectorModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getVolumeMounts();
+
+        assertThat(volumeMounts.size(), is(1));
+
+        assertThat(volumeMounts.get(0).getName(), is(RestProducerModel.CERTS_VOLUME_MOUNT_NAME));
+        assertThat(volumeMounts.get(0).getReadOnly(), is(true));
+        assertThat(volumeMounts.get(0).getMountPath(), is("/etc/ssl/certs"));
+    }
+
+    @Test
+    public void testVolumes() {
+        EventStreams es = createDefaultEventStreams().build();
+        CollectorModel collectorModel = new CollectorModel(es, imageConfig);
+
+        List<Volume> volumes = collectorModel.getDeployment().getSpec().getTemplate().getSpec().getVolumes();
+
+        assertThat(volumes.size(), is(1));
+        assertThat(volumes.get(0).getName(), is(AbstractSecureEndpointsModel.CERTS_VOLUME_MOUNT_NAME));
+    }
+
+    @Test
+    public void testDefaultEnvironmentVariables() {
+        EventStreams es = createDefaultEventStreams().build();
+        CollectorModel collectorModel = new CollectorModel(es, imageConfig);
+
+        EnvVar traceLevel = new EnvVarBuilder().withName("TRACE_LEVEL").withValue("0").build();
+        EnvVar apiPort = new EnvVarBuilder().withName("API_PORT").withValue("7443").build();
+        EnvVar metricsPort = new EnvVarBuilder().withName("METRICS_PORT").withValue("7888").build();
+        EnvVar tleEnabled = new EnvVarBuilder().withName("TLS_ENABLED").withValue("true").build();
+        EnvVar tlsCert = new EnvVarBuilder().withName("TLS_CERT").withValue("/etc/ssl/certs/p2ptls.crt").build();
+        EnvVar tlsKey = new EnvVarBuilder().withName("TLS_KEY").withValue("/etc/ssl/certs/p2ptls.key").build();
+        EnvVar ciphers = new EnvVarBuilder().withName("CIPHER_SUITES").withValue("TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_RSA_WITH_AES_128_GCM_SHA256").build();
+        EnvVar tlsVersion = new EnvVarBuilder().withName("TLS_VERSION").withValue("TLSv1.2").build();
+
+        Container collectorContainer = collectorModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0);
+        List<EnvVar> collectorDefaultEnv = collectorContainer.getEnv();
+        assertThat(collectorDefaultEnv, hasItem(traceLevel));
+        assertThat(collectorDefaultEnv, hasItem(apiPort));
+        assertThat(collectorDefaultEnv, hasItem(metricsPort));
+        assertThat(collectorDefaultEnv, hasItem(tleEnabled));
+        assertThat(collectorDefaultEnv, hasItem(tlsCert));
+        assertThat(collectorDefaultEnv, hasItem(tlsKey));
+        assertThat(collectorDefaultEnv, hasItem(ciphers));
+        assertThat(collectorDefaultEnv, hasItem(tlsVersion));
+    }
+
+    @Test
+    public void testGenerationIdLabelOnDeployment() {
+        EventStreams es = createDefaultEventStreams().build();
+        CollectorModel collectorModel = new CollectorModel(es, imageConfig);
+
+        assertThat(collectorModel.getDeployment("newID").getMetadata().getLabels().containsKey(AbstractSecureEndpointsModel.CERT_GENERATION_KEY), is(true));
+        assertThat(collectorModel.getDeployment("newID").getMetadata().getLabels().get(AbstractSecureEndpointsModel.CERT_GENERATION_KEY), is("newID"));
+        assertThat(collectorModel.getDeployment("newID").getSpec().getTemplate().getMetadata().getLabels().containsKey(AbstractSecureEndpointsModel.CERT_GENERATION_KEY), is(true));
+        assertThat(collectorModel.getDeployment("newID").getSpec().getTemplate().getMetadata().getLabels().get(AbstractSecureEndpointsModel.CERT_GENERATION_KEY), is("newID"));
     }
 }

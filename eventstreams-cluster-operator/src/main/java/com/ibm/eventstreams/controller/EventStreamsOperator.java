@@ -210,7 +210,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 .compose(state -> state.createAdminApi(this::dateSupplier))
                 .compose(state -> state.createSchemaRegistry(this::dateSupplier))
                 .compose(state -> state.createAdminUI())
-                .compose(state -> state.createCollector())
+                .compose(state -> state.createCollector(this::dateSupplier))
                 .compose(state -> state.createOAuthClient())
                 .compose(state -> state.checkEventStreamsSpec(this::dateSupplier))
                 .onSuccess(state -> state.finalStatusUpdate())
@@ -755,20 +755,26 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                     .map(v -> this));
         }
 
-        Future<ReconciliationState> createCollector() {
+        Future<ReconciliationState> createCollector(Supplier<Date> dateSupplier) {
             log.traceEntry();
             List<Future> collectorFutures = new ArrayList<>();
             CollectorModel collector = new CollectorModel(instance, imageConfig);
             if (collector.getCustomImage()) {
                 customImageCount++;
             }
-            collectorFutures.add(deploymentOperator.reconcile(namespace, collector.getDefaultResourceName(), collector.getDeployment()));
             collectorFutures.add(serviceAccountOperator.reconcile(namespace, collector.getDefaultResourceName(), collector.getServiceAccount()));
-            collectorFutures.add(serviceOperator.reconcile(namespace, collector.getDefaultResourceName(), collector.getService()));
+            collectorFutures.add(serviceOperator.reconcile(namespace, collector.getServiceName(EndpointServiceType.INTERNAL), collector.getSecurityService(EndpointServiceType.INTERNAL)));
             collectorFutures.add(networkPolicyOperator.reconcile(namespace, collector.getDefaultResourceName(), collector.getNetworkPolicy()));
             collectorFutures.add(checkPullSecrets(collector));
             return log.traceExit(CompositeFuture.join(collectorFutures)
-                    .map(v -> this));
+                    .compose(res -> reconcileCerts(collector, Collections.emptyMap(), dateSupplier))
+                    .compose(secretResult -> {
+                        String certGenerationID = null;
+                        if (secretResult.resourceOpt().isPresent()) {
+                            certGenerationID = secretResult.resource().getMetadata().getResourceVersion();
+                        }
+                        return deploymentOperator.reconcile(namespace, collector.getDefaultResourceName(), collector.getDeployment(certGenerationID));
+                    }).map(this));
         }
 
         Future<ReconciliationState> createOAuthClient() {
