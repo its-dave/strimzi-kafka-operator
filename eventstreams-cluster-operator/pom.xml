@@ -297,26 +297,28 @@
                 <version>1.6.0</version>
                 <executions>
                     <execution>
-                        <id>generate-crd</id>
+                        <id>generate-crd-co-install</id>
+                        <phase>process-classes</phase>
                         <goals>
                             <goal>exec</goal>
                         </goals>
+                        <configuration>
+                            <executable>java</executable>
+                            <arguments>
+                                <argument>-classpath</argument>
+                                <argument>${settings.localRepository}/io/strimzi/crd-generator/${project.version}/crd-generator-${project.version}.jar:${settings.localRepository}/io/strimzi/api/${project.version}/api-${project.version}.jar:${pom.basedir}/target/classes</argument>
+                                <argument>io.strimzi.crdgenerator.CrdGenerator</argument>
+                                <argument>--label</argument><argument>app:eventstreams</argument>
+                                <argument>--label</argument><argument>eventstreams.ibm.com/crd-install:true</argument>
+                                <argument>--yaml</argument>
+                                <argument>com.ibm.eventstreams.api.spec.EventStreams=${pom.basedir}/../eventstreams-helm-charts/ibm-eventstreams-operator/templates/140-Crd-eventstreams.yaml</argument>
+                                <argument>com.ibm.eventstreams.api.spec.EventStreamsReplicator=${pom.basedir}/../eventstreams-helm-charts/ibm-eventstreams-operator/templates/143-Crd-eventstreamsreplicator.yaml</argument>
+                            </arguments>
+                        </configuration>
                     </execution>
                 </executions>
-                <configuration>
-                    <includeProjectDependencies>true</includeProjectDependencies>
-                    <executable>java</executable>
-                    <arguments>
-                        <argument>-classpath</argument>
-                        <argument>${settings.localRepository}/io/strimzi/crd-generator/${project.version}/crd-generator-${project.version}.jar:${settings.localRepository}/io/strimzi/api/${project.version}/api-${project.version}.jar:${pom.basedir}/target/${project.build.finalName}.jar</argument>
-                        <argument>io.strimzi.crdgenerator.CrdGenerator</argument>
-                        <argument>--label</argument><argument>app:eventstreams</argument>
-                        <argument>--yaml</argument>
-                        <argument>com.ibm.eventstreams.api.spec.EventStreams=${pom.basedir}/../eventstreams-helm-charts/ibm-eventstreams-operator/templates/140-Crd-eventstreams.yaml</argument>
-                        <argument>com.ibm.eventstreams.api.spec.EventStreamsReplicator=${pom.basedir}/../eventstreams-helm-charts/ibm-eventstreams-operator/templates/143-Crd-eventstreamsreplicator.yaml</argument>
-                    </arguments>
-                </configuration>
             </plugin>
+
 
 
 

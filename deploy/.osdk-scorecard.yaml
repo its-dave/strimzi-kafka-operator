@@ -1,6 +1,7 @@
 scorecard:
   output: text
   bundle: "deploy/olm-catalog/ibm-eventstreams"
+  init-timeout: 180
   plugins:
     - basic:
         cr-manifest:

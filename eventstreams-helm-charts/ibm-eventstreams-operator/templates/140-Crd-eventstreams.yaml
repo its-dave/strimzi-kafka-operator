@@ -4,6 +4,7 @@ metadata:
   name: eventstreams.eventstreams.ibm.com
   labels:
     app: eventstreams
+    eventstreams.ibm.com/crd-install: "true"
 spec:
   group: eventstreams.ibm.com
   versions:
@@ -9618,6 +9619,7 @@ spec:
           - version
           - adminApi
           - strimziOverrides
+          description: The specification of the Event Streams instance.
         status:
           type: object
           properties:
@@ -9752,5 +9754,6 @@ spec:
               type: boolean
               description: Identifies whether IBM Cloud Pak for Integration Services
                 Binding is present.
+          description: The status of the Event Streams instance.
       required:
       - spec

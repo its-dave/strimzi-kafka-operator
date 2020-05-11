@@ -30,6 +30,7 @@ import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.client.CustomResource;
 import io.strimzi.api.kafka.model.Constants;
 import io.strimzi.crdgenerator.annotations.Crd;
+import io.strimzi.crdgenerator.annotations.Description;
 import io.sundr.builder.annotations.Buildable;
 import io.sundr.builder.annotations.Inline;
 import lombok.EqualsAndHashCode;
@@ -127,6 +128,7 @@ public class EventStreams extends CustomResource {
     }
 
     @JsonProperty(required = true)
+    @Description("The specification of the Event Streams instance")
     public EventStreamsSpec getSpec() {
         return spec;
     }
@@ -135,6 +137,7 @@ public class EventStreams extends CustomResource {
         this.spec = spec;
     }
 
+    @Description("The status of the Event Streams instance")
     public EventStreamsStatus getStatus() {
         return status;
     }

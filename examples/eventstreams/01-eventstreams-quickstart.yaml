@@ -17,9 +17,9 @@ spec:
     internalTls: NONE
   strimziOverrides:
     kafka:
-#      uncomment to enable security
-#      authorization:
-#        type: runas
+      #      uncomment to enable security
+      #      authorization:
+      #        type: runas
       replicas: 1
       config:
         interceptor.class.names: com.ibm.eventstreams.interceptors.metrics.ProducerMetricsInterceptor
@@ -29,9 +29,9 @@ spec:
       listeners:
         external:
           type: route
-#          uncomment to enable security
-#          authentication:
-#            type: scram-sha-512
+          #          uncomment to enable security
+          #          authentication:
+          #            type: scram-sha-512
         plain: {}
         tls: {}
       storage:

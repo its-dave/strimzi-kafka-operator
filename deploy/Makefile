@@ -75,6 +75,7 @@ start_local_registry:
 run_scorecard: build_csv
 
 	$(SED) -i s/"^kind: RoleBinding$$"/"kind: ClusterRoleBinding"/g $(ROLE_BINDING_FILE)
+	yq w -i $(OPERATOR_FILE) spec.template.spec.serviceAccountName eventstreams-cluster-operator
 	$(FIND) ../examples/eventstreams -type f -name '01-*.yaml' -exec yq w -i {} spec.license.accept true \;
 	cd .. && operator-sdk scorecard --verbose --config deploy/.osdk-scorecard.yaml 
 

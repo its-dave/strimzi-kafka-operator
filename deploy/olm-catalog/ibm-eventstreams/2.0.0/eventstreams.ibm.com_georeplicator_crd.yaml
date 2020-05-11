@@ -4,6 +4,7 @@ metadata:
   name: eventstreamsgeoreplicators.eventstreams.ibm.com
   labels:
     app: eventstreams
+    eventstreams.ibm.com/crd-install: "true"
 spec:
   group: eventstreams.ibm.com
   versions:
