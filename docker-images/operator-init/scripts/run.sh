@@ -53,32 +53,32 @@ OWNER_NAME="eventstreams-cluster-operator"
 OWNER_UID=$EVENTSTREAMS_UID
 
 echo "Getting list of cluster role bindings"
-clusterrolebindingnames=`kubectl get clusterrolebinding -o name | grep eventstreams`
+clusterrolebindingnames=$(kubectl get clusterrolebinding -o name | grep eventstreams)
 echo "Checking subjects for each CRB"
 for crbname in $clusterrolebindingnames;
     do
         echo "Checking $crbname"
-        crbattrs=`kubectl get $crbname -o jsonpath='{.subjects[0].kind}{" "}{.subjects[0].name}{" "}{.subjects[0].namespace}{" "}{.roleRef.kind}{" "}{.roleRef.name}'`
+        crbattrs=$(kubectl get "$crbname" -o jsonpath='{.subjects[0].kind}{" "}{.subjects[0].name}{" "}{.subjects[0].namespace}{" "}{.roleRef.kind}{" "}{.roleRef.name}')
         echo "Attributes: $crbattrs"
 
-        crb=( $crbattrs )
+        crb=( "$crbattrs" )
         subjectkind=${crb[0]}
         subjectname=${crb[1]}
         subjectns=${crb[2]}
         rolerefkind=${crb[3]}
         rolerefname=${crb[4]}
 
-        if [ $subjectkind == "ServiceAccount" ] && \
-            [ $subjectname == "eventstreams-cluster-operator-namespaced" ] && \
-            [ $subjectns == $EVENTSTREAMS_OPERATOR_NAMESPACE ] && \
-            [ $rolerefkind == "ClusterRole" ] ; then
+        if [ "$subjectkind" == "ServiceAccount" ] && \
+            [ "$subjectname" == "eventstreams-cluster-operator-namespaced" ] && \
+            [ "$subjectns" == "$EVENTSTREAMS_OPERATOR_NAMESPACE" ] && \
+            [ "$rolerefkind" == "ClusterRole" ] ; then
 
             echo "Found a cluster role to use as ownerref"
 
             OWNER_APIVERSION="rbac.authorization.k8s.io/v1"
             OWNER_KIND="ClusterRole"
             OWNER_NAME=$rolerefname
-            OWNER_UID=`kubectl get clusterrole $rolerefname -o jsonpath='{.metadata.uid}'`
+            OWNER_UID=$(kubectl get clusterrole "$rolerefname" -o jsonpath='{.metadata.uid}')
 
             break
         fi
@@ -102,7 +102,7 @@ echo "---------------------------------------------------------------"
 #
 
 echo "Creating service"
-cat <<EOF | kubectl apply -n $EVENTSTREAMS_OPERATOR_NAMESPACE -f -
+cat <<EOF | kubectl apply -n "$EVENTSTREAMS_OPERATOR_NAMESPACE" -f -
 apiVersion: v1
 kind: Service
 metadata:
@@ -124,10 +124,10 @@ spec:
 EOF
 
 echo "Verifying service definition"
-kubectl get service -n $EVENTSTREAMS_OPERATOR_NAMESPACE eventstreams-cluster-operator -o yaml
+kubectl get service -n "$EVENTSTREAMS_OPERATOR_NAMESPACE" eventstreams-cluster-operator -o yaml
 
 echo "Service certificate"
-kubectl get secret -n $EVENTSTREAMS_OPERATOR_NAMESPACE eventstreams-cluster-operator --ignore-not-found -o yaml
+kubectl get secret -n "$EVENTSTREAMS_OPERATOR_NAMESPACE" eventstreams-cluster-operator --ignore-not-found -o yaml
 
 
 
@@ -142,7 +142,7 @@ echo "---------------------------------------------------------------"
 #
 
 echo "Creating config map"
-cat <<EOF | kubectl apply -n $EVENTSTREAMS_OPERATOR_NAMESPACE -f -
+cat <<EOF | kubectl apply -n "$EVENTSTREAMS_OPERATOR_NAMESPACE" -f -
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -157,7 +157,7 @@ metadata:
 EOF
 
 echo "Verifying config map definition"
-kubectl get configmap -n $EVENTSTREAMS_OPERATOR_NAMESPACE eventstreams-cluster-operator -o yaml
+kubectl get configmap -n "$EVENTSTREAMS_OPERATOR_NAMESPACE" eventstreams-cluster-operator -o yaml
 
 
 echo "Retrieving CA from configmap"
@@ -167,15 +167,15 @@ do
   echo "Waiting for OpenShift to update configmap"
   sleep 1
   echo "Querying config map"
-  cabundle=`kubectl get configmap -n $EVENTSTREAMS_OPERATOR_NAMESPACE eventstreams-cluster-operator --ignore-not-found -o jsonpath="{.data['service-ca\.crt']}"`
+  cabundle=$(kubectl get configmap -n "$EVENTSTREAMS_OPERATOR_NAMESPACE" eventstreams-cluster-operator --ignore-not-found -o jsonpath="{.data['service-ca\.crt']}")
 done
 
 echo "CA for webhook"
-kubectl get configmap -n $EVENTSTREAMS_OPERATOR_NAMESPACE eventstreams-cluster-operator -o jsonpath="{.data['service-ca\.crt']}"
+kubectl get configmap -n "$EVENTSTREAMS_OPERATOR_NAMESPACE" eventstreams-cluster-operator -o jsonpath="{.data['service-ca\.crt']}"
 echo "Base64-encoding CA"
-kubectl get configmap -n $EVENTSTREAMS_OPERATOR_NAMESPACE eventstreams-cluster-operator -o jsonpath="{.data['service-ca\.crt']}" > /tmp/service-ca.crt
-cabundle=`base64 -w0 /tmp/service-ca.crt`
-echo $cabundle
+kubectl get configmap -n "$EVENTSTREAMS_OPERATOR_NAMESPACE" eventstreams-cluster-operator -o jsonpath="{.data['service-ca\.crt']}" > /tmp/service-ca.crt
+cabundle=$(base64 -w0 /tmp/service-ca.crt)
+echo "$cabundle"
 
 
 
@@ -280,7 +280,7 @@ webhooks:
 EOF
 
 echo "Webhook config:"
-kubectl get ValidatingWebhookConfiguration validate-eventstreams-$EVENTSTREAMS_OPERATOR_NAMESPACE -o yaml
+kubectl get ValidatingWebhookConfiguration validate-eventstreams-"$EVENTSTREAMS_OPERATOR_NAMESPACE" -o yaml
 
 
 
@@ -296,12 +296,36 @@ echo "---------------------------------------------------------------"
 #   are prefixed with !
 #
 
-echo "Updating console YAML samples"
-! cat <<EOF | kubectl apply -f -
+echo "Creating ConsoleYAMLSample samples"
+
+all_samples=("eventstreams-quickstart" "eventstreams-sample-1" "eventstreams-sample-3" "eventstreams-sample-6" "eventstreams-sample-9")
+samples_to_create=()
+
+for consolesamplename in "${all_samples[@]}"
+do
+  echo "Checking $consolesamplename"
+  ! SAMPLEEXISTS=$(kubectl get ConsoleYAMLSample "$consolesamplename" --ignore-not-found)
+  if [ -n "$SAMPLEEXISTS" ]; then
+    echo "$consolesamplename exists, adding ownerReference"
+    kubectl patch ConsoleYAMLSample "$consolesamplename" --type='json' -p="[{\"op\": \"add\", \"path\": \"/metadata/ownerReferences/-\", \"value\":{\"apiVersion\": \"$OWNER_APIVERSION\", \"kind\": \"$OWNER_KIND\", \"name\": \"$OWNER_NAME\", \"uid\": $OWNER_UID}}]"
+  else
+    echo "$consolesamplename does not exist, adding to list to create"
+    samples_to_create+=("$consolesamplename")
+  fi
+done
+
+echo "Creating missing ConsoleYAMLSamples"
+
+for consolesamplecreatename in "${samples_to_create[@]}"
+do
+  case $consolesamplecreatename in
+    "eventstreams-quickstart")
+      echo "Creating the quickstart sample"
+      ! cat <<EOF | kubectl apply -f -
 apiVersion: console.openshift.io/v1
 kind: ConsoleYAMLSample
 metadata:
-  name: eventstreams-quickstart-$EVENTSTREAMS_OPERATOR_NAMESPACE
+  name: eventstreams-quickstart
   ownerReferences:
   - apiVersion: $OWNER_APIVERSION
     kind: $OWNER_KIND
@@ -354,11 +378,15 @@ spec:
                 storage:
                     type: ephemeral
                 metrics: {}
----
+EOF
+      ;;
+    "eventstreams-sample-1")
+      echo "Creating the one-broker sample"
+      ! cat <<EOF | kubectl apply -f -
 apiVersion: console.openshift.io/v1
 kind: ConsoleYAMLSample
 metadata:
-  name: eventstreams-sample-1-$EVENTSTREAMS_OPERATOR_NAMESPACE
+  name: eventstreams-sample-1
   ownerReferences:
   - apiVersion: $OWNER_APIVERSION
     kind: $OWNER_KIND
@@ -370,7 +398,7 @@ spec:
   targetResource:
     apiVersion: eventstreams.ibm.com/v1beta1
     kind: EventStreams
-  title: 1 Broker
+  title: 1 Kafka Broker
   yaml: |
     apiVersion: eventstreams.ibm.com/v1beta1
     kind: EventStreams
@@ -413,11 +441,15 @@ spec:
                 storage:
                     type: ephemeral
                 metrics: {}
----
+EOF
+      ;;
+    "eventstreams-sample-3")
+      echo "Creating the three-brokers sample"
+      ! cat <<EOF | kubectl apply -f -
 apiVersion: console.openshift.io/v1
 kind: ConsoleYAMLSample
 metadata:
-  name: eventstreams-sample-3-$EVENTSTREAMS_OPERATOR_NAMESPACE
+  name: eventstreams-sample-3
   ownerReferences:
   - apiVersion: $OWNER_APIVERSION
     kind: $OWNER_KIND
@@ -429,7 +461,7 @@ spec:
   targetResource:
     apiVersion: eventstreams.ibm.com/v1beta1
     kind: EventStreams
-  title: 3 brokers
+  title: 3 Kafka brokers
   yaml: |
     apiVersion: eventstreams.ibm.com/v1beta1
     kind: EventStreams
@@ -484,11 +516,15 @@ spec:
                 storage:
                     type: ephemeral
                 metrics: {}
----
+EOF
+      ;;
+    "eventstreams-sample-6")
+      echo "Creating the six-brokers sample"
+      ! cat <<EOF | kubectl apply -f -
 apiVersion: console.openshift.io/v1
 kind: ConsoleYAMLSample
 metadata:
-  name: eventstreams-sample-6-$EVENTSTREAMS_OPERATOR_NAMESPACE
+  name: eventstreams-sample-6
   ownerReferences:
   - apiVersion: $OWNER_APIVERSION
     kind: $OWNER_KIND
@@ -500,7 +536,7 @@ spec:
   targetResource:
     apiVersion: eventstreams.ibm.com/v1beta1
     kind: EventStreams
-  title: 6 brokers
+  title: 6 Kafka brokers
   yaml: |
     apiVersion: eventstreams.ibm.com/v1beta1
     kind: EventStreams
@@ -555,11 +591,15 @@ spec:
                 storage:
                     type: ephemeral
                 metrics: {}
----
+EOF
+      ;;
+    "eventstreams-sample-9")
+      echo "Creating the nine-brokers sample"
+      ! cat <<EOF | kubectl apply -f -
 apiVersion: console.openshift.io/v1
 kind: ConsoleYAMLSample
 metadata:
-  name: eventstreams-sample-9-$EVENTSTREAMS_OPERATOR_NAMESPACE
+  name: eventstreams-sample-9
   ownerReferences:
   - apiVersion: $OWNER_APIVERSION
     kind: $OWNER_KIND
@@ -571,7 +611,7 @@ spec:
   targetResource:
     apiVersion: eventstreams.ibm.com/v1beta1
     kind: EventStreams
-  title: 9 brokers
+  title: 9 Kafka brokers
   yaml: |
     apiVersion: eventstreams.ibm.com/v1beta1
     kind: EventStreams
@@ -627,13 +667,16 @@ spec:
                     type: ephemeral
                 metrics: {}
 EOF
+      ;;
+  esac
+done
 
-echo "Console YAML samples:"
-! kubectl get ConsoleYAMLSample eventstreams-quickstart-$EVENTSTREAMS_OPERATOR_NAMESPACE -o yaml
-! kubectl get ConsoleYAMLSample eventstreams-sample-1-$EVENTSTREAMS_OPERATOR_NAMESPACE -o yaml
-! kubectl get ConsoleYAMLSample eventstreams-sample-3-$EVENTSTREAMS_OPERATOR_NAMESPACE -o yaml
-! kubectl get ConsoleYAMLSample eventstreams-sample-6-$EVENTSTREAMS_OPERATOR_NAMESPACE -o yaml
-! kubectl get ConsoleYAMLSample eventstreams-sample-9-$EVENTSTREAMS_OPERATOR_NAMESPACE -o yaml
+echo "Verifying Console YAML samples:"
+! kubectl get ConsoleYAMLSample eventstreams-quickstart -o yaml
+! kubectl get ConsoleYAMLSample eventstreams-sample-1 -o yaml
+! kubectl get ConsoleYAMLSample eventstreams-sample-3 -o yaml
+! kubectl get ConsoleYAMLSample eventstreams-sample-6 -o yaml
+! kubectl get ConsoleYAMLSample eventstreams-sample-9 -o yaml
 
 
 echo "---------------------------------------------------------------"
