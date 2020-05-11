@@ -18,7 +18,7 @@ overrides:
   # TODO validate if this is true and if so for how long.
   - rule: "NoAlphaAnnotations"
     message: '^\[ERROR\] scanned-service-\w+-my-es-(kafka-brokers|zookeeper-nodes)\.yaml:.*'
-    reason: "Back-level versions of kubernetes need supporting by Strimzi"
+    reason: "Annotations used for older versions of kubernetes that need supporting by Open Source Strimzi - EventStreams does not use these annotations"
 
   - rule: "PodHasArchBasedNodeAffinity"
     reason: "Implementing fat manifests, this no longer applies"
