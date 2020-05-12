@@ -344,7 +344,7 @@ public class AdminUIModel extends AbstractModel {
         envVarDefaults.add(new EnvVarBuilder().withName("REDIS_HOST").withValue("127.0.0.1").build());
 
         envVarDefaults.add(new EnvVarBuilder().withName("CLUSTER_NAME").withValue(Main.CLUSTER_NAME).build());
-        envVarDefaults.add(new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue("true").build());
+        envVarDefaults.add(new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue(Boolean.toString(ReplicatorModel.isValidInstanceForGeoReplication(instance))).build());
         envVarDefaults.add(new EnvVarBuilder().withName("SCHEMA_REGISTRY_ENABLED").withValue(Boolean.toString(SchemaRegistryModel.isSchemaRegistryEnabled(instance))).build());
         envVarDefaults.add(new EnvVarBuilder().withName("SCHEMA_REGISTRY_URL").withValue(schemaRegistryService).build());
         externalRestProducerRoute.ifPresent(route -> envVarDefaults.add(new EnvVarBuilder().withName("EXTERNAL_REST_PRODUCER_URL").withValue(route).build()));

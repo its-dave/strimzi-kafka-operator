@@ -143,6 +143,29 @@ public class AdminUIModelTest {
                 .endSpec();
     }
 
+    private EventStreamsBuilder createEventStreamsWithAuthenticatedExternalAccess() {
+        return ModelUtils.createEventStreamsWithAuthentication(instanceName)
+            .withMetadata(new ObjectMetaBuilder()
+                .withNewName(instanceName)
+                .withNewNamespace(namespace)
+                .build())
+            .editSpec()
+                .withNewAdminUI()
+                    .withReplicas(defaultReplicas)
+                .endAdminUI()
+                .withStrimziOverrides(new KafkaSpecBuilder()
+                    .withNewKafka()
+                        .withNewListeners()
+                            .withNewKafkaListenerExternalRoute()
+                                .withNewKafkaListenerAuthenticationTlsAuth()
+                                .endKafkaListenerAuthenticationTlsAuth()
+                            .endKafkaListenerExternalRoute()
+                        .endListeners()
+                    .endKafka()
+                    .build())
+            .endSpec();
+    }
+
     private AdminUIModel createDefaultAdminUIModel() {
         EventStreams instance = createDefaultEventStreams().build();
         return new AdminUIModel(instance, imageConfig, false, null);
@@ -156,6 +179,11 @@ public class AdminUIModelTest {
     private AdminUIModel createAdminUIModelWithAuth() {
         EventStreams instance = createEventStreamsWithAuthentication().build();
         return new AdminUIModel(instance, imageConfig, false, null);
+    }
+
+    private AdminUIModel createAdminUIModelWithExternalAuth() {
+        EventStreams instance = createEventStreamsWithAuthenticatedExternalAccess().build();
+        return new AdminUIModel(instance, imageConfig, true, null);
     }
 
     private AdminUIModel createAdminUIModelWithICPCM(Map<String, String> configMap) {
@@ -205,7 +233,7 @@ public class AdminUIModelTest {
                 new EnvVarBuilder().withName("ESFF_SECURITY_AUTHZ").withValue("false").build(),
                 new EnvVarBuilder().withName("ICP_USER_MGMT_IP").withValue("icp-management-ingress.kube-system").build(),
                 new EnvVarBuilder().withName("ICP_USER_MGMT_PORT").withValue("443").build(),
-                new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue("true").build(),
+                new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue("false").build(),
                 new EnvVarBuilder().withName("SCHEMA_REGISTRY_URL").withValue(schemaRegistryService).build(),
                 new EnvVarBuilder().withName("EXTERNAL_REST_PRODUCER_URL").withValue("https://" + restProducerHost).build(),
                 new EnvVarBuilder().withName("EXTERNAL_SCHEMA_REGISTRY_URL").withValue("https://" + schemaRegistryHost).build(),
@@ -272,10 +300,65 @@ public class AdminUIModelTest {
                 new EnvVarBuilder().withName("ESFF_SECURITY_AUTHZ").withValue("true").build(),
                 new EnvVarBuilder().withName("ICP_USER_MGMT_IP").withValue("icp-management-ingress.kube-system").build(),
                 new EnvVarBuilder().withName("ICP_USER_MGMT_PORT").withValue("443").build(),
-                new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue("true").build(),
+                new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue("false").build(),
                 new EnvVarBuilder().withName("SCHEMA_REGISTRY_URL").withValue(schemaRegistryService).build(),
                 new EnvVarBuilder().withName(AbstractModel.TLS_VERSION_ENV_KEY).withValue("TLSv1.2").build(),
                 new EnvVarBuilder().withName("ICP_USER_MGMT_HIGHEST_ROLE_FOR_CRN").withValue("idmgmt/identity/api/v1/teams/highestRole").build()));
+
+        Service userInterfaceService = adminUIModel.getService();
+        assertThat(userInterfaceService.getMetadata().getName(), startsWith(componentPrefix));
+
+        Route userInterfaceRoute = adminUIModel.getRoute();
+        assertThat(userInterfaceRoute.getMetadata().getName(), startsWith(componentPrefix));
+    }
+
+
+    @Test
+    public void testExternalAuthAdminUIModelEnvVars() {
+        AdminUIModel adminUIModel = createAdminUIModelWithExternalAuth();
+
+        Deployment userInterfaceDeployment = adminUIModel.getDeployment();
+        assertThat(userInterfaceDeployment.getMetadata().getName(), startsWith(componentPrefix));
+        assertThat(userInterfaceDeployment.getSpec().getReplicas(), is(defaultReplicas));
+
+        final ObjectMeta uiPodMetadata = userInterfaceDeployment.getSpec().getTemplate().getMetadata();
+        final PodSpec uiPodSpec = userInterfaceDeployment.getSpec().getTemplate().getSpec();
+        final List<Container> uiContainers = uiPodSpec.getContainers();
+
+        final RoleBinding createdRoleBinding = adminUIModel.getRoleBinding();
+
+        assertThat(createdRoleBinding.getSubjects(), hasSize(1));
+        assertThat(createdRoleBinding.getMetadata().getName(), is(componentPrefix));
+
+        final Subject createdSubject = createdRoleBinding.getSubjects().get(0);
+        assertThat(createdSubject.getKind(), is("ServiceAccount"));
+        assertThat(createdSubject.getName(), is(componentPrefix));
+        assertThat(createdSubject.getNamespace(), is(namespace));
+
+        final RoleRef createdRoleRef = createdRoleBinding.getRoleRef();
+        assertThat(createdRoleRef.getKind(), is("ClusterRole"));
+        assertThat(createdRoleRef.getName(), is("eventstreams-ui-clusterrole"));
+        assertThat(createdRoleRef.getApiGroup(), is("rbac.authorization.k8s.io"));
+
+        // confirm Kubernetes name and instance labels present, so the UI can discover it for status
+        assertThat(uiPodMetadata.getLabels(), hasEntry(Labels.KUBERNETES_NAME_LABEL, "admin-ui"));
+        assertThat(uiPodMetadata.getLabels(), hasEntry(Labels.KUBERNETES_INSTANCE_LABEL, instanceName));
+
+        // confirm ui container has required envars
+        String adminApiService = "https://" + instanceName + "-" + AbstractModel.APP_NAME + "-" + AdminApiModel.COMPONENT_NAME + "-" + INTERNAL_SERVICE_SUFFIX + "." +  namespace + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.DEFAULT_P2P_TLS_PORT;
+        String schemaRegistryService = "https://" + instanceName + "-" + AbstractModel.APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME + "-" + INTERNAL_SERVICE_SUFFIX + "." +  namespace + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.DEFAULT_P2P_TLS_PORT;
+
+        assertThat(uiContainers.get(0).getEnv(), hasItems(
+            new EnvVarBuilder().withName("ID").withValue(instanceName).build(),
+            new EnvVarBuilder().withName("API_URL").withValue(adminApiService).build(),
+            new EnvVarBuilder().withName("ESFF_SECURITY_AUTH").withValue("true").build(),
+            new EnvVarBuilder().withName("ESFF_SECURITY_AUTHZ").withValue("true").build(),
+            new EnvVarBuilder().withName("ICP_USER_MGMT_IP").withValue("icp-management-ingress.kube-system").build(),
+            new EnvVarBuilder().withName("ICP_USER_MGMT_PORT").withValue("443").build(),
+            new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue("true").build(),
+            new EnvVarBuilder().withName("SCHEMA_REGISTRY_URL").withValue(schemaRegistryService).build(),
+            new EnvVarBuilder().withName(AbstractModel.TLS_VERSION_ENV_KEY).withValue("TLSv1.2").build(),
+            new EnvVarBuilder().withName("ICP_USER_MGMT_HIGHEST_ROLE_FOR_CRN").withValue("idmgmt/identity/api/v1/teams/highestRole").build()));
 
         Service userInterfaceService = adminUIModel.getService();
         assertThat(userInterfaceService.getMetadata().getName(), startsWith(componentPrefix));

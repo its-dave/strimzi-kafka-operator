@@ -1023,11 +1023,10 @@ public abstract class AbstractModel {
             .orElse(DEFAULT_TLS_VERSION.toValue());
     }
 
-    // Checks whether the presented KafkaListenerAuthentication is one of the supported authentication types of the replicator
+    // Checks whether the presented KafkaListenerAuthentication is one of the supported authentication types
     protected static boolean isSupportedAuthType(KafkaListenerAuthentication auth) {
         return auth instanceof KafkaListenerAuthenticationTls ||
                 auth instanceof KafkaListenerAuthenticationScramSha512;
-
     }
 
     protected KafkaUser createKafkaUser(List<AclRule> aclList, String kafkaUserName, KafkaListenerAuthentication kafkaAuth) {
@@ -1044,22 +1043,4 @@ public abstract class AbstractModel {
 
         return createKafkaUser(kafkaUserName, kafkaUserSpec.build());
     }
-
-
-    public static boolean isValidReplicatorInstance(EventStreams instance) {
-        boolean validInstance = true;
-
-        KafkaListenerAuthentication internalClientAuth = ReplicatorModel.getInternalTlsKafkaListenerAuthentication(instance);
-        if (internalClientAuth != null && !isSupportedAuthType(internalClientAuth)) {
-            validInstance = false;
-        }
-
-        KafkaListenerAuthentication externalClientAuth = ReplicatorModel.getExternalKafkaListenerAuthentication(instance);
-        if (externalClientAuth != null && !isSupportedAuthType(externalClientAuth)) {
-            validInstance = false;
-        }
-
-        return validInstance;
-    }
-
 }

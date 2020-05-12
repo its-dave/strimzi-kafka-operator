@@ -542,7 +542,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         Future<ReconciliationState> hasEventStreamsReplicator() {
             log.traceEntry();
             return log.traceExit(replicatorResourceOperator.getAsync(namespace, instance.getMetadata().getName()).compose(replicator -> {
-                isGeoReplicationEnabled = ReplicatorModel.isReplicatorEnabled(replicator);
+                isGeoReplicationEnabled = ReplicatorModel.isReplicatorEnabled(replicator) && ReplicatorModel.isValidInstanceForGeoReplication(instance);
                 return Future.succeededFuture(this);
             }));
         }
