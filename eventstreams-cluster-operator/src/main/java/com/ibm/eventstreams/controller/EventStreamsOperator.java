@@ -262,12 +262,6 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             log.traceEntry();
             String phase = Optional.ofNullable(status.getPhase()).orElse("Pending");
 
-            // fail straight away if the CR previously had errored conditions
-            if (previousConditions.stream().anyMatch(c -> "Errored".equals(c.getReason()))) {
-                log.error("CR has previously had errored conditions");
-                return log.traceExit(Future.failedFuture("Error"));
-            }
-
             boolean isValidCR = true;
 
             if (LicenseValidation.shouldReject(instance)) {
