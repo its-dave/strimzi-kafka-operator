@@ -30,6 +30,18 @@ nodeSelector: {}
 
 imagePullSecrets: ibm-entitlement-key
 
+operatorIndex:
+  image:
+    repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
+    name: operator-index
+    tag: latest
+    
+operatorBundle:
+    image:
+      repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
+      name: operator-bundle
+      tag: latest
+
 operator:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com

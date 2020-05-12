@@ -346,7 +346,7 @@ metadata:
     categories: Streaming & Messaging
     certified: 'false'
     containerImage: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-operator-icp-linux:latest
-    createdAt: 2020-05-12T09:40:54Z
+    createdAt: 2020-05-12T11:54:42Z
     description: Kafka-based messaging platform for handling real-time data feeds.
     operators.operatorframework.io/internal-objects: '["kafkas.eventstreams.ibm.com","kafkamirrormaker2s.eventstreams.ibm.com"]'
     repository: https://github.ibm.com/mhub/qp-eventstreams-operator
@@ -1353,6 +1353,10 @@ spec:
       name: ibm-eventstreams
   version: 2.0.0
   relatedImages:
+  - name: operator-index-latest
+    image: cp.icr.io/cp/icp4i/es/operator-index-latest@sha256:4097889236A2AF26C293033FEB964C4CF118C0224E0D063FEC0A89E9D0569EF2
+  - name: operator-bundle-latest
+    image: cp.icr.io/cp/icp4i/es/operator-bundle-latest@sha256:4097889236A2AF26C293033FEB964C4CF118C0224E0D063FEC0A89E9D0569EF2
   - name: strimzi-operator-latest
     image: cp.icr.io/cp/icp4i/es/strimzi-operator-latest@sha256:4097889236A2AF26C293033FEB964C4CF118C0224E0D063FEC0A89E9D0569EF2
   - name: strimzi-operator-init-latest

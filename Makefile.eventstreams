@@ -8,6 +8,10 @@ B_REGISTRY ?= hyc-qp-stable-docker-local.artifactory.swg-devops.com
 B_PLATFORM ?= icp
 B_OS ?= linux
 B_ARCH ?= amd64
+TAG ?= latest
+
+VALUES_YAML_FILE="eventstreams-helm-charts/ibm-eventstreams-operator/values.yaml"
+BACKUP_VALUES_YAML_FILE="eventstreams-helm-charts/ibm-eventstreams-operator/values_backup.yaml"
 
 export DOCKER_BUILD_ARGS := ${DOCKER_BUILD_ARGS}\
     --build-arg JAVA_IMAGE_TAG_UBI7_OPENJDK8_JRE=${JAVA_IMAGE_TAG_UBI7_OPENJDK8_JRE}\
@@ -47,6 +51,42 @@ eventstreams_operator_build: check_artifactory_prereq set_eventstreams_kafka_ver
 
 eventstreams_java_build:
 	$(MAKE) -C ${EVENTSTREAMS_PROJECT_NAME} java_build
+
+eventstreams_operator_index: check_artifactory_prereq set_eventstreams_kafka_versions eventstreams_entitled_registry_values_yaml
+	$(MAKE) -C eventstreams-helm-charts docker_build
+	$(MAKE) -C deploy build_bundle
+	$(MAKE) cleanup_eventstreams_unwanted_files
+
+eventstreams_entitled_registry_values_yaml:
+	# build the operator index with references to the correct image locations
+
+	# make copy first
+	$(CP) ${VALUES_YAML_FILE} ${BACKUP_VALUES_YAML_FILE}
+	# replace repository
+	$(SED) -i -e "s|hyc-qp-stable-docker-local.artifactory.swg-devops.com|cp.stg.icr.io|g" ${VALUES_YAML_FILE}
+
+	# replace image names
+	$(SED) -i -e "s|operator-bundle|cp/ibm-eventstreams-operator-bundle|g" ${VALUES_YAML_FILE}
+	$(SED) -i -e "s|operator-index|cp/ibm-eventstreams-catalog|g" ${VALUES_YAML_FILE}
+	$(SED) -i -e "s|strimzi/operator|cp/ibm-eventstreams-operator|g" ${VALUES_YAML_FILE}
+	$(SED) -i -e "s|strimzi/operator-init|cp/ibm-eventstreams-operator-init|g" ${VALUES_YAML_FILE}
+	$(SED) -i -e "s|eventstreams-rest-producer-v2-icp-linux|cp/ibm-eventstreams-rest-producer|g" ${VALUES_YAML_FILE}
+	$(SED) -i -e "s|eventstreams-admin-icp-linux|cp/ibm-eventstreams-admin|g" ${VALUES_YAML_FILE}
+	$(SED) -i -e "s|eventstreams-schema-registry-icp-linux|cp/ibm-eventstreams-schema-registry|g" ${VALUES_YAML_FILE}
+	$(SED) -i -e "s|eventstreams-schema-registry-avro-icp-linux|cp/ibm-eventstreams-schema-registry-avro|g" ${VALUES_YAML_FILE}
+	$(SED) -i -e "s|eventstreams-schema-proxy-icp-linux|cp/ibm-eventstreams-schema-proxy|g" ${VALUES_YAML_FILE}
+	$(SED) -i -e "s|eventstreams-admin-ui-icp-linux|cp/ibm-eventstreams-admin-ui|g" ${VALUES_YAML_FILE}
+	$(SED) -i -e "s|eventstreams-session-store-icp-linux|cp/ibm-eventstreams-session-store|g" ${VALUES_YAML_FILE}
+	$(SED) -i -e "s|eventstreams-metrics-collector-icp-linux|cp/ibm-eventstreams-metrics-collector|g" ${VALUES_YAML_FILE}
+	$(SED) -i -e "s|strimzi/kafka|cp/ibm-eventstreams-kafka|g" ${VALUES_YAML_FILE}
+	$(SED) -i -e "s|strimzi/jmxtrans|cp/ibm-eventstreams-jmxtrans|g" ${VALUES_YAML_FILE}
+
+	# replace latest with tag
+	$(SED) -i -e "s|latest|${TAG}|g" ${VALUES_YAML_FILE}
+
+#	yq w -i ${VALUES_YAML_FILE} operatorIndex.image.repository "dockerhub.io"
+#	yq w -i ${VALUES_YAML_FILE} operator.image.repository "dockerhub.io"
+#	yq w -i ${VALUES_YAML_FILE} operatorInit.image.repository "dockerhub.io"
 
 cleanup_eventstreams_unwanted_files: 
 	# cleanup unwanted files
