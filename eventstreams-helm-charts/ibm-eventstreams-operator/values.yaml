@@ -83,7 +83,7 @@ adminUi:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: eventstreams-admin-ui-icp-linux
-    tag: 2020-05-01-14.45.21-4ffc2c8-dev
+    tag: 2020-05-12-08.39.44-22e4a9c-dev
 adminUiDatabase:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
