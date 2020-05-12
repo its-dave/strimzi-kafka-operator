@@ -79,6 +79,7 @@ import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
 import io.fabric8.openshift.api.model.Route;
 import io.fabric8.openshift.api.model.RouteBuilder;
+import io.fabric8.openshift.api.model.RouteSpec;
 import io.fabric8.openshift.client.OpenShiftClient;
 import io.strimzi.api.kafka.KafkaList;
 import io.strimzi.api.kafka.KafkaUserList;
@@ -3033,9 +3034,14 @@ public class EventStreamsOperatorTest {
             if (desiredRoute != null) {
                 // Create a new route with a host
                 // This mocks what would happen when a route is applied to OpenShift
+                // If the RouteSpec has a custom host, then we will use that custom host or else we will
+                // generate the default Openshift route.
                 Route routeWithHost = new RouteBuilder(desiredRoute)
                         .editOrNewSpec()
-                            .withNewHost(formatRouteHost(name))
+                            .withNewHost(Optional.ofNullable(desiredRoute)
+                                        .map(Route::getSpec)
+                                        .map(RouteSpec::getHost)
+                                        .orElse(formatRouteHost(name)))
                         .endSpec()
                         .build();
                 deployRouteInMockClient(routeWithHost);
@@ -3072,6 +3078,47 @@ public class EventStreamsOperatorTest {
         cp4iResourceOperator = mock(Cp4iServicesBindingResourceOperator.class);
 
         return cp4iResourceOperator;
+    }
+
+    @Test
+    public void testCustomRouteDomainCreatedWhenConfigured(VertxTestContext context) {
+        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
+        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+
+        String adminUIHost = "test-it.com";
+        EndpointSpec customHostSpec = new EndpointSpecBuilder()
+            .withName("custom-host")
+            .withContainerPort(9999)
+            .withTlsVersion(TlsVersion.TLS_V1_2)
+            .withType(EndpointServiceType.ROUTE)
+            .withHost("get-it.com")
+            .build();
+
+        String adminApiName = String.format("%s-ibm-es-%s-%s", CLUSTER_NAME, AdminApiModel.COMPONENT_NAME, customHostSpec.getName());
+        String adminUIName = String.format("%s-ibm-es-%s", CLUSTER_NAME, AdminUIModel.COMPONENT_NAME);
+
+        EventStreams instance = new EventStreamsBuilder(createDefaultEventStreams(NAMESPACE, CLUSTER_NAME))
+            .editSpec()
+                .withNewAdminApi()
+                    .withEndpoints(customHostSpec)
+                .endAdminApi()
+                .withNewAdminUI()
+                    .withNewHost(adminUIHost)
+                .endAdminUI()
+            .endSpec()
+            .build();
+
+        Checkpoint async = context.checkpoint();
+
+        esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), instance)
+            .onComplete(context.succeeding(v -> context.verify(() -> {
+                Route adminApiRoute = routeOperator.get(NAMESPACE,  adminApiName);
+                assertThat(adminApiRoute.getSpec().getHost(), is(customHostSpec.getHost()));
+
+                Route adminUiRoute = routeOperator.get(NAMESPACE, adminUIName);
+                assertThat(adminUiRoute.getSpec().getHost(), is(adminUIHost));
+                async.flag();
+            })));
     }
 
     @Test

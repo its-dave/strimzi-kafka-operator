@@ -799,7 +799,7 @@ public abstract class AbstractModel {
      * @param additionalLabels map of security labels
      * @return a configured Route
      */
-    protected Route createRoute(String name, String serviceName, int port, TLSConfig tlsConfig, Map<String, String> additionalLabels) {
+    protected Route createRoute(String name, Optional<String> host, String serviceName, int port, TLSConfig tlsConfig, Map<String, String> additionalLabels) {
         Labels labels = labels();
 
         RouteBuilder route = new RouteBuilder()
@@ -829,6 +829,9 @@ public abstract class AbstractModel {
                 .endSpec();
         }
 
+        host.ifPresent(s -> route.editSpec()
+                                .withNewHost(s)
+                                .endSpec());
         return route.build();
     }
 

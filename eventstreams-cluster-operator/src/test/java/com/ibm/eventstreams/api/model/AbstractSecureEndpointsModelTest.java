@@ -622,7 +622,7 @@ public class AbstractSecureEndpointsModelTest {
 
         assertThat(routes.size(), is(1));
 
-        assertThat(routes.get(String.format("%s-ibm-es-%s-%s", instanceName, ComponentModel.COMPONENT_NAME, Endpoint.DEFAULT_EXTERNAL_NAME)), is(notNullValue()));
+        assertThat(routes.get(getRouteName(Endpoint.DEFAULT_EXTERNAL_NAME)), is(notNullValue()));
     }
 
     @Test
@@ -645,10 +645,33 @@ public class AbstractSecureEndpointsModelTest {
 
         assertThat(routes.size(), is(3));
 
-        assertThat(routes.get(String.format("%s-ibm-es-%s-%s", instanceName, ComponentModel.COMPONENT_NAME, basicEndpointSpec.getName())), is(notNullValue()));
-        assertThat(routes.get(String.format("%s-ibm-es-%s-%s", instanceName, ComponentModel.COMPONENT_NAME, longNameRouteSpec.getName())), is(notNullValue()));
-        assertThat(routes.get(String.format("%s-ibm-es-%s-%s", instanceName, ComponentModel.COMPONENT_NAME, basicPlainEndpointSpec.getName())), is(notNullValue()));
-        assertThat(routes.get(String.format("%s-ibm-es-%s-%s", instanceName, ComponentModel.COMPONENT_NAME, configuredEndpointsSpec.getName())), is(nullValue()));
+        assertThat(routes.get(getRouteName(basicEndpointSpec.getName())), is(notNullValue()));
+        assertThat(routes.get(getRouteName(longNameRouteSpec.getName())), is(notNullValue()));
+        assertThat(routes.get(getRouteName(basicPlainEndpointSpec.getName())), is(notNullValue()));
+        assertThat(routes.get(getRouteName(configuredEndpointsSpec.getName())), is(nullValue()));
+    }
+
+    @Test
+    public void testCreationOfRouteWithCustomHost() {
+        EventStreams instance = ModelUtils.createDefaultEventStreams(instanceName).build();
+
+        EndpointSpec customRouteHostSpec = new EndpointSpecBuilder()
+            .withName("host")
+            .withContainerPort(343)
+            .withTlsVersion(TlsVersion.TLS_V1_2)
+            .withHost("you-shall-pass.com")
+            .build();
+
+        SecurityComponentSpec securityComponentSpec = new SecurityComponentSpecBuilder()
+            .withEndpoints(customRouteHostSpec)
+            .build();
+
+        ComponentModel model = new ComponentModel(instance, securityComponentSpec);
+
+        Map<String, Route> routes = model.createRoutesFromEndpoints();
+
+        assertThat(routes.size(), is(1));
+        assertThat(routes.get(getRouteName(customRouteHostSpec.getName())).getSpec().getHost(), is(customRouteHostSpec.getHost()));
     }
 
     @Test
@@ -794,6 +817,10 @@ public class AbstractSecureEndpointsModelTest {
             assertThat(route.getMetadata().getLabels(), hasEntry(AbstractModel.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + "RUNAS-ANONYMOUS", "true"));
             assertThat(route.getMetadata().getLabels(), hasEntry(AbstractModel.EVENTSTREAMS_PROTOCOL_LABEL, "http"));
         });
+    }
+
+    private String getRouteName(String endpointName) {
+        return String.format("%s-ibm-es-%s-%s", instanceName, ComponentModel.COMPONENT_NAME, endpointName);
     }
 
 }

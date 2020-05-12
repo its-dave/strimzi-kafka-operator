@@ -304,6 +304,7 @@ public class CollectorModel extends AbstractSecureEndpointsModel {
                     METRICS_PORT,
                     TlsVersion.NONE,
                     EndpointServiceType.INTERNAL,
+                    Endpoint.DEFAULT_HOST_ADDRESS,
                     null,
                     Collections.emptyList(),
                     Collections.emptyList()));

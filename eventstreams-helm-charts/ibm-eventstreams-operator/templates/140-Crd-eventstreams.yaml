@@ -108,6 +108,11 @@ spec:
                         - NONE
                         description: Defines which TLS version or no TLS version if
                           that will be used for the endpoint.
+                      host:
+                        type: string
+                        description: Defines the DNS name that the route will be created
+                          with for a user to connect on. If nothing is specified,
+                          then a route will be generated for you.
                       certOverrides:
                         type: object
                         properties:
@@ -690,6 +695,11 @@ spec:
                         this component.
                   description: Configuration options for the redis container used
                     to store UI login sessions.
+                host:
+                  type: string
+                  description: Defines the DNS name that the route will be created
+                    with for a user to connect on. If nothing is specified, then a
+                    route will be generated for you.
                 envVars:
                   type: array
                   items:
@@ -1609,6 +1619,11 @@ spec:
                         - NONE
                         description: Defines which TLS version or no TLS version if
                           that will be used for the endpoint.
+                      host:
+                        type: string
+                        description: Defines the DNS name that the route will be created
+                          with for a user to connect on. If nothing is specified,
+                          then a route will be generated for you.
                       certOverrides:
                         type: object
                         properties:
@@ -2451,6 +2466,11 @@ spec:
                         - NONE
                         description: Defines which TLS version or no TLS version if
                           that will be used for the endpoint.
+                      host:
+                        type: string
+                        description: Defines the DNS name that the route will be created
+                          with for a user to connect on. If nothing is specified,
+                          then a route will be generated for you.
                       certOverrides:
                         type: object
                         properties:

@@ -14,6 +14,7 @@ package com.ibm.eventstreams.rest;
 
 import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.EndpointServiceType;
+import com.ibm.eventstreams.api.spec.AdminUISpec;
 import com.ibm.eventstreams.api.spec.EndpointSpec;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
@@ -32,8 +33,10 @@ import org.apache.logging.log4j.Logger;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 
 
@@ -46,8 +49,11 @@ public class EndpointValidation extends AbstractValidation {
     public static final String SCHEMA_REGISTRY_SPEC_NAME = "schemaRegistry";
     public static final String FAILURE_REASON = "InvalidEndpoints";
     public static final int ENDPOINT_NAME_MAX_LENGTH = 16;
+    public static final int ROUTE_HOST_NAME_MAX_LENGTH = 64;
     private static final String VALID_NAME_REGEX = "^[a-z][-a-z0-9]*$";
     private static final Pattern VALID_NAME_PATTERN = Pattern.compile(VALID_NAME_REGEX);
+    private static final String VALID_HOST_REGEX = "^[a-z][-a-z0-9.]*$";
+    private static final Pattern VALID_HOST_PATTERN = Pattern.compile(VALID_HOST_REGEX);
 
     public static void rejectInvalidEndpoint(RoutingContext routingContext) {
 
@@ -66,6 +72,7 @@ public class EndpointValidation extends AbstractValidation {
         Optional<List<EndpointSpec>> adminApiEndpoints = Optional.ofNullable(instance.getSpec()).map(EventStreamsSpec::getAdminApi).map(SecurityComponentSpec::getEndpoints);
         Optional<List<EndpointSpec>> restProdEndpoints = Optional.ofNullable(instance.getSpec()).map(EventStreamsSpec::getRestProducer).map(SecurityComponentSpec::getEndpoints);
         Optional<List<EndpointSpec>> schemaRegistryEndpoints = Optional.ofNullable(instance.getSpec()).map(EventStreamsSpec::getSchemaRegistry).map(SchemaRegistrySpec::getEndpoints);
+        Optional<String> adminUiHost = Optional.ofNullable(instance.getSpec()).map(EventStreamsSpec::getAdminUI).map(AdminUISpec::getHost);
         Optional<KafkaListeners> listeners = Optional.ofNullable(instance.getSpec()).map(EventStreamsSpec::getStrimziOverrides).map(KafkaSpec::getKafka).map(KafkaClusterSpec::getListeners);
         ValidationResponsePayload outcome = new ValidationResponsePayload(null);
         if (adminApiEndpoints.isPresent()) {
@@ -90,6 +97,8 @@ public class EndpointValidation extends AbstractValidation {
             checkUniquePorts(outcome, SCHEMA_REGISTRY_SPEC_NAME, schemaRegistryEndpoints.get());
             checkValidTypes(outcome, SCHEMA_REGISTRY_SPEC_NAME, schemaRegistryEndpoints.get());
         }
+        checkHasUniqueHosts(outcome, adminApiEndpoints, restProdEndpoints, schemaRegistryEndpoints, adminUiHost);
+        checkValidHostNames(outcome, adminApiEndpoints, restProdEndpoints, schemaRegistryEndpoints, adminUiHost);
         checkKafkaListenersValidTypes(outcome, listeners);
         return outcome;
     }
@@ -99,6 +108,77 @@ public class EndpointValidation extends AbstractValidation {
         if (listeners.map(KafkaListeners::getExternal).map(KafkaListenerExternal::getType).isPresent() &&  !listeners.map(KafkaListeners::getExternal).map(KafkaListenerExternal::getType).get().equals("route")) {
             outcome.setResponse(invalidKafkaListenerResponse("external"));
         }
+    }
+
+    private static void checkValidHostNames(ValidationResponsePayload outcome, Optional<List<EndpointSpec>> adminApiEndpoints, Optional<List<EndpointSpec>> restProducerEndpoints, Optional<List<EndpointSpec>> schemaRegistryEndpoints, Optional<String> adminUiHost) {
+        checkEndpointSpecsHasValidHosts(outcome, adminApiEndpoints);
+        checkEndpointSpecsHasValidHosts(outcome, restProducerEndpoints);
+        checkEndpointSpecsHasValidHosts(outcome, schemaRegistryEndpoints);
+        adminUiHost.ifPresent(host -> checkHostIsValid(outcome, host));
+    }
+
+    private static void checkEndpointSpecsHasValidHosts(ValidationResponsePayload outcome, Optional<List<EndpointSpec>> spec) {
+        spec.ifPresent(endpoints ->
+            endpoints.stream().map(EndpointSpec::getHost)
+                .filter(Objects::nonNull)
+                .forEach(host -> checkHostIsValid(outcome, host)));
+    }
+
+    private static void checkHostIsValid(ValidationResponsePayload outcome, String host) {
+        if (!VALID_HOST_PATTERN.matcher(host).matches()) {
+            outcome.setResponse(invalidHostNameResponse(host));
+        } else if (doesExceedMaxHostLengthLimit(host)) {
+            outcome.setResponse(invalidHostNameLengthResponse(host));
+        }
+    }
+
+    private static ValidationResponse invalidHostNameLengthResponse(String hostname) {
+        return ValidationResponsePayload.createFailureResponse(String.format("Host name '%s' is an invalid hostname. A valid hostname has less than equal to 64 characters", hostname),
+            FAILURE_REASON);
+    }
+
+    private static boolean doesExceedMaxHostLengthLimit(String host) {
+        return host.length() > ROUTE_HOST_NAME_MAX_LENGTH;
+    }
+
+    private static ValidationResponse invalidHostNameResponse(String hostname) {
+        return ValidationResponsePayload.createFailureResponse(String.format("Host name '%s' is an invalid hostname. A valid hostname contains lowercase alphanumeric characters and '.'", hostname),
+            FAILURE_REASON);
+    }
+
+    private static void checkHasUniqueHosts(ValidationResponsePayload outcome, Optional<List<EndpointSpec>> adminApiEndpoints, Optional<List<EndpointSpec>> restProducerEndpoints, Optional<List<EndpointSpec>> schemaRegistryEndpoints, Optional<String> adminUiHost) {
+        if (!hasUniqueHosts(adminApiEndpoints, restProducerEndpoints, schemaRegistryEndpoints, adminUiHost)) {
+            outcome.setResponse(nonUniqueHostNamesResponse());
+        }
+    }
+
+    private static boolean hasUniqueHosts(Optional<List<EndpointSpec>> adminApiEndpoints, Optional<List<EndpointSpec>> restProducerEndpoints, Optional<List<EndpointSpec>> schemaRegistryEndpoints, Optional<String> adminUiHost) {
+        Set<String> hosts = new HashSet<>();
+        AtomicInteger numOfDefinedHosts = new AtomicInteger(0);
+
+        addHostsToSetAndIncrementCount(adminApiEndpoints, hosts, numOfDefinedHosts);
+        addHostsToSetAndIncrementCount(restProducerEndpoints, hosts, numOfDefinedHosts);
+        addHostsToSetAndIncrementCount(schemaRegistryEndpoints, hosts, numOfDefinedHosts);
+        adminUiHost.ifPresent(host -> addHostToSetAndIncrement(host, hosts, numOfDefinedHosts));
+
+        return hosts.size() == numOfDefinedHosts.get();
+    }
+
+    private static ValidationResponse nonUniqueHostNamesResponse() {
+        return ValidationResponsePayload.createFailureResponse("There are two or more hosts which have the same value, each host must be unique.",
+            FAILURE_REASON);
+    }
+
+    private static void addHostsToSetAndIncrementCount(Optional<List<EndpointSpec>> endpointSpecs, Set<String> hosts, AtomicInteger numOfDefinedHosts) {
+        endpointSpecs.ifPresent(endpoints -> endpoints.stream()
+            .map(EndpointSpec::getHost)
+            .filter(Objects::nonNull)
+            .forEachOrdered(host -> addHostToSetAndIncrement(host, hosts, numOfDefinedHosts)));
+    }
+
+    private static void addHostToSetAndIncrement(String host, Set<String> hosts, AtomicInteger numOfDefinedHosts) {
+        hosts.add(host);
+        numOfDefinedHosts.incrementAndGet();
     }
 
     private static ValidationResponse invalidKafkaListenerResponse(String listener) {
@@ -152,7 +232,6 @@ public class EndpointValidation extends AbstractValidation {
             spec + " endpoint configuration has an endpoint with a too long name, name cannot be longer than " + ENDPOINT_NAME_MAX_LENGTH + " characters",
             FAILURE_REASON);
     }
-
 
     private static void checkUniqueNames(ValidationResponsePayload outcome, String specName, List<EndpointSpec> endpoints) {
         if (!hasUniqueNames(endpoints)) {

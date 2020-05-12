@@ -693,6 +693,7 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
                 HTTP_HMAC_PORT,
                 TlsVersion.NONE,
                 EndpointServiceType.INTERNAL,
+                Endpoint.DEFAULT_HOST_ADDRESS,
                 null,
                 Collections.singletonList(Endpoint.MAC_KEY),
                 allowedComponentLabels);

@@ -350,7 +350,6 @@ public class EndpointValidationTest extends RestApiTest {
 
     @Test
     public void testAdminApiValidWithIAMBearer(VertxTestContext context) {
-
         EndpointSpec endpoint = new EndpointSpecBuilder()
             .withName("test-endpoint")
             .withContainerPort(8888)
@@ -378,6 +377,305 @@ public class EndpointValidationTest extends RestApiTest {
             JsonObject responseObj = resp.bodyAsJsonObject();
 
             assertThat(responseObj.getJsonObject("response").getBoolean("allowed"), is(true));
+            async.flag();
+        })));
+    }
+
+    @Test
+    public void testValidHost(VertxTestContext context) {
+        EndpointSpec endpoint = new EndpointSpecBuilder()
+            .withName("test-endpoint")
+            .withContainerPort(8888)
+            .withHost("this-will-work.com")
+            .addToAuthenticationMechanisms("SCRAM-SHA-512", "IAM-BEARER")
+            .build();
+
+        EventStreams test = ModelUtils.createDefaultEventStreams("test-es")
+            .editOrNewSpec()
+            .withNewAdminApi()
+            .withEndpoints(endpoint)
+            .endAdminApi()
+            .endSpec()
+            .build();
+
+        Map<String, Object> request = new HashMap<String, Object>();
+        request.put("object", test);
+
+        Map<String, Object> payload = new HashMap<String, Object>();
+        payload.put("request", request);
+
+
+        Checkpoint async = context.checkpoint();
+        WebClient.wrap(httpClient).post(EventStreamsVerticle.API_SERVER_PORT, "localhost", "/admissionwebhook/rejectinvalidendpoints").sendJson(payload, context.succeeding(resp -> context.verify(() -> {
+            JsonObject responseObj = resp.bodyAsJsonObject();
+
+            assertThat(responseObj.getJsonObject("response").getBoolean("allowed"), is(true));
+            async.flag();
+        })));
+    }
+
+    @Test
+    public void testAdminApiWithLongHostName(VertxTestContext context) {
+        EndpointSpec endpoint = new EndpointSpecBuilder()
+            .withName("test-endpoint")
+            .withContainerPort(8888)
+            .withHost("a-very-long-name-ibm-es-ui-this-is-an-absurdly-long-namespace-cos-i-like-to-break-things.apps.frodo.os.fyre.ibm.com")
+            .addToAuthenticationMechanisms("SCRAM-SHA-512", "IAM-BEARER")
+            .build();
+
+        EventStreams test = ModelUtils.createDefaultEventStreams("test-es")
+            .editOrNewSpec()
+            .withNewAdminApi()
+            .withEndpoints(endpoint)
+            .endAdminApi()
+            .endSpec()
+            .build();
+
+        Map<String, Object> request = new HashMap<String, Object>();
+        request.put("object", test);
+
+        Map<String, Object> payload = new HashMap<String, Object>();
+        payload.put("request", request);
+
+
+        Checkpoint async = context.checkpoint();
+        WebClient.wrap(httpClient).post(EventStreamsVerticle.API_SERVER_PORT, "localhost", "/admissionwebhook/rejectinvalidendpoints").sendJson(payload, context.succeeding(resp -> context.verify(() -> {
+            JsonObject responseObj = resp.bodyAsJsonObject();
+            assertThat(responseObj.getJsonObject("response").getBoolean("allowed"), is(false));
+            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("status"), is("Failure"));
+            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is(EndpointValidation.FAILURE_REASON));
+            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getInteger("code"), is(400));
+            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("message"),
+                is(String.format("Host name '%s' is an invalid hostname. A valid hostname has less than equal to 64 characters", endpoint.getHost())));
+            async.flag();
+        })));
+    }
+
+    @Test
+    public void testAdminApiWithInvalidHost(VertxTestContext context) {
+        EndpointSpec endpoint = new EndpointSpecBuilder()
+            .withName("test-endpoint")
+            .withContainerPort(8888)
+            .withHost("THIS-WON'T-Work")
+            .addToAuthenticationMechanisms("SCRAM-SHA-512", "IAM-BEARER")
+            .build();
+
+        EventStreams test = ModelUtils.createDefaultEventStreams("test-es")
+            .editOrNewSpec()
+            .withNewAdminApi()
+                .withEndpoints(endpoint)
+            .endAdminApi()
+            .endSpec()
+            .build();
+
+        Map<String, Object> request = new HashMap<String, Object>();
+        request.put("object", test);
+
+        Map<String, Object> payload = new HashMap<String, Object>();
+        payload.put("request", request);
+
+
+        Checkpoint async = context.checkpoint();
+        WebClient.wrap(httpClient).post(EventStreamsVerticle.API_SERVER_PORT, "localhost", "/admissionwebhook/rejectinvalidendpoints").sendJson(payload, context.succeeding(resp -> context.verify(() -> {
+            JsonObject responseObj = resp.bodyAsJsonObject();
+            assertThat(responseObj.getJsonObject("response").getBoolean("allowed"), is(false));
+            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("status"), is("Failure"));
+            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is(EndpointValidation.FAILURE_REASON));
+            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getInteger("code"), is(400));
+            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("message"),
+                is(String.format("Host name '%s' is an invalid hostname. A valid hostname contains lowercase alphanumeric characters and '.'", endpoint.getHost())));
+            async.flag();
+        })));
+    }
+
+    @Test
+    public void testRestProducerWithInvalidHost(VertxTestContext context) {
+        EndpointSpec endpoint = new EndpointSpecBuilder()
+            .withName("test-endpoint")
+            .withContainerPort(8888)
+            .withHost("THIS-WON'T-Work")
+            .addToAuthenticationMechanisms("SCRAM-SHA-512", "IAM-BEARER")
+            .build();
+
+        EventStreams test = ModelUtils.createDefaultEventStreams("test-es")
+            .editOrNewSpec()
+            .withNewRestProducer()
+            .withEndpoints(endpoint)
+            .endRestProducer()
+            .endSpec()
+            .build();
+
+        Map<String, Object> request = new HashMap<String, Object>();
+        request.put("object", test);
+
+        Map<String, Object> payload = new HashMap<String, Object>();
+        payload.put("request", request);
+
+
+        Checkpoint async = context.checkpoint();
+        WebClient.wrap(httpClient).post(EventStreamsVerticle.API_SERVER_PORT, "localhost", "/admissionwebhook/rejectinvalidendpoints").sendJson(payload, context.succeeding(resp -> context.verify(() -> {
+            JsonObject responseObj = resp.bodyAsJsonObject();
+            assertThat(responseObj.getJsonObject("response").getBoolean("allowed"), is(false));
+            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("status"), is("Failure"));
+            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is(EndpointValidation.FAILURE_REASON));
+            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getInteger("code"), is(400));
+            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("message"),
+                is(String.format("Host name '%s' is an invalid hostname. A valid hostname contains lowercase alphanumeric characters and '.'", endpoint.getHost())));
+            async.flag();
+        })));
+    }
+
+    @Test
+    public void testSchemaRegistryWithInvalidHost(VertxTestContext context) {
+        EndpointSpec endpoint = new EndpointSpecBuilder()
+            .withName("test-endpoint")
+            .withContainerPort(8888)
+            .withHost("THIS-WON'T-Work")
+            .addToAuthenticationMechanisms("SCRAM-SHA-512", "IAM-BEARER")
+            .build();
+
+        EventStreams test = ModelUtils.createDefaultEventStreams("test-es")
+            .editOrNewSpec()
+            .withNewSchemaRegistry()
+            .withEndpoints(endpoint)
+            .endSchemaRegistry()
+            .endSpec()
+            .build();
+
+        Map<String, Object> request = new HashMap<String, Object>();
+        request.put("object", test);
+
+        Map<String, Object> payload = new HashMap<String, Object>();
+        payload.put("request", request);
+
+
+        Checkpoint async = context.checkpoint();
+        WebClient.wrap(httpClient).post(EventStreamsVerticle.API_SERVER_PORT, "localhost", "/admissionwebhook/rejectinvalidendpoints").sendJson(payload, context.succeeding(resp -> context.verify(() -> {
+            JsonObject responseObj = resp.bodyAsJsonObject();
+            assertThat(responseObj.getJsonObject("response").getBoolean("allowed"), is(false));
+            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("status"), is("Failure"));
+            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is(EndpointValidation.FAILURE_REASON));
+            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getInteger("code"), is(400));
+            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("message"),
+                is(String.format("Host name '%s' is an invalid hostname. A valid hostname contains lowercase alphanumeric characters and '.'", endpoint.getHost())));
+            async.flag();
+        })));
+    }
+
+    @Test
+    public void testAdminUiWithInvalidHost(VertxTestContext context) {
+        String host = "This-Won'tWor.com";
+
+        EventStreams test = ModelUtils.createDefaultEventStreams("test-es")
+            .editOrNewSpec()
+            .withNewAdminUI()
+            .withNewHost(host)
+            .endAdminUI()
+            .endSpec()
+            .build();
+
+        Map<String, Object> request = new HashMap<String, Object>();
+        request.put("object", test);
+
+        Map<String, Object> payload = new HashMap<String, Object>();
+        payload.put("request", request);
+
+
+        Checkpoint async = context.checkpoint();
+        WebClient.wrap(httpClient).post(EventStreamsVerticle.API_SERVER_PORT, "localhost", "/admissionwebhook/rejectinvalidendpoints").sendJson(payload, context.succeeding(resp -> context.verify(() -> {
+            JsonObject responseObj = resp.bodyAsJsonObject();
+            assertThat(responseObj.getJsonObject("response").getBoolean("allowed"), is(false));
+            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("status"), is("Failure"));
+            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is(EndpointValidation.FAILURE_REASON));
+            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getInteger("code"), is(400));
+            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("message"),
+                is(String.format("Host name '%s' is an invalid hostname. A valid hostname contains lowercase alphanumeric characters and '.'", host)));
+            async.flag();
+        })));
+    }
+
+    @Test
+    public void testNonUniqueHostsInTheSameEndpointSpec(VertxTestContext context) {
+        EndpointSpec first = new EndpointSpecBuilder()
+            .withName("first-endpoint")
+            .withContainerPort(8888)
+            .withHost("this-will-work.com")
+            .addToAuthenticationMechanisms("SCRAM-SHA-512", "IAM-BEARER")
+            .build();
+
+        EndpointSpec second = new EndpointSpecBuilder()
+            .withName("second-endpoint2")
+            .withContainerPort(9999)
+            .withHost("this-will-work.com")
+            .addToAuthenticationMechanisms("SCRAM-SHA-512", "IAM-BEARER")
+            .build();
+
+        EventStreams test = ModelUtils.createDefaultEventStreams("test-es")
+            .editOrNewSpec()
+            .withNewAdminApi()
+                .withEndpoints(first, second)
+            .endAdminApi()
+            .endSpec()
+            .build();
+
+        Map<String, Object> request = new HashMap<String, Object>();
+        request.put("object", test);
+
+        Map<String, Object> payload = new HashMap<String, Object>();
+        payload.put("request", request);
+
+
+        Checkpoint async = context.checkpoint();
+        WebClient.wrap(httpClient).post(EventStreamsVerticle.API_SERVER_PORT, "localhost", "/admissionwebhook/rejectinvalidendpoints").sendJson(payload, context.succeeding(resp -> context.verify(() -> {
+            JsonObject responseObj = resp.bodyAsJsonObject();
+            assertThat(responseObj.getJsonObject("response").getBoolean("allowed"), is(false));
+            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("status"), is("Failure"));
+            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is(EndpointValidation.FAILURE_REASON));
+            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getInteger("code"), is(400));
+            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("message"),
+                is("There are two or more hosts which have the same value, each host must be unique."));
+            async.flag();
+        })));
+    }
+
+    @Test
+    public void testNonUniqueHostsInDifferentSpecs(VertxTestContext context) {
+        String host = "this-will-work.com";
+        EndpointSpec first = new EndpointSpecBuilder()
+            .withName("first-endpoint")
+            .withContainerPort(8888)
+            .withHost("this-will-work.com")
+            .addToAuthenticationMechanisms("SCRAM-SHA-512", "IAM-BEARER")
+            .build();
+
+
+        EventStreams test = ModelUtils.createDefaultEventStreams("test-es")
+            .editOrNewSpec()
+            .withNewAdminApi()
+            .withEndpoints(first)
+            .endAdminApi()
+            .withNewAdminUI()
+                .withNewHost(host)
+            .endAdminUI()
+            .endSpec()
+            .build();
+
+        Map<String, Object> request = new HashMap<String, Object>();
+        request.put("object", test);
+
+        Map<String, Object> payload = new HashMap<String, Object>();
+        payload.put("request", request);
+
+
+        Checkpoint async = context.checkpoint();
+        WebClient.wrap(httpClient).post(EventStreamsVerticle.API_SERVER_PORT, "localhost", "/admissionwebhook/rejectinvalidendpoints").sendJson(payload, context.succeeding(resp -> context.verify(() -> {
+            JsonObject responseObj = resp.bodyAsJsonObject();
+            assertThat(responseObj.getJsonObject("response").getBoolean("allowed"), is(false));
+            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("status"), is("Failure"));
+            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is(EndpointValidation.FAILURE_REASON));
+            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getInteger("code"), is(400));
+            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("message"),
+                is("There are two or more hosts which have the same value, each host must be unique."));
             async.flag();
         })));
     }

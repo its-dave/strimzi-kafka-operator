@@ -31,7 +31,7 @@ import java.util.Optional;
 @JsonDeserialize(using = JsonDeserializer.None.class)
 @Buildable(editableEnabled = false, generateBuilderPackage = false, builderPackage = "io.fabric8.kubernetes.api.builder")
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({"name", "type", "containerPort", "tls", "tlsVersion", "certOverrides", "authenticationMechanisms"})
+@JsonPropertyOrder({"name", "type", "containerPort", "tlsVersion", "host", "certOverrides", "authenticationMechanisms"})
 @EqualsAndHashCode
 public class EndpointSpec implements Serializable {
     private static final long serialVersionUID = 1L;
@@ -40,6 +40,7 @@ public class EndpointSpec implements Serializable {
     private EndpointServiceType type;
     private Integer containerPort;
     private TlsVersion tlsVersion;
+    private String host;
     private CertAndKeySecretSource certOverrides;
     private List<String> authenticationMechanisms;
 
@@ -79,6 +80,15 @@ public class EndpointSpec implements Serializable {
 
     public void setTlsVersion(TlsVersion tlsVersion) {
         this.tlsVersion = tlsVersion;
+    }
+
+    @Description("Defines the DNS name that the route will be created with for a user to connect on. If nothing is specified, then a route will be generated for you.")
+    public String getHost() {
+        return host;
+    }
+
+    public void setHost(String host) {
+        this.host = host;
     }
 
     @Description("Defines the certificate file and key file from a secret to use as the Endpoint's truststore.")

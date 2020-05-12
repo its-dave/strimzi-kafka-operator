@@ -230,7 +230,7 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
                     getRouteName(endpoint.getName()),
                 endpoint -> {
                     TLSConfig tlsConfig = endpoint.isTls() ? getDefaultTlsConfig() : null;
-                    return createRoute(getRouteName(endpoint.getName()), getServiceName(endpoint.getType()), endpoint.getPort(), tlsConfig, securityLabels(endpoint.isTls(), endpoint.getAuthenticationMechanisms()));
+                    return createRoute(getRouteName(endpoint.getName()), endpoint.getHost(), getServiceName(endpoint.getType()), endpoint.getPort(), tlsConfig, securityLabels(endpoint.isTls(), endpoint.getAuthenticationMechanisms()));
                 }));
     }
 

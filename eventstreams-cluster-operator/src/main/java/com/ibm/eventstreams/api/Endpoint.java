@@ -38,6 +38,7 @@ public class Endpoint {
     public static final String IAM_BEARER_KEY = "IAM-BEARER";
     public static final String SCRAM_SHA_512_KEY = "SCRAM-SHA-512";
     public static final String MUTUAL_TLS_KEY = "TLS";
+    public static final String DEFAULT_HOST_ADDRESS = null;
     public static final String MAC_KEY = "MAC";
     public static final String RUNAS_ANONYMOUS_KEY = "RUNAS-ANONYMOUS";
     private static final List<String> DEFAULT_EXTERNAL_AUTHENTICATION_MECHANISM = Arrays.asList(IAM_BEARER_KEY, MUTUAL_TLS_KEY, SCRAM_SHA_512_KEY);
@@ -48,6 +49,7 @@ public class Endpoint {
     public static final int DEFAULT_P2P_PLAIN_PORT = 7080;
 
     private String name;
+    private Optional<String> host;
     private int port;
     private TlsVersion tlsVersion;
     private EndpointServiceType type;
@@ -56,10 +58,11 @@ public class Endpoint {
     // This is a list of Label configurations for identify pods that can communicate with this endpoint
     private List<Labels> endpointIngressLabels;
 
-    public Endpoint(String name, int port, TlsVersion tlsVersion, EndpointServiceType type, CertAndKeySecretSource certificateAndKeyOverride, List<String> authenticationMechanisms, List<Labels> endpointIngressLabels) {
+    public Endpoint(String name, int port, TlsVersion tlsVersion, EndpointServiceType type, String host, CertAndKeySecretSource certificateAndKeyOverride, List<String> authenticationMechanisms, List<Labels> endpointIngressLabels) {
         this.name = name;
         this.port = port;
         this.tlsVersion = tlsVersion;
+        this.host = Optional.ofNullable(host).filter(string -> !string.isEmpty());
         this.type = type;
         this.certificateAndKeyOverride = certificateAndKeyOverride;
         this.authenticationMechanisms = authenticationMechanisms;
@@ -78,6 +81,7 @@ public class Endpoint {
                             DEFAULT_EXTERNAL_TLS_PORT,
                             DEFAULT_TLS_VERSION,
                             DEFAULT_EXTERNAL_SERVICE_TYPE,
+                            DEFAULT_HOST_ADDRESS,
                             null,
                             kafkaAuthenticationEnabled ? DEFAULT_EXTERNAL_AUTHENTICATION_MECHANISM : Collections.singletonList(RUNAS_ANONYMOUS_KEY),
                             Collections.emptyList());
@@ -96,6 +100,7 @@ public class Endpoint {
                             isTls ? DEFAULT_P2P_TLS_PORT : DEFAULT_P2P_PLAIN_PORT,
                             getP2PTlsVersion(instance),
                             EndpointServiceType.INTERNAL,
+                            DEFAULT_HOST_ADDRESS,
                             null,
                             podToPodAuth.isEmpty() ? Collections.singletonList(RUNAS_ANONYMOUS_KEY) : podToPodAuth,
                             endpointIngressLabels);
@@ -108,12 +113,13 @@ public class Endpoint {
      */
     public static Endpoint createEndpointFromSpec(EndpointSpec spec) {
         return new Endpoint(spec.getName(),
-                                    getPortOrDefault(spec),
-                                    getTlsVersionOrDefault(spec),
-                                    getTypeOrDefault(spec),
-                                    spec.getCertOverrides(),
-                                    getAuthenticationMechanismsOrDefault(spec),
-                                    getEndpointIngressLabels(spec));
+                            getPortOrDefault(spec),
+                            getTlsVersionOrDefault(spec),
+                            getTypeOrDefault(spec),
+                            spec.getHost(),
+                            spec.getCertOverrides(),
+                            getAuthenticationMechanismsOrDefault(spec),
+                            getEndpointIngressLabels(spec));
 
     }
 
@@ -248,6 +254,14 @@ public class Endpoint {
      */
     public TlsVersion getTlsVersion() {
         return tlsVersion;
+    }
+
+    /**
+     * Gets the custom DNS host that the route should be generated with.
+     * @return the custom DNS host
+     */
+    public Optional<String> getHost() {
+        return host;
     }
 
     /**

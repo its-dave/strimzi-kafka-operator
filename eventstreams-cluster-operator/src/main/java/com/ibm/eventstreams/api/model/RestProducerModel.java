@@ -351,6 +351,7 @@ public class RestProducerModel extends AbstractSecureEndpointsModel {
             Endpoint.DEFAULT_EXTERNAL_TLS_PORT,
             Endpoint.DEFAULT_TLS_VERSION,
             Endpoint.DEFAULT_EXTERNAL_SERVICE_TYPE,
+            Endpoint.DEFAULT_HOST_ADDRESS,
             null,
             authEnabled ? Arrays.asList(Endpoint.MUTUAL_TLS_KEY, Endpoint.SCRAM_SHA_512_KEY) : Collections.singletonList(Endpoint.RUNAS_ANONYMOUS_KEY),
             Collections.emptyList()));

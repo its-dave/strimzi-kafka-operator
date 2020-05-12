@@ -23,13 +23,14 @@ import lombok.EqualsAndHashCode;
 @JsonDeserialize(using = JsonDeserializer.None.class)
 @Buildable(editableEnabled = false, generateBuilderPackage = false, builderPackage = "io.fabric8.kubernetes.api.builder")
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({"redis"})
+@JsonPropertyOrder({"redis", "host"})
 @EqualsAndHashCode
 public class AdminUISpec extends ComponentSpec {
 
     private static final long serialVersionUID = 1L;
 
     private ContainerSpec redis;
+    private String host;
 
     @Description("Configuration options for the redis container used to store UI login sessions.")
     public ContainerSpec getRedis() {
@@ -38,5 +39,14 @@ public class AdminUISpec extends ComponentSpec {
 
     public void setRedis(ContainerSpec redis) {
         this.redis = redis;
+    }
+
+    @Description("Defines the DNS name that the route will be created with for a user to connect on. If nothing is specified, then a route will be generated for you.")
+    public String getHost() {
+        return host;
+    }
+
+    public void setHost(String host) {
+        this.host = host;
     }
 }
