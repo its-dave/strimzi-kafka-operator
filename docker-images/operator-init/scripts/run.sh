@@ -347,6 +347,7 @@ spec:
     spec:
         license:
           accept: false
+          use: CloudPakForIntegrationNonProduction
         version: 2020.2.1
         adminApi: {}
         adminUI: {}
@@ -408,6 +409,7 @@ spec:
     spec:
         license:
           accept: false
+          use: CloudPakForIntegrationNonProduction
         version: 2020.2.1
         adminApi: {}
         adminUI: {}
@@ -471,6 +473,7 @@ spec:
     spec:
         license:
           accept: false
+          use: CloudPakForIntegrationProduction
         version: 2020.2.1
         adminApi: {}
         adminUI: {}
@@ -546,6 +549,7 @@ spec:
     spec:
         license:
           accept: false
+          use: CloudPakForIntegrationProduction
         version: 2020.2.1
         adminApi: {}
         adminUI: {}
@@ -621,6 +625,7 @@ spec:
     spec:
         license:
           accept: false
+          use: CloudPakForIntegrationProduction
         version: 2020.2.1
         adminApi: {}
         adminUI: {}

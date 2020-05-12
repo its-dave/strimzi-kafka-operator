@@ -17,6 +17,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.ibm.eventstreams.api.ProductUse;
 import io.strimzi.crdgenerator.annotations.Description;
 import io.sundr.builder.annotations.Buildable;
 import lombok.EqualsAndHashCode;
@@ -26,13 +27,14 @@ import java.io.Serializable;
 @JsonDeserialize(using = JsonDeserializer.None.class)
 @Buildable(editableEnabled = false, generateBuilderPackage = false, builderPackage = "io.fabric8.kubernetes.api.builder")
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({"accept"})
+@JsonPropertyOrder({"accept", "use"})
 @EqualsAndHashCode
 public class LicenseSpec implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
     private boolean accept = false;
+    private ProductUse use;
 
     @JsonProperty(required = true)
     @Description("Accept the product license after reading it at <TBC>")
@@ -42,5 +44,15 @@ public class LicenseSpec implements Serializable {
 
     public void setAccept(boolean accept) {
         this.accept = accept;
+    }
+
+    @JsonProperty(required = true)
+    @Description("Specify if you intend for this installation to be used in a production environment")
+    public ProductUse getUse() {
+        return use;
+    }
+
+    public void setUse(ProductUse use) {
+        this.use = use;
     }
 }

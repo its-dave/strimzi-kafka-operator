@@ -15,17 +15,18 @@ package com.ibm.eventstreams.api.model;
 import com.ibm.eventstreams.Main;
 import com.ibm.eventstreams.api.ListenerAuthentication;
 import com.ibm.eventstreams.api.ListenerType;
+import com.ibm.eventstreams.api.ProductUse;
 import com.ibm.eventstreams.api.TlsVersion;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.spec.ExternalAccess;
+import com.ibm.eventstreams.api.spec.LicenseSpec;
 import com.ibm.eventstreams.api.spec.SecuritySpec;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.EnvVarBuilder;
-import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.LabelSelector;
 import io.fabric8.kubernetes.api.model.LabelSelectorBuilder;
 import io.fabric8.kubernetes.api.model.LocalObjectReference;
@@ -122,15 +123,27 @@ public abstract class AbstractModel {
     public static final String AUTHENTICATION_LABEL_SEPARATOR = "-";
     public static final String AUTHENTICATION_LABEL_NO_AUTH = "NO-AUTHENTICATION";
 
-    private static final String PRODUCT_ID = "ID";
-    private static final String PRODUCT_NAME = "eventstreams";
-    private static final String PRODUCT_VERSION = "version";
-    private static final String PRODUCT_CLOUDPAK_RATIO_PRODUCTION = "1:1";
-    private static final String PRODUCT_CLOUDPAK_RATIO_NON_PRODUCTION = "2:1";
-    private static final String PRODUCT_METRIC = "VIRTUAL_PROCESSOR_CORE";
-    private static final String CLOUDPAK_ID = "c8b82d189e7545f0892db9ef2731b90d";
-    private static final String CLOUDPAK_NAME = "IBM Cloud Pak for Integration";
-    private static final String CLOUDPAK_VERSION = "2019.4.1";
+    protected static final String PRODUCT_ID_KEY = "productID";
+    protected static final String PRODUCT_NAME_KEY = "productName";
+    protected static final String PRODUCT_VERSION_KEY = "productVersion";
+    protected static final String PRODUCT_METRIC_KEY = "productMetric";
+    protected static final String PRODUCT_CHARGED_CONTAINERS_KEY = "productChargedContainers";
+    protected static final String CLOUDPAK_ID_KEY = "cloudpakId";
+    protected static final String CLOUDPAK_NAME_KEY = "cloudpakName";
+    protected static final String CLOUDPAK_VERSION_KEY = "cloudpakVersion";
+    protected static final String PRODUCT_CLOUDPAK_RATIO_PRODUCTION_KEY = "productCloudpakRatio";
+
+    protected static final String PRODUCT_ID_PRODUCTION = "2cba508800504d0abfa48a0e2c4ecbe2";
+    protected static final String PRODUCT_ID_NON_PRODUCTION = "2a79e49111f44ec3acd89608e56138f5";
+    protected static final String PRODUCT_NAME_PRODUCTION = "IBM Event Streams";
+    protected static final String PRODUCT_NAME_NON_PRODUCTION = "IBM Event Streams for Non Production";
+    protected static final String PRODUCT_VERSION = "2020.2.1";
+    protected static final String PRODUCT_CLOUDPAK_RATIO_PRODUCTION = "1:1";
+    protected static final String PRODUCT_CLOUDPAK_RATIO_NON_PRODUCTION = "2:1";
+    protected static final String PRODUCT_METRIC = "VPC";
+    protected static final String CLOUDPAK_ID = "c8b82d189e7545f0892db9ef2731b90d";
+    protected static final String CLOUDPAK_NAME = "IBM Cloud Pak for Integration";
+    protected static final String CLOUDPAK_VERSION = "2020.2.1";
     private static final String RUNAS_LISTENER_TYPE = "runas";
     private static final String TLS_LISTENER_TYPE = "tls";
     private static final String PLAIN_LISTENER_TYPE = "plain";
@@ -163,6 +176,7 @@ public abstract class AbstractModel {
     private ResourceRequirements resourceRequirements;
     private PodTemplate podTemplate;
     private TlsVersion tlsVersion;
+    private ProductUse productUse;
 
     private List<LocalObjectReference> globalPullSecrets;
     protected String image = "";
@@ -177,13 +191,18 @@ public abstract class AbstractModel {
      * @param componentName used to name components and should be max 6 characters
      * @param applicationName used for labeling components, should be descriptive
      */
-    protected AbstractModel(HasMetadata resource, String componentName, String applicationName) {
+    protected AbstractModel(EventStreams resource, String componentName, String applicationName) {
         this.instanceName = resource.getMetadata().getName();
         this.namespace = resource.getMetadata().getNamespace();
         this.componentName = componentName;
         this.applicationName = applicationName;
 
         this.labels = generateDefaultLabels(resource, applicationName, componentName);
+
+        setProductUse(Optional.ofNullable(resource.getSpec())
+            .map(EventStreamsSpec::getLicense)
+            .map(LicenseSpec::getUse)
+            .get());
     }
 
     public String getComponentName() {
@@ -224,6 +243,10 @@ public abstract class AbstractModel {
 
     protected void setReplicas(int replicas) {
         this.replicas = replicas;
+    }
+
+    protected void setProductUse(ProductUse productUse) {
+        this.productUse = productUse;
     }
 
     protected void setExternalAccess(ExternalAccess externalAccess) {
@@ -473,17 +496,41 @@ public abstract class AbstractModel {
     }
 
     protected Map<String, String> getEventStreamsMeteringAnnotations(String chargedContainers) {
+        switch (productUse) {
+            case CP4I_PRODUCTION:
+                return getDefaultEventStreamsMeteringAnnotations(PRODUCT_ID_PRODUCTION, PRODUCT_NAME_PRODUCTION, chargedContainers, PRODUCT_CLOUDPAK_RATIO_PRODUCTION);
+            case CP4I_NON_PRODUCTION:
+                return getDefaultEventStreamsMeteringAnnotations(PRODUCT_ID_NON_PRODUCTION, PRODUCT_NAME_NON_PRODUCTION, chargedContainers, PRODUCT_CLOUDPAK_RATIO_NON_PRODUCTION);
+            case IBM_SUPPORTING_PROGRAM:
+                return getEmbeddedEventStreamsMeteringAnnotations();
+            default:
+                return null;
+        }
+    }
+
+    private Map<String, String> getDefaultEventStreamsMeteringAnnotations(String productId, String productName, String chargedContainers, String cloudPakRatio) {
         Map<String, String> annotations = new HashMap<String, String>();
 
-        annotations.put("productID", PRODUCT_ID);
-        annotations.put("productName", PRODUCT_NAME);
-        annotations.put("productVersion", PRODUCT_VERSION);
-        annotations.put("cloudpakId", CLOUDPAK_ID);
-        annotations.put("cloudpakName", CLOUDPAK_NAME);
-        annotations.put("cloudpakVersion", CLOUDPAK_VERSION);
-        annotations.put("productChargedContainers", chargedContainers);
-        annotations.put("productCloudpakRatio", PRODUCT_CLOUDPAK_RATIO_PRODUCTION);
-        annotations.put("productMetric", PRODUCT_METRIC);
+        annotations.put(PRODUCT_ID_KEY, productId);
+        annotations.put(PRODUCT_NAME_KEY, productName);
+        annotations.put(PRODUCT_VERSION_KEY, PRODUCT_VERSION);
+        annotations.put(PRODUCT_METRIC_KEY, PRODUCT_METRIC);
+        annotations.put(PRODUCT_CHARGED_CONTAINERS_KEY, chargedContainers);
+        annotations.put(CLOUDPAK_ID_KEY, CLOUDPAK_ID);
+        annotations.put(CLOUDPAK_NAME_KEY, CLOUDPAK_NAME);
+        annotations.put(CLOUDPAK_VERSION_KEY, CLOUDPAK_VERSION);
+        annotations.put(PRODUCT_CLOUDPAK_RATIO_PRODUCTION_KEY, cloudPakRatio);
+
+        return annotations;
+    }
+
+    protected Map<String, String> getEmbeddedEventStreamsMeteringAnnotations() {
+        Map<String, String> annotations = new HashMap<String, String>();
+
+        annotations.put(PRODUCT_ID_KEY, PRODUCT_ID_PRODUCTION);
+        annotations.put(PRODUCT_NAME_KEY, PRODUCT_NAME_PRODUCTION);
+        annotations.put(PRODUCT_VERSION_KEY, PRODUCT_VERSION);
+        annotations.put(PRODUCT_METRIC_KEY, PRODUCT_METRIC);
 
         return annotations;
     }
@@ -558,7 +605,7 @@ public abstract class AbstractModel {
         return labels;
     }
 
-    public static Labels generateDefaultLabels(HasMetadata resource, String applicationName, String componentName) {
+    public static Labels generateDefaultLabels(EventStreams resource, String applicationName, String componentName) {
         Labels labels = Labels.generateDefaultLabels(resource, applicationName, OPERATOR_NAME);
         // If the component is not part of the parent application (eventstreams), then override Strimzi name label
         // to use resource name including the resource prefix (this matches Strimzi convention)

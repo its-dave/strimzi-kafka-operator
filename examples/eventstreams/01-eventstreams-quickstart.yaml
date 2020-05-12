@@ -5,6 +5,7 @@ metadata:
 spec:
   license:
     accept: false
+    use: CloudPakForIntegrationNonProduction
   version: 2020.2.1
   adminApi: {}
   adminUI: {}

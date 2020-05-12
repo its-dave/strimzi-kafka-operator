@@ -45,8 +45,17 @@ spec:
                 accept:
                   type: boolean
                   description: Accept the product license after reading it at <TBC>.
+                use:
+                  type: string
+                  enum:
+                  - CloudPakForIntegrationProduction
+                  - CloudPakForIntegrationNonProduction
+                  - IBMSupportingProgram
+                  description: Specify if you intend for this installation to be used
+                    in a production environment.
               required:
               - accept
+              - use
               description: Specify the license information for the instance of Event
                 Streams.
             version:

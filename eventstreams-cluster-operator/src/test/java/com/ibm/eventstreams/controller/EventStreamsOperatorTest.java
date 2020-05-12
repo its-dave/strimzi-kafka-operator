@@ -15,6 +15,7 @@ package com.ibm.eventstreams.controller;
 
 import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.EndpointServiceType;
+import com.ibm.eventstreams.api.ProductUse;
 import com.ibm.eventstreams.api.TlsVersion;
 import com.ibm.eventstreams.api.model.AbstractModel;
 import com.ibm.eventstreams.api.model.AbstractSecureEndpointsModel;
@@ -448,6 +449,7 @@ public class EventStreamsOperatorTest {
             .withNewSpec()
             .withNewLicense()
                 .withAccept(true)
+                .withUse(ProductUse.CP4I_PRODUCTION)
             .endLicense()
             .withNewVersion(DEFAULT_VERSION)
             .withNewAdminApi()
@@ -1642,6 +1644,7 @@ public class EventStreamsOperatorTest {
             .endAdminApi()
             .withNewLicense()
                 .withAccept(true)
+                .withUse(ProductUse.CP4I_PRODUCTION)
             .endLicense()
             .withNewVersion(DEFAULT_VERSION)
             .withStrimziOverrides(new KafkaSpecBuilder()
@@ -1750,6 +1753,7 @@ public class EventStreamsOperatorTest {
             .endAdminApi()
             .withNewLicense()
                 .withAccept(true)
+                .withUse(ProductUse.CP4I_PRODUCTION)
             .endLicense()
             .withNewVersion(DEFAULT_VERSION)
             .withStrimziOverrides(new KafkaSpecBuilder()
@@ -2210,6 +2214,7 @@ public class EventStreamsOperatorTest {
                 .withNewSpec()
                 .withNewLicense()
                     .withAccept(true)
+                    .withUse(ProductUse.CP4I_PRODUCTION)
                 .endLicense()
                 .withNewVersion(DEFAULT_VERSION)
                 .withStrimziOverrides(new KafkaSpecBuilder()
@@ -2828,6 +2833,7 @@ public class EventStreamsOperatorTest {
             .withNewSpec()
             .withNewLicense()
                 .withAccept(true)
+                .withUse(ProductUse.CP4I_PRODUCTION)
             .endLicense()
             .withNewVersion(DEFAULT_VERSION)
             .withStrimziOverrides(new KafkaSpecBuilder()
@@ -2956,6 +2962,7 @@ public class EventStreamsOperatorTest {
                 .withNewSpec()
                     .withNewLicense()
                         .withAccept(true)
+                        .withUse(ProductUse.CP4I_PRODUCTION)
                     .endLicense()
                     .withNewAdminApi()
                         .withReplicas(1)
@@ -3175,6 +3182,7 @@ public class EventStreamsOperatorTest {
             .endAdminApi()
             .withNewLicense()
                 .withAccept(true)
+                .withUse(ProductUse.CP4I_PRODUCTION)
             .endLicense()
             .withNewVersion(DEFAULT_VERSION)
             .withStrimziOverrides(new KafkaSpecBuilder()

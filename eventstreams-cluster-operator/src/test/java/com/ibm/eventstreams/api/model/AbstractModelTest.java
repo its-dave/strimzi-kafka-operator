@@ -12,6 +12,7 @@
  */
 package com.ibm.eventstreams.api.model;
 
+import com.ibm.eventstreams.api.ProductUse;
 import com.ibm.eventstreams.api.model.utils.ModelUtils;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsSpecBuilder;
@@ -36,6 +37,26 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static com.ibm.eventstreams.api.model.AbstractModel.CLOUDPAK_ID;
+import static com.ibm.eventstreams.api.model.AbstractModel.CLOUDPAK_ID_KEY;
+import static com.ibm.eventstreams.api.model.AbstractModel.CLOUDPAK_NAME;
+import static com.ibm.eventstreams.api.model.AbstractModel.CLOUDPAK_NAME_KEY;
+import static com.ibm.eventstreams.api.model.AbstractModel.CLOUDPAK_VERSION;
+import static com.ibm.eventstreams.api.model.AbstractModel.CLOUDPAK_VERSION_KEY;
+import static com.ibm.eventstreams.api.model.AbstractModel.PRODUCT_CHARGED_CONTAINERS_KEY;
+import static com.ibm.eventstreams.api.model.AbstractModel.PRODUCT_CLOUDPAK_RATIO_NON_PRODUCTION;
+import static com.ibm.eventstreams.api.model.AbstractModel.PRODUCT_CLOUDPAK_RATIO_PRODUCTION;
+import static com.ibm.eventstreams.api.model.AbstractModel.PRODUCT_CLOUDPAK_RATIO_PRODUCTION_KEY;
+import static com.ibm.eventstreams.api.model.AbstractModel.PRODUCT_ID_KEY;
+import static com.ibm.eventstreams.api.model.AbstractModel.PRODUCT_ID_NON_PRODUCTION;
+import static com.ibm.eventstreams.api.model.AbstractModel.PRODUCT_ID_PRODUCTION;
+import static com.ibm.eventstreams.api.model.AbstractModel.PRODUCT_METRIC;
+import static com.ibm.eventstreams.api.model.AbstractModel.PRODUCT_METRIC_KEY;
+import static com.ibm.eventstreams.api.model.AbstractModel.PRODUCT_NAME_KEY;
+import static com.ibm.eventstreams.api.model.AbstractModel.PRODUCT_NAME_NON_PRODUCTION;
+import static com.ibm.eventstreams.api.model.AbstractModel.PRODUCT_NAME_PRODUCTION;
+import static com.ibm.eventstreams.api.model.AbstractModel.PRODUCT_VERSION;
+import static com.ibm.eventstreams.api.model.AbstractModel.PRODUCT_VERSION_KEY;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
@@ -360,6 +381,9 @@ public class AbstractModelTest {
     @Test
     public void testEventStreamsAuthenticationWithPlainKafkaListenerAuthentication() {
         EventStreams plainAuthInstance = ModelUtils.createEventStreams(instanceName, new EventStreamsSpecBuilder()
+            .editOrNewLicense()
+                .withUse(ProductUse.CP4I_PRODUCTION)
+            .endLicense()
             .withStrimziOverrides(new KafkaSpecBuilder()
                 .withNewKafka()
                     .withNewListeners()
@@ -379,6 +403,9 @@ public class AbstractModelTest {
     @Test
     public void testEventStreamsAuthenticationWithExternalKafkaListenerAuthentication() {
         EventStreams externalListenerInstance = ModelUtils.createEventStreams(instanceName, new EventStreamsSpecBuilder()
+            .editOrNewLicense()
+                .withUse(ProductUse.CP4I_PRODUCTION)
+            .endLicense()
             .withStrimziOverrides(new KafkaSpecBuilder()
                 .withNewKafka()
                 .withNewListeners()
@@ -398,6 +425,9 @@ public class AbstractModelTest {
     @Test
     public void testEventStreamsAuthenticationWithTlsKafkaListenerAuthentication() {
         EventStreams tlsAuthInstance = ModelUtils.createEventStreams(instanceName, new EventStreamsSpecBuilder()
+            .editOrNewLicense()
+                .withUse(ProductUse.CP4I_PRODUCTION)
+            .endLicense()
             .withStrimziOverrides(new KafkaSpecBuilder()
                 .withNewKafka()
                 .withNewListeners()
@@ -412,5 +442,78 @@ public class AbstractModelTest {
             .build();
         ComponentModel tlsListener = new ComponentModel(tlsAuthInstance);
         assertThat(tlsListener.isKafkaAuthenticationEnabled(tlsAuthInstance), is(true));
+    }
+
+    @Test
+    public void testCP4IProductionInstallHasCorrectMeteringAnnotations() {
+        EventStreams instance = ModelUtils.createDefaultEventStreams(instanceName).build();
+        ComponentModel model = new ComponentModel(instance);
+
+        Deployment deployment = model.createDeployment(new ArrayList<>(), null);
+        assertThat(deployment.getSpec().getTemplate().getMetadata().getAnnotations(),
+            allOf(
+                aMapWithSize(9),
+                hasEntry(PRODUCT_ID_KEY, PRODUCT_ID_PRODUCTION),
+                hasEntry(PRODUCT_NAME_KEY, PRODUCT_NAME_PRODUCTION),
+                hasEntry(PRODUCT_VERSION_KEY, PRODUCT_VERSION),
+                hasEntry(PRODUCT_METRIC_KEY, PRODUCT_METRIC),
+                hasEntry(PRODUCT_CHARGED_CONTAINERS_KEY, ""),
+                hasEntry(CLOUDPAK_ID_KEY, CLOUDPAK_ID),
+                hasEntry(CLOUDPAK_NAME_KEY, CLOUDPAK_NAME),
+                hasEntry(CLOUDPAK_VERSION_KEY, CLOUDPAK_VERSION),
+                hasEntry(PRODUCT_CLOUDPAK_RATIO_PRODUCTION_KEY, PRODUCT_CLOUDPAK_RATIO_PRODUCTION)
+            ));
+
+    }
+
+    @Test
+    public void testCP4INonProductionInstallHasCorrectMeteringAnnotations() {
+        EventStreams instance = ModelUtils.createDefaultEventStreams(instanceName)
+            .editOrNewSpec()
+                .editOrNewLicense()
+                    .withUse(ProductUse.CP4I_NON_PRODUCTION)
+                .endLicense()
+            .endSpec().build();
+
+        ComponentModel model = new ComponentModel(instance);
+
+        Deployment deployment = model.createDeployment(new ArrayList<>(), null);
+        assertThat(deployment.getSpec().getTemplate().getMetadata().getAnnotations(),
+            allOf(
+                aMapWithSize(9),
+                hasEntry(PRODUCT_ID_KEY, PRODUCT_ID_NON_PRODUCTION),
+                hasEntry(PRODUCT_NAME_KEY, PRODUCT_NAME_NON_PRODUCTION),
+                hasEntry(PRODUCT_VERSION_KEY, PRODUCT_VERSION),
+                hasEntry(PRODUCT_METRIC_KEY, PRODUCT_METRIC),
+                hasEntry(PRODUCT_CHARGED_CONTAINERS_KEY, ""),
+                hasEntry(CLOUDPAK_ID_KEY, CLOUDPAK_ID),
+                hasEntry(CLOUDPAK_NAME_KEY, CLOUDPAK_NAME),
+                hasEntry(CLOUDPAK_VERSION_KEY, CLOUDPAK_VERSION),
+                hasEntry(PRODUCT_CLOUDPAK_RATIO_PRODUCTION_KEY, PRODUCT_CLOUDPAK_RATIO_NON_PRODUCTION)
+            ));
+
+    }
+
+    @Test
+    public void testEmbeddedInstallHasCorrectMeteringAnnotations() {
+        EventStreams instance = ModelUtils.createDefaultEventStreams(instanceName)
+            .editOrNewSpec()
+                .editOrNewLicense()
+                    .withUse(ProductUse.IBM_SUPPORTING_PROGRAM)
+                .endLicense()
+            .endSpec().build();
+
+        ComponentModel model = new ComponentModel(instance);
+
+        Deployment deployment = model.createDeployment(new ArrayList<>(), null);
+        assertThat(deployment.getSpec().getTemplate().getMetadata().getAnnotations(),
+            allOf(
+                aMapWithSize(4),
+                hasEntry(PRODUCT_ID_KEY, PRODUCT_ID_PRODUCTION),
+                hasEntry(PRODUCT_NAME_KEY, PRODUCT_NAME_PRODUCTION),
+                hasEntry(PRODUCT_VERSION_KEY, PRODUCT_VERSION),
+                hasEntry(PRODUCT_METRIC_KEY, PRODUCT_METRIC)
+            ));
+
     }
 }

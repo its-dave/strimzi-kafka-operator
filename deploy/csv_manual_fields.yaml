@@ -147,6 +147,13 @@ spec:
           x-descriptors:
             - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:schemaRegistryPersistence'
             - 'urn:alm:descriptor:io.kubernetes:StorageClass'
+        - displayName: Product use
+          description: Specify if you intend for this installation to be used in a production environment
+          path: license.use
+          x-descriptors:
+            - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:licenseUsage'
+            - 'urn:alm:descriptor:com.tectonic.ui:select:CloudPakForIntegrationProduction'
+            - 'urn:alm:descriptor:com.tectonic.ui:select:CloudPakForIntegrationNonProduction'
         - displayName: Kafka storage
           description: The type of storage used by Kafka brokers
           path: strimziOverrides.kafka.storage.type

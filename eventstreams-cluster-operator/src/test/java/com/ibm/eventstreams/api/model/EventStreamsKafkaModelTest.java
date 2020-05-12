@@ -12,6 +12,11 @@
  */
 package com.ibm.eventstreams.api.model;
 
+import static com.ibm.eventstreams.api.model.AbstractModel.CLOUDPAK_ID;
+import static com.ibm.eventstreams.api.model.AbstractModel.CLOUDPAK_ID_KEY;
+import static com.ibm.eventstreams.api.model.AbstractModel.PRODUCT_CHARGED_CONTAINERS_KEY;
+import static com.ibm.eventstreams.api.model.AbstractModel.PRODUCT_ID_KEY;
+import static com.ibm.eventstreams.api.model.AbstractModel.PRODUCT_ID_PRODUCTION;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -54,7 +59,7 @@ public class EventStreamsKafkaModelTest {
 
     private EventStreamsKafkaModel createDefaultKafkaModel() {
         EventStreams eventStreamsResource = createDefaultEventStreams()
-                    .withNewSpec()
+                    .editOrNewSpec()
                 .endSpec()
                 .build();
         return new EventStreamsKafkaModel(eventStreamsResource);
@@ -77,14 +82,14 @@ public class EventStreamsKafkaModelTest {
         Map<String, String> zookeeperPodAnnotations = kafka.getSpec().getZookeeper().getTemplate().getPod()
                 .getMetadata().getAnnotations();
 
-        assertThat(kafkaPodAnnotations.get("productID"),  is("ID"));
-        assertThat(kafkaPodAnnotations.get("cloudpakId"),  is("c8b82d189e7545f0892db9ef2731b90d"));
-        assertThat(kafkaPodAnnotations.get("productChargedContainers"),  is("kafka"));
+        assertThat(kafkaPodAnnotations.get(PRODUCT_ID_KEY),  is(PRODUCT_ID_PRODUCTION));
+        assertThat(kafkaPodAnnotations.get(CLOUDPAK_ID_KEY),  is(CLOUDPAK_ID));
+        assertThat(kafkaPodAnnotations.get(PRODUCT_CHARGED_CONTAINERS_KEY),  is("kafka"));
         assertThat(kafkaPodAnnotations.get("prometheus.io/port"),  is(AbstractModel.DEFAULT_PROMETHEUS_PORT));
 
-        assertThat(zookeeperPodAnnotations.get("productID"),  is("ID"));
-        assertThat(zookeeperPodAnnotations.get("cloudpakId"),  is("c8b82d189e7545f0892db9ef2731b90d"));
-        assertThat(zookeeperPodAnnotations.get("productChargedContainers"),  is(""));
+        assertThat(zookeeperPodAnnotations.get(PRODUCT_ID_KEY),  is(PRODUCT_ID_PRODUCTION));
+        assertThat(zookeeperPodAnnotations.get(CLOUDPAK_ID_KEY),  is(CLOUDPAK_ID));
+        assertThat(zookeeperPodAnnotations.get(PRODUCT_CHARGED_CONTAINERS_KEY),  is(""));
     }
 
     @Test
@@ -141,15 +146,15 @@ public class EventStreamsKafkaModelTest {
         Map<String, String> kafkaPodAnnotations = kafka.getKafka().getSpec().getKafka().getTemplate().getPod().getMetadata().getAnnotations();
         Map<String, String> zookeeperPodAnnotations = kafka.getKafka().getSpec().getZookeeper().getTemplate().getPod().getMetadata().getAnnotations();
 
-        assertThat(kafkaPodAnnotations.get("productID"),  is("ID"));
-        assertThat(kafkaPodAnnotations.get("cloudpakId"),  is("c8b82d189e7545f0892db9ef2731b90d"));
-        assertThat(kafkaPodAnnotations.get("productChargedContainers"),  is("kafka"));
+        assertThat(kafkaPodAnnotations.get(PRODUCT_ID_KEY),  is(PRODUCT_ID_PRODUCTION));
+        assertThat(kafkaPodAnnotations.get(CLOUDPAK_ID_KEY),  is(CLOUDPAK_ID));
+        assertThat(kafkaPodAnnotations.get(PRODUCT_CHARGED_CONTAINERS_KEY),  is("kafka"));
         assertThat(kafkaPodAnnotations.get("prometheus.io/port"),  is(AbstractModel.DEFAULT_PROMETHEUS_PORT));
         assertThat(kafkaPodAnnotations.get(customAnnotationKey),  is(customAnnotationValue));
 
-        assertThat(zookeeperPodAnnotations.get("productID"),  is("ID"));
-        assertThat(zookeeperPodAnnotations.get("cloudpakId"),  is("c8b82d189e7545f0892db9ef2731b90d"));
-        assertThat(zookeeperPodAnnotations.get("productChargedContainers"),  is(""));
+        assertThat(zookeeperPodAnnotations.get(PRODUCT_ID_KEY),  is(PRODUCT_ID_PRODUCTION));
+        assertThat(zookeeperPodAnnotations.get(CLOUDPAK_ID_KEY),  is(CLOUDPAK_ID));
+        assertThat(zookeeperPodAnnotations.get(PRODUCT_CHARGED_CONTAINERS_KEY),  is(""));
     }
 
 
@@ -472,7 +477,7 @@ public class EventStreamsKafkaModelTest {
                 .addToLimits("memory", new Quantity("1Gi"))
                 .build();
         EventStreams eventStreamsInstance = createDefaultEventStreams()
-                .withNewSpec()
+                .editOrNewSpec()
                     .withStrimziOverrides(new KafkaSpecBuilder()
                             .withNewEntityOperator()
                                 .withNewTlsSidecar()
@@ -514,7 +519,7 @@ public class EventStreamsKafkaModelTest {
         metricsMap.put("rules", rules);
 
         EventStreams eventStreamsInstance = createDefaultEventStreams()
-            .withNewSpec()
+            .editOrNewSpec()
                 .withStrimziOverrides(new KafkaSpecBuilder()
                         .withNewKafka()
                             .addToMetrics(metricsMap)

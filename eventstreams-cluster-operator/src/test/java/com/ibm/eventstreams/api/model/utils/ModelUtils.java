@@ -15,6 +15,7 @@ package com.ibm.eventstreams.api.model.utils;
 
 import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.EndpointServiceType;
+import com.ibm.eventstreams.api.ProductUse;
 import com.ibm.eventstreams.api.TlsVersion;
 import com.ibm.eventstreams.api.model.AbstractSecureEndpointsModel;
 import com.ibm.eventstreams.api.model.EventStreamsKafkaModel;
@@ -54,6 +55,7 @@ public class ModelUtils {
                 .withNewSpec()
                     .withNewLicense()
                         .withAccept(true)
+                        .withUse(ProductUse.CP4I_PRODUCTION)
                     .endLicense()
                 .endSpec();
     }

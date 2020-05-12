@@ -44,6 +44,11 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 
+import static com.ibm.eventstreams.api.model.AbstractModel.CLOUDPAK_ID;
+import static com.ibm.eventstreams.api.model.AbstractModel.CLOUDPAK_ID_KEY;
+import static com.ibm.eventstreams.api.model.AbstractModel.PRODUCT_CHARGED_CONTAINERS_KEY;
+import static com.ibm.eventstreams.api.model.AbstractModel.PRODUCT_ID_KEY;
+import static com.ibm.eventstreams.api.model.AbstractModel.PRODUCT_ID_PRODUCTION;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
@@ -163,9 +168,9 @@ public class ReplicatorModelTest {
         Map<String, String> replicatorPodAnnotations = replicator.getSpec().getTemplate().getPod()
                 .getMetadata().getAnnotations();
 
-        assertThat(replicatorPodAnnotations.get("productID"),  is("ID"));
-        assertThat(replicatorPodAnnotations.get("cloudpakId"),  is("c8b82d189e7545f0892db9ef2731b90d"));
-        assertThat(replicatorPodAnnotations.get("productChargedContainers"),  is("georep"));
+        assertThat(replicatorPodAnnotations.get(PRODUCT_ID_KEY),  is(PRODUCT_ID_PRODUCTION));
+        assertThat(replicatorPodAnnotations.get(CLOUDPAK_ID_KEY),  is(CLOUDPAK_ID));
+        assertThat(replicatorPodAnnotations.get(PRODUCT_CHARGED_CONTAINERS_KEY),  is("georep"));
         assertThat(replicatorPodAnnotations.get("prometheus.io/port"),  is(AbstractModel.DEFAULT_PROMETHEUS_PORT));
 
     }

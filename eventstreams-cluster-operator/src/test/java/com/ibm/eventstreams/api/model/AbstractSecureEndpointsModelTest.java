@@ -14,6 +14,7 @@ package com.ibm.eventstreams.api.model;
 
 import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.EndpointServiceType;
+import com.ibm.eventstreams.api.ProductUse;
 import com.ibm.eventstreams.api.TlsVersion;
 import com.ibm.eventstreams.api.model.utils.ModelUtils;
 import com.ibm.eventstreams.api.spec.EndpointSpec;
@@ -115,6 +116,9 @@ public class AbstractSecureEndpointsModelTest {
     @Test
     public void testCreationOfServicesFromDefaultConfigurationOfEndpoints() {
         EventStreamsSpec spec = new EventStreamsSpecBuilder()
+            .editOrNewLicense()
+                .withUse(ProductUse.CP4I_PRODUCTION)
+            .endLicense()
             .withSecurity(new SecuritySpecBuilder()
                 .withInternalTls(TlsVersion.TLS_V1_2).build())
             .build();
@@ -155,6 +159,9 @@ public class AbstractSecureEndpointsModelTest {
     @Test
     public void testCreationOfEndpointFromMinimalConfigurationOfEndpoint() {
         EventStreamsSpec spec = new EventStreamsSpecBuilder()
+            .editOrNewLicense()
+                .withUse(ProductUse.CP4I_PRODUCTION)
+            .endLicense()
             .withSecurity(new SecuritySpecBuilder()
                 .withInternalTls(TlsVersion.TLS_V1_2).build())
             .build();
@@ -191,6 +198,9 @@ public class AbstractSecureEndpointsModelTest {
     @Test
     public void testCreationOfServicesFromDefaultNonTlsEventStreams() {
         EventStreamsSpec spec = new EventStreamsSpecBuilder()
+            .editOrNewLicense()
+                .withUse(ProductUse.CP4I_PRODUCTION)
+            .endLicense()
             .withSecurity(new SecuritySpecBuilder()
                 .withInternalTls(TlsVersion.NONE).build())
             .build();
@@ -231,6 +241,9 @@ public class AbstractSecureEndpointsModelTest {
     @Test
     public void testCreationOfServicesFromFullyConfiguredOfEndpoint() {
         EventStreamsSpec spec = new EventStreamsSpecBuilder()
+            .editOrNewLicense()
+                .withUse(ProductUse.CP4I_PRODUCTION)
+            .endLicense()
             .withSecurity(new SecuritySpecBuilder()
                 .withInternalTls(TlsVersion.TLS_V1_2).build())
             .build();
@@ -269,6 +282,9 @@ public class AbstractSecureEndpointsModelTest {
     @Test
     public void testCreationOfServicesFromMultipleEndpointConfigurations() {
         EventStreamsSpec spec = new EventStreamsSpecBuilder()
+            .editOrNewLicense()
+                .withUse(ProductUse.CP4I_PRODUCTION)
+            .endLicense()
             .withSecurity(new SecuritySpecBuilder()
                 .withInternalTls(TlsVersion.TLS_V1_2).build())
             .build();
@@ -318,6 +334,9 @@ public class AbstractSecureEndpointsModelTest {
     @Test
     public void testCreationOfVolumesWithNoCertOverrides() {
         EventStreamsSpec spec = new EventStreamsSpecBuilder()
+            .editOrNewLicense()
+                .withUse(ProductUse.CP4I_PRODUCTION)
+            .endLicense()
             .withSecurity(new SecuritySpecBuilder()
                 .withInternalTls(TlsVersion.TLS_V1_2).build())
             .build();
@@ -367,6 +386,9 @@ public class AbstractSecureEndpointsModelTest {
     @Test
     public void testCreationOfVolumesWithCertOverrides() {
         EventStreamsSpec spec = new EventStreamsSpecBuilder()
+            .editOrNewLicense()
+                .withUse(ProductUse.CP4I_PRODUCTION)
+            .endLicense()
             .withSecurity(new SecuritySpecBuilder()
                 .withInternalTls(TlsVersion.TLS_V1_2).build())
             .build();
@@ -413,6 +435,9 @@ public class AbstractSecureEndpointsModelTest {
     @Test
     public void testCreateVolumeMount() {
         EventStreamsSpec spec = new EventStreamsSpecBuilder()
+            .editOrNewLicense()
+                .withUse(ProductUse.CP4I_PRODUCTION)
+            .endLicense()
             .withSecurity(new SecuritySpecBuilder()
                 .withInternalTls(TlsVersion.NONE).build())
             .build();
