@@ -268,7 +268,6 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
             new EnvVarBuilder().withName("NAMESPACE").withValue(getNamespace()).build(),
             new EnvVarBuilder().withName("EVENTSTREAMS_API_GROUP").withValue(instance.getApiVersion()).build(),
             new EnvVarBuilder().withName("TRACE_SPEC").withValue(traceString).build(),
-            new EnvVarBuilder().withName("SCHEMA_REGISTRY_ENABLED").withValue(Boolean.toString(SchemaRegistryModel.isSchemaRegistryEnabled(instance))).build(),
             new EnvVarBuilder().withName("SCHEMA_REGISTRY_URL").withValue(schemaRegistryEndpoint).build(),
             new EnvVarBuilder().withName("ZOOKEEPER_CONNECT").withValue(zookeeperEndpoint).build(),
             new EnvVarBuilder().withName("PROMETHEUS_HOST").withValue(prometheusHost).build(),
