@@ -17,7 +17,6 @@ import io.strimzi.api.kafka.model.template.KafkaClusterTemplate;
 import io.strimzi.crdgenerator.annotations.Description;
 import io.strimzi.crdgenerator.annotations.KubeLink;
 import io.strimzi.crdgenerator.annotations.Minimum;
-import io.strimzi.crdgenerator.annotations.PreserveUnknownFields;
 import io.sundr.builder.annotations.Buildable;
 import lombok.EqualsAndHashCode;
 
@@ -95,7 +94,6 @@ public class KafkaClusterSpec implements UnknownPropertyPreserving, Serializable
 
     @Description("The kafka broker config. Properties with the following prefixes cannot be set: " + FORBIDDEN_PREFIXES + " (with the exception of: " + FORBIDDEN_PREFIX_EXCEPTIONS + ").")
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
-    @PreserveUnknownFields(true)
     public Map<String, Object> getConfig() {
         return config;
     }
@@ -230,7 +228,6 @@ public class KafkaClusterSpec implements UnknownPropertyPreserving, Serializable
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
     @Description("The Prometheus JMX Exporter configuration. " +
             "See https://github.com/prometheus/jmx_exporter for details of the structure of this configuration.")
-    @PreserveUnknownFields(true)
     public Map<String, Object> getMetrics() {
         return metrics;
     }

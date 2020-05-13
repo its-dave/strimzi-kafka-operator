@@ -1330,5 +1330,4 @@ spec:
                 type: object
               description: List of MirrorMaker 2.0 connector statuses, as reported
                 by the Kafka Connect REST API.
-              x-kubernetes-preserve-unknown-fields: true
           description: The status of the Kafka MirrorMaker 2.0 cluster.

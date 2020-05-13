@@ -2216,7 +2216,6 @@ spec:
                   required:
                   - type
                   description: Storage configuration (disk).
-                  x-kubernetes-preserve-unknown-fields: true
                 avro:
                   type: object
                   properties:

@@ -25,7 +25,6 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 
 import io.strimzi.api.kafka.model.status.ListenerStatus;
 import io.strimzi.crdgenerator.annotations.Description;
-import io.strimzi.crdgenerator.annotations.PreserveUnknownFields;
 import io.sundr.builder.annotations.Buildable;
 import lombok.EqualsAndHashCode;
 
@@ -57,7 +56,6 @@ public class EventStreamsStatus extends EventStreamsAbstractStatus {
     }
 
     @Description("OpenShift Routes created as part of the Event Streams cluster")
-    @PreserveUnknownFields(true)
     public Map<String, String> getRoutes() {
         return routes;
     }

@@ -18,7 +18,6 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.strimzi.api.kafka.model.storage.Storage;
 import io.strimzi.crdgenerator.annotations.Description;
-import io.strimzi.crdgenerator.annotations.PreserveUnknownFields;
 import io.sundr.builder.annotations.Buildable;
 import lombok.EqualsAndHashCode;
 
@@ -36,7 +35,6 @@ public class SchemaRegistrySpec extends SecurityComponentSpec {
     private ContainerSpec proxy;
 
     @Description("Storage configuration (disk).")
-    @PreserveUnknownFields(true)
     public Storage getStorage() {
         return storage;
     }

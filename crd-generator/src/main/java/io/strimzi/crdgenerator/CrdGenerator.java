@@ -24,7 +24,6 @@ import io.strimzi.crdgenerator.annotations.Maximum;
 import io.strimzi.crdgenerator.annotations.Minimum;
 import io.strimzi.crdgenerator.annotations.OneOf;
 import io.strimzi.crdgenerator.annotations.Pattern;
-import io.strimzi.crdgenerator.annotations.PreserveUnknownFields;
 import io.strimzi.crdgenerator.annotations.Type;
 
 import java.io.File;
@@ -536,11 +535,6 @@ public class CrdGenerator {
             result.put("x-kubernetes-preserve-unknown-fields", true);
         } catch (ClassCastException e) {
             // If Class throws ClassCastException, Class does not implement map, so do not override
-        }
-
-        if (element.isAnnotationPresent(PreserveUnknownFields.class)) {
-            PreserveUnknownFields preserve = element.getAnnotation(PreserveUnknownFields.class);
-            result.put("x-kubernetes-preserve-unknown-fields", preserve.value());
         }
     }
 
