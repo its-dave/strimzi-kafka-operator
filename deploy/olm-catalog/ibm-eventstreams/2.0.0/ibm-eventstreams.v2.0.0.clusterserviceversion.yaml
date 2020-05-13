@@ -599,6 +599,13 @@ spec:
         version: v1
       - kind: Pod
         version: v1
+    - description: Technology Preview feature. Used to define Kafka rebalance goals
+        for Cruise Control to carry out.
+      version: v1alpha1
+      displayName: Kafka Rebalance
+      kind: KafkaRebalance
+      name: kafkarebalances.eventstreams.ibm.com
+      resources: []
     - description: Used to enable IBM Event Stream's Geo-replication feature to synchronize
         data between clusters and aid in disaster recovery.
       version: v1alpha1

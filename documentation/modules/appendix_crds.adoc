@@ -35,7 +35,7 @@ Used in: xref:type-Kafka-{context}[`Kafka`]
 |xref:type-CertificateAuthority-{context}[`CertificateAuthority`]
 |clientsCa               1.2+<.<|Configuration of the clients certificate authority.
 |xref:type-CertificateAuthority-{context}[`CertificateAuthority`]
-|cruiseControl           1.2+<.<|Configuration for Cruise Control deployment. Deploys a Cruise Control instance when specified.
+|cruiseControl           1.2+<.<|This is a Technology Preview feature and is not supported by IBM. Configuration for Cruise Control deployment. Deploys a Cruise Control instance when specified.
 |xref:type-CruiseControlSpec-{context}[`CruiseControlSpec`]
 |jmxTrans                1.2+<.<|Configuration for JmxTrans. When the property is present a JmxTrans deployment is created for gathering JMX metrics from each Kafka broker. For more information see https://github.com/jmxtrans/jmxtrans[JmxTrans GitHub].
 |xref:type-JmxTransSpec-{context}[`JmxTransSpec`]

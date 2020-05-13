@@ -137,7 +137,7 @@ public class KafkaSpec implements UnknownPropertyPreserving, Serializable {
         this.kafkaExporter = kafkaExporter;
     }
 
-    @Description("Configuration for Cruise Control deployment. Deploys a Cruise Control instance when specified")
+    @Description("This is a Technology Preview feature and is not supported by IBM. Configuration for Cruise Control deployment. Deploys a Cruise Control instance when specified")
     public CruiseControlSpec getCruiseControl() {
         return cruiseControl;
     }

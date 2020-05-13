@@ -746,9 +746,11 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
         String loggingString = defaultString;
         if (logging != null && InlineLogging.TYPE_INLINE.equals(logging.getType())) {
             Map<String, String> loggers = ((InlineLogging) logging).getLoggers();
-            String firstKey = loggers.keySet().stream().findFirst().orElse(null);
-            if (firstKey != null) {
-                loggingString = loggers.get(firstKey);
+            if (loggers != null) {
+                String firstKey = loggers.keySet().stream().findFirst().orElse(null);
+                if (firstKey != null) {
+                    loggingString = loggers.get(firstKey);
+                }
             }
         }
         return loggingString;

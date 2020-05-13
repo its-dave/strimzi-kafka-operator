@@ -12,6 +12,7 @@ ${CP} "${INSTALL_DIR}/044-Crd-kafkauser.yaml" "${KAFKA_USER_CRD_FILE}"
 #${CP} ${INSTALL_DIR}/046-Crd-kafkabridge.yaml ${KAFKA_BRIDGE_CRD_FILE}
 ${CP} "${INSTALL_DIR}/047-Crd-kafkaconnector.yaml" "${KAFKA_CONNECTOR_CRD_FILE}"
 ${CP} "${INSTALL_DIR}/048-Crd-kafkamirrormaker2.yaml" "${KAFKA_MIRROR_MAKER_2_CRD_FILE}"
+${CP} "${INSTALL_DIR}/049-Crd-kafkarebalance.yaml" "${KAFKA_REBALANCE_CRD_FILE}"
 ${CP} "${INSTALL_DIR}/140-Crd-eventstreams.yaml" "${EVENTSTREAMS_CRD_FILE}"
 ${CP} "${INSTALL_DIR}/143-Crd-eventstreamsreplicator.yaml" "${EVENTSTREAMS_GEOREP_CRD_FILE}"
 yq w -i "${EVENTSTREAMS_CRD_FILE}" spec.version v1beta1

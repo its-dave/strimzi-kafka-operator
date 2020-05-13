@@ -16,6 +16,8 @@ import com.ibm.eventstreams.api.model.SchemaRegistryModel;
 import com.ibm.eventstreams.api.spec.ComponentSpec;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.spec.SchemaRegistrySpec;
+import io.strimzi.api.kafka.model.CruiseControlSpec;
+import io.strimzi.api.kafka.model.KafkaSpec;
 import io.strimzi.api.kafka.model.status.Condition;
 import io.strimzi.api.kafka.model.status.ConditionBuilder;
 import io.strimzi.api.kafka.model.storage.EphemeralStorage;
@@ -48,6 +50,7 @@ public class EventStreamsSpecChecker {
     public List<Condition> run() {
         List<Condition> warnings = new ArrayList<>();
         checkSchemaRegistryStorage(warnings);
+        checkCruiseControl(warnings);
         return warnings;
     }
 
@@ -64,6 +67,19 @@ public class EventStreamsSpecChecker {
                         "SchemaRegistryStorage",
                         "A Schema Registry with ephemeral storage will lose schemas after any restart or rolling update."));
             }
+        }
+    }
+
+    private void checkCruiseControl(List<Condition> warnings) {
+        Optional<CruiseControlSpec> cruiseControlSpec = Optional.ofNullable(spec)
+                                                            .map(EventStreamsSpec::getStrimziOverrides)
+                                                            .map(KafkaSpec::getCruiseControl);
+        if (cruiseControlSpec.isPresent()) {
+            warnings.add(buildCondition(
+                    "CruiseControlEnabled",
+                    "Technology Preview features are available to evaluate potential upcoming features. " +
+                            "These features are intended for testing purposes only and not for production use, and " +
+                            "are not supported by IBM."));
         }
     }
 

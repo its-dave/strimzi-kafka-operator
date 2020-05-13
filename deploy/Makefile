@@ -21,6 +21,7 @@ KAFKA_MIRROR_MAKER_CRD_FILE := $(CRD_DIR)/eventstreams.ibm.com_kafkamirrormaker_
 KAFKA_BRIDGE_CRD_FILE := $(CRD_DIR)/eventstreams.ibm.com_kafkabridge_crd.yaml
 KAFKA_CONNECTOR_CRD_FILE := $(CRD_DIR)/eventstreams.ibm.com_kafkaconnector_crd.yaml
 KAFKA_MIRROR_MAKER_2_CRD_FILE := $(CRD_DIR)/eventstreams.ibm.com_kafkamirrormaker2_crd.yaml
+KAFKA_REBALANCE_CRD_FILE := $(CRD_DIR)/eventstreams.ibm.com_kafkarebalance_crd.yaml
 
 BUNDLE_DIR = $(WORKING_DIR)/olm-catalog/$(OPERATOR_NAME)/$(CSV_VERSION)
 GENERATED_CSV := $(BUNDLE_DIR)/$(OPERATOR_NAME).v$(CSV_VERSION).clusterserviceversion.yaml
@@ -77,7 +78,7 @@ run_scorecard: build_csv
 	$(SED) -i s/"^kind: RoleBinding$$"/"kind: ClusterRoleBinding"/g $(ROLE_BINDING_FILE)
 	yq w -i $(OPERATOR_FILE) spec.template.spec.serviceAccountName eventstreams-cluster-operator
 	$(FIND) ../examples/eventstreams -type f -name '01-*.yaml' -exec yq w -i {} spec.license.accept true \;
-	cd .. && operator-sdk scorecard --verbose --config deploy/.osdk-scorecard.yaml 
+	cd .. && operator-sdk scorecard --verbose --config deploy/.osdk-scorecard.yaml
 
 	# cleanup
 	$(FIND) ../examples/eventstreams -type f -name '01-*.yaml' -exec yq w -i {} spec.license.accept false \;

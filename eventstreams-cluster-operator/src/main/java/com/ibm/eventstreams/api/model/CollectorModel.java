@@ -288,9 +288,11 @@ public class CollectorModel extends AbstractSecureEndpointsModel {
     private void setTraceLevel(Logging logging) {
         if (logging != null && InlineLogging.TYPE_INLINE.equals(logging.getType())) {
             Map<String, String> loggers = ((InlineLogging) logging).getLoggers();
-            String firstKey = loggers.keySet().stream().findFirst().orElse(null);
-            if (firstKey != null) {
-                traceLevel = loggers.get(firstKey);
+            if (loggers != null) {
+                String firstKey = loggers.keySet().stream().findFirst().orElse(null);
+                if (firstKey != null) {
+                    traceLevel = loggers.get(firstKey);
+                }
             }
         }
     }
