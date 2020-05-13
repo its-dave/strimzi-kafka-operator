@@ -41,6 +41,7 @@ import com.ibm.eventstreams.api.spec.SchemaRegistrySpec;
 import com.ibm.eventstreams.api.spec.SecurityComponentSpec;
 import com.ibm.eventstreams.api.spec.SecurityComponentSpecBuilder;
 import com.ibm.eventstreams.api.spec.SecuritySpecBuilder;
+import com.ibm.eventstreams.api.status.EventStreamsAbstractStatus;
 import com.ibm.eventstreams.api.status.EventStreamsAvailableVersions;
 import com.ibm.eventstreams.api.status.EventStreamsEndpoint;
 import com.ibm.eventstreams.api.status.EventStreamsEndpointBuilder;
@@ -51,6 +52,7 @@ import com.ibm.eventstreams.controller.utils.ConditionUtils;
 import com.ibm.eventstreams.controller.utils.ControllerUtils;
 import com.ibm.eventstreams.controller.utils.MetricsUtils;
 import com.ibm.eventstreams.rest.AuthenticationValidation;
+import com.ibm.eventstreams.rest.EndpointValidation;
 import com.ibm.iam.api.controller.Cp4iServicesBindingResourceOperator;
 import com.ibm.iam.api.spec.Cp4iServicesBinding;
 import com.ibm.iam.api.spec.Cp4iServicesBindingDoneable;
@@ -97,6 +99,7 @@ import io.strimzi.api.kafka.model.listener.KafkaListenerExternalRouteBuilder;
 import io.strimzi.api.kafka.model.listener.KafkaListenerTlsBuilder;
 import io.strimzi.api.kafka.model.listener.KafkaListenersBuilder;
 import io.strimzi.api.kafka.model.listener.TlsListenerConfigurationBuilder;
+import io.strimzi.api.kafka.model.status.Condition;
 import io.strimzi.api.kafka.model.status.KafkaStatusBuilder;
 import io.strimzi.api.kafka.model.status.KafkaUserStatusBuilder;
 import io.strimzi.api.kafka.model.status.ListenerAddressBuilder;
@@ -867,6 +870,57 @@ public class EventStreamsOperatorTest {
                 assertThat("Status is incorrect, found status : " + updatedEventStreams.getValue().getStatus(),
                         updatedEventStreams.getValue().getStatus().getConditions().get(0).getMessage(),
                         is("Listener client authentication unsupported for Geo Replication. Supported versions are TLS and SCRAM"));
+                async.flag();
+            })));
+    }
+
+    @Test
+    public void testEventStreamsHasMultipleEndpointWarningsThrows(VertxTestContext context) {
+        mockRoutes();
+        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
+
+        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+
+        EndpointSpec endpoint = new EndpointSpecBuilder()
+            .withName("Bad-Name")
+            .withContainerPort(7040)
+            .build();
+
+        EventStreams eventStreams = new EventStreamsBuilder()
+            .withMetadata(new ObjectMetaBuilder().withName(CLUSTER_NAME).withNamespace(NAMESPACE).build())
+            .withNewSpec()
+                .withNewLicense()
+                .withAccept(true)
+                .endLicense()
+                .withVersion(EventStreamsVersions.OPERAND_VERSION)
+                .withNewAdminApi()
+                    .withEndpoints(endpoint)
+                .endAdminApi()
+                .withStrimziOverrides(new KafkaSpecBuilder()
+                    .withNewKafka()
+                    .withNewListeners()
+                    .withNewPlain().endPlain()
+                    .endListeners()
+                    .endKafka()
+                    .build())
+            .endSpec()
+            .build();
+
+        ArgumentCaptor<EventStreams> updatedEventStreams = ArgumentCaptor.forClass(EventStreams.class);
+
+        Checkpoint async = context.checkpoint();
+        esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), eventStreams)
+            .onComplete(context.failing(e -> context.verify(() -> {
+                assertThat(e.getMessage(), is("Invalid Event Streams specification: further details in the status conditions"));
+                // check status
+
+                verify(esResourceOperator, times(2)).updateEventStreamsStatus(updatedEventStreams.capture());
+                Optional<List<Condition>> conditions = Optional.ofNullable(updatedEventStreams.getValue()).map(EventStreams::getStatus).map(EventStreamsAbstractStatus::getConditions);
+                assertThat(conditions.get().stream().filter(condition -> condition.getReason().equals(EndpointValidation.INVALID_PORT_REASON)).findFirst().get().getMessage(),
+                    is("adminApi has an endpoint that requested access on a reserved port between 7000 and 7999, inclusive. Edit spec.adminApi.endpoints to choose a port number outside of that range."));
+
+                assertThat(conditions.get().stream().filter(condition -> condition.getReason().equals(EndpointValidation.INVALID_ENDPOINT_NAME_REASON)).findFirst().get().getMessage(),
+                    is("adminApi has an endpoint with an invalid name. Acceptable names are lowercase alphanumeric with dashes (^[a-z][-a-z0-9]*$). Edit spec.adminApi.endpoints to provide a valid endpoint names."));
                 async.flag();
             })));
     }

@@ -41,7 +41,7 @@ import com.ibm.eventstreams.rest.AuthenticationValidation;
 import com.ibm.eventstreams.rest.EndpointValidation;
 import com.ibm.eventstreams.rest.LicenseValidation;
 import com.ibm.eventstreams.rest.NameValidation;
-import com.ibm.eventstreams.rest.ValidationResponsePayload.ValidationResponse;
+import com.ibm.eventstreams.rest.ValidationResponsePayload;
 import com.ibm.eventstreams.rest.VersionValidation;
 import com.ibm.iam.api.controller.Cp4iServicesBindingResourceOperator;
 import com.ibm.iam.api.model.ClientModel;
@@ -276,9 +276,11 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 addNotReadyCondition("InvalidVersion", "Invalid custom resource: Unsupported version. Supported versions are " + VersionValidation.VALID_APP_VERSIONS.toString());
                 isValidCR = false;
             }
-            ValidationResponse response = EndpointValidation.validateEndpoints(instance).getResponse();
-            if (response != null) {
-                addNotReadyCondition(EndpointValidation.FAILURE_REASON, response.getStatus().getMessage());
+            List<ValidationResponsePayload.ValidationResponse> responses = EndpointValidation.validateEndpoints(instance);
+            if (responses.size() > 0) {
+                responses.forEach(response -> {
+                    addNotReadyCondition(response.getStatus().getReason(), response.getStatus().getMessage());
+                });
                 isValidCR = false;
             }
             if (!ReplicatorSourceUsersModel.isValidInstance(instance)) {

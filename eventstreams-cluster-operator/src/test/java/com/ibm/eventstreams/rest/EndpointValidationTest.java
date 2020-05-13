@@ -19,7 +19,6 @@ import com.ibm.eventstreams.api.spec.EndpointSpec;
 import com.ibm.eventstreams.api.spec.EndpointSpecBuilder;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.controller.EventStreamsVerticle;
-
 import io.strimzi.api.kafka.model.KafkaClusterSpecBuilder;
 import io.strimzi.api.kafka.model.KafkaSpecBuilder;
 import io.vertx.core.json.JsonObject;
@@ -35,7 +34,6 @@ import java.util.Map;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-
 
 @ExtendWith(VertxExtension.class)
 public class EndpointValidationTest extends RestApiTest {
@@ -69,10 +67,10 @@ public class EndpointValidationTest extends RestApiTest {
             JsonObject responseObj = resp.bodyAsJsonObject();
             assertThat(responseObj.getJsonObject("response").getBoolean("allowed"), is(false));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("status"), is("Failure"));
-            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is(EndpointValidation.FAILURE_REASON));
+            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is(EndpointValidation.INVALID_PORT_REASON));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getInteger("code"), is(400));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("message"),
-                        is("adminApi endpoint configuration has requested access on a reserved port 7000 <= port <= 7999"));
+                        is("adminApi has an endpoint that requested access on a reserved port between 7000 and 7999, inclusive. Edit spec.adminApi.endpoints to choose a port number outside of that range."));
             async.flag();
         })));
     }
@@ -111,10 +109,10 @@ public class EndpointValidationTest extends RestApiTest {
             
             assertThat(responseObj.getJsonObject("response").getBoolean("allowed"), is(false));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("status"), is("Failure"));
-            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is(EndpointValidation.FAILURE_REASON));
+            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is(EndpointValidation.DUPLICATE_ENDPOINT_NAME_REASON));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getInteger("code"), is(400));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("message"),
-                        is("adminApi endpoint configuration has endpoints with the same name"));
+                        is("adminApi has multiple endpoints with the same name. Edit spec.adminApi.endpoints to ensure that each endpoint has a unique name."));
             async.flag();
         })));
     }
@@ -153,10 +151,10 @@ public class EndpointValidationTest extends RestApiTest {
             
             assertThat(responseObj.getJsonObject("response").getBoolean("allowed"), is(false));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("status"), is("Failure"));
-            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is(EndpointValidation.FAILURE_REASON));
+            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is(EndpointValidation.DUPLICATE_ENDPOINT_PORTS_REASON));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getInteger("code"), is(400));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("message"),
-                        is("adminApi endpoint configuration has endpoints with the same containerPort"));
+                        is("adminApi has multiple endpoints with the same containerPort. Edit spec.adminApi.endpoints to ensure that each endpoint has a unique containerPort."));
             async.flag();
         })));
     }
@@ -193,10 +191,10 @@ public class EndpointValidationTest extends RestApiTest {
             
             assertThat(responseObj.getJsonObject("response").getBoolean("allowed"), is(false));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("status"), is("Failure"));
-            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is(EndpointValidation.FAILURE_REASON));
+            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is(EndpointValidation.INVALID_ENDPOINT_TYPE_REASON));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getInteger("code"), is(400));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("message"),
-                        is("adminApi endpoint configuration has endpoints with invalid types. Acceptable types are 'Route' and 'Internal'"));
+                        is("adminApi has an endpoint with an invalid type. Acceptable types are 'Route' and 'Internal'. Edit spec.adminApi.endpoints to ensure that each endpoint has an acceptable type."));
             async.flag();
         })));
     }
@@ -231,10 +229,10 @@ public class EndpointValidationTest extends RestApiTest {
 
             assertThat(responseObj.getJsonObject("response").getBoolean("allowed"), is(false));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("status"), is("Failure"));
-            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is(EndpointValidation.FAILURE_REASON));
+            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is(EndpointValidation.INVALID_ENDPOINT_NAME_REASON));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getInteger("code"), is(400));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("message"),
-                is("adminApi endpoint configuration has endpoints with invalid names. Acceptable names are lowercase alphanumeric with dashes (^[a-z][-a-z0-9]*$)"));
+                is("adminApi has an endpoint with an invalid name. Acceptable names are lowercase alphanumeric with dashes (^[a-z][-a-z0-9]*$). Edit spec.adminApi.endpoints to provide a valid endpoint names."));
             async.flag();
         })));
     }
@@ -301,10 +299,10 @@ public class EndpointValidationTest extends RestApiTest {
             JsonObject responseObj = resp.bodyAsJsonObject();
             assertThat(responseObj.getJsonObject("response").getBoolean("allowed"), is(false));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("status"), is("Failure"));
-            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is(EndpointValidation.FAILURE_REASON));
+            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is(EndpointValidation.INVALID_EXTERNAL_KAFKA_LISTENER_TYPE));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getInteger("code"), is(400));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("message"),
-                        is("Invalid external kafka listener type, kafka listener can only have type 'route'"));
+                        is("spec.strimziOverrides.kafka.listener.external.type is an invalid listener type. Edit spec.strimziOverrides.kafka.listener.external.type to set 'route' as the value."));
             async.flag();
         })));
     }
@@ -340,10 +338,10 @@ public class EndpointValidationTest extends RestApiTest {
 
             assertThat(responseObj.getJsonObject("response").getBoolean("allowed"), is(false));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("status"), is("Failure"));
-            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is(EndpointValidation.FAILURE_REASON));
+            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is(EndpointValidation.UNSUPPORTED_ENDPOINT_AUTHENTICATION_MECHANISM_REASON));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getInteger("code"), is(400));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("message"),
-                is("restProducer endpoint configuration contains auth mechanism 'IAM-BEARER', which is prohibited for the Rest Producer"));
+                is("restProducer has an endpoint using authentication mechanism 'IAM-BEARER' which is not supported. Edit the authenticationMechanisms property in spec.restProducer.endpoints to set 'SCRAM-SHA-512', 'MAC', or both."));
             async.flag();
         })));
     }
@@ -443,10 +441,10 @@ public class EndpointValidationTest extends RestApiTest {
             JsonObject responseObj = resp.bodyAsJsonObject();
             assertThat(responseObj.getJsonObject("response").getBoolean("allowed"), is(false));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("status"), is("Failure"));
-            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is(EndpointValidation.FAILURE_REASON));
+            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is(EndpointValidation.INVALID_HOSTNAME_REASON));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getInteger("code"), is(400));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("message"),
-                is(String.format("Host name '%s' is an invalid hostname. A valid hostname has less than equal to 64 characters", endpoint.getHost())));
+                is(String.format("adminApi host '%s' is an invalid hostname. A valid hostname cannot be longer than 64 characters. Edit spec.adminApi.endpoints to provide a valid hostname.", endpoint.getHost())));
             async.flag();
         })));
     }
@@ -480,10 +478,10 @@ public class EndpointValidationTest extends RestApiTest {
             JsonObject responseObj = resp.bodyAsJsonObject();
             assertThat(responseObj.getJsonObject("response").getBoolean("allowed"), is(false));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("status"), is("Failure"));
-            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is(EndpointValidation.FAILURE_REASON));
+            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is(EndpointValidation.INVALID_HOSTNAME_REASON));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getInteger("code"), is(400));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("message"),
-                is(String.format("Host name '%s' is an invalid hostname. A valid hostname contains lowercase alphanumeric characters and '.'", endpoint.getHost())));
+                is(String.format("adminApi host '%s' is an invalid hostname. A valid hostname contains lowercase alphanumeric characters and full stops (^[a-z][-a-z0-9]*$). Edit spec.adminApi.endpoints to provide a valid hostname.", endpoint.getHost())));
             async.flag();
         })));
     }
@@ -494,7 +492,7 @@ public class EndpointValidationTest extends RestApiTest {
             .withName("test-endpoint")
             .withContainerPort(8888)
             .withHost("THIS-WON'T-Work")
-            .addToAuthenticationMechanisms("SCRAM-SHA-512", "IAM-BEARER")
+            .addToAuthenticationMechanisms("SCRAM-SHA-512")
             .build();
 
         EventStreams test = ModelUtils.createDefaultEventStreams("test-es")
@@ -517,10 +515,10 @@ public class EndpointValidationTest extends RestApiTest {
             JsonObject responseObj = resp.bodyAsJsonObject();
             assertThat(responseObj.getJsonObject("response").getBoolean("allowed"), is(false));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("status"), is("Failure"));
-            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is(EndpointValidation.FAILURE_REASON));
+            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is(EndpointValidation.INVALID_HOSTNAME_REASON));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getInteger("code"), is(400));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("message"),
-                is(String.format("Host name '%s' is an invalid hostname. A valid hostname contains lowercase alphanumeric characters and '.'", endpoint.getHost())));
+                is(String.format("restProducer host 'THIS-WON'T-Work' is an invalid hostname. A valid hostname contains lowercase alphanumeric characters and full stops (^[a-z][-a-z0-9]*$). Edit spec.restProducer.endpoints to provide a valid hostname.", endpoint.getHost())));
             async.flag();
         })));
     }
@@ -554,10 +552,10 @@ public class EndpointValidationTest extends RestApiTest {
             JsonObject responseObj = resp.bodyAsJsonObject();
             assertThat(responseObj.getJsonObject("response").getBoolean("allowed"), is(false));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("status"), is("Failure"));
-            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is(EndpointValidation.FAILURE_REASON));
+            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is(EndpointValidation.INVALID_HOSTNAME_REASON));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getInteger("code"), is(400));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("message"),
-                is(String.format("Host name '%s' is an invalid hostname. A valid hostname contains lowercase alphanumeric characters and '.'", endpoint.getHost())));
+                is(String.format("schemaRegistry host '%s' is an invalid hostname. A valid hostname contains lowercase alphanumeric characters and full stops (^[a-z][-a-z0-9]*$). Edit spec.schemaRegistry.endpoints to provide a valid hostname.", endpoint.getHost())));
             async.flag();
         })));
     }
@@ -586,10 +584,10 @@ public class EndpointValidationTest extends RestApiTest {
             JsonObject responseObj = resp.bodyAsJsonObject();
             assertThat(responseObj.getJsonObject("response").getBoolean("allowed"), is(false));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("status"), is("Failure"));
-            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is(EndpointValidation.FAILURE_REASON));
+            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is(EndpointValidation.INVALID_HOSTNAME_REASON));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getInteger("code"), is(400));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("message"),
-                is(String.format("Host name '%s' is an invalid hostname. A valid hostname contains lowercase alphanumeric characters and '.'", host)));
+                is(String.format("adminUi host '%s' is an invalid hostname. A valid hostname contains lowercase alphanumeric characters and full stops (^[a-z][-a-z0-9]*$). Edit spec.adminUi.endpoints to provide a valid hostname.", host)));
             async.flag();
         })));
     }
@@ -630,10 +628,11 @@ public class EndpointValidationTest extends RestApiTest {
             JsonObject responseObj = resp.bodyAsJsonObject();
             assertThat(responseObj.getJsonObject("response").getBoolean("allowed"), is(false));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("status"), is("Failure"));
-            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is(EndpointValidation.FAILURE_REASON));
+            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is(EndpointValidation.DUPLICATE_HOST_NAMES_REASON));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getInteger("code"), is(400));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("message"),
-                is("There are two or more hosts which have the same value, each host must be unique."));
+                is(String.format("There are two or more hosts that have the same value. Each host must have a unique value. To provide unique hostnames, edit spec.%s.endpoints, spec.%s.endpoints, spec.%s.endpoints, and spec.%s.host.",
+                    EndpointValidation.ADMIN_API_SPEC_NAME, EndpointValidation.REST_PRODUCER_SPEC_NAME, EndpointValidation.SCHEMA_REGISTRY_SPEC_NAME, EndpointValidation.ADMIN_UI_SPEC_NAME)));
             async.flag();
         })));
     }
@@ -672,10 +671,11 @@ public class EndpointValidationTest extends RestApiTest {
             JsonObject responseObj = resp.bodyAsJsonObject();
             assertThat(responseObj.getJsonObject("response").getBoolean("allowed"), is(false));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("status"), is("Failure"));
-            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is(EndpointValidation.FAILURE_REASON));
+            assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is(EndpointValidation.DUPLICATE_HOST_NAMES_REASON));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getInteger("code"), is(400));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("message"),
-                is("There are two or more hosts which have the same value, each host must be unique."));
+                is(String.format("There are two or more hosts that have the same value. Each host must have a unique value. To provide unique hostnames, edit spec.%s.endpoints, spec.%s.endpoints, spec.%s.endpoints, and spec.%s.host.",
+                    EndpointValidation.ADMIN_API_SPEC_NAME, EndpointValidation.REST_PRODUCER_SPEC_NAME, EndpointValidation.SCHEMA_REGISTRY_SPEC_NAME, EndpointValidation.ADMIN_UI_SPEC_NAME)));
             async.flag();
         })));
     }
