@@ -490,8 +490,8 @@ public class EventStreamsOperatorTest {
                 verify(esResourceOperator, times(2)).updateEventStreamsStatus(argument.capture());
 
                 EventStreamsStatus status = argument.getValue().getStatus();
-                assertThat(status.getConditions(), hasItem(hasProperty("reason", is("AuthenticationConfigurationWarning"))));
-                assertThat(status.getConditions(), hasItem(hasProperty("message", is(AuthenticationValidation.AUTH_ENDPOINT_UNAUTH_ES_WARNING))));
+                assertThat(status.getConditions(), hasItem(hasProperty("reason", is(AuthenticationValidation.ENDPOINT_AUTHENTICATED_WHEN_KAFKA_UNAUTHENTICATED_REASON))));
+                assertThat(status.getConditions(), hasItem(hasProperty("message", is(String.format(AuthenticationValidation.AUTH_ENDPOINT_UNAUTH_ES_WARNING, EndpointValidation.ADMIN_API_SPEC_NAME, EndpointValidation.ADMIN_API_SPEC_NAME)))));
             })))
             .map(v -> {
                 ArgumentCaptor<EventStreams> argument = ArgumentCaptor.forClass(EventStreams.class);
@@ -528,8 +528,8 @@ public class EventStreamsOperatorTest {
                 verify(esResourceOperator, times(3)).updateEventStreamsStatus(argument.capture());
 
                 EventStreamsStatus status = argument.getValue().getStatus();
-                assertThat(status.getConditions(), hasItem(hasProperty("reason", is("AuthenticationConfigurationWarning"))));
-                assertThat(status.getConditions(), hasItem(hasProperty("message", is(AuthenticationValidation.UNAUTH_ENDPOINT_AUTH_ES_WARNING))));
+                assertThat(status.getConditions(), hasItem(hasProperty("reason", is(AuthenticationValidation.ENDPOINT_UNAUTHENTICATED_WHEN_KAFKA_AUTHENTICATED_REASON))));
+                assertThat(status.getConditions(), hasItem(hasProperty("message", is(String.format(AuthenticationValidation.UNAUTH_ENDPOINT_AUTH_ES_WARNING, EndpointValidation.ADMIN_API_SPEC_NAME, EndpointValidation.ADMIN_API_SPEC_NAME)))));
                 async.flag();
             })));
     }

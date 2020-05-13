@@ -276,9 +276,9 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 addNotReadyCondition("InvalidVersion", "Invalid custom resource: Unsupported version. Supported versions are " + VersionValidation.VALID_APP_VERSIONS.toString());
                 isValidCR = false;
             }
-            List<ValidationResponsePayload.ValidationResponse> responses = EndpointValidation.validateEndpoints(instance);
-            if (responses.size() > 0) {
-                responses.forEach(response -> {
+            List<ValidationResponsePayload.ValidationResponse> endpointResponses = EndpointValidation.validateEndpoints(instance);
+            if (endpointResponses.size() > 0) {
+                endpointResponses.forEach(response -> {
                     addNotReadyCondition(response.getStatus().getReason(), response.getStatus().getMessage());
                 });
                 isValidCR = false;
@@ -287,8 +287,9 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 addNotReadyCondition("UnsupportedAuthorization", "Listener client authentication unsupported for Geo Replication. Supported versions are TLS and SCRAM");
                 isValidCR = false;
             }
-            if (AuthenticationValidation.shouldWarn(instance)) {
-                addWarningCondition("AuthenticationConfigurationWarning", AuthenticationValidation.getWarningReason(instance));
+            List<ValidationResponsePayload.ValidationResponse> authResponses = AuthenticationValidation.validateKafkaListenerAuthentication(instance);
+            if (authResponses.size() > 0) {
+                authResponses.forEach(response -> addWarningCondition(response.getStatus().getReason(), response.getStatus().getMessage()));
             }
 
             boolean adminApiRequested = Optional.ofNullable(instance.getSpec()).map(EventStreamsSpec::getAdminApi).isPresent();

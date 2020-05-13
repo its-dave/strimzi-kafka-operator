@@ -21,6 +21,7 @@ import com.ibm.eventstreams.api.spec.SecurityComponentSpec;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,27 +30,59 @@ import java.util.Optional;
 public class AuthenticationValidation extends AbstractValidation {
     private static final Logger log = LogManager.getLogger(AuthenticationValidation.class.getName());
 
-    public static final String UNAUTH_ENDPOINT_AUTH_ES_WARNING = "Event Streams components are authenticated but there is an Endpoint that is unauthenticated. "
-                                                                + "Clients connecting to unauthenticated endpoint will not be authorized to do anything!";
-    public static final String AUTH_ENDPOINT_UNAUTH_ES_WARNING = "Event Streams components are unauthenticated but there is an Endpoint that is authenticated. "
-                                                                + "Clients connecting in on the authenticated endpoint will need to be unnecessarily authenticated";
+    public static final String UNAUTH_ENDPOINT_AUTH_ES_WARNING = "At least one Kafka listener has required authentication. "
+        + "However, a supporting Event Streams component has an endpoint without authentication enabled. "
+        + "Clients connecting through this insecure endpoint will not have permission to access %s features. "
+        + "If authentication is required, edit spec.%s.endpoints in the CR YAML and add one or more of the following authenticationMechanisms: 'IAM-BEARER', 'SCRAM-SHA-512', or 'TLS'. ";
 
-    public static boolean shouldWarn(EventStreams instance) {
-        log.traceEntry(() -> instance);
-        return log.traceExit(!getWarningReason(instance).isEmpty());
-    }
+    public static final String AUTH_ENDPOINT_UNAUTH_ES_WARNING = "No authentication is enabled for Kafka listeners. "
+        + "However, there is a secure endpoint configured for %s. "
+        + "If Kafka authentication is not required, edit spec.%s.endpoints in the CR YAML to remove authenticationMechanisms from all endpoints. "
+        + "If authentication is required, enable it for Kafka listeners by setting the authentication type in one or more of the following locations: spec.strimziOverrides.kafka.listeners.external.authentication, spec.strimziOverrides.kafka.listeners.tls.authentication, and spec.strimziOverrides.kafka.listeners.plain.authentication.";
 
-    public static String getWarningReason(EventStreams instance) {
+    public static final String ENDPOINT_UNAUTHENTICATED_WHEN_KAFKA_AUTHENTICATED_REASON = "EndpointMissingAuthenticationWhenKafkaAuthenticated";
+    public static final String ENDPOINT_AUTHENTICATED_WHEN_KAFKA_UNAUTHENTICATED_REASON = "EndpointAuthenticatedWhenKafkaUnauthenticated";
+
+    public static List<ValidationResponsePayload.ValidationResponse> validateKafkaListenerAuthentication(EventStreams instance) {
         log.traceEntry(() -> instance);
         Map<ListenerType, ListenerAuthentication> listenerAuth = getListenerAuth(instance);
+        Optional<List<EndpointSpec>> adminApiEndpoints =  Optional.ofNullable(instance.getSpec())
+                                                            .map(EventStreamsSpec::getAdminApi)
+                                                            .map(SecurityComponentSpec::getEndpoints);
+
+        Optional<List<EndpointSpec>> restProducerEndpoints =  Optional.ofNullable(instance.getSpec())
+                                                                .map(EventStreamsSpec::getRestProducer)
+                                                                .map(SecurityComponentSpec::getEndpoints);
+
+        Optional<List<EndpointSpec>> schemaRegistryEndpoints = Optional.ofNullable(instance.getSpec())
+                                                                .map(EventStreamsSpec::getSchemaRegistry)
+                                                                .map(SecurityComponentSpec::getEndpoints);
+        List<ValidationResponsePayload.ValidationResponse> responses = new ArrayList<>();
 
         if (isAuthenticated(listenerAuth)) {
-            return (isEndpointConfigured(instance, false)) ? UNAUTH_ENDPOINT_AUTH_ES_WARNING : "";
+            if (isEndpointConfigured(adminApiEndpoints, false)) {
+                responses.add(ValidationResponsePayload.createFailureResponse(String.format(UNAUTH_ENDPOINT_AUTH_ES_WARNING, EndpointValidation.ADMIN_API_SPEC_NAME, EndpointValidation.ADMIN_API_SPEC_NAME), ENDPOINT_UNAUTHENTICATED_WHEN_KAFKA_AUTHENTICATED_REASON));
+            }
+            if (isEndpointConfigured(restProducerEndpoints, false)) {
+                responses.add(ValidationResponsePayload.createFailureResponse(String.format(UNAUTH_ENDPOINT_AUTH_ES_WARNING, EndpointValidation.REST_PRODUCER_SPEC_NAME, EndpointValidation.REST_PRODUCER_SPEC_NAME), ENDPOINT_UNAUTHENTICATED_WHEN_KAFKA_AUTHENTICATED_REASON));
+            }
+            if (isEndpointConfigured(schemaRegistryEndpoints, false)) {
+                responses.add(ValidationResponsePayload.createFailureResponse(String.format(UNAUTH_ENDPOINT_AUTH_ES_WARNING, EndpointValidation.SCHEMA_REGISTRY_SPEC_NAME, EndpointValidation.SCHEMA_REGISTRY_SPEC_NAME), ENDPOINT_UNAUTHENTICATED_WHEN_KAFKA_AUTHENTICATED_REASON));
+            }
+            return responses;
         }
 
-        return log.traceExit(isEndpointConfigured(instance, true) ? AUTH_ENDPOINT_UNAUTH_ES_WARNING : "");
+        if (isEndpointConfigured(adminApiEndpoints, true)) {
+            responses.add(ValidationResponsePayload.createFailureResponse(String.format(AUTH_ENDPOINT_UNAUTH_ES_WARNING, EndpointValidation.ADMIN_API_SPEC_NAME, EndpointValidation.ADMIN_API_SPEC_NAME), ENDPOINT_AUTHENTICATED_WHEN_KAFKA_UNAUTHENTICATED_REASON));
+        }
+        if (isEndpointConfigured(restProducerEndpoints, true)) {
+            responses.add(ValidationResponsePayload.createFailureResponse(String.format(AUTH_ENDPOINT_UNAUTH_ES_WARNING, EndpointValidation.REST_PRODUCER_SPEC_NAME, EndpointValidation.REST_PRODUCER_SPEC_NAME), ENDPOINT_AUTHENTICATED_WHEN_KAFKA_UNAUTHENTICATED_REASON));
+        }
+        if (isEndpointConfigured(schemaRegistryEndpoints, true)) {
+            responses.add(ValidationResponsePayload.createFailureResponse(String.format(AUTH_ENDPOINT_UNAUTH_ES_WARNING, EndpointValidation.SCHEMA_REGISTRY_SPEC_NAME, EndpointValidation.SCHEMA_REGISTRY_SPEC_NAME), ENDPOINT_AUTHENTICATED_WHEN_KAFKA_UNAUTHENTICATED_REASON));
+        }
+        return responses;
     }
-
 
     private static Map<ListenerType, ListenerAuthentication> getListenerAuth(EventStreams instance) {
         log.traceEntry(() -> instance);
@@ -73,27 +106,11 @@ public class AuthenticationValidation extends AbstractValidation {
         return log.traceExit(false);
     }
 
-    private static boolean isEndpointConfigured(EventStreams instance, boolean authenticatedEndpoint) {
-        log.traceEntry(() -> instance);
-        boolean adminApiAuthenticationEndpointExist = Optional.ofNullable(instance.getSpec())
-            .map(EventStreamsSpec::getAdminApi)
-            .map(SecurityComponentSpec::getEndpoints)
-            .map(endpoints -> hasAuthenticatedEndpoint(endpoints, authenticatedEndpoint))
-            .orElse(false);
-
-        boolean restProducerAuthenticationEndpointExist = Optional.ofNullable(instance.getSpec())
-            .map(EventStreamsSpec::getRestProducer)
-            .map(SecurityComponentSpec::getEndpoints)
-            .map(endpoints -> hasAuthenticatedEndpoint(endpoints, authenticatedEndpoint))
-            .orElse(false);
-
-        boolean schemaRegistryEndpointEndpointExist = Optional.ofNullable(instance.getSpec())
-            .map(EventStreamsSpec::getSchemaRegistry)
-            .map(SecurityComponentSpec::getEndpoints)
-            .map(endpoints -> hasAuthenticatedEndpoint(endpoints, authenticatedEndpoint))
-            .orElse(false);
-
-        return log.traceExit(adminApiAuthenticationEndpointExist || restProducerAuthenticationEndpointExist || schemaRegistryEndpointEndpointExist);
+    private static boolean isEndpointConfigured(Optional<List<EndpointSpec>> endpointSpecs, boolean authenticatedEndpoint) {
+        log.traceEntry(() -> endpointSpecs, () -> authenticatedEndpoint);
+        return log.traceExit(endpointSpecs
+                                .map(endpoints -> hasAuthenticatedEndpoint(endpoints, authenticatedEndpoint))
+                                .orElse(false));
     }
 
     private static boolean hasAuthenticatedEndpoint(List<EndpointSpec> endpoints, boolean authenticatedEndpoint) {

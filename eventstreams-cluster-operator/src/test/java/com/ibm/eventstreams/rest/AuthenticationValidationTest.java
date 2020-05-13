@@ -19,9 +19,11 @@ import com.ibm.eventstreams.api.spec.EventStreams;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
+import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
 
 public class AuthenticationValidationTest {
     private final String instanceName = "test-instance";
@@ -39,7 +41,51 @@ public class AuthenticationValidationTest {
         .build();
 
     @Test
-    public void DefaultEventStreamsConfigurationShouldNotCreateWarning() {
+    public void TestUnAuthEventStreamsConfigurationWithOneAuthenticatedAdminApiEndpointShouldWarn() {
+        EventStreams instance = ModelUtils.createDefaultEventStreams(instanceName)
+            .editSpec()
+            .withNewAdminApi()
+            .withEndpoints(authenticatedEndpoint)
+            .endAdminApi()
+            .withNewRestProducer()
+            .withEndpoints(unauthenticatedEndpoint)
+            .endRestProducer()
+            .withNewSchemaRegistry()
+            .withEndpoints(unauthenticatedEndpoint)
+            .endSchemaRegistry()
+            .endSpec()
+            .build();
+
+        List<ValidationResponsePayload.ValidationResponse> responses = AuthenticationValidation.validateKafkaListenerAuthentication(instance);
+        assertThat(responses, hasSize(1));
+        assertThat(responses.get(0).getStatus().getReason(), is(AuthenticationValidation.ENDPOINT_AUTHENTICATED_WHEN_KAFKA_UNAUTHENTICATED_REASON));
+        assertThat(responses.get(0).getStatus().getMessage(), is(String.format(AuthenticationValidation.AUTH_ENDPOINT_UNAUTH_ES_WARNING, EndpointValidation.ADMIN_API_SPEC_NAME, EndpointValidation.ADMIN_API_SPEC_NAME)));
+    }
+
+    @Test
+    public void TestUnAuthEventStreamsConfigurationWithOneAuthenticatedRestProducerEndpointShouldWarn() {
+        EventStreams instance = ModelUtils.createDefaultEventStreams(instanceName)
+            .editSpec()
+            .withNewAdminApi()
+            .withEndpoints(unauthenticatedEndpoint)
+            .endAdminApi()
+            .withNewRestProducer()
+            .withEndpoints(authenticatedEndpoint)
+            .endRestProducer()
+            .withNewSchemaRegistry()
+            .withEndpoints(unauthenticatedEndpoint)
+            .endSchemaRegistry()
+            .endSpec()
+            .build();
+
+        List<ValidationResponsePayload.ValidationResponse> responses = AuthenticationValidation.validateKafkaListenerAuthentication(instance);
+        assertThat(responses, hasSize(1));
+        assertThat(responses.get(0).getStatus().getReason(), is(AuthenticationValidation.ENDPOINT_AUTHENTICATED_WHEN_KAFKA_UNAUTHENTICATED_REASON));
+        assertThat(responses.get(0).getStatus().getMessage(), is(String.format(AuthenticationValidation.AUTH_ENDPOINT_UNAUTH_ES_WARNING, EndpointValidation.REST_PRODUCER_SPEC_NAME, EndpointValidation.REST_PRODUCER_SPEC_NAME)));
+    }
+
+    @Test
+    public void TestUnAuthEventStreamsConfigurationWithOneAuthenticatedSchemaRegistryEndpointShouldWarn() {
         EventStreams instance = ModelUtils.createDefaultEventStreams(instanceName)
             .editSpec()
                 .withNewAdminApi()
@@ -49,54 +95,19 @@ public class AuthenticationValidationTest {
                     .withEndpoints(unauthenticatedEndpoint)
                 .endRestProducer()
                 .withNewSchemaRegistry()
-                    .withEndpoints(unauthenticatedEndpoint)
-                .endSchemaRegistry()
-            .endSpec()
-            .build();
-
-        assertThat(AuthenticationValidation.shouldWarn(instance), is(false));
-    }
-
-    @Test
-    public void AuthenticatedEventStreamsConfigurationWithAuthEndpointsShouldNotCreateWarning() {
-        EventStreams instance = ModelUtils.createEventStreamsWithAuthentication(instanceName)
-            .editSpec()
-                .withNewAdminApi()
-                    .withEndpoints(authenticatedEndpoint)
-                .endAdminApi()
-                .withNewRestProducer()
-                    .withEndpoints(authenticatedEndpoint)
-                .endRestProducer()
-                .withNewSchemaRegistry()
                     .withEndpoints(authenticatedEndpoint)
                 .endSchemaRegistry()
             .endSpec()
             .build();
 
-        assertThat(AuthenticationValidation.shouldWarn(instance), is(false));
+        List<ValidationResponsePayload.ValidationResponse> responses = AuthenticationValidation.validateKafkaListenerAuthentication(instance);
+        assertThat(responses, hasSize(1));
+        assertThat(responses.get(0).getStatus().getReason(), is(AuthenticationValidation.ENDPOINT_AUTHENTICATED_WHEN_KAFKA_UNAUTHENTICATED_REASON));
+        assertThat(responses.get(0).getStatus().getMessage(), is(String.format(AuthenticationValidation.AUTH_ENDPOINT_UNAUTH_ES_WARNING, EndpointValidation.SCHEMA_REGISTRY_SPEC_NAME, EndpointValidation.SCHEMA_REGISTRY_SPEC_NAME)));
     }
 
     @Test
-    public void EventStreamsConfigurationWithOneUnauthenticatedEndpointShouldWarn() {
-        EventStreams instance = ModelUtils.createEventStreamsWithAuthentication(instanceName)
-            .editSpec()
-                .withNewAdminApi()
-                    .withEndpoints(unauthenticatedEndpoint)
-                .endAdminApi()
-                .withNewRestProducer()
-                    .withEndpoints(authenticatedEndpoint)
-                .endRestProducer()
-                .withNewSchemaRegistry()
-                    .withEndpoints(authenticatedEndpoint)
-                .endSchemaRegistry()
-            .endSpec()
-            .build();
-
-        assertThat(AuthenticationValidation.shouldWarn(instance), is(true));
-    }
-
-    @Test
-    public void EventStreamsConfigurationWithOneUnauthenticatedEndpointShouldGetWarningReason() {
+    public void TestAuthEventStreamsConfigurationWithOneUnauthenticatedAdminApiEndpointShouldGetWarningReason() {
         EventStreams instance = ModelUtils.createEventStreamsWithAuthentication(instanceName)
             .editSpec()
             .withNewAdminApi()
@@ -111,34 +122,18 @@ public class AuthenticationValidationTest {
             .endSpec()
             .build();
 
-        assertThat(AuthenticationValidation.getWarningReason(instance), is(AuthenticationValidation.UNAUTH_ENDPOINT_AUTH_ES_WARNING));
+        List<ValidationResponsePayload.ValidationResponse> responses = AuthenticationValidation.validateKafkaListenerAuthentication(instance);
+        assertThat(responses, hasSize(1));
+        assertThat(responses.get(0).getStatus().getReason(), is(AuthenticationValidation.ENDPOINT_UNAUTHENTICATED_WHEN_KAFKA_AUTHENTICATED_REASON));
+        assertThat(responses.get(0).getStatus().getMessage(), is(String.format(AuthenticationValidation.UNAUTH_ENDPOINT_AUTH_ES_WARNING, EndpointValidation.ADMIN_API_SPEC_NAME, EndpointValidation.ADMIN_API_SPEC_NAME)));
     }
 
     @Test
-    public void TestUnAuthEventStreamsConfigurationWithOneAuthenticatedEndpointShouldWarn() {
-        EventStreams instance = ModelUtils.createDefaultEventStreams(instanceName)
-            .editSpec()
-                .withNewAdminApi()
-                    .withEndpoints(unauthenticatedEndpoint)
-                .endAdminApi()
-                .withNewRestProducer()
-                    .withEndpoints(unauthenticatedEndpoint)
-                .endRestProducer()
-                .withNewSchemaRegistry()
-                    .withEndpoints(authenticatedEndpoint)
-                .endSchemaRegistry()
-            .endSpec()
-            .build();
-
-        assertThat(AuthenticationValidation.shouldWarn(instance), is(true));
-    }
-
-    @Test
-    public void TestUnAuthEventStreamsConfigurationWithOneAuthenticatedEndpointShouldGetWarningReason() {
-        EventStreams instance = ModelUtils.createDefaultEventStreams(instanceName)
+    public void TestAuthEventStreamsConfigurationWithOneUnauthenticatedRestProducerEndpointShouldGetWarningReason() {
+        EventStreams instance = ModelUtils.createEventStreamsWithAuthentication(instanceName)
             .editSpec()
             .withNewAdminApi()
-            .withEndpoints(unauthenticatedEndpoint)
+            .withEndpoints(authenticatedEndpoint)
             .endAdminApi()
             .withNewRestProducer()
             .withEndpoints(unauthenticatedEndpoint)
@@ -149,6 +144,81 @@ public class AuthenticationValidationTest {
             .endSpec()
             .build();
 
-        assertThat(AuthenticationValidation.getWarningReason(instance), is(AuthenticationValidation.AUTH_ENDPOINT_UNAUTH_ES_WARNING));
+        List<ValidationResponsePayload.ValidationResponse> responses = AuthenticationValidation.validateKafkaListenerAuthentication(instance);
+        assertThat(responses, hasSize(1));
+        assertThat(responses.get(0).getStatus().getReason(), is(AuthenticationValidation.ENDPOINT_UNAUTHENTICATED_WHEN_KAFKA_AUTHENTICATED_REASON));
+        assertThat(responses.get(0).getStatus().getMessage(), is(String.format(AuthenticationValidation.UNAUTH_ENDPOINT_AUTH_ES_WARNING, EndpointValidation.REST_PRODUCER_SPEC_NAME, EndpointValidation.REST_PRODUCER_SPEC_NAME)));
+    }
+
+    @Test
+    public void TestAuthEventStreamsConfigurationWithOneUnauthenticatedSchemaRegistryEndpointShouldGetWarningReason() {
+        EventStreams instance = ModelUtils.createEventStreamsWithAuthentication(instanceName)
+            .editSpec()
+            .withNewAdminApi()
+            .withEndpoints(authenticatedEndpoint)
+            .endAdminApi()
+            .withNewRestProducer()
+            .withEndpoints(authenticatedEndpoint)
+            .endRestProducer()
+            .withNewSchemaRegistry()
+            .withEndpoints(unauthenticatedEndpoint)
+            .endSchemaRegistry()
+            .endSpec()
+            .build();
+        List<ValidationResponsePayload.ValidationResponse> responses = AuthenticationValidation.validateKafkaListenerAuthentication(instance);
+        assertThat(responses, hasSize(1));
+        assertThat(responses.get(0).getStatus().getReason(), is(AuthenticationValidation.ENDPOINT_UNAUTHENTICATED_WHEN_KAFKA_AUTHENTICATED_REASON));
+        assertThat(responses.get(0).getStatus().getMessage(), is(String.format(AuthenticationValidation.UNAUTH_ENDPOINT_AUTH_ES_WARNING, EndpointValidation.SCHEMA_REGISTRY_SPEC_NAME, EndpointValidation.SCHEMA_REGISTRY_SPEC_NAME)));
+    }
+
+    @Test
+    public void TestUnAuthEventStreamsConfigurationWithMultipleAuthEndpointsHasMultipleWarningReasons() {
+        EventStreams instance = ModelUtils.createDefaultEventStreams(instanceName)
+            .editSpec()
+            .withNewAdminApi()
+            .withEndpoints(authenticatedEndpoint)
+            .endAdminApi()
+            .withNewRestProducer()
+            .withEndpoints(authenticatedEndpoint)
+            .endRestProducer()
+            .withNewSchemaRegistry()
+            .withEndpoints(authenticatedEndpoint)
+            .endSchemaRegistry()
+            .endSpec()
+            .build();
+        List<ValidationResponsePayload.ValidationResponse> responses = AuthenticationValidation.validateKafkaListenerAuthentication(instance);
+        assertThat(responses, hasSize(3));
+        assertThat(responses.get(0).getStatus().getReason(), is(AuthenticationValidation.ENDPOINT_AUTHENTICATED_WHEN_KAFKA_UNAUTHENTICATED_REASON));
+        assertThat(responses.get(0).getStatus().getMessage(), is(String.format(AuthenticationValidation.AUTH_ENDPOINT_UNAUTH_ES_WARNING, EndpointValidation.ADMIN_API_SPEC_NAME, EndpointValidation.ADMIN_API_SPEC_NAME)));
+        assertThat(responses.get(1).getStatus().getReason(), is(AuthenticationValidation.ENDPOINT_AUTHENTICATED_WHEN_KAFKA_UNAUTHENTICATED_REASON));
+        assertThat(responses.get(1).getStatus().getMessage(), is(String.format(AuthenticationValidation.AUTH_ENDPOINT_UNAUTH_ES_WARNING, EndpointValidation.REST_PRODUCER_SPEC_NAME, EndpointValidation.REST_PRODUCER_SPEC_NAME)));
+        assertThat(responses.get(2).getStatus().getReason(), is(AuthenticationValidation.ENDPOINT_AUTHENTICATED_WHEN_KAFKA_UNAUTHENTICATED_REASON));
+        assertThat(responses.get(2).getStatus().getMessage(), is(String.format(AuthenticationValidation.AUTH_ENDPOINT_UNAUTH_ES_WARNING, EndpointValidation.SCHEMA_REGISTRY_SPEC_NAME, EndpointValidation.SCHEMA_REGISTRY_SPEC_NAME)));
+    }
+
+    @Test
+    public void TestAuthEventStreamsConfigurationWithMultipleUnAuthEndpointsHasMultipleWarningReasons() {
+        EventStreams instance = ModelUtils.createEventStreamsWithAuthentication(instanceName)
+            .editSpec()
+            .withNewAdminApi()
+            .withEndpoints(unauthenticatedEndpoint)
+            .endAdminApi()
+            .withNewRestProducer()
+            .withEndpoints(unauthenticatedEndpoint)
+            .endRestProducer()
+            .withNewSchemaRegistry()
+            .withEndpoints(unauthenticatedEndpoint)
+            .endSchemaRegistry()
+            .endSpec()
+            .build();
+
+        List<ValidationResponsePayload.ValidationResponse> responses = AuthenticationValidation.validateKafkaListenerAuthentication(instance);
+        assertThat(responses, hasSize(3));
+        assertThat(responses.get(0).getStatus().getReason(), is(AuthenticationValidation.ENDPOINT_UNAUTHENTICATED_WHEN_KAFKA_AUTHENTICATED_REASON));
+        assertThat(responses.get(0).getStatus().getMessage(), is(String.format(AuthenticationValidation.UNAUTH_ENDPOINT_AUTH_ES_WARNING, EndpointValidation.ADMIN_API_SPEC_NAME, EndpointValidation.ADMIN_API_SPEC_NAME)));
+        assertThat(responses.get(1).getStatus().getReason(), is(AuthenticationValidation.ENDPOINT_UNAUTHENTICATED_WHEN_KAFKA_AUTHENTICATED_REASON));
+        assertThat(responses.get(1).getStatus().getMessage(), is(String.format(AuthenticationValidation.UNAUTH_ENDPOINT_AUTH_ES_WARNING, EndpointValidation.REST_PRODUCER_SPEC_NAME, EndpointValidation.REST_PRODUCER_SPEC_NAME)));
+        assertThat(responses.get(2).getStatus().getReason(), is(AuthenticationValidation.ENDPOINT_UNAUTHENTICATED_WHEN_KAFKA_AUTHENTICATED_REASON));
+        assertThat(responses.get(2).getStatus().getMessage(), is(String.format(AuthenticationValidation.UNAUTH_ENDPOINT_AUTH_ES_WARNING, EndpointValidation.SCHEMA_REGISTRY_SPEC_NAME, EndpointValidation.SCHEMA_REGISTRY_SPEC_NAME)));
     }
 }
