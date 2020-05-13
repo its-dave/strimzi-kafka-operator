@@ -140,7 +140,7 @@ public abstract class AbstractModel {
     protected static final String PRODUCT_VERSION = "2020.2.1";
     protected static final String PRODUCT_CLOUDPAK_RATIO_PRODUCTION = "1:1";
     protected static final String PRODUCT_CLOUDPAK_RATIO_NON_PRODUCTION = "2:1";
-    protected static final String PRODUCT_METRIC = "VPC";
+    protected static final String PRODUCT_METRIC = "VIRTUAL_PROCESSOR_CORE";
     protected static final String CLOUDPAK_ID = "c8b82d189e7545f0892db9ef2731b90d";
     protected static final String CLOUDPAK_NAME = "IBM Cloud Pak for Integration";
     protected static final String CLOUDPAK_VERSION = "2020.2.1";
