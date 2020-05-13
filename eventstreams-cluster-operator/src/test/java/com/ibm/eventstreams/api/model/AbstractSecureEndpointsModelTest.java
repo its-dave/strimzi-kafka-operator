@@ -104,7 +104,7 @@ public class AbstractSecureEndpointsModelTest {
         .withName("fully-configured")
         .withContainerPort(8080)
         .withType(EndpointServiceType.NODE_PORT)
-        .withTlsVersion(TlsVersion.TLS_V1_3)
+        .withTlsVersion(TlsVersion.TLS_V1_2)
         .withCertOverrides(new CertAndKeySecretSourceBuilder()
             .withCertificate("random-cert")
             .withKey("random-key")
@@ -596,7 +596,7 @@ public class AbstractSecureEndpointsModelTest {
         assertThat(envVars.get(1).getName(), is("ENDPOINTS"));
         assertThat(envVars.get(1).getValue(), is("9080,8080:fully-configured,7443:p2ptls"));
         assertThat(envVars.get(2).getName(), is("TLS_VERSION"));
-        assertThat(envVars.get(2).getValue(), is("9080,8080:TLSv1.3,7443:TLSv1.2"));
+        assertThat(envVars.get(2).getValue(), is("9080,8080:TLSv1.2,7443:TLSv1.2"));
         assertThat(envVars.get(3).getName(), is(SSL_TRUSTSTORE_P12_PATH_ENV_KEY));
         assertThat(envVars.get(3).getValue(), is("/certs/cluster/ca.p12"));
         assertThat(envVars.get(4).getName(), is(SSL_TRUSTSTORE_CRT_PATH_ENV_KEY));

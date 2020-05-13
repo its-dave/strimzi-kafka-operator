@@ -104,7 +104,6 @@ spec:
                         type: string
                         enum:
                         - TLSv1.2
-                        - TLSv1.3
                         - NONE
                         description: Defines which TLS version or no TLS version if
                           that will be used for the endpoint.
@@ -1615,7 +1614,6 @@ spec:
                         type: string
                         enum:
                         - TLSv1.2
-                        - TLSv1.3
                         - NONE
                         description: Defines which TLS version or no TLS version if
                           that will be used for the endpoint.
@@ -2462,7 +2460,6 @@ spec:
                         type: string
                         enum:
                         - TLSv1.2
-                        - TLSv1.3
                         - NONE
                         description: Defines which TLS version or no TLS version if
                           that will be used for the endpoint.
@@ -2949,7 +2946,6 @@ spec:
                   type: string
                   enum:
                   - TLSv1.2
-                  - TLSv1.3
                   - NONE
                   description: Configure what TLS version Event Streams components
                     use to communicate with one another.
