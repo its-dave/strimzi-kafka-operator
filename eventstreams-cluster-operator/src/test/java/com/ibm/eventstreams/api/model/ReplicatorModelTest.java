@@ -33,7 +33,6 @@ import io.strimzi.api.kafka.model.KafkaMirrorMaker2TlsBuilder;
 import io.strimzi.api.kafka.model.KafkaSpecBuilder;
 import io.strimzi.api.kafka.model.authentication.KafkaClientAuthentication;
 import io.strimzi.api.kafka.model.authentication.KafkaClientAuthenticationTlsBuilder;
-import io.strimzi.api.kafka.model.connect.ExternalConfiguration;
 import io.strimzi.operator.cluster.model.Ca;
 import io.strimzi.operator.common.model.Labels;
 import org.junit.jupiter.api.Test;
@@ -232,16 +231,6 @@ public class ReplicatorModelTest {
 
     private EventStreamsReplicatorBuilder createDefaultEventStreamsReplicator() {
         return ModelUtils.createDefaultEventStreamsReplicator(instanceName);
-    }
-
-    @Test
-    public void testDefaultReplicatorExternalConfiguration() {
-        ExternalConfiguration externalConfiguration = createDefaultReplicatorModel().getReplicator().getSpec().getExternalConfiguration();
-
-        assertThat(externalConfiguration.getVolumes().size(), is(1));
-        assertThat(externalConfiguration.getVolumes().get(0).getName(), is(ReplicatorSecretModel.REPLICATOR_SECRET_NAME));
-        assertThat(externalConfiguration.getVolumes().get(0).getSecret().getSecretName(), is(instanceName + "-" + AbstractModel.APP_NAME + "-"  + ReplicatorSecretModel.REPLICATOR_SECRET_NAME));
-        assertThat(externalConfiguration.getVolumes().get(0).getName(), is(ReplicatorSecretModel.REPLICATOR_SECRET_NAME));
     }
 
     private EventStreamsBuilder createDefaultEventStreams() {

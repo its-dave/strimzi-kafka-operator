@@ -12,47 +12,41 @@
  */
 package com.ibm.eventstreams.api.model;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
 import com.ibm.eventstreams.Main;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsReplicator;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.spec.ReplicatorSpec;
 import com.ibm.eventstreams.replicator.ReplicatorCredentials;
-import io.fabric8.kubernetes.api.model.SecretVolumeSourceBuilder;
+import io.fabric8.kubernetes.api.model.networking.NetworkPolicy;
+import io.fabric8.kubernetes.api.model.networking.NetworkPolicyEgressRule;
+import io.fabric8.kubernetes.api.model.networking.NetworkPolicyIngressRule;
+import io.fabric8.kubernetes.api.model.networking.NetworkPolicyIngressRuleBuilder;
 import io.strimzi.api.kafka.model.KafkaClusterSpec;
+import io.strimzi.api.kafka.model.KafkaMirrorMaker2;
+import io.strimzi.api.kafka.model.KafkaMirrorMaker2Builder;
 import io.strimzi.api.kafka.model.KafkaMirrorMaker2ClusterSpec;
 import io.strimzi.api.kafka.model.KafkaMirrorMaker2ClusterSpecBuilder;
 import io.strimzi.api.kafka.model.KafkaMirrorMaker2Spec;
 import io.strimzi.api.kafka.model.KafkaMirrorMaker2Tls;
 import io.strimzi.api.kafka.model.KafkaSpec;
 import io.strimzi.api.kafka.model.authentication.KafkaClientAuthentication;
-import io.strimzi.api.kafka.model.connect.ExternalConfiguration;
-import io.strimzi.api.kafka.model.connect.ExternalConfigurationBuilder;
-import io.strimzi.api.kafka.model.connect.ExternalConfigurationVolumeSourceBuilder;
 import io.strimzi.api.kafka.model.listener.KafkaListenerAuthentication;
 import io.strimzi.api.kafka.model.listener.KafkaListenerExternal;
 import io.strimzi.api.kafka.model.listener.KafkaListenerTls;
 import io.strimzi.api.kafka.model.listener.KafkaListeners;
 import io.strimzi.api.kafka.model.template.KafkaConnectTemplate;
 import io.strimzi.api.kafka.model.template.KafkaConnectTemplateBuilder;
-import io.strimzi.api.kafka.model.KafkaMirrorMaker2;
-import io.strimzi.api.kafka.model.KafkaMirrorMaker2Builder;
-
 import io.strimzi.operator.common.model.Labels;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import io.fabric8.kubernetes.api.model.networking.NetworkPolicyIngressRuleBuilder;
-import io.fabric8.kubernetes.api.model.networking.NetworkPolicy;
-import io.fabric8.kubernetes.api.model.networking.NetworkPolicyEgressRule;
-import io.fabric8.kubernetes.api.model.networking.NetworkPolicyIngressRule;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 public class ReplicatorModel extends AbstractModel {
 
@@ -178,18 +172,6 @@ public class ReplicatorModel extends AbstractModel {
 
             mm2Spec.setClusters(Collections.singletonList(newKafkaMirrorMaker2ClusterSpec));
         }
-
-
-        ExternalConfiguration externalConfiguration = new ExternalConfigurationBuilder()
-                .withVolumes(new ExternalConfigurationVolumeSourceBuilder()
-                        .withName(ReplicatorSecretModel.REPLICATOR_SECRET_NAME)
-                        .withSecret(new SecretVolumeSourceBuilder()
-                                .withSecretName(getDefaultResourceName(getInstanceName(),  ReplicatorSecretModel.REPLICATOR_SECRET_NAME))
-                                .build())
-                        .build())
-                .build();
-        mm2Spec.setExternalConfiguration(externalConfiguration);
-
 
         return new KafkaMirrorMaker2Builder()
                 .withApiVersion(KafkaMirrorMaker2.RESOURCE_GROUP + "/" + KafkaMirrorMaker2.V1ALPHA1)
