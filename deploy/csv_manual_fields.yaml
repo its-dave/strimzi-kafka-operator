@@ -378,6 +378,7 @@ spec:
   keywords: ['kafka', 'apachekafka', 'messaging', 'streams']
   labels:
     name: ibm-eventstreams
+    app: eventstreams
   links:
     - name: Website
       url: https://www.ibm.com/uk-en/cloud/event-streams

@@ -1345,6 +1345,7 @@ spec:
   - 'messaging'
   - 'streams'
   labels:
+    app: eventstreams
     name: ibm-eventstreams
   links:
   - name: Website
