@@ -241,8 +241,7 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
         return Optional.ofNullable(instance.getSpec())
                 .map(EventStreamsSpec::getSchemaRegistry)
                 .map(SchemaRegistrySpec::getReplicas)
-                .map(replicas -> replicas > 0)
-                .orElse(false);
+                .orElse(DEFAULT_REPLICAS) > 0;
     }
 
     /**

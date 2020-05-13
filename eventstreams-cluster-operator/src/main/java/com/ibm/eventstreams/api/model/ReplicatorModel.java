@@ -66,6 +66,7 @@ public class ReplicatorModel extends AbstractModel {
     protected static final String STATUS_STORAGE_TOPIC_NAME = "__eventstreams_georeplicator_status";
     public static final String BYTE_ARRAY_CONVERTER_NAME = "org.apache.kafka.connect.converters.ByteArrayConverter";
     public static final String REPLICATOR_SECRET_MOUNT_PATH = "/etc/georeplication";
+    private static final int DEFAULT_REPLICAS = 0;
 
     private NetworkPolicy networkPolicy;
     private KafkaMirrorMaker2 kafkaMirrorMaker2;
@@ -100,7 +101,7 @@ public class ReplicatorModel extends AbstractModel {
         Optional<ReplicatorSpec> eventStreamsreplicatorSpec = Optional.ofNullable(replicatorInstance.getSpec());
         KafkaMirrorMaker2Spec mm2Spec = mirrorMaker2 == null || mirrorMaker2.getSpec() == null ? new KafkaMirrorMaker2Spec() : mirrorMaker2.getSpec();
 
-        int replicas = eventStreamsreplicatorSpec.map(ReplicatorSpec::getReplicas).orElse(0);
+        int replicas = eventStreamsreplicatorSpec.map(ReplicatorSpec::getReplicas).orElse(DEFAULT_REPLICAS);
         mm2Spec.setReplicas(replicas);
 
         KafkaMirrorMaker2Tls caCert = replicatorCredentials.getReplicatorConnectTrustStore();
@@ -235,8 +236,7 @@ public class ReplicatorModel extends AbstractModel {
     public static boolean isReplicatorEnabled(EventStreamsReplicator replicatorInstance) {
         return Optional.ofNullable(replicatorInstance)
                 .map(replicator -> replicator.getSpec().getReplicas())
-                .map(replicas -> replicas > 0)
-                .orElse(false);
+                .orElse(DEFAULT_REPLICAS) > 0;
     }
 
     public static boolean isValidInstanceForGeoReplication(EventStreams instance) {
