@@ -28,13 +28,23 @@ import java.util.List;
 @JsonDeserialize(using = JsonDeserializer.None.class)
 @Buildable(editableEnabled = false, generateBuilderPackage = false, builderPackage = "io.fabric8.kubernetes.api.builder")
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({"customImages", "endpoints", "conditions"})
+@JsonPropertyOrder({"phase", "customImages", "endpoints", "conditions"})
 @EqualsAndHashCode
 public abstract class EventStreamsAbstractStatus implements Serializable {
 
+    private String phase;
     private boolean customImages;
     private EventStreamsVersions versions;
     private List<Condition> conditions;
+
+    @Description("Identifies the current status of the Event Streams instance. This will be 'Pending', 'Running', or 'Failed'")
+    public String getPhase() {
+        return phase;
+    }
+
+    public void setPhase(String phase) {
+        this.phase = phase;
+    }
 
 
     @Description("Identifies whether any of the Docker images have been modified from the defaults for this version of Event Streams")

@@ -13,6 +13,7 @@
 package com.ibm.eventstreams.api.spec;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -33,9 +34,10 @@ public class ReplicatorSpec implements Serializable  {
     private static final long serialVersionUID = 1L;
 
     private Integer replicas = 1;
+    private String version;
 
-    @Description("The number of connect replicas to start for Event Streams replication")
     @Minimum(1)
+    @Description("The number of Kafka Connect workers to start for Event Streams geo-replication")
     public Integer getReplicas() {
         return replicas;
     }
@@ -43,6 +45,17 @@ public class ReplicatorSpec implements Serializable  {
     public void setReplicas(Integer replicas) {
         this.replicas = replicas;
     }
+
+    @JsonProperty(required = true)
+    @Description("Version of the Event Streams geo-replicator")
+    public String getVersion() {
+        return version;
+    }
+
+    public void setVersion(String version) {
+        this.version = version;
+    }
+
 
 }
 

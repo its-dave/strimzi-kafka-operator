@@ -88,12 +88,12 @@ public class EventStreamsReplicatorVerticle extends AbstractVerticle {
 
             eventStreamsReplicatorOperator.createWatch(namespace, eventStreamsReplicatorOperator.recreateWatch(namespace))
                     .compose(w -> {
-                        log.info("Started operator for EventStreamsReplicator kind.");
+                        log.info("Started operator for EventStreamsGeoReplicator kind.");
                         eventStreamsReplicatorCRWatcher = w;
-                        log.info("Setting up periodic reconciliation for Replicator for namespace {}" + namespace);
+                        log.info("Setting up periodic reconciliation for geo-replicator for namespace {}" + namespace);
                         reconcileTimer = vertx.setPeriodic(reconciliationIntervalMilliSecs, handler -> {
                             Handler<AsyncResult<Void>> asyncHandler = ignoredHandler -> { };
-                            log.info("Triggering periodic reconciliation for Replicator for namespace {}..." + namespace);
+                            log.info("Triggering periodic reconciliation for geo-replicator for namespace {}..." + namespace);
                             eventStreamsReplicatorOperator.reconcileAll("timer", namespace, asyncHandler);
                         });
                         return Future.<Void>succeededFuture();

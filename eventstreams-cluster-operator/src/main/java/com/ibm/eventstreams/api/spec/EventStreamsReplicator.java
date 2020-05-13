@@ -24,6 +24,7 @@ import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.client.CustomResource;
 import io.strimzi.api.kafka.model.Constants;
 import io.strimzi.crdgenerator.annotations.Crd;
+import io.strimzi.crdgenerator.annotations.Description;
 import io.sundr.builder.annotations.Buildable;
 import io.sundr.builder.annotations.Inline;
 import lombok.EqualsAndHashCode;
@@ -48,7 +49,16 @@ import static java.util.Collections.unmodifiableList;
                 },
                 subresources = @Crd.Spec.Subresources(
                         status = @Crd.Spec.Subresources.Status()
-                )
+                ),
+                additionalPrinterColumns = {
+                        @Crd.Spec.AdditionalPrinterColumn(
+                                name = "Ready",
+                                description = "The status of the Event Streams geo-replicator cluster",
+                                jsonPath = ".status.conditions[?(@.type==\"Ready\")].status",
+                                type = "string",
+                                priority = 0
+                        )
+                }
         ))
 @Buildable(
         editableEnabled = false,
@@ -83,6 +93,7 @@ public class EventStreamsReplicator extends CustomResource {
     private ReplicatorSpec spec;
     private EventStreamsReplicatorStatus status;
 
+
     @Override
     public String toString() {
         YAMLMapper mapper = new YAMLMapper().disable(YAMLGenerator.Feature.USE_NATIVE_TYPE_ID);
@@ -110,6 +121,7 @@ public class EventStreamsReplicator extends CustomResource {
     }
 
     @JsonProperty(required = true)
+    @Description("The Event Streams geo-replicator specification")
     public ReplicatorSpec getSpec() {
         return spec;
     }
@@ -117,6 +129,8 @@ public class EventStreamsReplicator extends CustomResource {
     public void setSpec(ReplicatorSpec spec) {
         this.spec = spec;
     }
+
+
 
     public EventStreamsReplicatorStatus getStatus() {
         return status;

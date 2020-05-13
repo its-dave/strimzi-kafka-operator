@@ -42,8 +42,8 @@ public class ReplicatorDestinationUsersModel extends AbstractModel {
     private static final Logger log = LogManager.getLogger(ReplicatorDestinationUsersModel.class.getName());
 
     /**
-     * This class is used to create the KafkaUser custom resources required to deploy the replicator
-     * @param replicatorInstance The EventStreams Georeplicator instance
+     * This class is used to create the KafkaUser custom resources required to deploy the geo-replicator
+     * @param replicatorInstance The EventStreams geo-replicator instance
      * @param instance The Event Streams instance is used to get the security information from the main install
      */
     public ReplicatorDestinationUsersModel(EventStreamsReplicator replicatorInstance, EventStreams instance) {
@@ -337,6 +337,35 @@ public class ReplicatorDestinationUsersModel extends AbstractModel {
         } else {
             targetConnectorKafkaUser = null;
         }
+    }
+
+    public static boolean isValidInstance(EventStreams instance) {
+        boolean validInstance = true;
+
+        KafkaListenerAuthentication internalClientAuth = ReplicatorModel.getInternalTlsKafkaListenerAuthentication(instance);
+        if (internalClientAuth != null && !isSupportedAuthType(internalClientAuth)) {
+            validInstance = false;
+        }
+
+        KafkaListenerAuthentication externalClientAuth = ReplicatorModel.getExternalKafkaListenerAuthentication(instance);
+        if (externalClientAuth != null && !isSupportedAuthType(externalClientAuth)) {
+            validInstance = false;
+        }
+
+        return validInstance;
+    }
+
+    public static boolean isValidInternExternalConfig(EventStreams instance) {
+        boolean validInstance = true;
+
+        KafkaListenerAuthentication internalClientAuth = ReplicatorModel.getInternalTlsKafkaListenerAuthentication(instance);
+        KafkaListenerAuthentication externalClientAuth = ReplicatorModel.getExternalKafkaListenerAuthentication(instance);
+
+        if (internalClientAuth != null && externalClientAuth == null) {
+            validInstance = false;
+        }
+
+        return validInstance;
     }
 
 

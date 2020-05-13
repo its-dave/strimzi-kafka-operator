@@ -13,6 +13,7 @@
 package com.ibm.eventstreams.rest;
 
 import com.ibm.eventstreams.api.spec.EventStreams;
+import com.ibm.eventstreams.api.spec.EventStreamsReplicator;
 import com.ibm.eventstreams.api.status.EventStreamsVersions;
 import io.vertx.core.json.Json;
 import io.vertx.ext.web.RoutingContext;
@@ -31,6 +32,12 @@ public class VersionValidation extends AbstractValidation {
     public static final List<String> VALID_APP_VERSIONS = unmodifiableList(asList(EventStreamsVersions.OPERAND_VERSION, EventStreamsVersions.AUTO_UPGRADE_VERSION));
 
     public static boolean shouldReject(EventStreams customResourceSpec) {
+        return !(VALID_APP_VERSIONS.contains(customResourceSpec.getSpec().getVersion()));
+    }
+
+    //Can't easily pass in a CustomResource as a parameter as it doesn't have a spec so overloading the method definition
+    //Need to keep in sync with the shouldReject above
+    public static boolean shouldReject(EventStreamsReplicator customResourceSpec) {
         return !(VALID_APP_VERSIONS.contains(customResourceSpec.getSpec().getVersion()));
     }
 

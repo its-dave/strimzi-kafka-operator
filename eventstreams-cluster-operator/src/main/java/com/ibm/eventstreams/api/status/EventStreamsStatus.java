@@ -38,7 +38,6 @@ public class EventStreamsStatus extends EventStreamsAbstractStatus {
 
     private static final long serialVersionUID = 1L;
 
-    private String phase;
     private List<ListenerStatus> kafkaListeners;
     private String adminUiUrl;
     private Map<String, String> routes;
@@ -73,14 +72,6 @@ public class EventStreamsStatus extends EventStreamsAbstractStatus {
         this.endpoints = endpoints;
     }
 
-    @Description("Identifies the current status of the Event Streams instance. This will be 'Pending', 'Running', or 'Failed'")
-    public String getPhase() {
-        return phase;
-    }
-
-    public void setPhase(String phase) {
-        this.phase = phase;
-    }
 
     @Description("Web address for the Event Streams administration UI")
     public String getAdminUiUrl() {

@@ -44,13 +44,13 @@ public class ReplicatorSecretModel extends AbstractModel {
     }
 
     /**
-     * @return Secret return the replicators secret
+     * @return Secret return the geo-replicator secret
      */
     public Secret getSecret() {
         return this.secret;
     }
     /**
-     * @return String return the replicators secret name
+     * @return String return the geo-replicator secret name
      */
     public String getSecretName() {
         return getDefaultResourceName(getInstanceName(), REPLICATOR_SECRET_NAME);

@@ -26,7 +26,7 @@ import lombok.EqualsAndHashCode;
 @JsonDeserialize(using = JsonDeserializer.None.class)
 @Buildable(editableEnabled = false, generateBuilderPackage = false, builderPackage = "io.fabric8.kubernetes.api.builder")
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({"customImages", "endpoints", "conditions", "message"})
+@JsonPropertyOrder({"phase", "customImages", "endpoints", "conditions"})
 @EqualsAndHashCode
 public class EventStreamsReplicatorStatus extends EventStreamsAbstractStatus {
 

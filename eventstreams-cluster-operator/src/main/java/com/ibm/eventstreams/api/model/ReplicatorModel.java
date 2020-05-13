@@ -75,7 +75,7 @@ public class ReplicatorModel extends AbstractModel {
 
     /**
      * This class is used to model a KafkaMirrorMaker2 custom resource used by the strimzi cluster operator,
-     * it is also used to create the kube resources required to correctly deploy the replicator
+     * it is also used to create the kube resources required to correctly deploy the geo-replicator
      * @param replicatorInstance
      * @param instance
      * @param replicatorCredentials
@@ -314,7 +314,7 @@ public class ReplicatorModel extends AbstractModel {
     }
 
     /**
-     * @return KafkaMirrorMaker2 the current implementation of the replicator
+     * @return KafkaMirrorMaker2 the current implementation of the geo-replicator
      */
     public KafkaMirrorMaker2 getReplicator() {
         return this.kafkaMirrorMaker2;

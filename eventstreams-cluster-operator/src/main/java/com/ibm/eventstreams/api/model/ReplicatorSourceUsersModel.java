@@ -132,11 +132,6 @@ public class ReplicatorSourceUsersModel extends AbstractModel {
     public static boolean isValidInstance(EventStreams instance) {
         boolean validInstance = true;
 
-        KafkaListenerAuthentication internalClientAuth = ReplicatorModel.getInternalTlsKafkaListenerAuthentication(instance);
-        if (internalClientAuth != null && !isSupportedAuthType(internalClientAuth)) {
-            validInstance = false;
-        }
-
         KafkaListenerAuthentication externalClientAuth = ReplicatorModel.getExternalKafkaListenerAuthentication(instance);
         if (externalClientAuth != null && !isSupportedAuthType(externalClientAuth)) {
             validInstance = false;

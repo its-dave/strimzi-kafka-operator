@@ -162,9 +162,9 @@ public class Main {
             vertx.deployVerticle(eventSteamsReplicatorVerticle,
                 result -> {
                     if (result.succeeded()) {
-                        log.info("EventStreams Replicator Operator verticle started in namespace {}", namespace);
+                        log.info("EventStreams geo-replicator operator verticle started in namespace {}", namespace);
                     } else {
-                        log.error("EventStreams Replicator Operator verticle in namespace {} failed to start", namespace, result.cause());
+                        log.error("EventStreams geo-replicator operator verticle in namespace {} failed to start", namespace, result.cause());
                         System.exit(1);
                     }
                     replicatorPromise.handle(result);

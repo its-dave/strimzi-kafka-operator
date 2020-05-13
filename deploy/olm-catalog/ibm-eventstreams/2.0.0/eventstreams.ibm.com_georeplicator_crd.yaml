@@ -19,6 +19,11 @@ spec:
     plural: eventstreamsgeoreplicators
     shortNames:
     - esgr
+  additionalPrinterColumns:
+  - name: Ready
+    description: The status of the Event Streams geo-replicator cluster
+    JSONPath: .status.conditions[?(@.type=="Ready")].status
+    type: string
   subresources:
     status: {}
   preserveUnknownFields: false
@@ -32,11 +37,21 @@ spec:
             replicas:
               type: integer
               minimum: 1
-              description: The number of connect replicas to start for Event Streams
-                replication.
+              description: The number of Kafka Connect workers to start for Event
+                Streams geo-replication.
+            version:
+              type: string
+              description: Version of the Event Streams geo-replicator.
+          required:
+          - version
+          description: The Event Streams geo-replicator specification.
         status:
           type: object
           properties:
+            phase:
+              type: string
+              description: Identifies the current status of the Event Streams instance.
+                This will be 'Pending', 'Running', or 'Failed'.
             customImages:
               type: boolean
               description: Identifies whether any of the Docker images have been modified
