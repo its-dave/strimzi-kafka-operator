@@ -72,7 +72,7 @@ oc apply -f install/ibm-eventstreams-operator/
 Finally you can create an instance of the EventStreams Custom resource.
 
 ```
-oc apply -f examples/eventstreams/01-eventstreams-quickstart.yaml
+oc apply -f examples/eventstreams/01-quickstart.yaml
 ```
 
 ### Watching multiple namespaces

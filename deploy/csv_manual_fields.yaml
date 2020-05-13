@@ -14,28 +14,28 @@ metadata:
         vpc: '1'
         cpu: '4'
         memory: '4 GB'
-    one-broker-sample:
+    sample-1-broker:
       name: 1 broker
       description: Secure development cluster with a single Kafka broker
       resources:
         vpc: '1'
         cpu: '4'
         memory: '4 GB'
-    three-broker-sample:
+    sample-3-broker:
       name: 3 brokers
       description: Secure production cluster with three Kafka brokers
       resources:
         vpc: '13'
         cpu: '16'
         memory: '29 GB'
-    six-broker-sample:
+    sample-6-broker:
       name: 6 brokers
       description: Secure production cluster with six Kafka brokers
       resources:
         vpc: '25'
         cpu: '28'
         memory: '53 GB'
-    nine-broker-sample:
+    sample-9-broker:
       name: 9 brokers
       description: Secure production cluster with nine Kafka brokers
       resources:

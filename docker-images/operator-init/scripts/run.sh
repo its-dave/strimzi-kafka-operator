@@ -298,7 +298,7 @@ echo "---------------------------------------------------------------"
 
 echo "Creating ConsoleYAMLSample samples"
 
-all_samples=("eventstreams-quickstart" "eventstreams-sample-1" "eventstreams-sample-3" "eventstreams-sample-6" "eventstreams-sample-9")
+all_samples=("quickstart" "sample-1-broker" "sample-3-broker" "sample-6-broker" "sample-9-broker")
 samples_to_create=()
 
 for consolesamplename in "${all_samples[@]}"
@@ -319,13 +319,13 @@ echo "Creating missing ConsoleYAMLSamples"
 for consolesamplecreatename in "${samples_to_create[@]}"
 do
   case $consolesamplecreatename in
-    "eventstreams-quickstart")
+    "quickstart")
       echo "Creating the quickstart sample"
       ! cat <<EOF | kubectl apply -f -
 apiVersion: console.openshift.io/v1
 kind: ConsoleYAMLSample
 metadata:
-  name: eventstreams-quickstart
+  name: quickstart
   ownerReferences:
   - apiVersion: $OWNER_APIVERSION
     kind: $OWNER_KIND
@@ -381,13 +381,13 @@ spec:
                 metrics: {}
 EOF
       ;;
-    "eventstreams-sample-1")
+    "sample-1-broker")
       echo "Creating the one-broker sample"
       ! cat <<EOF | kubectl apply -f -
 apiVersion: console.openshift.io/v1
 kind: ConsoleYAMLSample
 metadata:
-  name: eventstreams-sample-1
+  name: sample-1-broker
   ownerReferences:
   - apiVersion: $OWNER_APIVERSION
     kind: $OWNER_KIND
@@ -404,7 +404,7 @@ spec:
     apiVersion: eventstreams.ibm.com/v1beta1
     kind: EventStreams
     metadata:
-        name: sample-one
+        name: sample-1-broker
         namespace: placeholder
     spec:
         license:
@@ -445,13 +445,13 @@ spec:
                 metrics: {}
 EOF
       ;;
-    "eventstreams-sample-3")
+    "sample-3-broker")
       echo "Creating the three-brokers sample"
       ! cat <<EOF | kubectl apply -f -
 apiVersion: console.openshift.io/v1
 kind: ConsoleYAMLSample
 metadata:
-  name: eventstreams-sample-3
+  name: sample-3-broker
   ownerReferences:
   - apiVersion: $OWNER_APIVERSION
     kind: $OWNER_KIND
@@ -468,7 +468,7 @@ spec:
     apiVersion: eventstreams.ibm.com/v1beta1
     kind: EventStreams
     metadata:
-        name: sample-three
+        name: sample-3-broker
         namespace: placeholder
     spec:
         license:
@@ -521,13 +521,13 @@ spec:
                 metrics: {}
 EOF
       ;;
-    "eventstreams-sample-6")
+    "sample-6-broker")
       echo "Creating the six-brokers sample"
       ! cat <<EOF | kubectl apply -f -
 apiVersion: console.openshift.io/v1
 kind: ConsoleYAMLSample
 metadata:
-  name: eventstreams-sample-6
+  name: sample-6-broker
   ownerReferences:
   - apiVersion: $OWNER_APIVERSION
     kind: $OWNER_KIND
@@ -544,7 +544,7 @@ spec:
     apiVersion: eventstreams.ibm.com/v1beta1
     kind: EventStreams
     metadata:
-        name: sample-six
+        name: sample-6-broker
         namespace: placeholder
     spec:
         license:
@@ -597,13 +597,13 @@ spec:
                 metrics: {}
 EOF
       ;;
-    "eventstreams-sample-9")
+    "sample-9-broker")
       echo "Creating the nine-brokers sample"
       ! cat <<EOF | kubectl apply -f -
 apiVersion: console.openshift.io/v1
 kind: ConsoleYAMLSample
 metadata:
-  name: eventstreams-sample-9
+  name: sample-9-broker
   ownerReferences:
   - apiVersion: $OWNER_APIVERSION
     kind: $OWNER_KIND
@@ -620,7 +620,7 @@ spec:
     apiVersion: eventstreams.ibm.com/v1beta1
     kind: EventStreams
     metadata:
-        name: sample-nine
+        name: sample-9-broker
         namespace: placeholder
     spec:
         license:
@@ -677,11 +677,11 @@ EOF
 done
 
 echo "Verifying Console YAML samples:"
-! kubectl get ConsoleYAMLSample eventstreams-quickstart -o yaml
-! kubectl get ConsoleYAMLSample eventstreams-sample-1 -o yaml
-! kubectl get ConsoleYAMLSample eventstreams-sample-3 -o yaml
-! kubectl get ConsoleYAMLSample eventstreams-sample-6 -o yaml
-! kubectl get ConsoleYAMLSample eventstreams-sample-9 -o yaml
+! kubectl get ConsoleYAMLSample quickstart -o yaml
+! kubectl get ConsoleYAMLSample sample-1-broker -o yaml
+! kubectl get ConsoleYAMLSample sample-3-broker -o yaml
+! kubectl get ConsoleYAMLSample sample-6-broker -o yaml
+! kubectl get ConsoleYAMLSample sample-9-broker -o yaml
 
 
 echo "---------------------------------------------------------------"

@@ -1,0 +1,50 @@
+apiVersion: eventstreams.ibm.com/v1beta1
+kind: EventStreams
+metadata:
+  name: sample-3-broker
+spec:
+  license:
+    accept: false
+    use: CloudPakForIntegrationProduction
+  version: 2020.2.1
+  adminApi: {}
+  adminUI: {}
+  collector: {}
+  restProducer: {}
+  schemaRegistry:
+    storage:
+      type: ephemeral
+  strimziOverrides:
+    kafka:
+      replicas: 3
+      config:
+        interceptor.class.names: com.ibm.eventstreams.interceptors.metrics.ProducerMetricsInterceptor
+        num.replica.fetchers: 3
+        num.io.threads: 24
+        num.network.threads: 9
+        log.cleaner.threads: 6
+      listeners:
+        external:
+          type: route
+          authentication:
+            type: scram-sha-512
+        tls:
+          authentication:
+            type: tls
+      authorization:
+        type: runas
+      storage:
+        type: ephemeral
+      metrics: {}
+      resources:
+        requests:
+          memory: 8096Mi
+          cpu: 4000m
+        limits:
+          memory: 8096Mi
+          cpu: 4000m
+    zookeeper:
+      replicas: 3
+      storage:
+        type: ephemeral
+      metrics: {}
