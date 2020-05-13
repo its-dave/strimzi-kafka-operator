@@ -898,10 +898,11 @@ spec:
                     prefixes cannot be set: listeners, advertised., broker., listener.,
                     host.name, port, inter.broker.listener.name, sasl., ssl., security.,
                     password., principal.builder.class, log.dir, zookeeper.connect,
-                    zookeeper.set.acl, authorizer., super.usercruise.control.metrics.topic,
+                    zookeeper.set.acl, authorizer., super.user, cruise.control.metrics.topic,
                     cruise.control.metrics.reporter.bootstrap.servers (with the exception
                     of: zookeeper.connection.timeout.ms, ssl.cipher.suites, ssl.protocol,
-                    ssl.enabled.protocols).'
+                    ssl.enabled.protocols,cruise.control.metrics.topic.num.partitions,
+                    cruise.control.metrics.topic.replication.factor, cruise.control.metrics.topic.retention.ms).'
                   x-kubernetes-preserve-unknown-fields: true
                 rack:
                   type: object
@@ -4944,7 +4945,7 @@ spec:
                     failed.brokers.zk.path,webserver.http., webserver.api.urlprefix,
                     webserver.session.path, webserver.accesslog., two.step., request.reason.required,metric.reporter.sampler.bootstrap.servers,
                     metric.reporter.topic, partition.metric.sample.store.topic, broker.metric.sample.store.topic,capacity.config.file,
-                    self.healing., ssl.'
+                    self.healing., anomaly.detection., ssl.'
                   x-kubernetes-preserve-unknown-fields: true
                 livenessProbe:
                   type: object
