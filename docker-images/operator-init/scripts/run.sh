@@ -483,8 +483,6 @@ spec:
         schemaRegistry:
             storage:
                 type: ephemeral
-        security:
-            internalTls: TLSv1.2
         strimziOverrides:
             kafka:
                 replicas: 3
@@ -559,8 +557,6 @@ spec:
         schemaRegistry:
             storage:
                 type: ephemeral
-        security:
-            internalTls: TLSv1.2
         strimziOverrides:
             kafka:
                 replicas: 6
@@ -635,8 +631,6 @@ spec:
         schemaRegistry:
             storage:
                 type: ephemeral
-        security:
-            internalTls: TLSv1.2
         strimziOverrides:
             kafka:
                 replicas: 9

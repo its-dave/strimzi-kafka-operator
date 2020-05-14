@@ -194,16 +194,10 @@ public class EventStreamsKafkaModel extends AbstractModel {
                 .editOrNewZookeeper()
                     .addToMetrics(getZookeeperMetricsConfig().isEmpty() ? null : getZookeeperMetricsConfig())
                     .withResources(getZookeeperResources())
-                    .editOrNewTlsSidecar()
-                        .withResources(getZookeeperTlsResources())
-                    .endTlsSidecar()
                     .editOrNewTemplate()
                         .editOrNewZookeeperContainer()
                             .withSecurityContext(writableFsSecurityContext)
                         .endZookeeperContainer()
-                        .editOrNewTlsSidecarContainer()
-                            .withSecurityContext(writableFsSecurityContext)
-                        .endTlsSidecarContainer()
                         .editOrNewPod()
                             .editOrNewMetadata()
                                 .addToAnnotations(getEventStreamsMeteringAnnotations())
@@ -403,18 +397,6 @@ public class EventStreamsKafkaModel extends AbstractModel {
                 .orElseGet(ResourceRequirements::new);
         return getResourceRequirements(zookeeperResources, DefaultResourceRequirements.ZOOKEEPER);
     }
-
-    /**
-     * 
-     * @return The zookeeper tls sidecar resource requirements
-     */
-    private ResourceRequirements getZookeeperTlsResources() {
-        ResourceRequirements zkTlsSidecarResources = Optional.ofNullable(zookeeperClusterSpec.getTlsSidecar())
-                .map(TlsSidecar::getResources)
-                .orElseGet(ResourceRequirements::new);
-        return getResourceRequirements(zkTlsSidecarResources, DefaultResourceRequirements.TLS_SIDECAR);
-    }
-
 
     /**
      * 

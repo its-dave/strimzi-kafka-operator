@@ -331,44 +331,6 @@ public class EventStreamsKafkaModelTest {
     }
 
     @Test
-    public void testDefaultZookeeperTlsSidecarResources() {
-        ZookeeperClusterSpec zookeeper = createDefaultKafkaModel().getKafka().getSpec().getZookeeper();
-
-        ResourceRequirements resources = zookeeper.getTlsSidecar().getResources();
-        assertThat(resources.getRequests().get("cpu"), is(new Quantity("10m")));
-        assertThat(resources.getLimits().get("cpu"), is(new Quantity("100m")));
-        assertThat(resources.getRequests().get("memory"), is(new Quantity("10Mi")));
-        assertThat(resources.getLimits().get("memory"), is(new Quantity("100Mi")));
-    }
-
-    @Test
-    public void testZookeeperTlsResourcesWithOverrides() {
-        ResourceRequirements customResources = new ResourceRequirementsBuilder()
-                .addToRequests("cpu", new Quantity("20m"))
-                .addToLimits("memory", new Quantity("1Gi"))
-                .build();
-
-        EventStreams instance = createDefaultEventStreams()
-            .editSpec()
-                .withStrimziOverrides(new KafkaSpecBuilder()
-                    .editOrNewZookeeper()
-                        .editOrNewTlsSidecar()
-                            .withResources(customResources)
-                        .endTlsSidecar()
-                    .endZookeeper()
-                    .build())
-            .endSpec()
-            .build();
-        Kafka kafka = new EventStreamsKafkaModel(instance).getKafka();
-
-        ResourceRequirements actualResources = kafka.getSpec().getZookeeper().getTlsSidecar().getResources();
-        assertThat(actualResources.getRequests().get("cpu"), is(new Quantity("20m")));
-        assertThat(actualResources.getLimits().get("cpu"), is(new Quantity("100m")));
-        assertThat(actualResources.getRequests().get("memory"), is(new Quantity("10Mi")));
-        assertThat(actualResources.getLimits().get("memory"), is(new Quantity("1Gi")));
-    }
-
-    @Test
     public void testTopicOperatorOmittedByDefault() {
         EntityOperatorSpec entityOperator = createDefaultKafkaModel().getKafka().getSpec().getEntityOperator();
 
