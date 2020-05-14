@@ -16,7 +16,6 @@ import com.ibm.eventstreams.Main;
 import com.ibm.eventstreams.api.DefaultResourceRequirements;
 import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.EndpointServiceType;
-import com.ibm.eventstreams.api.TlsVersion;
 import com.ibm.eventstreams.api.spec.ComponentSpec;
 import com.ibm.eventstreams.api.spec.ComponentTemplate;
 import com.ibm.eventstreams.api.spec.ContainerSpec;
@@ -51,7 +50,6 @@ import io.strimzi.api.kafka.model.storage.EphemeralStorage;
 import io.strimzi.api.kafka.model.storage.PersistentClaimStorage;
 import io.strimzi.api.kafka.model.storage.Storage;
 import io.strimzi.api.kafka.model.template.PodTemplate;
-import io.strimzi.operator.common.model.Labels;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -71,8 +69,6 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
     public static final String SCHEMA_REGISTRY_PROXY_CONTAINER_NAME = "proxy";
     public static final int SCHEMA_REGISTRY_PORT = 3000;
     public static final int AVRO_SERVICE_PORT = 3080;
-    public static final String HTTP_HAMC_NAME = "http-hmac";
-    public static final int HTTP_HMAC_PORT = 7081;
     public static final int DEFAULT_REPLICAS = 1;
     public static final String TEMP_DIR_NAME = "tempdir";
     public static final String SHARED_VOLUME_MOUNT_NAME = "shared";
@@ -684,26 +680,12 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
     @Override
     protected List<Endpoint> createP2PEndpoints(EventStreams instance) {
         List<Endpoint> endpoints = new ArrayList<>();
-
-        List<Labels> allowedComponentLabels = new ArrayList<>();
-        allowedComponentLabels.add(AbstractModel.generateDefaultLabels(instance, AdminApiModel.APPLICATION_NAME, AdminApiModel.COMPONENT_NAME));
-        allowedComponentLabels.add(AbstractModel.generateDefaultLabels(instance, RestProducerModel.APPLICATION_NAME, RestProducerModel.COMPONENT_NAME));
-        Endpoint httpHMACEndpoint = new Endpoint(HTTP_HAMC_NAME,
-                HTTP_HMAC_PORT,
-                TlsVersion.NONE,
-                EndpointServiceType.INTERNAL,
-                Endpoint.DEFAULT_HOST_ADDRESS,
-                null,
-                Collections.singletonList(Endpoint.MAC_KEY),
-                allowedComponentLabels);
-
-        endpoints.add(httpHMACEndpoint);
         endpoints.add(Endpoint.createP2PEndpoint(instance, getP2PAuthenticationMechanisms(instance), Collections.singletonList(uniqueInstanceLabels())));
         return endpoints;
     }
 
     public List<String> getP2PAuthenticationMechanisms(EventStreams instance) {
-        return isKafkaAuthenticationEnabled(instance) ? Collections.singletonList(Endpoint.IAM_BEARER_KEY) : Collections.emptyList();
+        return isKafkaAuthenticationEnabled(instance) ? Arrays.asList(Endpoint.IAM_BEARER_KEY, Endpoint.MAC_KEY) : Collections.emptyList();
     }
 
     /**

@@ -167,14 +167,14 @@ public class RestProducerModel extends AbstractSecureEndpointsModel {
                 getInternalServiceName(getInstanceName(), SchemaRegistryModel.COMPONENT_NAME),
                 getNamespace(),
                 Main.CLUSTER_NAME,
-                SchemaRegistryModel.HTTP_HMAC_PORT);
+                Endpoint.getPodToPodPort(tlsEnabled()));
 
         ArrayList<EnvVar> envVars = new ArrayList<>(Arrays.asList(
             new EnvVarBuilder().withName("RELEASE").withValue(getInstanceName()).build(),
             new EnvVarBuilder().withName("LICENSE").withValue("accept").build(),
             new EnvVarBuilder().withName("NAMESPACE").withValue(getNamespace()).build(),
             new EnvVarBuilder().withName("SCHEMA_REGISTRY_URL").withValue(schemaRegistryEndpoint).build(),
-            new EnvVarBuilder().withName("SCHEMA_REGISTRY_SECURITY_PROTOCOL").withValue("http://").build(),
+            new EnvVarBuilder().withName("SCHEMA_REGISTRY_PROTOCOL").withValue(getUrlProtocol(getTlsVersion())).build(),
             new EnvVarBuilder().withName("MAX_KEY_SIZE").withValue("4096").build(),
             new EnvVarBuilder().withName("MAX_MESSAGE_SIZE").withValue("65536").build(),
             new EnvVarBuilder().withName("PRODUCER_CACHE_SIZE").withValue("10").build(),
