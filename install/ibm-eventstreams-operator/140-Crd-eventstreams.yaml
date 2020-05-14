@@ -9885,10 +9885,6 @@ spec:
               type: boolean
               description: Identifies whether any of the Docker images have been modified
                 from the defaults for this version of Event Streams.
-            cp4iPresent:
-              type: boolean
-              description: Identifies whether IBM Cloud Pak for Integration Services
-                Binding is present.
           description: The status of the Event Streams instance.
       required:
       - spec

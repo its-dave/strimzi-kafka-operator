@@ -236,6 +236,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         Map<String, String> icpClusterData = null;
         boolean isGeoReplicationEnabled = false;
         String kafkaPrincipal;
+        boolean cp4iPresent = false;
 
         ReconciliationState(Reconciliation reconciliation, EventStreams instance, EventStreamsOperatorConfig.ImageLookup imageConfig) {
             log.traceEntry(() -> reconciliation, () -> instance, () -> imageConfig);
@@ -443,11 +444,11 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         Future<ReconciliationState> createCp4iServicesBinding() {
             log.traceEntry();
             if (!isCrdPresent(CP4I_SERVICES_BINDING_NAME)) {
-                status.withCp4iPresent(false);
+                cp4iPresent = false;
                 log.debug("CP4I Services Binding CRD is not present, unable to create");
                 return log.traceExit(Future.succeededFuture(this));
             }
-            status.withCp4iPresent(true);
+            cp4iPresent = true;
 
             Cp4iServicesBindingModel cp4iServicesBindingModel = new Cp4iServicesBindingModel(instance);
             Cp4iServicesBinding cp4iServicesBinding = cp4iServicesBindingModel.getCp4iServicesBinding();
@@ -461,7 +462,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
 
         Future<ReconciliationState> waitForCp4iServicesBindingStatus() {
             log.traceEntry();
-            if (!status.isCp4iPresent()) {
+            if (!cp4iPresent) {
                 log.debug("CP4I is not present, no longer waiting for CP4I Services Binding Status");
                 return log.traceExit(Future.succeededFuture(this));
             }

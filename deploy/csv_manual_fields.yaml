@@ -212,11 +212,6 @@ spec:
           path: phase
           x-descriptors:
             - 'urn:alm:descriptor:io.kubernetes.phase'
-        - description: Identifies if Cloud Pak for Integration is Present
-          displayName: Cloud Pak for Integration Present
-          path: cp4iPresent
-          x-descriptors:
-            - 'urn:alm:descriptor:text'
         - description: Identifies if custom images are being used
           displayName: Custom Images
           path: customImages

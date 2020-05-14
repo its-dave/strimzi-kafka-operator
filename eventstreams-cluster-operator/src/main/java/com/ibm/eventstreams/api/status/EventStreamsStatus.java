@@ -32,7 +32,7 @@ import lombok.EqualsAndHashCode;
 @JsonDeserialize(using = JsonDeserializer.None.class)
 @Buildable(editableEnabled = false, generateBuilderPackage = false, builderPackage = "io.fabric8.kubernetes.api.builder")
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({"phase", "conditions", "versions", "endpoints", "adminUiUrl", "kafkaListeners", "routes", "customImages", "cp4iPresent"})
+@JsonPropertyOrder({"phase", "conditions", "versions", "endpoints", "adminUiUrl", "kafkaListeners", "routes", "customImages"})
 @EqualsAndHashCode
 public class EventStreamsStatus extends EventStreamsAbstractStatus {
 
@@ -42,7 +42,6 @@ public class EventStreamsStatus extends EventStreamsAbstractStatus {
     private String adminUiUrl;
     private Map<String, String> routes;
     private List<EventStreamsEndpoint> endpoints;
-    private boolean cp4iPresent;
 
 
     @Description("Addresses of the internal and external listeners")
@@ -80,16 +79,6 @@ public class EventStreamsStatus extends EventStreamsAbstractStatus {
 
     public void setAdminUiUrl(String adminUiUrl) {
         this.adminUiUrl = adminUiUrl;
-    }
-
-
-    @Description("Identifies whether IBM Cloud Pak for Integration Services Binding is present")
-    public boolean isCp4iPresent() {
-        return cp4iPresent;
-    }
-
-    public void setCp4iPresent(boolean cp4iPresent) {
-        this.cp4iPresent = cp4iPresent;
     }
 
     @Override
