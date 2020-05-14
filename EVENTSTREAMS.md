@@ -29,6 +29,8 @@ brew install yq jq operator-sdk python3 gnu-sed
 - `brew log --oneline <package>` lists the commits to Homebrew that modify the package version. Copy the short commit id that has the message '<package>: update <version> bottle'
 - `brew unlink <package>` will remove the link to the newer version
 - `brew install https://raw.githubusercontent.com/Homebrew/homebrew-core/<short-commit>/Formula/<package>.rb`
+  
+The `make` build is using GNU versions of `find` and `sed` utilities and is not compatible with the BSD versions available on Mac OS. When using Mac OS, you have to install the GNU versions of `find` and `sed`. When using `brew`, you can do `brew install gnu-sed findutils grep coreutils`. This command will install the GNU versions as `gcp`, `ggrep`, `gsed` and `gfind` and our `make` build will automatically pick them up and use them.
 
 #### Pip3 packages
 - operator-courier v2.1.7 [source repo](https://github.com/operator-framework/operator-courier)
@@ -63,6 +65,7 @@ This will also regenerate the EventStreams CustomResourceDefinition into `instal
 
 ## Deploy
 If deploying for the first time from scratch, be aware that the following needs to be in a project called 'myproject'.
+[Common services](#install-common-services) also need to be installed if not done so already.
 
 To deploy the EventStreams operator into your Kubernetes Environment with a `common-services` installed
 ```
@@ -205,13 +208,17 @@ Get the certificate by running the command:
 ```
 oc get secret <cluster_name>-cluster-ca-cert -o jsonpath='{.data.ca\.crt}' -n <name_of_your_namespace> | base64 -d > ca.crt
 ```
+You can run `oc get secrets` to find the cluster name.
 
 1. Save the password for the certificate
-2. When asked whether to trust the certificate, enter `yes`
-3. Import the certificate into the Java KeyStore file:
+```
+oc get secret <cluster_name>-cluster-ca-cert -o jsonpath='{.data.ca\.password}' | base64 -D
+```
+2. Import the certificate into the Java KeyStore file:
 ```
 keytool -keystore client.truststore.jks -alias CARoot -import -file ca.crt
 ```
+3. When asked whether to trust the certificate, enter `yes`
 
 ### Use a sample Java application for testing
 Download locally a [sample Java application](https://github.ibm.com/qp-samples/vertx-kafka):
@@ -222,16 +229,41 @@ git clone git@github.ibm.com:qp-samples/vertx-kafka.git
 1. To build the application, run
 ```
 mvn install
-
+```
+If this fails then add this snippet to `~/.m2/settings.xml` and try again
+```
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0
+                          https://maven.apache.org/xsd/settings-1.0.0.xsd">
+  <profiles>
+    <profile>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <repositories>
+       <repository>
+         <id>snapshots-repo</id>
+         <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+         <releases><enabled>false</enabled></releases>
+         <snapshots><enabled>true</enabled></snapshots>
+       </repository>
+      </repositories>
+     </profile>
+  </profiles>
+</settings>
 ```
 2. To run the application:
 ```
-java -jar target/demo-0.0.1-SNAPSHOT-fat.jar
+java -jar target/demo-0.0.2-SNAPSHOT-all.jar
 ```
 go to `localhost:8080` in your browser to see it running
+
 3. To connect and configure your application to the EventStreams instance, do the following:
+  
     In `src/main/resources/kafka.properties`, update the following properties:
     1. `bootstrap.servers` - the bootstrap server address
+        - This can be found in the `External` section under `Cluster connection` in your cluster's UI
     2. `ssl.truststore.location` - a path to your Java KeyStore file
     3. `ssl.truststore.password` - a password you have chosen during generation of the certificate
 
