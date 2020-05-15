@@ -6,48 +6,62 @@ metadata:
     support: IBM
     containerImage: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-operator-icp-linux:latest
     operators.operatorframework.io/internal-objects: '["kafkas.eventstreams.ibm.com","kafkamirrormaker2s.eventstreams.ibm.com"]'
-  alm-examples-metadata:
-    quickstart:
-      name: quickstart
-      description: Development cluster with security disabled, and a single Kafka broker
-      resources:
-        vpc: '1'
-        cpu: '4'
-        memory: '4 GB'
-    sample-1-broker:
-      name: 1 broker
-      description: Secure development cluster with a single Kafka broker
-      resources:
-        vpc: '1'
-        cpu: '4'
-        memory: '4 GB'
-    sample-3-broker:
-      name: 3 brokers
-      description: Secure production cluster with three Kafka brokers
-      resources:
-        vpc: '13'
-        cpu: '16'
-        memory: '29 GB'
-    sample-6-broker:
-      name: 6 brokers
-      description: Secure production cluster with six Kafka brokers
-      resources:
-        vpc: '25'
-        cpu: '28'
-        memory: '53 GB'
-    sample-9-broker:
-      name: 9 brokers
-      description: Secure production cluster with nine Kafka brokers
-      resources:
-        vpc: '37'
-        cpu: '40'
-        memory: '78 GB'
-    georeplicator-quickstart:
-      name: georeplicator
-      resources:
-        vpc: '1'
-        cpu: '1'
-        memory: '1.5 GB'
+    alm-examples-metadata: |-
+      {
+        "quickstart": {
+          "description": "Development cluster with security disabled, and a single Kafka broker",
+          "name": "quickstart",
+          "resources": {
+            "cpu": "4",
+            "memory": "4 GB",
+            "vpc": "1"
+          }
+        },
+        "sample-1-broker": {
+          "description": "Secure development cluster with a single Kafka broker",
+          "name": "1 broker",
+          "resources": {
+            "cpu": "4",
+            "memory": "4 GB",
+            "vpc": "1"
+          }
+        },
+        "sample-3-broker": {
+          "description": "Secure production cluster with three Kafka brokers",
+          "name": "3 brokers",
+          "resources": {
+            "cpu": "16",
+            "memory": "29 GB",
+            "vpc": "13"
+          }
+        },
+        "sample-6-broker": {
+          "description": "Secure production cluster with six Kafka brokers",
+          "name": "6 brokers",
+          "resources": {
+            "cpu": "28",
+            "memory": "53 GB",
+            "vpc": "25"
+          }
+        },
+        "sample-9-broker": {
+          "description": "Secure production cluster with nine Kafka brokers",
+          "name": "9 brokers",
+          "resources": {
+            "cpu": "40",
+            "memory": "78 GB",
+            "vpc": "37"
+          }
+        },
+        "georeplicator": {
+          "name": "georeplicator",
+          "resources": {
+            "cpu": "1",
+            "memory": "1.5 GB",
+            "vpc": "1"
+          }
+        }
+      }
   version: 2.0.0
 spec:
   customresourcedefinitions:
