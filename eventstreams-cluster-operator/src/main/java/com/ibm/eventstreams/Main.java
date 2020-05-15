@@ -29,6 +29,7 @@ import io.strimzi.operator.cluster.operator.resource.ResourceOperatorSupplier;
 import io.strimzi.operator.common.MetricsProvider;
 import io.strimzi.operator.common.PasswordGenerator;
 import io.strimzi.operator.common.operator.resource.ClusterRoleOperator;
+import io.strimzi.operator.common.Util;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -78,13 +79,17 @@ public class Main {
 
         log.info("ClusterOperator {} is starting", Main.class.getPackage().getImplementationVersion());
         ClusterOperatorConfig config = ClusterOperatorConfig.fromMap(System.getenv());
-
         //Setup Micrometer metrics options
         VertxOptions options = new VertxOptions().setMetricsOptions(
                 new MicrometerMetricsOptions()
                         .setPrometheusOptions(new VertxPrometheusOptions().setEnabled(true))
                         .setEnabled(true));
         Vertx vertx = Vertx.vertx(options);
+        // Workaround for https://github.com/fabric8io/kubernetes-client/issues/2212
+        // Can be removed after upgrade to Fabric8 4.10.2 or higher or to Java 11
+        if (Util.shouldDisableHttp2()) {
+            System.setProperty("http2.disable", "true");
+        }
         KubernetesClient client = new DefaultKubernetesClient();
 
         maybeCreateClusterRoles(vertx, config, client).setHandler(crs -> {
