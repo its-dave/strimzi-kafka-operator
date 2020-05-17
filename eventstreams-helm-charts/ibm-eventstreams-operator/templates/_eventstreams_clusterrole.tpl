@@ -127,6 +127,7 @@
   resources:
   - customresourcedefinitions
   verbs:
+  - get
   - list
 {{- end -}}
 
@@ -162,5 +163,6 @@
   resources:
   - customresourcedefinitions
   verbs:
+  - get
   - list
 {{- end -}}

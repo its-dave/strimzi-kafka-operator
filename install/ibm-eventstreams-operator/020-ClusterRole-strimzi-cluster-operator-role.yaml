@@ -412,4 +412,5 @@ rules:
   resources:
   - customresourcedefinitions
   verbs:
+  - get
   - list
