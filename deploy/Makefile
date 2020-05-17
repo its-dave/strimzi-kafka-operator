@@ -89,12 +89,19 @@ build_csv: .EXPORT_ALL_VARIABLES clean
 	./build_csv.sh
 
 build_bundle: build_csv start_local_registry
-	echo "Generating bundle & image"
+	# copy to tmp dir as backup for after bundle built as we dont want them to be stored in json format
+	rm -rf tmp
+	$(CP) -R olm-catalog/$(OPERATOR_NAME) tmp/
+	./convertYaml2Json.sh
+	# echo "Generating bundle & image"
 	cd .. && opm alpha bundle build --tag $(BUNDLE_IMAGE_NAME) --package $(OPERATOR_NAME) --directory deploy/olm-catalog/$(OPERATOR_NAME)/$(CSV_VERSION) --channels $(CHANNELS) --default $(DEFAULT_CHANNEL)
 	docker tag $(BUNDLE_IMAGE_NAME) $(LOCAL_REPO_ADDR)$(BUNDLE_IMAGE_NAME)
 	docker push $(LOCAL_REPO_ADDR)$(BUNDLE_IMAGE_NAME)
 	opm alpha bundle validate --tag $(LOCAL_REPO_ADDR)$(BUNDLE_IMAGE_NAME) --image-builder docker
 	cd .. && opm index add --bundles $(LOCAL_REPO_ADDR)$(BUNDLE_IMAGE_NAME) --container-tool docker --tag $(IMAGE_NAME)
+	rm -rf olm-catalog/$(OPERATOR_NAME)
+	$(CP) -R tmp/ olm-catalog/$(OPERATOR_NAME)
+
 
 docker_build: build_csv
 

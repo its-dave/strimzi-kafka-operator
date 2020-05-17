@@ -1,4 +1,4 @@
-temp/
+tmp/
 crds/
 role.yaml
 role_binding.yaml
