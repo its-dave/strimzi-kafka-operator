@@ -713,8 +713,21 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         Future<ReconciliationState> createMessageAuthenticationSecret() {
             log.traceEntry();
             MessageAuthenticationModel messageAuthenticationModel = new MessageAuthenticationModel(instance);
-            return log.traceExit(secretOperator.reconcile(instance.getMetadata().getNamespace(), messageAuthenticationModel.getSecretName(instance.getMetadata().getName()), messageAuthenticationModel.getSecret())
-                    .map(v -> this));
+            String secretName = messageAuthenticationModel.getSecretName(instance.getMetadata().getName());
+            Future<ReconcileResult<Secret>> maybeReconcileSecret = secretOperator.getAsync(namespace, secretName)
+                .compose(secret -> {
+                    // If secret does not exist or has been modified to be invalid, create/patch it
+                    // otherwise do nothing
+                    if (!messageAuthenticationModel.isValidHmacSecret(secret)) {
+                        return secretOperator.reconcile(namespace,
+                                secretName,
+                                messageAuthenticationModel.getSecret());
+                    }
+                    return Future.succeededFuture();
+                });
+
+            return log.traceExit(maybeReconcileSecret.map(v -> this));
+
         }
 
         Future<ReconciliationState> createAdminUI() {

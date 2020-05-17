@@ -51,13 +51,20 @@ public class MessageAuthenticationModel extends AbstractModel {
         return createSecret(getNamespace(), getSecretName(getInstanceName()), createSecretData(), labels(), null);
     }
 
+    public boolean isValidHmacSecret(Secret existingSecret) {
+        return existingSecret != null &&
+                existingSecret.getData() != null &&
+                existingSecret.getData().get(HMAC_SECRET) != null &&
+                !existingSecret.getData().get(HMAC_SECRET).isEmpty();
+    }
+
     private Map<String, String> createSecretData() {
         Map<String, String> data = new HashMap<>();
-        data.put(HMAC_SECRET, Base64.getEncoder().encodeToString(generateSecret().getBytes(Charset.forName("UTF-8"))));
+        data.put(HMAC_SECRET, Base64.getEncoder().encodeToString(generateHmacSecretData().getBytes(Charset.forName("UTF-8"))));
         return data;
     }
 
-    private String generateSecret() {
+    private String generateHmacSecretData() {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < NUM_OF_UUID_GEN; i++) {
             sb.append(UUID.randomUUID().toString());

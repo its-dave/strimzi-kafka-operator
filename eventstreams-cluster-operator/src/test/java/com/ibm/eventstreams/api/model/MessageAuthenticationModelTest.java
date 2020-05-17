@@ -16,12 +16,14 @@ import com.ibm.eventstreams.api.model.utils.ModelUtils;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
 import io.fabric8.kubernetes.api.model.Secret;
+import io.fabric8.kubernetes.api.model.SecretBuilder;
 import org.junit.jupiter.api.Test;
 import java.util.Base64;
 
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasLength;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class MessageAuthenticationModelTest {
@@ -51,5 +53,36 @@ public class MessageAuthenticationModelTest {
         String regex = "([0-9a-fA-F]{8}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{12}){" + MessageAuthenticationModel.NUM_OF_UUID_GEN + "}";
         assertTrue(secretData.matches(regex));
         assertThat(secretData, hasLength(MessageAuthenticationModel.NUM_OF_UUID_GEN * UUID_LENGTH));
+    }
+
+    @Test
+    public void testIsValidHmacSecretTrueWithCorrectKey() {
+        MessageAuthenticationModel model = createDefaultMessageAuthenticationModel();
+        Secret secret = new SecretBuilder()
+                .editOrNewMetadata()
+                .withNewName("my-secret")
+                .endMetadata()
+                .addToData(MessageAuthenticationModel.HMAC_SECRET, "some-secret")
+                .build();
+        assertThat(model.isValidHmacSecret(secret), is(true));
+    }
+
+    @Test
+    public void testIsValidHmacSecretFalseWithNullSecret() {
+        MessageAuthenticationModel model = createDefaultMessageAuthenticationModel();
+        assertThat(model.isValidHmacSecret(null), is(false));
+    }
+
+    @Test
+    public void testIsValidHmacSecretFalseWithSecretWithoutHmacKey() {
+        MessageAuthenticationModel model = createDefaultMessageAuthenticationModel();
+        Secret secret = new SecretBuilder()
+                .editOrNewMetadata()
+                    .withNewName("my-secret")
+                .endMetadata()
+                .addToData(MessageAuthenticationModel.HMAC_SECRET + "foo", "some-secret")
+                .build();
+        assertThat(model.isValidHmacSecret(secret), is(false));
+
     }
 }
