@@ -23,6 +23,9 @@ import com.ibm.eventstreams.api.spec.EventStreamsReplicatorList;
 import com.ibm.iam.api.spec.Client;
 import com.ibm.iam.api.spec.ClientDoneable;
 import com.ibm.iam.api.spec.ClientList;
+import com.ibm.iam.api.spec.Cp4iServicesBinding;
+import com.ibm.iam.api.spec.Cp4iServicesBindingDoneable;
+import com.ibm.iam.api.spec.Cp4iServicesBindingList;
 import io.strimzi.api.kafka.KafkaMirrorMaker2List;
 import io.strimzi.api.kafka.KafkaList;
 import io.strimzi.api.kafka.KafkaUserList;
@@ -50,6 +53,8 @@ public class MockEventStreamsKube extends MockKube {
             .withCustomResourceDefinition(io.strimzi.api.kafka.Crds.kafkaMirrorMaker2(), KafkaMirrorMaker2.class, KafkaMirrorMaker2List.class, DoneableKafkaMirrorMaker2.class)
             .end()
             .withCustomResourceDefinition(Crds.getCrd(EventStreamsReplicator.class), EventStreamsReplicator.class, EventStreamsReplicatorList.class, EventStreamsReplicatorDoneable.class)
-                .end();
+            .end()
+            .withCustomResourceDefinition(Crds.getCrd(Cp4iServicesBinding.class), Cp4iServicesBinding.class, Cp4iServicesBindingList.class, Cp4iServicesBindingDoneable.class)
+            .end();
     }
 }

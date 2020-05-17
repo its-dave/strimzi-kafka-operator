@@ -20,7 +20,6 @@ import com.ibm.eventstreams.api.Crds;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
-import io.strimzi.operator.common.Reconciliation;
 import io.strimzi.operator.common.operator.resource.AbstractWatchableResourceOperator;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
@@ -57,19 +56,8 @@ public class Cp4iServicesBindingResourceOperator extends
      * @param timeoutMs         Timeout.
      * @return A future that succeeds regardless of whether the Cp4i Services Binding Status has a URL or not
      */
-    public Future<String> waitForCp4iServicesBindingStatusAndMaybeGetUrl(String namespace, String cp4iInstanceName, long pollIntervalMs, long timeoutMs, Reconciliation reconciliation) {
-        return waitFor(namespace, cp4iInstanceName, pollIntervalMs, timeoutMs, this::cp4iServicesBindingStatusHasUrl)
-            .compose(v -> {
-                log.debug("Retrieve Cp4i Services Binding in namespace : " + namespace);
-                Optional<String> cp4iHeaderUrl = getCp4iHeaderUrl(namespace, cp4iInstanceName);
-                if (cp4iHeaderUrl.isPresent()) {
-                    log.debug("{}: cp4iHeaderUrl: {}", reconciliation, cp4iHeaderUrl);
-                    return Future.succeededFuture(cp4iHeaderUrl.get());
-                } else {
-                    log.debug("{}: No cp4iHeaderUrl present", reconciliation);
-                    return Future.succeededFuture("");
-                }
-            });
+    public Future<Void> waitForCp4iServicesBindingStatusAndMaybeGetUrl(String namespace, String cp4iInstanceName, long pollIntervalMs, long timeoutMs) {
+        return waitFor(namespace, cp4iInstanceName, pollIntervalMs, timeoutMs, this::cp4iServicesBindingStatusHasUrl);
     }
 
     /**
@@ -79,7 +67,7 @@ public class Cp4iServicesBindingResourceOperator extends
      * @param name          The name of the Cp4i instance.
      * @return              Whether the Cp4i Services Binding Status has a URL
      */
-    public boolean cp4iServicesBindingStatusHasUrl(String namespace, String name) {
+    private boolean cp4iServicesBindingStatusHasUrl(String namespace, String name) {
         return getCp4iHeaderUrl(namespace, name)
             .isPresent();
     }
@@ -96,13 +84,7 @@ public class Cp4iServicesBindingResourceOperator extends
         Optional<String> headerUrl = Optional.ofNullable(cp4iServicesBinding)
             .map(Cp4iServicesBinding::getStatus)
             .map(Cp4iServicesBindingStatus::getEndpoints)
-            .map(endpoints -> {
-                return endpoints.get(Cp4iServicesBindingStatus.URL_KEY);
-            });                    
+            .map(endpoints -> endpoints.get(Cp4iServicesBindingStatus.URL_KEY));
         return headerUrl;
-    }
-
-    public MixedOperation<Cp4iServicesBinding, Cp4iServicesBindingList, Cp4iServicesBindingDoneable, Resource<Cp4iServicesBinding, Cp4iServicesBindingDoneable>> createCp4iMixedOperation(KubernetesClient client) {
-        return Crds.cp4iServicesBindingOperation(client);
     }
 }

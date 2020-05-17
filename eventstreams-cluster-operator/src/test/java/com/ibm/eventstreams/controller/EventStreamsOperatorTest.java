@@ -55,8 +55,6 @@ import com.ibm.eventstreams.rest.AuthenticationValidation;
 import com.ibm.eventstreams.rest.EndpointValidation;
 import com.ibm.iam.api.controller.Cp4iServicesBindingResourceOperator;
 import com.ibm.iam.api.spec.Cp4iServicesBinding;
-import com.ibm.iam.api.spec.Cp4iServicesBindingDoneable;
-import com.ibm.iam.api.spec.Cp4iServicesBindingList;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.DoneableConfigMap;
@@ -64,19 +62,13 @@ import io.fabric8.kubernetes.api.model.DoneableSecret;
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.EnvVarBuilder;
 import io.fabric8.kubernetes.api.model.HasMetadata;
-import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.Service;
-import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition;
-import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinitionBuilder;
-import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinitionList;
-import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinitionListBuilder;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.apps.DeploymentList;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
-import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
 import io.fabric8.openshift.api.model.Route;
@@ -275,23 +267,14 @@ public class EventStreamsOperatorTest {
         when(esResourceOperator.getAsync(anyString(), anyString())).thenReturn(Future.succeededFuture(mockEventStreams));
         when(esResourceOperator.updateEventStreamsStatus(any(EventStreams.class))).thenReturn(Future.succeededFuture(mockEventStreams));
 
-        Cp4iServicesBinding mockCp4i = new Cp4iServicesBinding();
-        mockCp4i.setMetadata(new ObjectMetaBuilder().withName(CLUSTER_NAME).withNamespace(NAMESPACE).build());
-
-        cp4iResourceOperator = mockCp4iServicesBinding(CP4I_TEST_HEADER_URL, true);
-        when(cp4iResourceOperator.waitForCp4iServicesBindingStatusAndMaybeGetUrl(anyString(), anyString(), anyLong(), anyLong(), any())).thenReturn(Future.succeededFuture());
-
-        MixedOperation<Cp4iServicesBinding, Cp4iServicesBindingList, Cp4iServicesBindingDoneable, Resource<Cp4iServicesBinding, Cp4iServicesBindingDoneable>> mockCp4iCr = mock(MixedOperation.class);
-        when(cp4iResourceOperator.createCp4iMixedOperation(any())).thenReturn(mockCp4iCr);
+        cp4iResourceOperator = mock(Cp4iServicesBindingResourceOperator.class);
+        when(cp4iResourceOperator.reconcile(anyString(), anyString(), any())).thenReturn(Future.succeededFuture());
+        when(cp4iResourceOperator.waitForCp4iServicesBindingStatusAndMaybeGetUrl(anyString(), anyString(), anyLong(), anyLong())).thenReturn(Future.succeededFuture());
+        when(cp4iResourceOperator.getCp4iHeaderUrl(anyString(), anyString())).thenReturn(Optional.of("header"));
 
         EventStreamsReplicator mockEventStreamsReplicator = ModelUtils.createDefaultEventStreamsReplicator(CLUSTER_NAME).build();
         esReplicatorResourceOperator = mock(EventStreamsReplicatorResourceOperator.class);
         when(esReplicatorResourceOperator.getAsync(anyString(), anyString())).thenReturn(Future.succeededFuture(mockEventStreamsReplicator));
-
-        NonNamespaceOperation mockNamespaceOperation = mock(NonNamespaceOperation.class);
-        Resource<Cp4iServicesBinding, Cp4iServicesBindingDoneable> res = mock(Resource.class);
-        when(mockCp4iCr.inNamespace(anyString())).thenReturn(mockNamespaceOperation);
-        when(mockCp4iCr.inNamespace(anyString()).withName(anyString())).thenReturn(res);
 
         kafkaUserOperator = mock(KafkaUserOperator.class);
         when(kafkaUserOperator.getAsync(anyString(), anyString())).thenReturn(Future.succeededFuture(mockKafkaUser));
@@ -315,6 +298,8 @@ public class EventStreamsOperatorTest {
         when(pfa.hasRoutes()).thenReturn(true);
 
         metricsProvider = MetricsUtils.createMockMetricsProvider();
+
+        NonNamespaceOperation mockNamespaceOperation = mock(NonNamespaceOperation.class);
 
         // mock ICP Config Map is present
         Map<String, String> configMapData = new HashMap<>();
@@ -2429,23 +2414,20 @@ public class EventStreamsOperatorTest {
 
     @Test
     public void testCreateCp4iServicesBindingWithCrd(VertxTestContext context) {
-        cp4iResourceOperator = mockCp4iServicesBinding("", true);
-        when(cp4iResourceOperator.waitForCp4iServicesBindingStatusAndMaybeGetUrl(anyString(), anyString(), anyLong(), anyLong(), any()))
-                .thenReturn(Future.succeededFuture());
-
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
 
         Checkpoint async = context.checkpoint();
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster).onComplete(context.succeeding(v -> context.verify(() -> {
+            verify(cp4iResourceOperator).reconcile(anyString(), anyString(), any());
             async.flag();
         })));
     }
 
     @Test
     public void testCreateCp4iServicesBindingWithoutCrd(VertxTestContext context) {
-        cp4iResourceOperator = mockCp4iServicesBinding("", false);
+        when(mockClient.customResourceDefinitions().withName(Cp4iServicesBinding.CRD_NAME).get()).thenReturn(null);
 
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
@@ -2453,15 +2435,29 @@ public class EventStreamsOperatorTest {
 
         Checkpoint async = context.checkpoint();
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster).onComplete(context.succeeding(v -> context.verify(() -> {
+            verify(cp4iResourceOperator, times(0)).reconcile(anyString(), anyString(), any());
             async.flag();
         })));
     }
 
     @Test
-    public void testCreateCp4iServicesBindingWithHeaderUrl(VertxTestContext context) {
-        cp4iResourceOperator = mockCp4iServicesBinding(CP4I_TEST_HEADER_URL, true);
-        when(cp4iResourceOperator.waitForCp4iServicesBindingStatusAndMaybeGetUrl(anyString(), anyString(), anyLong(), anyLong(), any()))
-            .thenReturn(Future.succeededFuture(CP4I_TEST_HEADER_URL));
+    public void testCreateCp4iServicesBindingFails(VertxTestContext context) {
+        when(cp4iResourceOperator.reconcile(anyString(), anyString(), any())).thenReturn(Future.failedFuture("Failed to reconcile binding"));
+
+        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
+        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
+
+        Checkpoint async = context.checkpoint();
+        esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster).onComplete(context.succeeding(v -> context.verify(() -> {
+            verify(cp4iResourceOperator, times(0)).waitForCp4iServicesBindingStatusAndMaybeGetUrl(anyString(), anyString(), anyLong(), anyLong());
+            async.flag();
+        })));
+    }
+
+    @Test
+    public void testWaitForCp4iServicesBindingStatusSetsHeaderURL(VertxTestContext context) {
+        when(cp4iResourceOperator.getCp4iHeaderUrl(anyString(), anyString())).thenReturn(Optional.of(CP4I_TEST_HEADER_URL));
 
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
@@ -2469,19 +2465,96 @@ public class EventStreamsOperatorTest {
 
         Checkpoint async = context.checkpoint();
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster)
-            .onComplete(context.succeeding(v -> context.verify(() -> {
-                Optional<Deployment> adminUI = Optional.ofNullable(mockClient.apps().deployments().inNamespace(NAMESPACE).list())
-                    .map(DeploymentList::getItems)
-                    .map(list -> list.stream()
-                        .filter(deploy -> deploy.getMetadata().getName().equals(CLUSTER_NAME + "-" + APP_NAME + "-" + AdminUIModel.COMPONENT_NAME))
-                        .findFirst())
-                    .map(deployment -> (Deployment) deployment.get());
+                  .onComplete(context.succeeding(v -> context.verify(() -> {
+                      Optional<Deployment> adminUI = Optional.ofNullable(mockClient.apps().deployments().inNamespace(NAMESPACE).list())
+                            .map(DeploymentList::getItems)
+                            .map(list -> list.stream()
+                                .filter(deploy -> deploy.getMetadata().getName().equals(CLUSTER_NAME + "-" + APP_NAME + "-" + AdminUIModel.COMPONENT_NAME))
+                                .findFirst())
+                            .map(deployment -> (Deployment) deployment.get());
 
-                assertThat(adminUI.isPresent(), is(true));
-                Container uiContainer = adminUI.get().getSpec().getTemplate().getSpec().getContainers().get(0);
-                assertThat(uiContainer.getEnv(), hasItem(new EnvVarBuilder().withName(CP4I_ADMIN_UI_ENVAR_NAME).withValue(CP4I_TEST_HEADER_URL).build()));
-                async.flag();
-            })));
+                      assertThat(adminUI.isPresent(), is(true));
+                      Container uiContainer = adminUI.get().getSpec().getTemplate().getSpec().getContainers().get(0);
+                      assertThat(uiContainer.getEnv(), hasItem(new EnvVarBuilder().withName(CP4I_ADMIN_UI_ENVAR_NAME).withValue(CP4I_TEST_HEADER_URL).build()));
+                      async.flag();
+                  })));
+    }
+
+
+    @Test
+    public void testWaitForCp4iServicesBindingStatusWithEmptyHeaderUrl(VertxTestContext context) {
+        when(cp4iResourceOperator.getCp4iHeaderUrl(anyString(), anyString())).thenReturn(Optional.of(""));
+
+        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
+        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
+
+        Checkpoint async = context.checkpoint();
+        esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster)
+                .onComplete(context.succeeding(v -> context.verify(() -> {
+                    Optional<Deployment> adminUI = Optional.ofNullable(mockClient.apps().deployments().inNamespace(NAMESPACE).list())
+                            .map(DeploymentList::getItems)
+                            .map(list -> list.stream()
+                                    .filter(deploy -> deploy.getMetadata().getName().equals(CLUSTER_NAME + "-" + APP_NAME + "-" + AdminUIModel.COMPONENT_NAME))
+                                    .findFirst())
+                            .map(deployment -> (Deployment) deployment.get());
+
+                    assertThat(adminUI.isPresent(), is(true));
+                    Container uiContainer = adminUI.get().getSpec().getTemplate().getSpec().getContainers().get(0);
+                    assertThat(uiContainer.getEnv(), hasItem(new EnvVarBuilder().withName(CP4I_ADMIN_UI_ENVAR_NAME).withValue("").build()));
+                    async.flag();
+                })));
+    }
+
+    @Test
+    public void testWaitForCp4iServicesBindingStatusFailsSetsEmptyHeaderURL(VertxTestContext context) {
+        when(cp4iResourceOperator.waitForCp4iServicesBindingStatusAndMaybeGetUrl(anyString(), anyString(), anyLong(), anyLong()))
+                .thenReturn(Future.failedFuture("Failed to get status"));
+
+        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
+        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
+
+        Checkpoint async = context.checkpoint();
+        esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster)
+                .onComplete(context.succeeding(v -> context.verify(() -> {
+                    Optional<Deployment> adminUI = Optional.ofNullable(mockClient.apps().deployments().inNamespace(NAMESPACE).list())
+                            .map(DeploymentList::getItems)
+                            .map(list -> list.stream()
+                                    .filter(deploy -> deploy.getMetadata().getName().equals(CLUSTER_NAME + "-" + APP_NAME + "-" + AdminUIModel.COMPONENT_NAME))
+                                    .findFirst())
+                            .map(deployment -> (Deployment) deployment.get());
+
+                    assertThat(adminUI.isPresent(), is(true));
+                    Container uiContainer = adminUI.get().getSpec().getTemplate().getSpec().getContainers().get(0);
+                    assertThat(uiContainer.getEnv(), hasItem(new EnvVarBuilder().withName(CP4I_ADMIN_UI_ENVAR_NAME).withValue("").build()));
+                    async.flag();
+                })));
+    }
+
+    @Test
+    public void testWaitForCp4iServicesBindingStatusWithMissingHeaderUrl(VertxTestContext context) {
+        when(cp4iResourceOperator.getCp4iHeaderUrl(anyString(), anyString())).thenReturn(Optional.ofNullable(null));
+
+        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
+        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
+
+        Checkpoint async = context.checkpoint();
+        esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster)
+                .onComplete(context.succeeding(v -> context.verify(() -> {
+                    Optional<Deployment> adminUI = Optional.ofNullable(mockClient.apps().deployments().inNamespace(NAMESPACE).list())
+                            .map(DeploymentList::getItems)
+                            .map(list -> list.stream()
+                                    .filter(deploy -> deploy.getMetadata().getName().equals(CLUSTER_NAME + "-" + APP_NAME + "-" + AdminUIModel.COMPONENT_NAME))
+                                    .findFirst())
+                            .map(deployment -> (Deployment) deployment.get());
+
+                    assertThat(adminUI.isPresent(), is(true));
+                    Container uiContainer = adminUI.get().getSpec().getTemplate().getSpec().getContainers().get(0);
+                    assertThat(uiContainer.getEnv(), hasItem(new EnvVarBuilder().withName(CP4I_ADMIN_UI_ENVAR_NAME).withValue("").build()));
+                    async.flag();
+                })));
     }
 
     @Test
@@ -2538,38 +2611,7 @@ public class EventStreamsOperatorTest {
     }
 
     @Test
-    public void testCreateCp4iServicesBindingWithoutHeaderUrl(VertxTestContext context) {
-        cp4iResourceOperator = mockCp4iServicesBinding("", true);
-        when(cp4iResourceOperator.waitForCp4iServicesBindingStatusAndMaybeGetUrl(anyString(), anyString(), anyLong(), anyLong(), any()))
-            .thenReturn(Future.succeededFuture(""));
-
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
-        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
-
-        Checkpoint async = context.checkpoint();
-        esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster)
-            .onComplete(context.succeeding(v -> context.verify(() -> {
-                Optional<Deployment> adminUI = Optional.ofNullable(mockClient.apps().deployments().inNamespace(NAMESPACE).list())
-                    .map(DeploymentList::getItems)
-                    .map(list -> list.stream()
-                        .filter(deploy -> deploy.getMetadata().getName().equals(CLUSTER_NAME + "-" + APP_NAME + "-" + AdminUIModel.COMPONENT_NAME))
-                        .findFirst())
-                    .map(deployment -> (Deployment) deployment.get());
-
-                assertThat(adminUI.isPresent(), is(true));
-                Container uiContainer = adminUI.get().getSpec().getTemplate().getSpec().getContainers().get(0);
-                assertThat(uiContainer.getEnv(), hasItem(new EnvVarBuilder().withName(CP4I_ADMIN_UI_ENVAR_NAME).withValue("").build()));
-                async.flag();
-            })));
-    }
-
-    @Test
     public void testDefaultEventStreamsUIEnvVars(VertxTestContext context) {
-        cp4iResourceOperator = mockCp4iServicesBinding("", true);
-        when(cp4iResourceOperator.waitForCp4iServicesBindingStatusAndMaybeGetUrl(anyString(), anyString(), anyLong(), anyLong(), any()))
-            .thenReturn(Future.succeededFuture(""));
-
         boolean tlsEnabled = AbstractModel.DEFAULT_INTERNAL_TLS.equals(TlsVersion.TLS_V1_2);
         String adminApiService =  "https://" + getInternalServiceName(CLUSTER_NAME, AdminApiModel.COMPONENT_NAME) + "." +  NAMESPACE + ".svc.cluster.local:" + Endpoint.getPodToPodPort(tlsEnabled);
         String schemaRegistryService =  "https://" + getInternalServiceName(CLUSTER_NAME, SchemaRegistryModel.COMPONENT_NAME) + "." +  NAMESPACE + ".svc.cluster.local:" + Endpoint.getPodToPodPort(tlsEnabled);
@@ -3115,23 +3157,6 @@ public class EventStreamsOperatorTest {
                 return Future.succeededFuture(ReconcileResult.created(route));
             });
 
-    }
-
-    private Cp4iServicesBindingResourceOperator mockCp4iServicesBinding(String headerUrl, Boolean crdPresent) {
-        // mock Cp4iServicesBinding Crd
-        CustomResourceDefinitionList crdList;
-        if (crdPresent) {
-            ObjectMeta meta = new ObjectMetaBuilder().withName(EventStreamsOperator.CP4I_SERVICES_BINDING_NAME).build();
-            CustomResourceDefinition crd = new CustomResourceDefinitionBuilder().withMetadata(meta).build();
-            crdList = new CustomResourceDefinitionListBuilder().addToItems(crd).build();
-        } else {
-            crdList = new CustomResourceDefinitionListBuilder().build();
-        }
-
-        when(mockClient.customResourceDefinitions().list()).thenReturn(crdList);
-        cp4iResourceOperator = mock(Cp4iServicesBindingResourceOperator.class);
-
-        return cp4iResourceOperator;
     }
 
     @Test

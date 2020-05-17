@@ -54,7 +54,6 @@ import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.Service;
-import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinitionList;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
@@ -136,7 +135,6 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
     private int customImageCount = 0;
     private static final String ENCODED_IBMCLOUD_CA_CERT = "icp_public_cacert_encoded";
     private static final String CLUSTER_CA_CERT_SECRET_NAME = "cluster-ca-cert";
-    public static final String CP4I_SERVICES_BINDING_NAME = "cp4iservicesbinding.cp4i.ibm.com";
 
     public EventStreamsOperator(Vertx vertx, KubernetesClient client, String kind, PlatformFeaturesAvailability pfa,
                                 EventStreamsResourceOperator esResourceOperator,
@@ -443,21 +441,31 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
 
         Future<ReconciliationState> createCp4iServicesBinding() {
             log.traceEntry();
-            if (!isCrdPresent(CP4I_SERVICES_BINDING_NAME)) {
+            Boolean cp4iBindingCrdPresent = Optional.ofNullable(client.customResourceDefinitions().withName(Cp4iServicesBinding.CRD_NAME).get())
+                    .isPresent();
+            if (!cp4iBindingCrdPresent) {
                 cp4iPresent = false;
-                log.debug("CP4I Services Binding CRD is not present, unable to create");
+                log.info("CP4I Services Binding CRD is not present, binding will not be created");
                 return log.traceExit(Future.succeededFuture(this));
             }
-            cp4iPresent = true;
 
             Cp4iServicesBindingModel cp4iServicesBindingModel = new Cp4iServicesBindingModel(instance);
             Cp4iServicesBinding cp4iServicesBinding = cp4iServicesBindingModel.getCp4iServicesBinding();
             String cp4iServicesBindingName = cp4iServicesBinding.getMetadata().getName();
 
-            // Create an operation that can be invoked to retrieve or create the required Custom Resource
-            cp4iResourceOperator.reconcile(namespace, cp4iServicesBindingName, cp4iServicesBinding);
-
-            return log.traceExit(Future.succeededFuture(this));
+            Promise<ReconciliationState> createCp4iServicesBinding = Promise.promise();
+            cp4iResourceOperator.reconcile(namespace, cp4iServicesBindingName, cp4iServicesBinding)
+                    .onComplete(res -> {
+                        if (res.succeeded()) {
+                            log.debug("Successfully created CP4I Services Binding");
+                            cp4iPresent = true;
+                        } else {
+                            log.error("Failed to create CP4I Services Binding: {}", res.cause());
+                            cp4iPresent = false;
+                        }
+                        createCp4iServicesBinding.complete(this);
+                    });
+            return log.traceExit(createCp4iServicesBinding.future());
         }
 
         Future<ReconciliationState> waitForCp4iServicesBindingStatus() {
@@ -469,18 +477,23 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
 
             String cp4iInstanceName = Cp4iServicesBindingModel.getCp4iInstanceName(instance.getMetadata().getName());
 
-            return log.traceExit(cp4iResourceOperator.waitForCp4iServicesBindingStatusAndMaybeGetUrl(namespace, cp4iInstanceName, defaultPollIntervalMs, 10000, reconciliation)
-                .setHandler(res -> {
+            Promise<ReconciliationState> waitForCp4iServicesBindingStatus = Promise.promise();
+            cp4iResourceOperator.waitForCp4iServicesBindingStatusAndMaybeGetUrl(namespace, cp4iInstanceName, defaultPollIntervalMs, 10000)
+                .onComplete(res -> {
                     if (res.succeeded()) {
-                        log.debug("Putting the header URL " + res.result() + " into the Admin UI");
-                        icpClusterData.put(AdminUIModel.ICP_CM_CLUSTER_PLATFORM_SERVICES_URL, res.result());
+                        String cp4iHeaderUrl = cp4iResourceOperator.getCp4iHeaderUrl(namespace, cp4iInstanceName).orElseGet(() -> {
+                            log.warn("{}: No header URL present in CP4I binding {}", reconciliation, cp4iInstanceName);
+                            return "";
+                        });
+                        log.debug("Putting the header URL " + cp4iHeaderUrl + " into the Admin UI");
+                        icpClusterData.put(AdminUIModel.ICP_CM_CLUSTER_PLATFORM_SERVICES_URL, cp4iHeaderUrl);
                     } else {
-                        log.debug("Putting the header URL (empty string) into the Admin UI");
+                        log.error("Failed waiting for CP4I binding status so putting empty string into the Admin UI");
                         icpClusterData.put(AdminUIModel.ICP_CM_CLUSTER_PLATFORM_SERVICES_URL, "");
                     }
-                }).compose(v -> {
-                    return Future.succeededFuture(this);
-                }));
+                    waitForCp4iServicesBindingStatus.complete(this);
+                });
+            return log.traceExit(waitForCp4iServicesBindingStatus.future());
         }
 
         Future<ReconciliationState> createKafkaCustomResource() {
@@ -1261,16 +1274,5 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                                             .thenComparing(Condition::getType, Comparator.reverseOrder()));
             log.traceExit();
         }
-    }
-
-    Boolean isCrdPresent(String crdName) {
-        log.traceEntry(() -> crdName);
-        return log.traceExit(Optional.ofNullable(client.customResourceDefinitions().list())
-            .map(CustomResourceDefinitionList::getItems)
-            .map(list -> list.stream()
-                .filter(crd -> crd.getMetadata().getName().equals(crdName))
-                .findAny()
-                .isPresent())
-            .orElse(false));
     }
 }
