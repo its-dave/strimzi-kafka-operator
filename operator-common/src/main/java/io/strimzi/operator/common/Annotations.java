@@ -7,6 +7,7 @@ package io.strimzi.operator.common;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.PodTemplateSpec;
+import io.strimzi.operator.common.model.Labels;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -16,7 +17,7 @@ import static java.lang.Integer.parseInt;
 
 public class Annotations {
 
-    public static final String STRIMZI_DOMAIN = "strimzi.io/";
+    public static final String STRIMZI_DOMAIN = Labels.STRIMZI_DOMAIN;
     public static final String STRIMZI_LOGGING_ANNOTATION = STRIMZI_DOMAIN + "logging";
     public static final String STRIMZI_IO_USE_CONNECTOR_RESOURCES = STRIMZI_DOMAIN + "use-connector-resources";
     public static final String ANNO_STRIMZI_IO_MANUAL_ROLLING_UPDATE = STRIMZI_DOMAIN + "manual-rolling-update";
