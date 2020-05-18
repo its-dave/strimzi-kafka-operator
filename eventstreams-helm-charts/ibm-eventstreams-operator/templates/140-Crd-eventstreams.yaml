@@ -22,7 +22,7 @@ spec:
   additionalPrinterColumns:
   - name: Ready
     description: The status of the Event Streams cluster
-    JSONPath: .status.conditions[?(@.type=="Ready")].status
+    JSONPath: .status.phase[?(@.type=="Ready")].status
     type: string
   - name: Desired Kafka replicas
     description: The desired number of Kafka replicas in the cluster
@@ -9859,8 +9859,11 @@ spec:
           properties:
             phase:
               type: string
-              description: Identifies the current status of the Event Streams instance.
-                This will be 'Pending', 'Running', or 'Failed'.
+              enum:
+              - Ready
+              - Pending
+              - Failed
+              description: Identifies the current state of the Event Streams instance.
             conditions:
               type: array
               items:

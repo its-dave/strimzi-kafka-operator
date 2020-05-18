@@ -12,9 +12,6 @@
  */
 package com.ibm.eventstreams.api.status;
 
-import java.util.List;
-import java.util.Map;
-
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -22,12 +19,13 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
-
 import io.strimzi.api.kafka.model.status.ListenerStatus;
 import io.strimzi.crdgenerator.annotations.Description;
 import io.sundr.builder.annotations.Buildable;
 import lombok.EqualsAndHashCode;
 
+import java.util.List;
+import java.util.Map;
 
 @JsonDeserialize(using = JsonDeserializer.None.class)
 @Buildable(editableEnabled = false, generateBuilderPackage = false, builderPackage = "io.fabric8.kubernetes.api.builder")
@@ -42,7 +40,6 @@ public class EventStreamsStatus extends EventStreamsAbstractStatus {
     private String adminUiUrl;
     private Map<String, String> routes;
     private List<EventStreamsEndpoint> endpoints;
-
 
     @Description("Addresses of the internal and external listeners")
     public List<ListenerStatus> getKafkaListeners() {
@@ -70,7 +67,6 @@ public class EventStreamsStatus extends EventStreamsAbstractStatus {
     public void setEndpoints(List<EventStreamsEndpoint> endpoints) {
         this.endpoints = endpoints;
     }
-
 
     @Description("Web address for the Event Streams administration UI")
     public String getAdminUiUrl() {

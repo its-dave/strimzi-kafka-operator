@@ -164,12 +164,12 @@ public class EventStreamsVerticle extends AbstractVerticle {
         bodyHandler.setHandleFileUploads(false);
         router.route().handler(bodyHandler);
 
-        router.route(HttpMethod.POST, "/admissionwebhook/rejectlicensenotaccepted").handler(LicenseValidation::rejectLicenseIfNotAccepted);
-        router.route(HttpMethod.POST, "/admissionwebhook/rejectinvalidnames").handler(NameValidation::rejectInvalidNames);
-        router.route(HttpMethod.POST, "/admissionwebhook/rejectinvalidversions").handler(VersionValidation::rejectInvalidVersions);
+        router.route(HttpMethod.POST, "/admissionwebhook/rejectlicensenotaccepted").handler(new LicenseValidation()::rejectCr);
+        router.route(HttpMethod.POST, "/admissionwebhook/rejectinvalidnames").handler(new NameValidation()::rejectCr);
+        router.route(HttpMethod.POST, "/admissionwebhook/rejectinvalidversions").handler(new VersionValidation()::rejectCr);
         router.route(HttpMethod.POST, "/admissionwebhook/rejectinvalidtopics").handler(EntityLabelValidation::rejectInvalidKafkaTopics);
         router.route(HttpMethod.POST, "/admissionwebhook/rejectinvalidusers").handler(EntityLabelValidation::rejectInvalidKafkaUsers);
-        router.route(HttpMethod.POST, "/admissionwebhook/rejectinvalidendpoints").handler(EndpointValidation::rejectInvalidEndpoint);
+        router.route(HttpMethod.POST, "/admissionwebhook/rejectinvalidendpoints").handler(new EndpointValidation()::rejectCr);
 
         router.errorHandler(500, rc -> {
             Throwable failure = rc.failure();

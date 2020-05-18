@@ -20,6 +20,8 @@ import com.ibm.eventstreams.api.spec.EventStreamsReplicatorBuilder;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.status.EventStreamsReplicatorStatusBuilder;
 import com.ibm.eventstreams.api.status.EventStreamsReplicatorStatus;
+import com.ibm.eventstreams.controller.models.PhaseState;
+import com.ibm.eventstreams.controller.models.StatusCondition;
 import com.ibm.eventstreams.replicator.ReplicatorCredentials;
 import com.ibm.eventstreams.rest.VersionValidation;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -51,7 +53,6 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
-
 
 public class EventStreamsReplicatorOperator extends AbstractOperator<EventStreamsReplicator, EventStreamsReplicatorResourceOperator> {
 
@@ -142,12 +143,13 @@ public class EventStreamsReplicatorOperator extends AbstractOperator<EventStream
 
         Future<EventStreamsReplicatorOperator.ReconciliationState> validateCustomResource() {
 
-            String phase = Optional.ofNullable(status.getPhase()).orElse("Pending");
+            PhaseState phase = Optional.ofNullable(status.getPhase()).orElse(PhaseState.PENDING);
 
             boolean isValidCR = true;
 
-            if (VersionValidation.shouldReject(replicatorInstance)) {
-                addNotReadyCondition("InvalidVersion", "Invalid custom resource: Unsupported version. Supported versions are " + VersionValidation.VALID_APP_VERSIONS.toString());
+            List<StatusCondition> conditions = new VersionValidation().validateCr(replicatorInstance);
+            if (!conditions.isEmpty()) {
+                conditions.forEach(condition -> addCondition(condition.toCondition()));
                 isValidCR = false;
             }
 
@@ -173,7 +175,7 @@ public class EventStreamsReplicatorOperator extends AbstractOperator<EventStream
                                 .withMessage("Event Streams is being deployed")
                                 .build()));
             } else {
-                phase = "Failed";
+                phase = PhaseState.FAILED;
             }
 
 
@@ -210,7 +212,7 @@ public class EventStreamsReplicatorOperator extends AbstractOperator<EventStream
                                         + replicatorInstance.getMetadata().getLabels().get(Labels.STRIMZI_CLUSTER_LABEL)
                                         + " to enable replicator");
 
-                                EventStreamsReplicatorStatus statusSubresource = status.withPhase("Failed").build();
+                                EventStreamsReplicatorStatus statusSubresource = status.withPhase(PhaseState.FAILED).build();
                                 replicatorInstance.setStatus(statusSubresource);
 
                                 Promise<EventStreamsReplicatorOperator.ReconciliationState> failReconcile = Promise.promise();
@@ -226,7 +228,7 @@ public class EventStreamsReplicatorOperator extends AbstractOperator<EventStream
                                 addNotReadyCondition("UnsupportedAuthorization", "  Listener client authentication " +
                                         "unsupported for GeoReplication. Supported versions are TLS and SCRAM");
 
-                                EventStreamsReplicatorStatus statusSubresource = status.withPhase("Failed").build();
+                                EventStreamsReplicatorStatus statusSubresource = status.withPhase(PhaseState.FAILED).build();
                                 replicatorInstance.setStatus(statusSubresource);
 
                                 Promise<EventStreamsReplicatorOperator.ReconciliationState> failReconcile = Promise.promise();
@@ -242,7 +244,7 @@ public class EventStreamsReplicatorOperator extends AbstractOperator<EventStream
                                 addNotReadyCondition("UnsupoprtedInternalExternalListenerConfig", "If internal listener client authentication " +
                                         "enabled, then external listner client authentication must also be enabled");
 
-                                EventStreamsReplicatorStatus statusSubresource = status.withPhase("Failed").build();
+                                EventStreamsReplicatorStatus statusSubresource = status.withPhase(PhaseState.FAILED).build();
                                 replicatorInstance.setStatus(statusSubresource);
 
                                 Promise<EventStreamsReplicatorOperator.ReconciliationState> failReconcile = Promise.promise();
@@ -277,7 +279,7 @@ public class EventStreamsReplicatorOperator extends AbstractOperator<EventStream
                             addNotReadyCondition("EventStreamsInstanceNotFound", "Can't find Event Streams instance "
                                     + eventStreamsInstanceName + " in namespace " + namespace + ". Ensure the Event Streams instance is created before deploying the Event Streams geo-replicator ");
 
-                            EventStreamsReplicatorStatus statusSubresource = status.withPhase("Failed").build();
+                            EventStreamsReplicatorStatus statusSubresource = status.withPhase(PhaseState.FAILED).build();
                             replicatorInstance.setStatus(statusSubresource);
 
                             Promise<EventStreamsReplicatorOperator.ReconciliationState> failReconcile = Promise.promise();
@@ -393,13 +395,13 @@ public class EventStreamsReplicatorOperator extends AbstractOperator<EventStream
             log.error("Recording reconcile failure", thr);
             addNotReadyCondition("DeploymentFailed", thr.getMessage());
 
-            EventStreamsReplicatorStatus statusSubresource = status.withPhase("Failed").build();
+            EventStreamsReplicatorStatus statusSubresource = status.withPhase(PhaseState.FAILED).build();
             replicatorInstance.setStatus(statusSubresource);
             updateStatus(statusSubresource);
         }
 
         Future<EventStreamsReplicatorOperator.ReconciliationState> finalStatusUpdate() {
-            status.withPhase("Running");
+            status.withPhase(PhaseState.READY);
             addReadyCondition();
 
             log.info("Updating status");

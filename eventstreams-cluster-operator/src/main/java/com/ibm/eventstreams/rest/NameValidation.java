@@ -13,15 +13,15 @@
 package com.ibm.eventstreams.rest;
 
 import com.ibm.eventstreams.api.spec.EventStreams;
-import io.vertx.core.json.Json;
-import io.vertx.ext.web.RoutingContext;
+import com.ibm.eventstreams.controller.models.StatusCondition;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Pattern;
 
-
-public class NameValidation extends AbstractValidation {
+public class NameValidation implements Validation {
 
     private static final Logger log = LogManager.getLogger(NameValidation.class.getName());
 
@@ -30,41 +30,27 @@ public class NameValidation extends AbstractValidation {
     private static final String VALID_NAME_REGEX = "[a-z]([-a-z0-9]*[a-z0-9])?";
     private static final Pattern VALID_NAME_PATTERN = Pattern.compile(VALID_NAME_REGEX);
 
-    public static boolean shouldReject(EventStreams customResourceSpec) {
+    public static final String INVALID_INSTANCE_NAME_REASON = "InvalidInstanceName";
+
+    public static final String INSTANCE_NAME_TOO_LONG_MESSAGE = "%s instance name is too long."
+        + String.format("Instance names are no longer than %d characters. ", MAX_NAME_LENGTH)
+        + "Edit metadata.name to provide a valid instance name";
+
+    public static final String INSTANCE_NAME_DOES_NOT_FOLLOW_REGEX_MESSAGE = "%s instance name is an invalid name."
+        + String.format("Instance names are lower case alphanumeric characters or '-', start with an alphabetic character, and end with an alphabetic character (%s). ", VALID_NAME_REGEX)
+        + "Edit metadata.name to provide a valid instance name";
+
+    public List<StatusCondition> validateCr(EventStreams customResourceSpec) {
+        log.traceEntry(() -> customResourceSpec);
+        List<StatusCondition> conditions = new ArrayList<>();
+
         String name = customResourceSpec.getMetadata().getName();
-        return name.length() > MAX_NAME_LENGTH || !VALID_NAME_PATTERN.matcher(name).matches();
-    }
-
-
-    public static void rejectInvalidNames(RoutingContext routingContext) {
-        log.traceEntry();
-
-        String name = getSpecFromRequest(routingContext).getMetadata().getName();
-
-        ValidationResponsePayload outcome = null;
-
         if (name.length() > MAX_NAME_LENGTH) {
-            outcome = ValidationResponsePayload.createFailureResponsePayload(
-                    "Names should not be longer than 16 characters",
-                    "Name too long");
-        } else if (!VALID_NAME_PATTERN.matcher(name).matches()) {
-            outcome = ValidationResponsePayload.createFailureResponsePayload(
-                    "Invalid metadata.name. " +
-                            "Names must consist of lower case alphanumeric characters or '-', " +
-                            "start with an alphabetic character, and " +
-                            "end with an alphanumeric character " +
-                            "(regex used for validation is '" + VALID_NAME_REGEX + "')",
-                    "Invalid name");
-        } else {
-            outcome = ValidationResponsePayload.createSuccessResponsePayload();
+            conditions.add(StatusCondition.createErrorCondition(INVALID_INSTANCE_NAME_REASON, String.format(INSTANCE_NAME_TOO_LONG_MESSAGE, name)));
         }
-
-        routingContext
-                .response()
-                .setStatusCode(200)
-                .putHeader("content-type", "application/json; charset=utf-8")
-                .end(Json.encodePrettily(outcome));
-
-        log.traceExit();
+        if (!VALID_NAME_PATTERN.matcher(name).matches()) {
+            conditions.add(StatusCondition.createErrorCondition(INVALID_INSTANCE_NAME_REASON, String.format(INSTANCE_NAME_DOES_NOT_FOLLOW_REGEX_MESSAGE, name)));
+        }
+        return log.traceExit(conditions);
     }
 }

@@ -36,7 +36,7 @@ public class ValidationResponsePayload {
         return new ValidationResponse(false, vrs);
     }
 
-    ValidationResponsePayload(ValidationResponse response) {
+    public ValidationResponsePayload(ValidationResponse response) {
         this.response = response;
     }
 

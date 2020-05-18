@@ -32,7 +32,7 @@ import org.apache.logging.log4j.Logger;
  *
  * The aim is just to catch the accidental omission of a required label.
  */
-public class EntityLabelValidation extends AbstractValidation {
+public class EntityLabelValidation {
 
     private static final Logger log = LogManager.getLogger(NameValidation.class.getName());
     
@@ -50,13 +50,12 @@ public class EntityLabelValidation extends AbstractValidation {
         rejectInvalidEntities(routingContext, KafkaUser.class);
     }
 
-
     private static void rejectInvalidEntities(RoutingContext routingContext, Class entityClass) {
         log.traceEntry();
 
-        CustomResource customResourceSpec = getSpecFromRequest(routingContext, entityClass);
+        CustomResource customResourceSpec = Validation.getSpecFromRequest(routingContext, entityClass);
 
-        ValidationResponsePayload outcome = null;
+        ValidationResponsePayload outcome;
 
         if (shouldReject(customResourceSpec)) {
             outcome = ValidationResponsePayload.createFailureResponsePayload(

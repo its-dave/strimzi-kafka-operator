@@ -13,11 +13,15 @@
 package com.ibm.eventstreams.rest;
 
 import com.ibm.eventstreams.api.spec.EventStreams;
+import com.ibm.eventstreams.controller.models.StatusCondition;
 import io.fabric8.kubernetes.client.CustomResource;
+import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 
-public abstract class AbstractValidation {
+import java.util.List;
+
+public interface Validation {
 
     static <T extends CustomResource> T getSpecFromRequest(RoutingContext routingContext, Class<T> specClass) {
         JsonObject requestBody = routingContext.getBodyAsJson();
@@ -27,5 +31,19 @@ public abstract class AbstractValidation {
 
     static EventStreams getSpecFromRequest(RoutingContext routingContext) {
         return getSpecFromRequest(routingContext, EventStreams.class);
+    }
+
+    List<StatusCondition> validateCr(EventStreams spec);
+
+    default void rejectCr(RoutingContext routingContext) {
+        sendResponse(routingContext, validateCr(getSpecFromRequest(routingContext)));
+    }
+
+    default void sendResponse(RoutingContext routingContext, List<StatusCondition> conditions) {
+        routingContext
+            .response()
+            .setStatusCode(200)
+            .putHeader("content-type", "application/json; charset=utf-8")
+            .end(Json.encodePrettily(conditions.isEmpty() ? ValidationResponsePayload.createSuccessResponsePayload() : conditions.get(0).toPayload()));
     }
 }

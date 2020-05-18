@@ -18,6 +18,7 @@ import com.ibm.eventstreams.api.spec.EndpointSpec;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.spec.SecurityComponentSpec;
+import com.ibm.eventstreams.controller.models.StatusCondition;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -27,7 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public class AuthenticationValidation extends AbstractValidation {
+public class AuthenticationValidation implements Validation {
     private static final Logger log = LogManager.getLogger(AuthenticationValidation.class.getName());
 
     public static final String UNAUTH_ENDPOINT_AUTH_ES_WARNING = "At least one Kafka listener has required authentication. "
@@ -43,7 +44,7 @@ public class AuthenticationValidation extends AbstractValidation {
     public static final String ENDPOINT_UNAUTHENTICATED_WHEN_KAFKA_AUTHENTICATED_REASON = "EndpointMissingAuthenticationWhenKafkaAuthenticated";
     public static final String ENDPOINT_AUTHENTICATED_WHEN_KAFKA_UNAUTHENTICATED_REASON = "EndpointAuthenticatedWhenKafkaUnauthenticated";
 
-    public static List<ValidationResponsePayload.ValidationResponse> validateKafkaListenerAuthentication(EventStreams instance) {
+    public List<StatusCondition> validateCr(EventStreams instance) {
         log.traceEntry(() -> instance);
         Map<ListenerType, ListenerAuthentication> listenerAuth = getListenerAuth(instance);
         Optional<List<EndpointSpec>> adminApiEndpoints =  Optional.ofNullable(instance.getSpec())
@@ -57,31 +58,31 @@ public class AuthenticationValidation extends AbstractValidation {
         Optional<List<EndpointSpec>> schemaRegistryEndpoints = Optional.ofNullable(instance.getSpec())
                                                                 .map(EventStreamsSpec::getSchemaRegistry)
                                                                 .map(SecurityComponentSpec::getEndpoints);
-        List<ValidationResponsePayload.ValidationResponse> responses = new ArrayList<>();
+        List<StatusCondition> conditions = new ArrayList<>();
 
         if (isAuthenticated(listenerAuth)) {
             if (isEndpointConfigured(adminApiEndpoints, false)) {
-                responses.add(ValidationResponsePayload.createFailureResponse(String.format(UNAUTH_ENDPOINT_AUTH_ES_WARNING, EndpointValidation.ADMIN_API_SPEC_NAME, EndpointValidation.ADMIN_API_SPEC_NAME), ENDPOINT_UNAUTHENTICATED_WHEN_KAFKA_AUTHENTICATED_REASON));
+                conditions.add(StatusCondition.createWarningCondition(ENDPOINT_UNAUTHENTICATED_WHEN_KAFKA_AUTHENTICATED_REASON, String.format(UNAUTH_ENDPOINT_AUTH_ES_WARNING, EndpointValidation.ADMIN_API_SPEC_NAME, EndpointValidation.ADMIN_API_SPEC_NAME)));
             }
             if (isEndpointConfigured(restProducerEndpoints, false)) {
-                responses.add(ValidationResponsePayload.createFailureResponse(String.format(UNAUTH_ENDPOINT_AUTH_ES_WARNING, EndpointValidation.REST_PRODUCER_SPEC_NAME, EndpointValidation.REST_PRODUCER_SPEC_NAME), ENDPOINT_UNAUTHENTICATED_WHEN_KAFKA_AUTHENTICATED_REASON));
+                conditions.add(StatusCondition.createWarningCondition(ENDPOINT_UNAUTHENTICATED_WHEN_KAFKA_AUTHENTICATED_REASON, String.format(UNAUTH_ENDPOINT_AUTH_ES_WARNING, EndpointValidation.REST_PRODUCER_SPEC_NAME, EndpointValidation.REST_PRODUCER_SPEC_NAME)));
             }
             if (isEndpointConfigured(schemaRegistryEndpoints, false)) {
-                responses.add(ValidationResponsePayload.createFailureResponse(String.format(UNAUTH_ENDPOINT_AUTH_ES_WARNING, EndpointValidation.SCHEMA_REGISTRY_SPEC_NAME, EndpointValidation.SCHEMA_REGISTRY_SPEC_NAME), ENDPOINT_UNAUTHENTICATED_WHEN_KAFKA_AUTHENTICATED_REASON));
+                conditions.add(StatusCondition.createWarningCondition(ENDPOINT_UNAUTHENTICATED_WHEN_KAFKA_AUTHENTICATED_REASON, String.format(UNAUTH_ENDPOINT_AUTH_ES_WARNING, EndpointValidation.SCHEMA_REGISTRY_SPEC_NAME, EndpointValidation.SCHEMA_REGISTRY_SPEC_NAME)));
             }
-            return responses;
+            return conditions;
         }
 
         if (isEndpointConfigured(adminApiEndpoints, true)) {
-            responses.add(ValidationResponsePayload.createFailureResponse(String.format(AUTH_ENDPOINT_UNAUTH_ES_WARNING, EndpointValidation.ADMIN_API_SPEC_NAME, EndpointValidation.ADMIN_API_SPEC_NAME), ENDPOINT_AUTHENTICATED_WHEN_KAFKA_UNAUTHENTICATED_REASON));
+            conditions.add(StatusCondition.createWarningCondition(ENDPOINT_AUTHENTICATED_WHEN_KAFKA_UNAUTHENTICATED_REASON, String.format(AUTH_ENDPOINT_UNAUTH_ES_WARNING, EndpointValidation.ADMIN_API_SPEC_NAME, EndpointValidation.ADMIN_API_SPEC_NAME)));
         }
         if (isEndpointConfigured(restProducerEndpoints, true)) {
-            responses.add(ValidationResponsePayload.createFailureResponse(String.format(AUTH_ENDPOINT_UNAUTH_ES_WARNING, EndpointValidation.REST_PRODUCER_SPEC_NAME, EndpointValidation.REST_PRODUCER_SPEC_NAME), ENDPOINT_AUTHENTICATED_WHEN_KAFKA_UNAUTHENTICATED_REASON));
+            conditions.add(StatusCondition.createWarningCondition(ENDPOINT_AUTHENTICATED_WHEN_KAFKA_UNAUTHENTICATED_REASON, String.format(AUTH_ENDPOINT_UNAUTH_ES_WARNING, EndpointValidation.REST_PRODUCER_SPEC_NAME, EndpointValidation.REST_PRODUCER_SPEC_NAME)));
         }
         if (isEndpointConfigured(schemaRegistryEndpoints, true)) {
-            responses.add(ValidationResponsePayload.createFailureResponse(String.format(AUTH_ENDPOINT_UNAUTH_ES_WARNING, EndpointValidation.SCHEMA_REGISTRY_SPEC_NAME, EndpointValidation.SCHEMA_REGISTRY_SPEC_NAME), ENDPOINT_AUTHENTICATED_WHEN_KAFKA_UNAUTHENTICATED_REASON));
+            conditions.add(StatusCondition.createWarningCondition(ENDPOINT_AUTHENTICATED_WHEN_KAFKA_UNAUTHENTICATED_REASON, String.format(AUTH_ENDPOINT_UNAUTH_ES_WARNING, EndpointValidation.SCHEMA_REGISTRY_SPEC_NAME, EndpointValidation.SCHEMA_REGISTRY_SPEC_NAME)));
         }
-        return responses;
+        return conditions;
     }
 
     private static Map<ListenerType, ListenerAuthentication> getListenerAuth(EventStreams instance) {

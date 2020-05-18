@@ -85,10 +85,10 @@ public class VersionValidationTest extends RestApiTest {
                 JsonObject responseObj = resp.result().bodyAsJsonObject();
                 assertThat(responseObj.getJsonObject("response").getBoolean("allowed"), is(false));
                 assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("status"), is("Failure"));
-                assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is("Unsupported version"));
+                assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is(VersionValidation.INVALID_VERSION_REASON));
                 assertThat(responseObj.getJsonObject("response").getJsonObject("status").getInteger("code"), is(400));
                 assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("message"),
-                        is("Supported version values are: 2020.2, 2020.2.1"));
+                        is(VersionValidation.INVALID_VERSION_MESSAGE));
             } else {
                 fail("Failed to post webhook request");
             }

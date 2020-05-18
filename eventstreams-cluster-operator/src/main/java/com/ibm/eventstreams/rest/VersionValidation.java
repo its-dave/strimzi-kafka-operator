@@ -15,53 +15,35 @@ package com.ibm.eventstreams.rest;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsReplicator;
 import com.ibm.eventstreams.api.status.EventStreamsVersions;
-import io.vertx.core.json.Json;
-import io.vertx.ext.web.RoutingContext;
+import com.ibm.eventstreams.controller.models.StatusCondition;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.Collections;
 import java.util.List;
-import static java.util.Collections.unmodifiableList;
+
 import static java.util.Arrays.asList;
+import static java.util.Collections.unmodifiableList;
 
-
-public class VersionValidation extends AbstractValidation {
-
+public class VersionValidation implements Validation {
     private static final Logger log = LogManager.getLogger(NameValidation.class.getName());
 
     public static final List<String> VALID_APP_VERSIONS = unmodifiableList(asList(EventStreamsVersions.OPERAND_VERSION, EventStreamsVersions.AUTO_UPGRADE_VERSION));
+    public static final String INVALID_VERSION_REASON = "InvalidVersion";
+    public static final String INVALID_VERSION_MESSAGE = "Invalid custom resource: Unsupported version. Supported versions are " + VersionValidation.VALID_APP_VERSIONS.toString();
 
-    public static boolean shouldReject(EventStreams customResourceSpec) {
-        return !(VALID_APP_VERSIONS.contains(customResourceSpec.getSpec().getVersion()));
+    public List<StatusCondition> validateCr(EventStreamsReplicator spec) {
+        log.traceEntry(() -> spec);
+        return log.traceExit(!VALID_APP_VERSIONS.contains(spec.getSpec().getVersion())
+            ? Collections.singletonList(StatusCondition.createErrorCondition(INVALID_VERSION_REASON, INVALID_VERSION_MESSAGE))
+            : Collections.emptyList());
     }
 
-    //Can't easily pass in a CustomResource as a parameter as it doesn't have a spec so overloading the method definition
-    //Need to keep in sync with the shouldReject above
-    public static boolean shouldReject(EventStreamsReplicator customResourceSpec) {
-        return !(VALID_APP_VERSIONS.contains(customResourceSpec.getSpec().getVersion()));
-    }
-
-    public static void rejectInvalidVersions(RoutingContext routingContext) {
-        log.traceEntry();
-
-        EventStreams customResourceSpec = getSpecFromRequest(routingContext);
-
-        ValidationResponsePayload outcome = null;
-
-        if (shouldReject(customResourceSpec)) {
-            outcome = ValidationResponsePayload.createFailureResponsePayload(
-                    "Supported version values are: 2020.2, 2020.2.1",
-                    "Unsupported version");
-        } else {
-            outcome = ValidationResponsePayload.createSuccessResponsePayload();
-        }
-
-        routingContext
-                .response()
-                .setStatusCode(200)
-                .putHeader("content-type", "application/json; charset=utf-8")
-                .end(Json.encodePrettily(outcome));
-
-        log.traceExit();
+    @Override
+    public List<StatusCondition> validateCr(EventStreams spec) {
+        log.traceEntry(() -> spec);
+        return log.traceExit(!VALID_APP_VERSIONS.contains(spec.getSpec().getVersion())
+            ? Collections.singletonList(StatusCondition.createErrorCondition(INVALID_VERSION_REASON, INVALID_VERSION_MESSAGE))
+            : Collections.emptyList());
     }
 }

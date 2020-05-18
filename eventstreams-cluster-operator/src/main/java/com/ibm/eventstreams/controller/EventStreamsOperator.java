@@ -4,7 +4,7 @@
  *
  * 5737-H33
  *
- * (C) Copyright IBM Corp. 2019  All Rights Reserved.
+ * (C) Copyright IBM Corp. 2020  All Rights Reserved.
  *
  * The source code for this program is not published or otherwise
  * divested of its trade secrets, irrespective of what has been
@@ -31,17 +31,18 @@ import com.ibm.eventstreams.api.model.RestProducerModel;
 import com.ibm.eventstreams.api.model.SchemaRegistryModel;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
-import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.status.EventStreamsEndpoint;
 import com.ibm.eventstreams.api.status.EventStreamsStatus;
 import com.ibm.eventstreams.api.status.EventStreamsStatusBuilder;
 import com.ibm.eventstreams.controller.certificates.EventStreamsCertificateException;
 import com.ibm.eventstreams.controller.certificates.EventStreamsCertificateManager;
+import com.ibm.eventstreams.controller.models.PhaseState;
+import com.ibm.eventstreams.controller.models.StatusCondition;
 import com.ibm.eventstreams.rest.AuthenticationValidation;
 import com.ibm.eventstreams.rest.EndpointValidation;
+import com.ibm.eventstreams.rest.EventStreamsGeneralValidation;
 import com.ibm.eventstreams.rest.LicenseValidation;
 import com.ibm.eventstreams.rest.NameValidation;
-import com.ibm.eventstreams.rest.ValidationResponsePayload;
 import com.ibm.eventstreams.rest.VersionValidation;
 import com.ibm.iam.api.controller.Cp4iServicesBindingResourceOperator;
 import com.ibm.iam.api.model.ClientModel;
@@ -64,12 +65,10 @@ import io.strimzi.api.kafka.Crds;
 import io.strimzi.api.kafka.model.Kafka;
 import io.strimzi.api.kafka.model.KafkaUser;
 import io.strimzi.api.kafka.model.status.Condition;
-import io.strimzi.api.kafka.model.status.ConditionBuilder;
 import io.strimzi.api.kafka.model.status.KafkaStatus;
 import io.strimzi.api.kafka.model.status.KafkaUserStatus;
 import io.strimzi.certs.CertAndKey;
 import io.strimzi.operator.PlatformFeaturesAvailability;
-import io.strimzi.operator.cluster.model.ModelUtils;
 import io.strimzi.operator.common.AbstractOperator;
 import io.strimzi.operator.common.MetricsProvider;
 import io.strimzi.operator.common.Reconciliation;
@@ -135,6 +134,8 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
     private int customImageCount = 0;
     private static final String ENCODED_IBMCLOUD_CA_CERT = "icp_public_cacert_encoded";
     private static final String CLUSTER_CA_CERT_SECRET_NAME = "cluster-ca-cert";
+    public static final String COMMON_SERVICES_NOT_FOUND_REASON = "CommonServicesNotFound";
+    public static final String COMMON_SERVICES_CERTIFICATE_NOT_FOUND_REASON = "CommonServicesCertificateNotFound";
 
     public EventStreamsOperator(Vertx vertx, KubernetesClient client, String kind, PlatformFeaturesAvailability pfa,
                                 EventStreamsResourceOperator esResourceOperator,
@@ -210,7 +211,6 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 .compose(state -> state.createAdminUI())
                 .compose(state -> state.createCollector(this::dateSupplier))
                 .compose(state -> state.createOAuthClient())
-                .compose(state -> state.checkEventStreamsSpec(this::dateSupplier))
                 .onSuccess(state -> state.finalStatusUpdate())
                 .onFailure(thr -> reconcileState.recordFailure(thr))
                 .map(t -> null));
@@ -259,62 +259,38 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         @SuppressWarnings("checkstyle:NPathComplexity")
         Future<ReconciliationState> validateCustomResource() {
             log.traceEntry();
-            String phase = Optional.ofNullable(status.getPhase()).orElse("Pending");
+            PhaseState phase = Optional.ofNullable(status.getPhase()).orElse(PhaseState.PENDING);
 
             boolean isValidCR = true;
+            List<StatusCondition> errorConditions = new ArrayList<>();
+            errorConditions.addAll(new LicenseValidation().validateCr(instance));
+            errorConditions.addAll(new NameValidation().validateCr(instance));
+            errorConditions.addAll(new VersionValidation().validateCr(instance));
+            errorConditions.addAll(new EndpointValidation().validateCr(instance));
+            errorConditions.addAll(ReplicatorSourceUsersModel.validateCr(instance));
 
-            if (LicenseValidation.shouldReject(instance)) {
-                addNotReadyCondition("LicenseNotAccepted", "Invalid custom resource: EventStreams License not accepted");
+            if (!errorConditions.isEmpty()) {
+                errorConditions.forEach(condition -> addToConditions(condition.toCondition()));
                 isValidCR = false;
-            }
-            if (NameValidation.shouldReject(instance)) {
-                addNotReadyCondition("InvalidName", "Invalid custom resource: EventStreams metadata name not accepted");
-                isValidCR = false;
-            }
-            if (VersionValidation.shouldReject(instance)) {
-                addNotReadyCondition("InvalidVersion", "Invalid custom resource: Unsupported version. Supported versions are " + VersionValidation.VALID_APP_VERSIONS.toString());
-                isValidCR = false;
-            }
-            List<ValidationResponsePayload.ValidationResponse> endpointResponses = EndpointValidation.validateEndpoints(instance);
-            if (endpointResponses.size() > 0) {
-                endpointResponses.forEach(response -> {
-                    addNotReadyCondition(response.getStatus().getReason(), response.getStatus().getMessage());
-                });
-                isValidCR = false;
-            }
-            if (!ReplicatorSourceUsersModel.isValidInstance(instance)) {
-                addNotReadyCondition("UnsupportedAuthorization", "Listener client authentication unsupported for Geo Replication. Supported versions are TLS and SCRAM");
-                isValidCR = false;
-            }
-            List<ValidationResponsePayload.ValidationResponse> authResponses = AuthenticationValidation.validateKafkaListenerAuthentication(instance);
-            if (authResponses.size() > 0) {
-                authResponses.forEach(response -> addWarningCondition(response.getStatus().getReason(), response.getStatus().getMessage()));
             }
 
-            boolean adminApiRequested = Optional.ofNullable(instance.getSpec()).map(EventStreamsSpec::getAdminApi).isPresent();
-            boolean uiRequested = Optional.ofNullable(instance.getSpec()).map(EventStreamsSpec::getAdminUI).isPresent();
-            if (uiRequested && !adminApiRequested) {
-                addNotReadyCondition("InvalidUiConfiguration", "adminApi is a required component to enable adminUi");
-                isValidCR = false;
-            }
+            // Warnings
+            List<StatusCondition> warnings = new ArrayList<>();
+            warnings.addAll(new AuthenticationValidation().validateCr(instance));
+            warnings.addAll(new EventStreamsGeneralValidation().validateCr(instance));
+            warnings.forEach(warning -> addToConditions(warning.toCondition()));
 
             if (isValidCR) {
                 addCondition(previousConditions
                         .stream()
                         // restore any previous readiness condition if this was set, so
                         // that timestamps remain consistent
-                        .filter(c -> "Ready".equals(c.getType()) || "Creating".equals(c.getType()))
+                        .filter(c -> c.getType().equals(PhaseState.PENDING.toValue()))
                         .findFirst()
                         // otherwise set a new condition saying that the reconcile loop is running
-                        .orElse(new ConditionBuilder()
-                                    .withLastTransitionTime(ModelUtils.formatTimestamp(dateSupplier()))
-                                    .withType("NotReady")
-                                    .withStatus("True")
-                                    .withReason("Creating")
-                                    .withMessage("Event Streams is being deployed")
-                                    .build()));
+                        .orElse(StatusCondition.createPendingCondition("Creating", "Event Streams is being deployed").toCondition()));
             } else {
-                phase = "Failed";
+                phase = PhaseState.FAILED;
             }
 
             EventStreamsStatus statusSubresource = status.withPhase(phase).build();
@@ -352,9 +328,11 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             log.info("{}: IAM status: {}", reconciliation, iamPresent);
 
             if (!iamPresent) {
-                addNotReadyCondition("DependencyMissing", "Could not retrieve cloud pak resources");
+                String failureMessage = "Common Services is required by Event Streams, but the Event Streams Operator could not find the Common Services CA certificate. "
+                    + "Contact IBM Support for assistance in diagnosing the cause.";
+                addToConditions(StatusCondition.createErrorCondition(COMMON_SERVICES_NOT_FOUND_REASON, failureMessage).toCondition());
 
-                EventStreamsStatus statusSubresource = status.withPhase("Failed").build();
+                EventStreamsStatus statusSubresource = status.withPhase(PhaseState.FAILED).build();
                 instance.setStatus(statusSubresource);
 
                 Promise<ReconciliationState> failReconcile = Promise.promise();
@@ -386,9 +364,11 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                         clusterCaSecretPromise.fail(e);
                     }
                 } else {
-                    addNotReadyCondition("DependencyMissing", "could not get secret 'ibmcloud-cluster-ca-cert' in namespace 'kube-public'");
+                    String failureMessage = "Common Services is required by Event Streams, but the Event Streams Operator could not find the Common Services configmap."
+                        + " Contact IBM Support for assistance in diagnosing the cause.";
+                    addToConditions(StatusCondition.createErrorCondition(COMMON_SERVICES_NOT_FOUND_REASON, failureMessage).toCondition());
 
-                    EventStreamsStatus statusSubresource = status.withPhase("Failed").build();
+                    EventStreamsStatus statusSubresource = status.withPhase(PhaseState.FAILED).build();
                     instance.setStatus(statusSubresource);
 
                     updateStatus(statusSubresource).onComplete(f -> {
@@ -409,24 +389,14 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             String clusterCert = icpClusterData.get(EventStreamsOperator.ENCODED_IBMCLOUD_CA_CERT);
             if (clusterCert != null) {
                 clusterSecrets.createIBMCloudCASecret(clusterCert)
-                    .onSuccess(ar -> {
-                        clusterCaSecretPromise.complete();
-                    })
-                    .onFailure(err -> {
-                        addNotReadyCondition("FailedCreate", err.getMessage());
-
-                        EventStreamsStatus statusSubresource = status.withPhase("Failed").build();
-                        instance.setStatus(statusSubresource);
-
-                        updateStatus(statusSubresource).onComplete(f -> {
-                            log.info("Failure to create ICP Cluster CA Cert secret {}", f.succeeded());
-                            clusterCaSecretPromise.fail(err);
-                        });
-                    });
+                    .onSuccess(ar -> clusterCaSecretPromise.complete())
+                    .onFailure(clusterCaSecretPromise::fail);
             } else {
-                addNotReadyCondition("DependencyMissing", "Encoded ICP CA Cert not in ICPClusterData");
+                String failureMessage = "Common Services is required by Event Streams, but the Event Streams Operator could not find the Common Services CA certificate. "
+                    + "Contact IBM Support for assistance in diagnosing the cause.";
+                addToConditions(StatusCondition.createErrorCondition(COMMON_SERVICES_CERTIFICATE_NOT_FOUND_REASON, failureMessage).toCondition());
 
-                EventStreamsStatus statusSubresource = status.withPhase("Failed").build();
+                EventStreamsStatus statusSubresource = status.withPhase(PhaseState.FAILED).build();
                 instance.setStatus(statusSubresource);
 
                 updateStatus(statusSubresource).onComplete(f -> {
@@ -847,17 +817,6 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             return log.traceExit(Future.succeededFuture(this));
         }
 
-        Future<ReconciliationState> checkEventStreamsSpec(Supplier<Date> dateSupplier) {
-            log.traceEntry(() -> dateSupplier);
-            EventStreamsSpecChecker checker = new EventStreamsSpecChecker(dateSupplier, instance.getSpec());
-            List<Condition> warnings = checker.run();
-            for (Condition warning : warnings) {
-                addToConditions(warning);
-            }
-            return log.traceExit(Future.succeededFuture(this));
-        }
-
-
         Future<ReconciliationState> updateStatus(EventStreamsStatus newStatus) {
             log.traceEntry(() -> newStatus);
             Promise<ReconciliationState> updateStatusPromise = Promise.promise();
@@ -889,13 +848,10 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             return log.traceExit(updateStatusPromise.future());
         }
 
-
-
         Future<ReconciliationState> finalStatusUpdate() {
             log.traceEntry();
             status.withCustomImages(customImageCount > 0);
-            status.withPhase("Running");
-            addReadyCondition();
+            status.withPhase(PhaseState.READY);
 
             log.info("Updating status");
             EventStreamsStatus esStatus = status.build();
@@ -903,19 +859,16 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             return log.traceExit(updateStatus(esStatus));
         }
 
-
         void recordFailure(Throwable thr) {
             log.traceEntry(() -> thr);
             log.error("Recording reconcile failure", thr);
-            addNotReadyCondition("DeploymentFailed", thr.getMessage());
-
-            EventStreamsStatus statusSubresource = status.withPhase("Failed").build();
+            addToConditions(StatusCondition.createErrorCondition("DeploymentFailed",
+                String.format("An unexpected exception was encountered: %s. More detail can be found in the Event Streams Operator log.", thr.getMessage())).toCondition());
+            EventStreamsStatus statusSubresource = status.withPhase(PhaseState.FAILED).build();
             instance.setStatus(statusSubresource);
             updateStatus(statusSubresource);
             log.traceExit();
         }
-
-
 
         /**
          *
@@ -925,7 +878,6 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
          *
          *
          */
-
         private <T> Future<T> toFuture(Supplier<T> createResource) {
             log.traceEntry(() -> createResource);
             return log.traceExit(Future.future(blockingFuture -> {
@@ -1003,14 +955,11 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                             .allMatch(future -> future.result() == null);
 
                     if (allPullSecretsMissing) {
-                        addToConditions(new ConditionBuilder()
-                                .withLastTransitionTime(ModelUtils.formatTimestamp(dateSupplier()))
-                                .withType("Warning")
-                                .withStatus("True")
-                                .withReason("MissingPullSecret")
-                                .withMessage(String.format("None of the pull secrets specified for %s exist",
-                                                           component.getApplicationName()))
-                                .build());
+                        String errorMessage = String.format("The image pull secrets specified for the %s component do not exist.", component.getApplicationName())
+                            + "This may prevent images being pulled from the entitled registry. "
+                            + "Check your entitlement and get an entitlement key from https://myibm.ibm.com/products-services/containerlibrary. "
+                            + "Create an image pull secret called 'ibm-entitlement-key' using your entitlement key as the password, cp as the username, and cp.icr.io as the docker server for use with this deployment.";
+                        addToConditions(StatusCondition.createWarningCondition("MissingPullSecret", errorMessage).toCondition());
                     }
 
                     checkSecretsPromise.complete();
@@ -1174,7 +1123,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
          * that will be reused (allowing for timestamps to remain consistent). If not,
          * the provided condition will be added as-is.
          *
-         * @param condition Condition to add to the status conditions list.
+         * @param condition StatusCondition to add to the status conditions list.
          */
         private void addToConditions(Condition condition) {
             log.traceEntry(() -> condition);
@@ -1187,87 +1136,6 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                                  condition.getMessage().equals(c.getMessage()))
                     .findFirst()
                     .orElse(condition));
-            log.traceExit();
-        }
-
-        /**
-         * Checks if the provided condition's message is a new message, if so then it will update the condition
-         * or else use the old condition.
-         *
-         * This will check to see if a matching condition was previously seen and the message is the same, and if so
-         * that will be reused (allowing for timestamps to remain consistent). If not,
-         * the provided condition will be added as-is.
-         *
-         * @param condition Condition to add to the status conditions list.
-         */
-        private void maybeUpdateCondition(Condition condition) {
-            log.traceEntry(() -> condition);
-            // restore the equivalent previous condition if found, otherwise
-            //  add the new condition to the status
-            addCondition(previousConditions
-                .stream()
-                .filter(c -> condition.getReason().equals(c.getReason()))
-                .filter(c -> condition.getMessage().equals(c.getMessage()))
-                .findFirst()
-                .orElse(condition));
-            log.traceExit();
-        }
-
-        /**
-         * Adds a "Ready" condition to the status if there is not already one.
-         *  This does nothing if there is already an existing ready condition from
-         *  a previous reconcile.
-         */
-        private void addReadyCondition() {
-            log.traceEntry();
-            boolean needsReadyCondition = status.getMatchingCondition(cond -> "Ready".equals(cond.getType())) == null;
-            if (needsReadyCondition) {
-                addCondition(new ConditionBuilder()
-                        .withLastTransitionTime(ModelUtils.formatTimestamp(dateSupplier()))
-                        .withType("Ready")
-                        .withStatus("True")
-                        .build());
-            }
-            log.traceExit();
-        }
-
-        /**
-         * Adds a "NotReady" condition to the status that documents a reason why the
-         *  Event Streams operand is not ready yet.
-         *
-         * @param reason A unique, one-word, CamelCase reason for why the operand is not ready.
-         * @param message A human-readable message indicating why the operand is not ready.
-         */
-        private void addNotReadyCondition(String reason, String message) {
-            log.traceEntry(() -> reason, () -> message);
-            addToConditions(
-                    new ConditionBuilder()
-                        .withLastTransitionTime(ModelUtils.formatTimestamp(dateSupplier()))
-                        .withType("NotReady")
-                        .withStatus("True")
-                        .withReason(reason)
-                        .withMessage(message)
-                        .build());
-            log.traceExit();
-        }
-
-        /**
-         * Adds a "Warning" condition to the status that documents a reason why the
-         * Event Streams operand may be configured in a way that breaks things in Event Streams.
-         *
-         * @param reason A unique, one-word, CamelCase reason for why the operand may be configured to break things in ES.
-         * @param message A human-readable message indicating why the operand may be configured to break things in ES.
-         */
-        private void addWarningCondition(String reason, String message) {
-            log.traceEntry(() -> reason, () -> message);
-            maybeUpdateCondition(
-                new ConditionBuilder()
-                    .withLastTransitionTime(ModelUtils.formatTimestamp(dateSupplier()))
-                    .withType("Warning")
-                    .withStatus("True")
-                    .withReason(reason)
-                    .withMessage(message)
-                    .build());
             log.traceExit();
         }
 

@@ -16,6 +16,7 @@ import com.ibm.eventstreams.api.model.utils.ModelUtils;
 import com.ibm.eventstreams.api.spec.EndpointSpec;
 import com.ibm.eventstreams.api.spec.EndpointSpecBuilder;
 import com.ibm.eventstreams.api.spec.EventStreams;
+import com.ibm.eventstreams.controller.models.StatusCondition;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
@@ -56,10 +57,10 @@ public class AuthenticationValidationTest {
             .endSpec()
             .build();
 
-        List<ValidationResponsePayload.ValidationResponse> responses = AuthenticationValidation.validateKafkaListenerAuthentication(instance);
+        List<StatusCondition> responses = new AuthenticationValidation().validateCr(instance);
         assertThat(responses, hasSize(1));
-        assertThat(responses.get(0).getStatus().getReason(), is(AuthenticationValidation.ENDPOINT_AUTHENTICATED_WHEN_KAFKA_UNAUTHENTICATED_REASON));
-        assertThat(responses.get(0).getStatus().getMessage(), is(String.format(AuthenticationValidation.AUTH_ENDPOINT_UNAUTH_ES_WARNING, EndpointValidation.ADMIN_API_SPEC_NAME, EndpointValidation.ADMIN_API_SPEC_NAME)));
+        assertThat(responses.get(0).getReason(), is(AuthenticationValidation.ENDPOINT_AUTHENTICATED_WHEN_KAFKA_UNAUTHENTICATED_REASON));
+        assertThat(responses.get(0).getMessage(), is(String.format(AuthenticationValidation.AUTH_ENDPOINT_UNAUTH_ES_WARNING, EndpointValidation.ADMIN_API_SPEC_NAME, EndpointValidation.ADMIN_API_SPEC_NAME)));
     }
 
     @Test
@@ -78,10 +79,10 @@ public class AuthenticationValidationTest {
             .endSpec()
             .build();
 
-        List<ValidationResponsePayload.ValidationResponse> responses = AuthenticationValidation.validateKafkaListenerAuthentication(instance);
+        List<StatusCondition> responses = new AuthenticationValidation().validateCr(instance);
         assertThat(responses, hasSize(1));
-        assertThat(responses.get(0).getStatus().getReason(), is(AuthenticationValidation.ENDPOINT_AUTHENTICATED_WHEN_KAFKA_UNAUTHENTICATED_REASON));
-        assertThat(responses.get(0).getStatus().getMessage(), is(String.format(AuthenticationValidation.AUTH_ENDPOINT_UNAUTH_ES_WARNING, EndpointValidation.REST_PRODUCER_SPEC_NAME, EndpointValidation.REST_PRODUCER_SPEC_NAME)));
+        assertThat(responses.get(0).getReason(), is(AuthenticationValidation.ENDPOINT_AUTHENTICATED_WHEN_KAFKA_UNAUTHENTICATED_REASON));
+        assertThat(responses.get(0).getMessage(), is(String.format(AuthenticationValidation.AUTH_ENDPOINT_UNAUTH_ES_WARNING, EndpointValidation.REST_PRODUCER_SPEC_NAME, EndpointValidation.REST_PRODUCER_SPEC_NAME)));
     }
 
     @Test
@@ -100,10 +101,10 @@ public class AuthenticationValidationTest {
             .endSpec()
             .build();
 
-        List<ValidationResponsePayload.ValidationResponse> responses = AuthenticationValidation.validateKafkaListenerAuthentication(instance);
+        List<StatusCondition> responses = new AuthenticationValidation().validateCr(instance);
         assertThat(responses, hasSize(1));
-        assertThat(responses.get(0).getStatus().getReason(), is(AuthenticationValidation.ENDPOINT_AUTHENTICATED_WHEN_KAFKA_UNAUTHENTICATED_REASON));
-        assertThat(responses.get(0).getStatus().getMessage(), is(String.format(AuthenticationValidation.AUTH_ENDPOINT_UNAUTH_ES_WARNING, EndpointValidation.SCHEMA_REGISTRY_SPEC_NAME, EndpointValidation.SCHEMA_REGISTRY_SPEC_NAME)));
+        assertThat(responses.get(0).getReason(), is(AuthenticationValidation.ENDPOINT_AUTHENTICATED_WHEN_KAFKA_UNAUTHENTICATED_REASON));
+        assertThat(responses.get(0).getMessage(), is(String.format(AuthenticationValidation.AUTH_ENDPOINT_UNAUTH_ES_WARNING, EndpointValidation.SCHEMA_REGISTRY_SPEC_NAME, EndpointValidation.SCHEMA_REGISTRY_SPEC_NAME)));
     }
 
     @Test
@@ -122,10 +123,10 @@ public class AuthenticationValidationTest {
             .endSpec()
             .build();
 
-        List<ValidationResponsePayload.ValidationResponse> responses = AuthenticationValidation.validateKafkaListenerAuthentication(instance);
+        List<StatusCondition> responses = new AuthenticationValidation().validateCr(instance);
         assertThat(responses, hasSize(1));
-        assertThat(responses.get(0).getStatus().getReason(), is(AuthenticationValidation.ENDPOINT_UNAUTHENTICATED_WHEN_KAFKA_AUTHENTICATED_REASON));
-        assertThat(responses.get(0).getStatus().getMessage(), is(String.format(AuthenticationValidation.UNAUTH_ENDPOINT_AUTH_ES_WARNING, EndpointValidation.ADMIN_API_SPEC_NAME, EndpointValidation.ADMIN_API_SPEC_NAME)));
+        assertThat(responses.get(0).getReason(), is(AuthenticationValidation.ENDPOINT_UNAUTHENTICATED_WHEN_KAFKA_AUTHENTICATED_REASON));
+        assertThat(responses.get(0).getMessage(), is(String.format(AuthenticationValidation.UNAUTH_ENDPOINT_AUTH_ES_WARNING, EndpointValidation.ADMIN_API_SPEC_NAME, EndpointValidation.ADMIN_API_SPEC_NAME)));
     }
 
     @Test
@@ -144,10 +145,10 @@ public class AuthenticationValidationTest {
             .endSpec()
             .build();
 
-        List<ValidationResponsePayload.ValidationResponse> responses = AuthenticationValidation.validateKafkaListenerAuthentication(instance);
+        List<StatusCondition> responses = new AuthenticationValidation().validateCr(instance);
         assertThat(responses, hasSize(1));
-        assertThat(responses.get(0).getStatus().getReason(), is(AuthenticationValidation.ENDPOINT_UNAUTHENTICATED_WHEN_KAFKA_AUTHENTICATED_REASON));
-        assertThat(responses.get(0).getStatus().getMessage(), is(String.format(AuthenticationValidation.UNAUTH_ENDPOINT_AUTH_ES_WARNING, EndpointValidation.REST_PRODUCER_SPEC_NAME, EndpointValidation.REST_PRODUCER_SPEC_NAME)));
+        assertThat(responses.get(0).getReason(), is(AuthenticationValidation.ENDPOINT_UNAUTHENTICATED_WHEN_KAFKA_AUTHENTICATED_REASON));
+        assertThat(responses.get(0).getMessage(), is(String.format(AuthenticationValidation.UNAUTH_ENDPOINT_AUTH_ES_WARNING, EndpointValidation.REST_PRODUCER_SPEC_NAME, EndpointValidation.REST_PRODUCER_SPEC_NAME)));
     }
 
     @Test
@@ -165,10 +166,10 @@ public class AuthenticationValidationTest {
             .endSchemaRegistry()
             .endSpec()
             .build();
-        List<ValidationResponsePayload.ValidationResponse> responses = AuthenticationValidation.validateKafkaListenerAuthentication(instance);
+        List<StatusCondition> responses = new AuthenticationValidation().validateCr(instance);
         assertThat(responses, hasSize(1));
-        assertThat(responses.get(0).getStatus().getReason(), is(AuthenticationValidation.ENDPOINT_UNAUTHENTICATED_WHEN_KAFKA_AUTHENTICATED_REASON));
-        assertThat(responses.get(0).getStatus().getMessage(), is(String.format(AuthenticationValidation.UNAUTH_ENDPOINT_AUTH_ES_WARNING, EndpointValidation.SCHEMA_REGISTRY_SPEC_NAME, EndpointValidation.SCHEMA_REGISTRY_SPEC_NAME)));
+        assertThat(responses.get(0).getReason(), is(AuthenticationValidation.ENDPOINT_UNAUTHENTICATED_WHEN_KAFKA_AUTHENTICATED_REASON));
+        assertThat(responses.get(0).getMessage(), is(String.format(AuthenticationValidation.UNAUTH_ENDPOINT_AUTH_ES_WARNING, EndpointValidation.SCHEMA_REGISTRY_SPEC_NAME, EndpointValidation.SCHEMA_REGISTRY_SPEC_NAME)));
     }
 
     @Test
@@ -186,14 +187,14 @@ public class AuthenticationValidationTest {
             .endSchemaRegistry()
             .endSpec()
             .build();
-        List<ValidationResponsePayload.ValidationResponse> responses = AuthenticationValidation.validateKafkaListenerAuthentication(instance);
+        List<StatusCondition> responses = new AuthenticationValidation().validateCr(instance);
         assertThat(responses, hasSize(3));
-        assertThat(responses.get(0).getStatus().getReason(), is(AuthenticationValidation.ENDPOINT_AUTHENTICATED_WHEN_KAFKA_UNAUTHENTICATED_REASON));
-        assertThat(responses.get(0).getStatus().getMessage(), is(String.format(AuthenticationValidation.AUTH_ENDPOINT_UNAUTH_ES_WARNING, EndpointValidation.ADMIN_API_SPEC_NAME, EndpointValidation.ADMIN_API_SPEC_NAME)));
-        assertThat(responses.get(1).getStatus().getReason(), is(AuthenticationValidation.ENDPOINT_AUTHENTICATED_WHEN_KAFKA_UNAUTHENTICATED_REASON));
-        assertThat(responses.get(1).getStatus().getMessage(), is(String.format(AuthenticationValidation.AUTH_ENDPOINT_UNAUTH_ES_WARNING, EndpointValidation.REST_PRODUCER_SPEC_NAME, EndpointValidation.REST_PRODUCER_SPEC_NAME)));
-        assertThat(responses.get(2).getStatus().getReason(), is(AuthenticationValidation.ENDPOINT_AUTHENTICATED_WHEN_KAFKA_UNAUTHENTICATED_REASON));
-        assertThat(responses.get(2).getStatus().getMessage(), is(String.format(AuthenticationValidation.AUTH_ENDPOINT_UNAUTH_ES_WARNING, EndpointValidation.SCHEMA_REGISTRY_SPEC_NAME, EndpointValidation.SCHEMA_REGISTRY_SPEC_NAME)));
+        assertThat(responses.get(0).getReason(), is(AuthenticationValidation.ENDPOINT_AUTHENTICATED_WHEN_KAFKA_UNAUTHENTICATED_REASON));
+        assertThat(responses.get(0).getMessage(), is(String.format(AuthenticationValidation.AUTH_ENDPOINT_UNAUTH_ES_WARNING, EndpointValidation.ADMIN_API_SPEC_NAME, EndpointValidation.ADMIN_API_SPEC_NAME)));
+        assertThat(responses.get(1).getReason(), is(AuthenticationValidation.ENDPOINT_AUTHENTICATED_WHEN_KAFKA_UNAUTHENTICATED_REASON));
+        assertThat(responses.get(1).getMessage(), is(String.format(AuthenticationValidation.AUTH_ENDPOINT_UNAUTH_ES_WARNING, EndpointValidation.REST_PRODUCER_SPEC_NAME, EndpointValidation.REST_PRODUCER_SPEC_NAME)));
+        assertThat(responses.get(2).getReason(), is(AuthenticationValidation.ENDPOINT_AUTHENTICATED_WHEN_KAFKA_UNAUTHENTICATED_REASON));
+        assertThat(responses.get(2).getMessage(), is(String.format(AuthenticationValidation.AUTH_ENDPOINT_UNAUTH_ES_WARNING, EndpointValidation.SCHEMA_REGISTRY_SPEC_NAME, EndpointValidation.SCHEMA_REGISTRY_SPEC_NAME)));
     }
 
     @Test
@@ -212,13 +213,13 @@ public class AuthenticationValidationTest {
             .endSpec()
             .build();
 
-        List<ValidationResponsePayload.ValidationResponse> responses = AuthenticationValidation.validateKafkaListenerAuthentication(instance);
+        List<StatusCondition> responses = new AuthenticationValidation().validateCr(instance);
         assertThat(responses, hasSize(3));
-        assertThat(responses.get(0).getStatus().getReason(), is(AuthenticationValidation.ENDPOINT_UNAUTHENTICATED_WHEN_KAFKA_AUTHENTICATED_REASON));
-        assertThat(responses.get(0).getStatus().getMessage(), is(String.format(AuthenticationValidation.UNAUTH_ENDPOINT_AUTH_ES_WARNING, EndpointValidation.ADMIN_API_SPEC_NAME, EndpointValidation.ADMIN_API_SPEC_NAME)));
-        assertThat(responses.get(1).getStatus().getReason(), is(AuthenticationValidation.ENDPOINT_UNAUTHENTICATED_WHEN_KAFKA_AUTHENTICATED_REASON));
-        assertThat(responses.get(1).getStatus().getMessage(), is(String.format(AuthenticationValidation.UNAUTH_ENDPOINT_AUTH_ES_WARNING, EndpointValidation.REST_PRODUCER_SPEC_NAME, EndpointValidation.REST_PRODUCER_SPEC_NAME)));
-        assertThat(responses.get(2).getStatus().getReason(), is(AuthenticationValidation.ENDPOINT_UNAUTHENTICATED_WHEN_KAFKA_AUTHENTICATED_REASON));
-        assertThat(responses.get(2).getStatus().getMessage(), is(String.format(AuthenticationValidation.UNAUTH_ENDPOINT_AUTH_ES_WARNING, EndpointValidation.SCHEMA_REGISTRY_SPEC_NAME, EndpointValidation.SCHEMA_REGISTRY_SPEC_NAME)));
+        assertThat(responses.get(0).getReason(), is(AuthenticationValidation.ENDPOINT_UNAUTHENTICATED_WHEN_KAFKA_AUTHENTICATED_REASON));
+        assertThat(responses.get(0).getMessage(), is(String.format(AuthenticationValidation.UNAUTH_ENDPOINT_AUTH_ES_WARNING, EndpointValidation.ADMIN_API_SPEC_NAME, EndpointValidation.ADMIN_API_SPEC_NAME)));
+        assertThat(responses.get(1).getReason(), is(AuthenticationValidation.ENDPOINT_UNAUTHENTICATED_WHEN_KAFKA_AUTHENTICATED_REASON));
+        assertThat(responses.get(1).getMessage(), is(String.format(AuthenticationValidation.UNAUTH_ENDPOINT_AUTH_ES_WARNING, EndpointValidation.REST_PRODUCER_SPEC_NAME, EndpointValidation.REST_PRODUCER_SPEC_NAME)));
+        assertThat(responses.get(2).getReason(), is(AuthenticationValidation.ENDPOINT_UNAUTHENTICATED_WHEN_KAFKA_AUTHENTICATED_REASON));
+        assertThat(responses.get(2).getMessage(), is(String.format(AuthenticationValidation.UNAUTH_ENDPOINT_AUTH_ES_WARNING, EndpointValidation.SCHEMA_REGISTRY_SPEC_NAME, EndpointValidation.SCHEMA_REGISTRY_SPEC_NAME)));
     }
 }

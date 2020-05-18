@@ -48,11 +48,14 @@ import com.ibm.eventstreams.api.status.EventStreamsEndpointBuilder;
 import com.ibm.eventstreams.api.status.EventStreamsStatus;
 import com.ibm.eventstreams.api.status.EventStreamsStatusBuilder;
 import com.ibm.eventstreams.api.status.EventStreamsVersions;
+import com.ibm.eventstreams.controller.models.PhaseState;
 import com.ibm.eventstreams.controller.utils.ConditionUtils;
 import com.ibm.eventstreams.controller.utils.ControllerUtils;
 import com.ibm.eventstreams.controller.utils.MetricsUtils;
 import com.ibm.eventstreams.rest.AuthenticationValidation;
 import com.ibm.eventstreams.rest.EndpointValidation;
+import com.ibm.eventstreams.rest.NameValidation;
+import com.ibm.eventstreams.rest.VersionValidation;
 import com.ibm.iam.api.controller.Cp4iServicesBindingResourceOperator;
 import com.ibm.iam.api.spec.Cp4iServicesBinding;
 import io.fabric8.kubernetes.api.model.ConfigMap;
@@ -538,7 +541,7 @@ public class EventStreamsOperatorTest {
                 verify(esResourceOperator, times(2)).updateEventStreamsStatus(argument.capture());
 
                 EventStreams val = argument.getValue();
-                assertThat(val.getStatus().getPhase(), is("Running"));
+                assertThat(val.getStatus().getPhase(), is(PhaseState.READY));
                 assertThat(val.getStatus().getConditions(), hasItem(hasProperty("reason", is("KafkaStorage"))));
                 assertThat(val.getStatus().getConditions(), hasItem(hasProperty("reason", is("ZooKeeperStorage"))));
 
@@ -564,7 +567,7 @@ public class EventStreamsOperatorTest {
                 ArgumentCaptor<EventStreams> argument = ArgumentCaptor.forClass(EventStreams.class);
                 verify(esResourceOperator, times(2)).updateEventStreamsStatus(argument.capture());
                 EventStreams val = argument.getValue();
-                assertThat(val.getStatus().getPhase(), is("Failed"));
+                assertThat(val.getStatus().getPhase(), is(PhaseState.FAILED));
                 assertThat(val.getStatus().getConditions(), hasItem(hasProperty("reason", is("MockFailure"))));
 
                 async.flag();
@@ -629,7 +632,7 @@ public class EventStreamsOperatorTest {
                 ArgumentCaptor<EventStreams> argument = ArgumentCaptor.forClass(EventStreams.class);
                 verify(esResourceOperator, times(3)).updateEventStreamsStatus(argument.capture());
                 assertThat(argument.getValue().getStatus().getConditions(),
-                        hasItem(hasProperty("message", is("Could not retrieve cloud pak resources"))));
+                        hasItem(hasProperty("message", is("Common Services is required by Event Streams, but the Event Streams Operator could not find the Common Services CA certificate. Contact IBM Support for assistance in diagnosing the cause."))));
                 async.flag();
             })));
     }
@@ -653,7 +656,7 @@ public class EventStreamsOperatorTest {
                 ArgumentCaptor<EventStreams> argument = ArgumentCaptor.forClass(EventStreams.class);
                 verify(esResourceOperator, times(3)).updateEventStreamsStatus(argument.capture());
                 assertThat(argument.getValue().getStatus().getConditions(),
-                        hasItem(hasProperty("message", is("Could not retrieve cloud pak resources"))));
+                        hasItem(hasProperty("message", is("Common Services is required by Event Streams, but the Event Streams Operator could not find the Common Services CA certificate. Contact IBM Support for assistance in diagnosing the cause."))));
                 async.flag();
             })));
     }
@@ -697,14 +700,13 @@ public class EventStreamsOperatorTest {
     }
 
     @Test
-    public void testEventStreamsNameTooLongThrows(VertxTestContext context) {
+    public void testEventStreamsNameValidationThrows(VertxTestContext context) {
         mockRoutes();
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
 
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
 
-        // 17 Characters long
-        String clusterName = "long-instancename";
+        String clusterName = "bad.char-with-a-superlong-name";
 
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, clusterName);
         ArgumentCaptor<EventStreams> updatedEventStreams = ArgumentCaptor.forClass(EventStreams.class);
@@ -712,37 +714,20 @@ public class EventStreamsOperatorTest {
 
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, clusterName), esCluster)
                 .onComplete(context.failing(e -> context.verify(() -> {
-                    assertThat(e.getMessage(), is("Invalid Event Streams specification: further details in the status conditions"));
-                    // check status
                     verify(esResourceOperator, times(2)).updateEventStreamsStatus(updatedEventStreams.capture());
-                    assertThat("Status is incorrect, found status : " + updatedEventStreams.getValue().getStatus(),
-                            updatedEventStreams.getValue().getStatus().getConditions().get(0).getMessage(),
-                            is("Invalid custom resource: EventStreams metadata name not accepted"));
-                    async.flag();
-                })));
-    }
-
-    @Test
-    public void testEventStreamsInvalidNameThrows(VertxTestContext context) {
-        mockRoutes();
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
-
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
-
-        String clusterName = "bad.char";
-
-        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, clusterName);
-        ArgumentCaptor<EventStreams> updatedEventStreams = ArgumentCaptor.forClass(EventStreams.class);
-        Checkpoint async = context.checkpoint();
-
-        esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, clusterName), esCluster)
-                .onComplete(context.failing(e -> context.verify(() -> {
                     assertThat(e.getMessage(), is("Invalid Event Streams specification: further details in the status conditions"));
+
                     // check status
-                    verify(esResourceOperator, times(2)).updateEventStreamsStatus(updatedEventStreams.capture());
-                    assertThat("Status is incorrect, found status : " + updatedEventStreams.getValue().getStatus(),
-                            updatedEventStreams.getValue().getStatus().getConditions().get(0).getMessage(),
-                            is("Invalid custom resource: EventStreams metadata name not accepted"));
+                    List<String> messages = updatedEventStreams.getValue().getStatus().getConditions().stream()
+                        .filter(condition -> condition.getReason().equals(NameValidation.INVALID_INSTANCE_NAME_REASON))
+                        .map(Condition::getMessage)
+                        .collect(Collectors.toList());
+
+                    assertThat(messages, hasSize(2));
+                    assertThat(messages, hasItems(
+                        String.format(NameValidation.INSTANCE_NAME_DOES_NOT_FOLLOW_REGEX_MESSAGE, clusterName),
+                        String.format(NameValidation.INSTANCE_NAME_TOO_LONG_MESSAGE, clusterName)));
+
                     async.flag();
                 })));
     }
@@ -766,55 +751,16 @@ public class EventStreamsOperatorTest {
                 assertThat(e.getMessage(), is("Invalid Event Streams specification: further details in the status conditions"));
                 // check status
                 verify(esResourceOperator, times(2)).updateEventStreamsStatus(updatedEventStreams.capture());
+                String message = updatedEventStreams.getValue().getStatus().getConditions().stream()
+                    .filter(condition -> condition.getReason().matches(VersionValidation.INVALID_VERSION_REASON))
+                    .findFirst()
+                    .map(Condition::getMessage).get();
+
                 assertThat("Status is incorrect, found status : " + updatedEventStreams.getValue().getStatus(),
-                        updatedEventStreams.getValue().getStatus().getConditions().get(0).getMessage().equals("Invalid custom resource: Unsupported version. Supported versions are [2020.2.1, 2020.2]"));
+                        message, is(VersionValidation.INVALID_VERSION_MESSAGE));
                 async.flag();
             })));
     }
-
-    @Test
-    public void testEventStreamsUIWithoutAPIThrows(VertxTestContext context) {
-        mockRoutes();
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
-
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
-
-        String clusterName = "instancename";
-        EventStreams esCluster = new EventStreamsBuilder()
-                .withMetadata(new ObjectMetaBuilder().withName(clusterName).withNamespace(NAMESPACE).build())
-                .withNewSpec()
-                    .withNewLicense()
-                        .withAccept(true)
-                    .endLicense()
-                    .withVersion(EventStreamsVersions.OPERAND_VERSION)
-                    .withNewAdminUI()
-                        .withReplicas(1)
-                    .endAdminUI()
-                    .withStrimziOverrides(new KafkaSpecBuilder()
-                            .withNewKafka()
-                                .withNewListeners()
-                                    .withNewPlain().endPlain()
-                                .endListeners()
-                            .endKafka()
-                            .build())
-                .endSpec()
-                .build();
-
-        ArgumentCaptor<EventStreams> updatedEventStreams = ArgumentCaptor.forClass(EventStreams.class);
-        Checkpoint async = context.checkpoint();
-
-        esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, clusterName), esCluster)
-                .onComplete(context.failing(e -> context.verify(() -> {
-                    assertThat(e.getMessage(), is("Invalid Event Streams specification: further details in the status conditions"));
-
-                    verify(esResourceOperator, times(2)).updateEventStreamsStatus(updatedEventStreams.capture());
-                    EventStreamsStatus status = updatedEventStreams.getValue().getStatus();
-                    assertThat(status.getPhase(), is("Failed"));
-                    assertThat(status.getConditions().get(0).getMessage(), is("adminApi is a required component to enable adminUi"));
-                    async.flag();
-                })));
-    }
-
 
     @Test
     public void testEventStreamsInvalidListenerAuthenticationOauthThrows(VertxTestContext context) {
@@ -852,9 +798,13 @@ public class EventStreamsOperatorTest {
                 assertThat(e.getMessage(), is("Invalid Event Streams specification: further details in the status conditions"));
                 // check status
                 verify(esResourceOperator, times(2)).updateEventStreamsStatus(updatedEventStreams.capture());
+                List<String> messages = updatedEventStreams.getValue().getStatus().getConditions()
+                    .stream().filter(condition -> condition.getReason().matches(ReplicatorSourceUsersModel.INVALID_REASON))
+                    .map(Condition::getMessage).collect(Collectors.toList());
+
                 assertThat("Status is incorrect, found status : " + updatedEventStreams.getValue().getStatus(),
-                        updatedEventStreams.getValue().getStatus().getConditions().get(0).getMessage(),
-                        is("Listener client authentication unsupported for Geo Replication. Supported versions are TLS and SCRAM"));
+                        messages,
+                        hasItem(ReplicatorSourceUsersModel.INVALID_MESSAGE));
                 async.flag();
             })));
     }

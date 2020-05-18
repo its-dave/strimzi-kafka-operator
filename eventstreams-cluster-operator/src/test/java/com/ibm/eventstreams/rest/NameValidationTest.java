@@ -20,8 +20,6 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -37,10 +35,9 @@ import static org.junit.jupiter.api.Assertions.fail;
 @ExtendWith(VertxExtension.class)
 public class NameValidationTest extends RestApiTest {
 
-    private static final Logger log = LogManager.getLogger(NameValidationTest.class.getName());
-
     @Test
     public void testLongName(VertxTestContext context) {
+        String name = "this-is-a-very-long-name-that-exceeds-limits";
         EventStreams test = ModelUtils.createDefaultEventStreams("this-is-a-very-long-name-that-exceeds-limits").build();
         Map<String, Object> request = new HashMap<String, Object>();
         request.put("object", test);
@@ -53,10 +50,10 @@ public class NameValidationTest extends RestApiTest {
                 JsonObject responseObj = resp.result().bodyAsJsonObject();
                 assertThat(responseObj.getJsonObject("response").getBoolean("allowed"), is(false));
                 assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("status"), is("Failure"));
-                assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is("Name too long"));
+                assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is(NameValidation.INVALID_INSTANCE_NAME_REASON));
                 assertThat(responseObj.getJsonObject("response").getJsonObject("status").getInteger("code"), is(400));
                 assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("message"),
-                           is("Names should not be longer than 16 characters"));
+                           is(String.format(NameValidation.INSTANCE_NAME_TOO_LONG_MESSAGE, name)));
             } else {
                 fail("Failed to post webhook request");
             }
@@ -66,6 +63,7 @@ public class NameValidationTest extends RestApiTest {
 
     @Test
     public void testInvalidName(VertxTestContext context) {
+        String name = "invalid.chars";
         EventStreams test = ModelUtils.createDefaultEventStreams("invalid.chars").build();
         Map<String, Object> request = new HashMap<String, Object>();
         request.put("object", test);
@@ -78,10 +76,10 @@ public class NameValidationTest extends RestApiTest {
                 JsonObject responseObj = resp.result().bodyAsJsonObject();
                 assertThat(responseObj.getJsonObject("response").getBoolean("allowed"), is(false));
                 assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("status"), is("Failure"));
-                assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is("Invalid name"));
+                assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is(NameValidation.INVALID_INSTANCE_NAME_REASON));
                 assertThat(responseObj.getJsonObject("response").getJsonObject("status").getInteger("code"), is(400));
                 assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("message"),
-                        startsWith("Invalid metadata.name. Names must consist of lower case alphanumeric characters "));
+                        startsWith(String.format(NameValidation.INSTANCE_NAME_DOES_NOT_FOLLOW_REGEX_MESSAGE, name)));
             } else {
                 fail("Failed to post webhook request");
             }

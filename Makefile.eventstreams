@@ -91,6 +91,7 @@ eventstreams_entitled_registry_values_yaml:
 cleanup_eventstreams_unwanted_files: 
 	# cleanup unwanted files
 	rm -rf deploy/temp
+	rm -f bundle.Dockerfile
 	git checkout -- cluster-operator/src/main/resources
 	git checkout -- helm-charts/strimzi-kafka-operator/templates/_kafka_image_map.tpl
 	git checkout -- kafka-versions.yaml

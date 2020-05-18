@@ -12,11 +12,6 @@
  */
 package com.ibm.eventstreams.api.spec;
 
-import static java.util.Collections.singletonList;
-import static java.util.Collections.unmodifiableList;
-
-import java.util.List;
-
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -24,7 +19,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 import com.ibm.eventstreams.api.status.EventStreamsStatus;
-
 import io.fabric8.kubernetes.api.model.Doneable;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.client.CustomResource;
@@ -34,6 +28,11 @@ import io.strimzi.crdgenerator.annotations.Description;
 import io.sundr.builder.annotations.Buildable;
 import io.sundr.builder.annotations.Inline;
 import lombok.EqualsAndHashCode;
+
+import java.util.List;
+
+import static java.util.Collections.singletonList;
+import static java.util.Collections.unmodifiableList;
 
 @Crd(
     apiVersion = EventStreams.CRD_API_VERSION,
@@ -55,7 +54,7 @@ import lombok.EqualsAndHashCode;
             @Crd.Spec.AdditionalPrinterColumn(
                     name = "Ready",
                     description = "The status of the Event Streams cluster",
-                    jsonPath = ".status.conditions[?(@.type==\"Ready\")].status",
+                    jsonPath = ".status.phase[?(@.type==\"Ready\")].status",
                     type = "string",
                     priority = 0
             ),

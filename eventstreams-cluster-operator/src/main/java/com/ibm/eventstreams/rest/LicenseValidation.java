@@ -15,48 +15,31 @@ package com.ibm.eventstreams.rest;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.spec.LicenseSpec;
-import io.vertx.core.json.Json;
-import io.vertx.ext.web.RoutingContext;
+import com.ibm.eventstreams.controller.models.StatusCondition;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 
-public class LicenseValidation extends AbstractValidation {
+public class LicenseValidation implements Validation {
 
     private static final Logger log = LogManager.getLogger(NameValidation.class.getName());
+    public static final String LICENSE_NOT_ACCEPTED_REASON = "LicenseNotAccepted";
+    public static final String LICENSE_NOT_ACCEPTED_MESSAGE = "The license has not been accepted. "
+        + "To indicate that you have accepted the terms of the IBM Event Streams license, edit spec.license.accept and provide value true";
 
-    public static boolean shouldReject(EventStreams customResourceSpec) {
-        return Optional.ofNullable(customResourceSpec.getSpec())
-                    .map(EventStreamsSpec::getLicense)
-                    .map(LicenseSpec::isAccept)
-                    .map(accepted -> !accepted)
-                    .orElse(true);
-    }
+    public List<StatusCondition> validateCr(EventStreams spec) {
+        log.traceEntry(() -> spec);
 
+        boolean licenseNotAccepted = Optional.ofNullable(spec.getSpec())
+            .map(EventStreamsSpec::getLicense)
+            .map(LicenseSpec::isAccept)
+            .map(accepted -> !accepted)
+            .orElse(true);
 
-    public static void rejectLicenseIfNotAccepted(RoutingContext routingContext) {
-        log.traceEntry();
-
-        EventStreams customResourceSpec = getSpecFromRequest(routingContext);
-
-        ValidationResponsePayload outcome = null;
-
-        if (shouldReject(customResourceSpec)) {
-            outcome = ValidationResponsePayload.createFailureResponsePayload(
-                    "The IBM Event Streams license must be accepted before installation",
-                    "License not accepted");
-        } else {
-            outcome = ValidationResponsePayload.createSuccessResponsePayload();
-        }
-
-        routingContext
-                .response()
-                .setStatusCode(200)
-                .putHeader("content-type", "application/json; charset=utf-8")
-                .end(Json.encodePrettily(outcome));
-
-        log.traceExit();
+        return log.traceExit(licenseNotAccepted ? Collections.singletonList(StatusCondition.createWarningCondition(LICENSE_NOT_ACCEPTED_REASON, LICENSE_NOT_ACCEPTED_MESSAGE)) : Collections.emptyList());
     }
 }

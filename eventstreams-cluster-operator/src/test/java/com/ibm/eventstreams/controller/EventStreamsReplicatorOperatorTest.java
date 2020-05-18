@@ -144,7 +144,7 @@ package com.ibm.eventstreams.controller;
 //import io.strimzi.api.kafka.model.listener.KafkaListenerTlsBuilder;
 //import io.strimzi.api.kafka.model.listener.KafkaListenersBuilder;
 //import io.strimzi.api.kafka.model.listener.TlsListenerConfigurationBuilder;
-//import io.strimzi.api.kafka.model.status.Condition;
+//import io.strimzi.api.kafka.model.status.StatusCondition;
 //import io.strimzi.api.kafka.model.status.ConditionBuilder;
 //import io.strimzi.api.kafka.model.status.KafkaStatusBuilder;
 //import io.strimzi.api.kafka.model.status.ListenerAddressBuilder;

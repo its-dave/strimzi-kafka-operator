@@ -20,13 +20,11 @@ import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.spec.SchemaRegistrySpec;
 import com.ibm.eventstreams.api.spec.SecurityComponentSpec;
-import com.ibm.eventstreams.rest.ValidationResponsePayload.ValidationResponse;
+import com.ibm.eventstreams.controller.models.StatusCondition;
 import io.strimzi.api.kafka.model.KafkaClusterSpec;
 import io.strimzi.api.kafka.model.KafkaSpec;
 import io.strimzi.api.kafka.model.listener.KafkaListenerExternal;
 import io.strimzi.api.kafka.model.listener.KafkaListeners;
-import io.vertx.core.json.Json;
-import io.vertx.ext.web.RoutingContext;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -41,7 +39,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 
 
-public class EndpointValidation extends AbstractValidation {
+public class EndpointValidation implements Validation {
 
     private static final Logger log = LogManager.getLogger(EndpointValidation.class.getName());
 
@@ -67,20 +65,8 @@ public class EndpointValidation extends AbstractValidation {
     private static final String VALID_HOST_REGEX = "^[a-z][-a-z0-9.]*$";
     private static final Pattern VALID_HOST_PATTERN = Pattern.compile(VALID_HOST_REGEX);
 
-    public static void rejectInvalidEndpoint(RoutingContext routingContext) {
-        EventStreams instance = getSpecFromRequest(routingContext);
-        List<ValidationResponse> responses = validateEndpoints(instance);
-        routingContext
-            .response()
-            .setStatusCode(200)
-            .putHeader("content-type", "application/json; charset=utf-8")
-            // Get the first outcome when checking the CR
-            .end(Json.encodePrettily(responses.size() == 0 ? ValidationResponsePayload.createSuccessResponsePayload() : new ValidationResponsePayload(responses.get(0))));
-        log.traceExit();
-    }
-
-    public static List<ValidationResponse> validateEndpoints(EventStreams instance) {
-        List<ValidationResponse> responses = new ArrayList<>();
+    public List<StatusCondition> validateCr(EventStreams instance) {
+        List<StatusCondition> conditions = new ArrayList<>();
         // get the spec that contain endpoints
         Optional<List<EndpointSpec>> adminApiEndpoints = Optional.ofNullable(instance.getSpec()).map(EventStreamsSpec::getAdminApi).map(SecurityComponentSpec::getEndpoints);
         Optional<List<EndpointSpec>> restProdEndpoints = Optional.ofNullable(instance.getSpec()).map(EventStreamsSpec::getRestProducer).map(SecurityComponentSpec::getEndpoints);
@@ -88,79 +74,79 @@ public class EndpointValidation extends AbstractValidation {
         Optional<String> adminUiHost = Optional.ofNullable(instance.getSpec()).map(EventStreamsSpec::getAdminUI).map(AdminUISpec::getHost);
         Optional<KafkaListeners> listeners = Optional.ofNullable(instance.getSpec()).map(EventStreamsSpec::getStrimziOverrides).map(KafkaSpec::getKafka).map(KafkaClusterSpec::getListeners);
         if (adminApiEndpoints.isPresent()) {
-            checkNoEndpointsOnReservedPorts(responses, ADMIN_API_SPEC_NAME, adminApiEndpoints.get());
-            checkValidNames(responses, ADMIN_API_SPEC_NAME, adminApiEndpoints.get());
-            checkUniqueNames(responses, ADMIN_API_SPEC_NAME, adminApiEndpoints.get());
-            checkUniquePorts(responses, ADMIN_API_SPEC_NAME, adminApiEndpoints.get());
-            checkValidTypes(responses, ADMIN_API_SPEC_NAME, adminApiEndpoints.get());
+            checkNoEndpointsOnReservedPorts(conditions, ADMIN_API_SPEC_NAME, adminApiEndpoints.get());
+            checkValidNames(conditions, ADMIN_API_SPEC_NAME, adminApiEndpoints.get());
+            checkUniqueNames(conditions, ADMIN_API_SPEC_NAME, adminApiEndpoints.get());
+            checkUniquePorts(conditions, ADMIN_API_SPEC_NAME, adminApiEndpoints.get());
+            checkValidTypes(conditions, ADMIN_API_SPEC_NAME, adminApiEndpoints.get());
         }
         if (restProdEndpoints.isPresent()) {
-            checkNoEndpointsOnReservedPorts(responses, REST_PRODUCER_SPEC_NAME, restProdEndpoints.get());
-            checkValidNames(responses, REST_PRODUCER_SPEC_NAME, restProdEndpoints.get());
-            checkUniqueNames(responses, REST_PRODUCER_SPEC_NAME, restProdEndpoints.get());
-            checkUniquePorts(responses, REST_PRODUCER_SPEC_NAME, restProdEndpoints.get());
-            checkValidTypes(responses, REST_PRODUCER_SPEC_NAME, restProdEndpoints.get());
-            checkNoIAMBearer(responses, restProdEndpoints.get());
+            checkNoEndpointsOnReservedPorts(conditions, REST_PRODUCER_SPEC_NAME, restProdEndpoints.get());
+            checkValidNames(conditions, REST_PRODUCER_SPEC_NAME, restProdEndpoints.get());
+            checkUniqueNames(conditions, REST_PRODUCER_SPEC_NAME, restProdEndpoints.get());
+            checkUniquePorts(conditions, REST_PRODUCER_SPEC_NAME, restProdEndpoints.get());
+            checkValidTypes(conditions, REST_PRODUCER_SPEC_NAME, restProdEndpoints.get());
+            checkNoIAMBearer(conditions, restProdEndpoints.get());
         }
         if (schemaRegistryEndpoints.isPresent()) {
-            checkNoEndpointsOnReservedPorts(responses, SCHEMA_REGISTRY_SPEC_NAME, schemaRegistryEndpoints.get());
-            checkValidNames(responses, SCHEMA_REGISTRY_SPEC_NAME, schemaRegistryEndpoints.get());
-            checkUniqueNames(responses, SCHEMA_REGISTRY_SPEC_NAME, schemaRegistryEndpoints.get());
-            checkUniquePorts(responses, SCHEMA_REGISTRY_SPEC_NAME, schemaRegistryEndpoints.get());
-            checkValidTypes(responses, SCHEMA_REGISTRY_SPEC_NAME, schemaRegistryEndpoints.get());
+            checkNoEndpointsOnReservedPorts(conditions, SCHEMA_REGISTRY_SPEC_NAME, schemaRegistryEndpoints.get());
+            checkValidNames(conditions, SCHEMA_REGISTRY_SPEC_NAME, schemaRegistryEndpoints.get());
+            checkUniqueNames(conditions, SCHEMA_REGISTRY_SPEC_NAME, schemaRegistryEndpoints.get());
+            checkUniquePorts(conditions, SCHEMA_REGISTRY_SPEC_NAME, schemaRegistryEndpoints.get());
+            checkValidTypes(conditions, SCHEMA_REGISTRY_SPEC_NAME, schemaRegistryEndpoints.get());
         }
-        checkKafkaListenersValidTypes(responses, listeners);
-        checkHasUniqueHosts(responses, adminApiEndpoints, restProdEndpoints, schemaRegistryEndpoints, adminUiHost);
-        checkValidHostNames(responses, adminApiEndpoints, restProdEndpoints, schemaRegistryEndpoints, adminUiHost);
-        return responses;
+        checkKafkaListenersValidTypes(conditions, listeners);
+        checkHasUniqueHosts(conditions, adminApiEndpoints, restProdEndpoints, schemaRegistryEndpoints, adminUiHost);
+        checkValidHostNames(conditions, adminApiEndpoints, restProdEndpoints, schemaRegistryEndpoints, adminUiHost);
+        return conditions;
     }
 
     // TODO what kafka listener types are actually invalid
-    private static void checkKafkaListenersValidTypes(List<ValidationResponse> responses, Optional<KafkaListeners> listeners) {
+    private static void checkKafkaListenersValidTypes(List<StatusCondition> conditions, Optional<KafkaListeners> listeners) {
         if (listeners.map(KafkaListeners::getExternal).map(KafkaListenerExternal::getType).isPresent() &&  !listeners.map(KafkaListeners::getExternal).map(KafkaListenerExternal::getType).get().equals("route")) {
-            responses.add(invalidExternalListenerType());
+            conditions.add(invalidExternalListenerType());
         }
     }
 
-    private static void checkValidHostNames(List<ValidationResponse> responses, Optional<List<EndpointSpec>> adminApiEndpoints, Optional<List<EndpointSpec>> restProducerEndpoints, Optional<List<EndpointSpec>> schemaRegistryEndpoints, Optional<String> adminUiHost) {
-        checkEndpointSpecsHasValidHosts(responses, adminApiEndpoints, ADMIN_API_SPEC_NAME);
-        checkEndpointSpecsHasValidHosts(responses, restProducerEndpoints, REST_PRODUCER_SPEC_NAME);
-        checkEndpointSpecsHasValidHosts(responses, schemaRegistryEndpoints, SCHEMA_REGISTRY_SPEC_NAME);
-        adminUiHost.ifPresent(host -> checkHostIsValid(responses, host, ADMIN_UI_SPEC_NAME));
+    private static void checkValidHostNames(List<StatusCondition> conditions, Optional<List<EndpointSpec>> adminApiEndpoints, Optional<List<EndpointSpec>> restProducerEndpoints, Optional<List<EndpointSpec>> schemaRegistryEndpoints, Optional<String> adminUiHost) {
+        checkEndpointSpecsHasValidHosts(conditions, adminApiEndpoints, ADMIN_API_SPEC_NAME);
+        checkEndpointSpecsHasValidHosts(conditions, restProducerEndpoints, REST_PRODUCER_SPEC_NAME);
+        checkEndpointSpecsHasValidHosts(conditions, schemaRegistryEndpoints, SCHEMA_REGISTRY_SPEC_NAME);
+        adminUiHost.ifPresent(host -> checkHostIsValid(conditions, host, ADMIN_UI_SPEC_NAME));
     }
 
-    private static void checkEndpointSpecsHasValidHosts(List<ValidationResponse> responses, Optional<List<EndpointSpec>> spec, String component) {
+    private static void checkEndpointSpecsHasValidHosts(List<StatusCondition> conditions, Optional<List<EndpointSpec>> spec, String component) {
         spec.ifPresent(endpoints ->
             endpoints.stream().map(EndpointSpec::getHost)
                 .filter(Objects::nonNull)
-                .forEach(host -> checkHostIsValid(responses, host, component)));
+                .forEach(host -> checkHostIsValid(conditions, host, component)));
     }
 
-    private static void checkHostIsValid(List<ValidationResponse> responses, String host, String spec) {
+    private static void checkHostIsValid(List<StatusCondition> conditions, String host, String spec) {
         if (!VALID_HOST_PATTERN.matcher(host).matches()) {
-            responses.add(invalidHostNameResponse(host, spec));
+            conditions.add(invalidHostNameResponse(host, spec));
         } else if (doesExceedMaxHostLengthLimit(host)) {
-            responses.add(invalidHostNameLengthResponse(host, spec));
+            conditions.add(invalidHostNameLengthResponse(host, spec));
         }
     }
 
-    private static ValidationResponse invalidHostNameLengthResponse(String hostname, String spec) {
-        return ValidationResponsePayload.createFailureResponse(String.format("%s host '%s' is an invalid hostname. A valid hostname cannot be longer than 64 characters. Edit spec.%s.endpoints to provide a valid hostname.", spec, hostname, spec),
-            INVALID_HOSTNAME_REASON);
+    private static StatusCondition invalidHostNameLengthResponse(String hostname, String spec) {
+        return StatusCondition.createErrorCondition(INVALID_HOSTNAME_REASON,
+            String.format("%s host '%s' is an invalid hostname. A valid hostname cannot be longer than 64 characters. Edit spec.%s.endpoints to provide a valid hostname.", spec, hostname, spec));
     }
 
     private static boolean doesExceedMaxHostLengthLimit(String host) {
         return host.length() > ROUTE_HOST_NAME_MAX_LENGTH;
     }
 
-    private static ValidationResponse invalidHostNameResponse(String hostname, String spec) {
-        return ValidationResponsePayload.createFailureResponse(String.format("%s host '%s' is an invalid hostname. A valid hostname contains lowercase alphanumeric characters and full stops (%s). Edit spec.%s.endpoints to provide a valid hostname.", spec, hostname, VALID_NAME_REGEX, spec),
-            INVALID_HOSTNAME_REASON);
+    private static StatusCondition invalidHostNameResponse(String hostname, String spec) {
+        return StatusCondition.createErrorCondition(INVALID_HOSTNAME_REASON,
+            String.format("%s host '%s' is an invalid hostname. A valid hostname contains lowercase alphanumeric characters and full stops (%s). Edit spec.%s.endpoints to provide a valid hostname.", spec, hostname, VALID_NAME_REGEX, spec));
     }
 
-    private static void checkHasUniqueHosts(List<ValidationResponse> responses, Optional<List<EndpointSpec>> adminApiEndpoints, Optional<List<EndpointSpec>> restProducerEndpoints, Optional<List<EndpointSpec>> schemaRegistryEndpoints, Optional<String> adminUiHost) {
+    private static void checkHasUniqueHosts(List<StatusCondition> conditions, Optional<List<EndpointSpec>> adminApiEndpoints, Optional<List<EndpointSpec>> restProducerEndpoints, Optional<List<EndpointSpec>> schemaRegistryEndpoints, Optional<String> adminUiHost) {
         if (!hasUniqueHosts(adminApiEndpoints, restProducerEndpoints, schemaRegistryEndpoints, adminUiHost)) {
-            responses.add(nonUniqueHostNamesResponse());
+            conditions.add(nonUniqueHostNamesResponse());
         }
     }
 
@@ -176,10 +162,10 @@ public class EndpointValidation extends AbstractValidation {
         return hosts.size() == numOfDefinedHosts.get();
     }
 
-    private static ValidationResponse nonUniqueHostNamesResponse() {
-        return ValidationResponsePayload.createFailureResponse(String.format("There are two or more hosts that have the same value. Each host must have a unique value. To provide unique hostnames, edit spec.%s.endpoints, spec.%s.endpoints, spec.%s.endpoints, and spec.%s.host.",
-            ADMIN_API_SPEC_NAME, REST_PRODUCER_SPEC_NAME, SCHEMA_REGISTRY_SPEC_NAME, ADMIN_UI_SPEC_NAME),
-            DUPLICATE_HOST_NAMES_REASON);
+    private static StatusCondition nonUniqueHostNamesResponse() {
+        return StatusCondition.createErrorCondition(DUPLICATE_HOST_NAMES_REASON,
+            String.format("There are two or more hosts that have the same value. Each host must have a unique value. To provide unique hostnames, edit spec.%s.endpoints, spec.%s.endpoints, spec.%s.endpoints, and spec.%s.host.",
+                ADMIN_API_SPEC_NAME, REST_PRODUCER_SPEC_NAME, SCHEMA_REGISTRY_SPEC_NAME, ADMIN_UI_SPEC_NAME));
     }
 
     private static void addHostsToSetAndIncrementCount(Optional<List<EndpointSpec>> endpointSpecs, Set<String> hosts, AtomicInteger numOfDefinedHosts) {
@@ -194,14 +180,14 @@ public class EndpointValidation extends AbstractValidation {
         numOfDefinedHosts.incrementAndGet();
     }
 
-    private static ValidationResponse invalidExternalListenerType() {
-        return ValidationResponsePayload.createFailureResponse("spec.strimziOverrides.kafka.listener.external.type is an invalid listener type. Edit spec.strimziOverrides.kafka.listener.external.type to set 'route' as the value.",
-            INVALID_EXTERNAL_KAFKA_LISTENER_TYPE);
+    private static StatusCondition invalidExternalListenerType() {
+        return StatusCondition.createErrorCondition(INVALID_EXTERNAL_KAFKA_LISTENER_TYPE,
+            "spec.strimziOverrides.kafka.listener.external.type is an invalid listener type. Edit spec.strimziOverrides.kafka.listener.external.type to set 'route' as the value.");
     }
 
-    private static void checkNoEndpointsOnReservedPorts(List<ValidationResponse> responses, String specName, List<EndpointSpec> endpoints) {
+    private static void checkNoEndpointsOnReservedPorts(List<StatusCondition> conditions, String specName, List<EndpointSpec> endpoints) {
         if (hasEndpointsOnReservedPorts(endpoints)) {
-            responses.add(reservedEndpointResponse(specName));
+            conditions.add(reservedEndpointResponse(specName));
         }
     }
 
@@ -210,17 +196,16 @@ public class EndpointValidation extends AbstractValidation {
             .anyMatch(endpoint -> endpoint.getContainerPort() >= 7000 && endpoint.getContainerPort() <= 7999); // reserve 7000 - 7999 to give us some space
     }
 
-    private static ValidationResponse reservedEndpointResponse(String spec) {
-        return ValidationResponsePayload.createFailureResponse(
-            String.format("%s has an endpoint that requested access on a reserved port between 7000 and 7999, inclusive. Edit spec.%s.endpoints to choose a port number outside of that range.", spec, spec),
-            INVALID_PORT_REASON);
+    private static StatusCondition reservedEndpointResponse(String spec) {
+        return StatusCondition.createErrorCondition(INVALID_PORT_REASON,
+            String.format("%s has an endpoint that requested access on a reserved port between 7000 and 7999, inclusive. Edit spec.%s.endpoints to choose a port number outside of that range.", spec, spec));
     }
 
-    private static void checkValidNames(List<ValidationResponse> responses, String specName, List<EndpointSpec> endpoints) {
+    private static void checkValidNames(List<StatusCondition> conditions, String specName, List<EndpointSpec> endpoints) {
         if (hasInvalidName(endpoints)) {
-            responses.add(invalidEndpointNameResponse(specName));
+            conditions.add(invalidEndpointNameResponse(specName));
         } else if (hasNameTooLong(endpoints)) {
-            responses.add(nameTooLongResponse(specName));
+            conditions.add(nameTooLongResponse(specName));
         }
     }
 
@@ -229,10 +214,9 @@ public class EndpointValidation extends AbstractValidation {
             .anyMatch(endpoint -> !VALID_NAME_PATTERN.matcher(endpoint.getName()).matches());
     }
 
-    private static ValidationResponse invalidEndpointNameResponse(String spec) {
-        return ValidationResponsePayload.createFailureResponse(
-            String.format("%s has an endpoint with an invalid name. Acceptable names are lowercase alphanumeric with dashes (%s). Edit spec.%s.endpoints to provide a valid endpoint names.", spec, VALID_NAME_REGEX, spec),
-            INVALID_ENDPOINT_NAME_REASON);
+    private static StatusCondition invalidEndpointNameResponse(String spec) {
+        return StatusCondition.createErrorCondition(INVALID_ENDPOINT_NAME_REASON,
+            String.format("%s has an endpoint with an invalid name. Acceptable names are lowercase alphanumeric with dashes (%s). Edit spec.%s.endpoints to provide a valid endpoint names.", spec, VALID_NAME_REGEX, spec));
     }
 
     private static boolean hasNameTooLong(List<EndpointSpec> endpoints) {
@@ -240,33 +224,31 @@ public class EndpointValidation extends AbstractValidation {
             .anyMatch(endpoint -> endpoint.getName().length() > ENDPOINT_NAME_MAX_LENGTH);
     }
 
-    private static ValidationResponse nameTooLongResponse(String spec) {
-        return ValidationResponsePayload.createFailureResponse(
-            String.format("%s has an endpoint with an invalid name. Names cannot be longer than %d characters. Edit spec.%s.endpoints to provide a valid endpoint name.", spec, ENDPOINT_NAME_MAX_LENGTH, spec),
-            INVALID_ENDPOINT_NAME_REASON);
+    private static StatusCondition nameTooLongResponse(String spec) {
+        return StatusCondition.createErrorCondition(INVALID_ENDPOINT_NAME_REASON,
+            String.format("%s has an endpoint with an invalid name. Names cannot be longer than %d characters. Edit spec.%s.endpoints to provide a valid endpoint name.", spec, ENDPOINT_NAME_MAX_LENGTH, spec));
     }
 
-    private static void checkUniqueNames(List<ValidationResponse> responses, String specName, List<EndpointSpec> endpoints) {
+    private static void checkUniqueNames(List<StatusCondition> conditions, String specName, List<EndpointSpec> endpoints) {
         if (!hasUniqueNames(endpoints)) {
-            responses.add(nonUniqueNameResponse(specName));
+            conditions.add(nonUniqueNameResponse(specName));
         }
     }
 
     private static boolean hasUniqueNames(List<EndpointSpec> endpoints) {
-        Set<String> names = new HashSet<String>();
+        Set<String> names = new HashSet<>();
         endpoints.forEach(endpoint -> names.add(endpoint.getName()));
         return names.size() == endpoints.size();
     }
 
-    private static ValidationResponse nonUniqueNameResponse(String spec) {
-        return ValidationResponsePayload.createFailureResponse(
-            String.format("%s has multiple endpoints with the same name. Edit spec.%s.endpoints to ensure that each endpoint has a unique name.", spec, spec),
-            DUPLICATE_ENDPOINT_NAME_REASON);
+    private static StatusCondition nonUniqueNameResponse(String spec) {
+        return StatusCondition.createErrorCondition(DUPLICATE_ENDPOINT_NAME_REASON,
+            String.format("%s has multiple endpoints with the same name. Edit spec.%s.endpoints to ensure that each endpoint has a unique name.", spec, spec));
     }
 
-    private static void checkUniquePorts(List<ValidationResponse> responses, String specName, List<EndpointSpec> endpoints) {
+    private static void checkUniquePorts(List<StatusCondition> conditions, String specName, List<EndpointSpec> endpoints) {
         if (!hasUniquePorts(endpoints)) {
-            responses.add(nonUniquePortResponse(specName));
+            conditions.add(nonUniquePortResponse(specName));
         }
     }
     private static boolean hasUniquePorts(List<EndpointSpec> endpoints) {
@@ -275,15 +257,14 @@ public class EndpointValidation extends AbstractValidation {
         return ports.size() == endpoints.size();
     }
 
-    private static ValidationResponse nonUniquePortResponse(String spec) {
-        return ValidationResponsePayload.createFailureResponse(
-            String.format("%s has multiple endpoints with the same containerPort. Edit spec.%s.endpoints to ensure that each endpoint has a unique containerPort.", spec, spec),
-            DUPLICATE_ENDPOINT_PORTS_REASON);
+    private static StatusCondition nonUniquePortResponse(String spec) {
+        return StatusCondition.createErrorCondition(DUPLICATE_ENDPOINT_PORTS_REASON,
+            String.format("%s has multiple endpoints with the same containerPort. Edit spec.%s.endpoints to ensure that each endpoint has a unique containerPort.", spec, spec));
     }
 
-    private static void checkValidTypes(List<ValidationResponse> responses, String specName, List<EndpointSpec> endpoints) {
+    private static void checkValidTypes(List<StatusCondition> conditions, String specName, List<EndpointSpec> endpoints) {
         if (hasInvalidTypes(endpoints)) {
-            responses.add(invalidTypeResponse(specName));
+            conditions.add(invalidTypeResponse(specName));
         }
     }
 
@@ -295,15 +276,14 @@ public class EndpointValidation extends AbstractValidation {
                 endpoint.getType().equals(EndpointServiceType.LOAD_BALANCER));
     }
 
-    private static ValidationResponse invalidTypeResponse(String spec) {
-        return ValidationResponsePayload.createFailureResponse(
-            String.format("%s has an endpoint with an invalid type. Acceptable types are 'Route' and 'Internal'. Edit spec.%s.endpoints to ensure that each endpoint has an acceptable type.", spec, spec),
-            INVALID_ENDPOINT_TYPE_REASON);
+    private static StatusCondition invalidTypeResponse(String spec) {
+        return StatusCondition.createErrorCondition(INVALID_ENDPOINT_TYPE_REASON,
+            String.format("%s has an endpoint with an invalid type. Acceptable types are 'Route' and 'Internal'. Edit spec.%s.endpoints to ensure that each endpoint has an acceptable type.", spec, spec));
     }
 
-    private static void checkNoIAMBearer(List<ValidationResponse> responses, List<EndpointSpec> endpoints) {
+    private static void checkNoIAMBearer(List<StatusCondition> conditions, List<EndpointSpec> endpoints) {
         if (hasIAMBearerAuth(endpoints)) {
-            responses.add(invalidIAMBearerEndpointResponse());
+            conditions.add(invalidIAMBearerEndpointResponse());
         }
     }
 
@@ -312,9 +292,8 @@ public class EndpointValidation extends AbstractValidation {
             .anyMatch(endpoint -> Optional.ofNullable(endpoint.getAuthenticationMechanisms()).orElse(Collections.emptyList()).contains(Endpoint.IAM_BEARER_KEY));
     }
 
-    private static ValidationResponse invalidIAMBearerEndpointResponse() {
-        return ValidationResponsePayload.createFailureResponse(
-            String.format("restProducer has an endpoint using authentication mechanism '%s' which is not supported. Edit the authenticationMechanisms property in spec.restProducer.endpoints to set '%s', '%s', or both.", Endpoint.IAM_BEARER_KEY, Endpoint.SCRAM_SHA_512_KEY, Endpoint.MAC_KEY),
-            UNSUPPORTED_ENDPOINT_AUTHENTICATION_MECHANISM_REASON);
+    private static StatusCondition invalidIAMBearerEndpointResponse() {
+        return StatusCondition.createErrorCondition(UNSUPPORTED_ENDPOINT_AUTHENTICATION_MECHANISM_REASON,
+            String.format("restProducer has an endpoint using authentication mechanism '%s' which is not supported. Edit the authenticationMechanisms property in spec.restProducer.endpoints to set '%s', '%s', or both.", Endpoint.IAM_BEARER_KEY, Endpoint.SCRAM_SHA_512_KEY, Endpoint.MAC_KEY));
     }
 }

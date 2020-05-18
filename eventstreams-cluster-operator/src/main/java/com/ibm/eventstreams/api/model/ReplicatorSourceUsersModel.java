@@ -14,17 +14,20 @@
 package com.ibm.eventstreams.api.model;
 
 import com.ibm.eventstreams.api.spec.EventStreams;
+import com.ibm.eventstreams.controller.models.StatusCondition;
 import io.strimzi.api.kafka.model.AclOperation;
 import io.strimzi.api.kafka.model.AclResourcePatternType;
 import io.strimzi.api.kafka.model.AclRule;
+import io.strimzi.api.kafka.model.AclRuleBuilder;
 import io.strimzi.api.kafka.model.KafkaUser;
 import io.strimzi.api.kafka.model.listener.KafkaListenerAuthentication;
-import io.strimzi.api.kafka.model.AclRuleBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 public class ReplicatorSourceUsersModel extends AbstractModel {
 
@@ -32,6 +35,10 @@ public class ReplicatorSourceUsersModel extends AbstractModel {
     private KafkaUser sourceConnectorKafkaUser;
 
     private static final Logger log = LogManager.getLogger(ReplicatorSourceUsersModel.class.getName());
+    public static final String INVALID_REASON = "AuthenticationNotSupportedByGeoReplication";
+    public static final String INVALID_MESSAGE = "A Kafka Listener is configured with authentication that is not supported by geo-replication. "
+        + "Valid authentication types for geo-replication are 'tls' or 'scram-sha-512'. "
+        + "Edit spec.strimziOverrides.kafka.listeners.external to provide a valid authentication type.";
 
     public ReplicatorSourceUsersModel(EventStreams instance) {
         super(instance, ReplicatorModel.COMPONENT_NAME, ReplicatorModel.APPLICATION_NAME);
@@ -129,15 +136,15 @@ public class ReplicatorSourceUsersModel extends AbstractModel {
         }
     }
 
-    public static boolean isValidInstance(EventStreams instance) {
-        boolean validInstance = true;
-
-        KafkaListenerAuthentication externalClientAuth = ReplicatorModel.getExternalKafkaListenerAuthentication(instance);
-        if (externalClientAuth != null && !isSupportedAuthType(externalClientAuth)) {
-            validInstance = false;
+    public static List<StatusCondition> validateCr(EventStreams spec) {
+        boolean isInvalidKafkaListenerAuth = Optional.ofNullable(ReplicatorModel.getExternalKafkaListenerAuthentication(spec))
+            .map(auth -> !isSupportedAuthType(auth))
+            .orElse(false);
+        if (isInvalidKafkaListenerAuth) {
+            return Collections.singletonList(StatusCondition.createErrorCondition(INVALID_REASON, INVALID_MESSAGE));
         }
 
-        return validInstance;
+        return Collections.emptyList();
     }
 
     public String getSourceConnectorKafkaUserName() {

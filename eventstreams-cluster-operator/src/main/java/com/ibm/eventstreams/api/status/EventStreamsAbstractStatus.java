@@ -17,6 +17,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.ibm.eventstreams.controller.models.PhaseState;
 import io.strimzi.api.kafka.model.status.Condition;
 import io.strimzi.crdgenerator.annotations.Description;
 import io.sundr.builder.annotations.Buildable;
@@ -32,20 +33,19 @@ import java.util.List;
 @EqualsAndHashCode
 public abstract class EventStreamsAbstractStatus implements Serializable {
 
-    private String phase;
+    private PhaseState phase;
     private boolean customImages;
     private EventStreamsVersions versions;
     private List<Condition> conditions;
 
-    @Description("Identifies the current status of the Event Streams instance. This will be 'Pending', 'Running', or 'Failed'")
-    public String getPhase() {
+    @Description("Identifies the current state of the Event Streams instance.")
+    public PhaseState getPhase() {
         return phase;
     }
 
-    public void setPhase(String phase) {
+    public void setPhase(PhaseState phase) {
         this.phase = phase;
     }
-
 
     @Description("Identifies whether any of the Docker images have been modified from the defaults for this version of Event Streams")
     public boolean isCustomImages() {
