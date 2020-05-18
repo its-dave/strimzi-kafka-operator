@@ -234,7 +234,8 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
     }
 
     public static boolean isSchemaRegistryEnabled(EventStreams instance) {
-        return Optional.ofNullable(instance.getSpec())
+        return instance.getSpec().getSchemaRegistry() != null &&
+            Optional.ofNullable(instance.getSpec())
                 .map(EventStreamsSpec::getSchemaRegistry)
                 .map(SchemaRegistrySpec::getReplicas)
                 .orElse(DEFAULT_REPLICAS) > 0;

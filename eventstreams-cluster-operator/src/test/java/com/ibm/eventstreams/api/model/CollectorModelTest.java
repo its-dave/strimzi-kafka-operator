@@ -552,4 +552,16 @@ public class CollectorModelTest {
         assertThat(collectorModel.getDeployment("newID").getSpec().getTemplate().getMetadata().getLabels().containsKey(AbstractSecureEndpointsModel.CERT_GENERATION_KEY), is(true));
         assertThat(collectorModel.getDeployment("newID").getSpec().getTemplate().getMetadata().getLabels().get(AbstractSecureEndpointsModel.CERT_GENERATION_KEY), is("newID"));
     }
+
+    @Test
+    public void testCheckIfEnabled() {
+        EventStreams eventStreams = createDefaultEventStreams().build();
+        assertThat(CollectorModel.isCollectorEnabled(eventStreams), is(true));
+    }
+
+    @Test
+    public void testCheckIfDisabled() {
+        EventStreams eventStreams = ModelUtils.createDefaultEventStreams(instanceName).build();
+        assertThat(CollectorModel.isCollectorEnabled(eventStreams), is(false));
+    }
 }

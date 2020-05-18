@@ -245,6 +245,10 @@ public abstract class AbstractModel {
         this.replicas = replicas;
     }
 
+    public int getReplicas() {
+        return replicas;
+    }
+
     protected void setProductUse(ProductUse productUse) {
         this.productUse = productUse;
     }

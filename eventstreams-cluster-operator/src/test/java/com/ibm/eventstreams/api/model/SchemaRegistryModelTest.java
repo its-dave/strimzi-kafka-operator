@@ -779,6 +779,17 @@ public class SchemaRegistryModelTest {
         List<EnvVar> actualSchemaProxyEnvVars = schemaRegistryModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(2).getEnv();
         System.out.println(actualSchemaProxyEnvVars);
         assertThat(actualSchemaProxyEnvVars, hasItems(expectedEnvVarIAMClusterName, expectedEnvVarIAMClusterEndpoint, expectedEnvVarKafkaPrincipal));
+    }
 
+    @Test
+    public void testCheckIfEnabled() {
+        EventStreams eventStreams = createDefaultEventStreams().build();
+        assertThat(SchemaRegistryModel.isSchemaRegistryEnabled(eventStreams), is(true));
+    }
+
+    @Test
+    public void testCheckIfDisabled() {
+        EventStreams eventStreams = ModelUtils.createDefaultEventStreams(instanceName).build();
+        assertThat(SchemaRegistryModel.isSchemaRegistryEnabled(eventStreams), is(false));
     }
 }

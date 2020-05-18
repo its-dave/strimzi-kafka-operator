@@ -505,4 +505,16 @@ public class RestProducerModelTest {
         assertThat(restProducerModel.getDeployment("newID").getSpec().getTemplate().getMetadata().getLabels().containsKey(AbstractSecureEndpointsModel.CERT_GENERATION_KEY), is(true));
         assertThat(restProducerModel.getDeployment("newID").getSpec().getTemplate().getMetadata().getLabels().get(AbstractSecureEndpointsModel.CERT_GENERATION_KEY), is("newID"));
     }
+
+    @Test
+    public void testCheckIfEnabled() {
+        EventStreams eventStreams = createDefaultEventStreams().build();
+        assertThat(RestProducerModel.isRestProducerEnabled(eventStreams), is(true));
+    }
+
+    @Test
+    public void testCheckIfDisabled() {
+        EventStreams eventStreams = ModelUtils.createDefaultEventStreams(instanceName).build();
+        assertThat(RestProducerModel.isRestProducerEnabled(eventStreams), is(false));
+    }
 }

@@ -632,7 +632,9 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 restProducerFutures.add(serviceOperator.reconcile(namespace, restProducer.getServiceName(type), restProducer.getSecurityService(type)));
             }
             restProducerFutures.add(networkPolicyOperator.reconcile(namespace, restProducer.getDefaultResourceName(), restProducer.getNetworkPolicy()));
-            restProducerFutures.add(checkPullSecrets(restProducer));
+            if (RestProducerModel.isRestProducerEnabled(instance)) {
+                restProducerFutures.add(checkPullSecrets(restProducer));
+            }
             return log.traceExit(CompositeFuture.join(restProducerFutures)
                 .compose(v -> reconcileRoutes(restProducer, restProducer.getRoutes()))
                 .compose(routesMap -> reconcileCerts(restProducer, routesMap, dateSupplier))
@@ -698,7 +700,9 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 schemaRegistryFutures.add(serviceOperator.reconcile(namespace, schemaRegistry.getServiceName(type), schemaRegistry.getSecurityService(type)));
             }
             schemaRegistryFutures.add(networkPolicyOperator.reconcile(namespace, schemaRegistry.getDefaultResourceName(), schemaRegistry.getNetworkPolicy()));
-            schemaRegistryFutures.add(checkPullSecrets(schemaRegistry));
+            if (SchemaRegistryModel.isSchemaRegistryEnabled(instance)) {
+                schemaRegistryFutures.add(checkPullSecrets(schemaRegistry));
+            }
 
             return log.traceExit(CompositeFuture.join(schemaRegistryFutures)
                     .compose(v -> reconcileRoutes(schemaRegistry, schemaRegistry.getRoutes()))
@@ -755,7 +759,9 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             adminUIFutures.add(roleBindingOperator.reconcile(namespace, ui.getDefaultResourceName(), ui.getRoleBinding()));
             adminUIFutures.add(serviceOperator.reconcile(namespace, ui.getDefaultResourceName(), ui.getService()));
             adminUIFutures.add(networkPolicyOperator.reconcile(namespace, ui.getDefaultResourceName(), ui.getNetworkPolicy()));
-            adminUIFutures.add(checkPullSecrets(ui));
+            if (AdminUIModel.isUIEnabled(instance)) {
+                adminUIFutures.add(checkPullSecrets(ui));
+            }
 
             if (pfa.hasRoutes() && routeOperator != null) {
                 adminUIFutures.add(routeOperator.reconcile(namespace, ui.getRouteName(), ui.getRoute()).compose(route -> {
@@ -789,7 +795,9 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             collectorFutures.add(serviceAccountOperator.reconcile(namespace, collector.getDefaultResourceName(), collector.getServiceAccount()));
             collectorFutures.add(serviceOperator.reconcile(namespace, collector.getServiceName(EndpointServiceType.INTERNAL), collector.getSecurityService(EndpointServiceType.INTERNAL)));
             collectorFutures.add(networkPolicyOperator.reconcile(namespace, collector.getDefaultResourceName(), collector.getNetworkPolicy()));
-            collectorFutures.add(checkPullSecrets(collector));
+            if (CollectorModel.isCollectorEnabled(instance)) {
+                collectorFutures.add(checkPullSecrets(collector));
+            }
             return log.traceExit(CompositeFuture.join(collectorFutures)
                     .compose(res -> reconcileCerts(collector, Collections.emptyMap(), dateSupplier))
                     .compose(secretResult -> {
@@ -992,7 +1000,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             CompositeFuture.all(getPullSecrets).setHandler(res -> {
                 if (res.succeeded()) {
                     boolean allPullSecretsMissing = getPullSecrets.stream()
-                        .allMatch(future -> future.result() == null);
+                            .allMatch(future -> future.result() == null);
 
                     if (allPullSecretsMissing) {
                         addToConditions(new ConditionBuilder()

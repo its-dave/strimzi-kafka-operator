@@ -560,9 +560,10 @@ public class AdminUIModel extends AbstractModel {
     }
 
     public static boolean isUIEnabled(EventStreams instance) {
-        return Optional.ofNullable(instance.getSpec().getAdminUI())
-            .map(AdminUISpec::getReplicas)
-            .orElse(DEFAULT_REPLICAS) > 0;
+        return instance.getSpec().getAdminUI() != null &&
+            Optional.ofNullable(instance.getSpec().getAdminUI())
+                .map(AdminUISpec::getReplicas)
+                .orElse(DEFAULT_REPLICAS) > 0;
     }
 
     /**

@@ -345,6 +345,13 @@ public class RestProducerModel extends AbstractSecureEndpointsModel {
         return createNetworkPolicy(createLabelSelector(APPLICATION_NAME), ingressRules, null);
     }
 
+    public static boolean isRestProducerEnabled(EventStreams instance) {
+        return instance.getSpec().getRestProducer() != null &&
+            Optional.ofNullable(instance.getSpec().getRestProducer())
+                .map(SecurityComponentSpec::getReplicas)
+                .orElse(DEFAULT_REPLICAS) > 0;
+    }
+
     @Override
     protected List<Endpoint> createDefaultEndpoints(boolean authEnabled) {
         return Collections.singletonList(new Endpoint(Endpoint.DEFAULT_EXTERNAL_NAME,

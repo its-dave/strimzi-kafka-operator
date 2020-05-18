@@ -285,6 +285,13 @@ public class CollectorModel extends AbstractSecureEndpointsModel {
         return this.serviceAccount;
     }
 
+    public static boolean isCollectorEnabled(EventStreams instance) {
+        return instance.getSpec().getCollector() != null &&
+            Optional.ofNullable(instance.getSpec().getCollector())
+                .map(ComponentSpec::getReplicas)
+                .orElse(DEFAULT_REPLICAS) > 0;
+    }
+
     private void setTraceLevel(Logging logging) {
         if (logging != null && InlineLogging.TYPE_INLINE.equals(logging.getType())) {
             Map<String, String> loggers = ((InlineLogging) logging).getLoggers();

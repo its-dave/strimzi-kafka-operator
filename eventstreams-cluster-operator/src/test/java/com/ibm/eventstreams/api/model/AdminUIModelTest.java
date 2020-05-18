@@ -819,4 +819,16 @@ public class AdminUIModelTest {
             .getMatchLabels(),
                 is(Collections.singletonMap(Labels.KUBERNETES_NAME_LABEL, expectedComponentName)));
     }
+
+    @Test
+    public void testCheckIfEnabled() {
+        EventStreams eventStreams = createDefaultEventStreams().build();
+        assertThat(AdminUIModel.isUIEnabled(eventStreams), is(true));
+    }
+
+    @Test
+    public void testCheckIfDisabled() {
+        EventStreams eventStreams = ModelUtils.createDefaultEventStreams(instanceName).build();
+        assertThat(AdminUIModel.isUIEnabled(eventStreams), is(false));
+    }
 }
