@@ -93,7 +93,7 @@ build_bundle: build_csv start_local_registry
 	rm -rf tmp
 	$(CP) -R olm-catalog/$(OPERATOR_NAME) tmp/
 	./convertYaml2Json.sh
-	# echo "Generating bundle & image"
+	echo "Generating bundle & image"
 	cd .. && opm alpha bundle build --tag $(BUNDLE_IMAGE_NAME) --package $(OPERATOR_NAME) --directory deploy/olm-catalog/$(OPERATOR_NAME)/$(CSV_VERSION) --channels $(CHANNELS) --default $(DEFAULT_CHANNEL)
 	docker tag $(BUNDLE_IMAGE_NAME) $(LOCAL_REPO_ADDR)$(BUNDLE_IMAGE_NAME)
 	docker push $(LOCAL_REPO_ADDR)$(BUNDLE_IMAGE_NAME)
