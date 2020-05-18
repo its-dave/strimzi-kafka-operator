@@ -29,7 +29,7 @@ brew install yq jq operator-sdk python3 gnu-sed
 - `brew log --oneline <package>` lists the commits to Homebrew that modify the package version. Copy the short commit id that has the message '<package>: update <version> bottle'
 - `brew unlink <package>` will remove the link to the newer version
 - `brew install https://raw.githubusercontent.com/Homebrew/homebrew-core/<short-commit>/Formula/<package>.rb`
-  
+
 The `make` build is using GNU versions of `find` and `sed` utilities and is not compatible with the BSD versions available on Mac OS. When using Mac OS, you have to install the GNU versions of `find` and `sed`. When using `brew`, you can do `brew install gnu-sed findutils grep coreutils`. This command will install the GNU versions as `gcp`, `ggrep`, `gsed` and `gfind` and our `make` build will automatically pick them up and use them.
 
 #### Pip3 packages
@@ -137,10 +137,25 @@ metadata:
   name: <your-scc>
 ```
 
-### Create a secret for your cluster to enable access to Docker registry:
+### Create a secret for your cluster to enable access to Docker registry for operand images:
 ```
 oc create secret docker-registry ibm-entitlement-key --docker-server=hyc-qp-stable-docker-local.artifactory.swg-devops.com --docker-username=<your_email> --docker-password=<Artifactory_API> --docker-email=<your_email> -n <name_of_your_namespace>
 ```
+
+### Update the global pull secret for your cluster to enable access to Docker registry for operator images:
+
+Add a docker config json for hyc-qp-stable-docker-local.artifactory.swg-devops.com to the `pull-secret` secret in the `openshift-config` namespace.
+
+```
+"hyc-qp-stable-docker-local.artifactory.swg-devops.com": {
+	"auth": "base64creds",
+	"email": "your.email@uk.ibm.com"
+}
+```
+
+where `base64creds` is a base64-encoded version of your Artifactory `username:apikey`
+
+[More background here](https://github.ibm.com/mhub/strimzi-kafka-operator/pull/375#issuecomment-20208595)
 
 ### Install Common Services
 Follow the [instructions](https://github.ibm.com/ICP-DevOps/tf_openshift_4_tools/tree/master/fyre/ceph_and_inception_install) to install Common Services in your OpenShift Cluster.
@@ -260,7 +275,7 @@ java -jar target/demo-0.0.2-SNAPSHOT-all.jar
 go to `localhost:8080` in your browser to see it running
 
 3. To connect and configure your application to the EventStreams instance, do the following:
-  
+
     In `src/main/resources/kafka.properties`, update the following properties:
     1. `bootstrap.servers` - the bootstrap server address
         - This can be found in the `External` section under `Cluster connection` in your cluster's UI

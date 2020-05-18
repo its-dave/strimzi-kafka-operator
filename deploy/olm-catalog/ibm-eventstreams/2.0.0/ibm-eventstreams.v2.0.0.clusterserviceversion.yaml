@@ -1317,8 +1317,6 @@ spec:
                 volumeMounts:
                 - mountPath: /etc/eventstreams
                   name: eventstreams
-              imagePullSecrets:
-              - name: ibm-entitlement-key
               initContainers:
               - env:
                 - name: EVENTSTREAMS_OPERATOR_NAMESPACE
