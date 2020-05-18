@@ -1271,7 +1271,7 @@ spec:
                 - name: EVENTSTREAMS_DEFAULT_REST_PRODUCER_IMAGE
                   value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-rest-producer-v2-icp-linux:2020-05-13-13.55.44-64d7827
                 - name: EVENTSTREAMS_DEFAULT_ADMIN_API_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-admin-icp-linux:2020-05-13-13.55.59-64d7827
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-admin-icp-linux:2020-05-18-12.41.30-a436c8c
                 - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_IMAGE
                   value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-schema-registry-icp-linux:2020-05-01-09.46.24-21cd0a7-dev
                 - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_AVRO_IMAGE
@@ -1279,7 +1279,7 @@ spec:
                 - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_PROXY_IMAGE
                   value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-schema-proxy-icp-linux:2020-05-11-17.52.48-d1887e4
                 - name: EVENTSTREAMS_DEFAULT_ADMIN_UI_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-admin-ui-icp-linux:2020-05-12-08.39.44-22e4a9c-dev
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-admin-ui-icp-linux:2020-05-18-10.54.10-acae45d-dev
                 - name: EVENTSTREAMS_DEFAULT_ADMIN_UI_REDIS_IMAGE
                   value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-session-store-icp-linux:2020-04-09-15.40.36-f32e234
                 - name: EVENTSTREAMS_DEFAULT_COLLECTOR_IMAGE
@@ -1400,16 +1400,16 @@ spec:
     image: cp.icr.io/cp/icp4i/es/strimzi-operator-init-latest@sha256:4097889236A2AF26C293033FEB964C4CF118C0224E0D063FEC0A89E9D0569EF2
   - name: eventstreams-rest-producer-v2-icp-linux-2020-05-13-13.55.44-64d7827
     image: cp.icr.io/cp/icp4i/es/eventstreams-rest-producer-v2-icp-linux-2020-05-13-13.55.44-64d7827@sha256:d96c3a2d919f57820b0daf68b9ad0d909227821396daa3c03bca496d35877b26
-  - name: eventstreams-admin-icp-linux-2020-05-13-13.55.59-64d7827
-    image: cp.icr.io/cp/icp4i/es/eventstreams-admin-icp-linux-2020-05-13-13.55.59-64d7827@sha256:d0b0c2bbf2fe380358a3d1e3068ea03893041408739e2e3762a5bdda9076d1eb
+  - name: eventstreams-admin-icp-linux-2020-05-18-12.41.30-a436c8c
+    image: cp.icr.io/cp/icp4i/es/eventstreams-admin-icp-linux-2020-05-18-12.41.30-a436c8c@sha256:1ec879c8abf760f28f9558de04c027acc850f1d218fa56d686a0ba5cfa57d947
   - name: eventstreams-schema-registry-icp-linux-2020-05-01-09.46.24-21cd0a7-dev
     image: cp.icr.io/cp/icp4i/es/eventstreams-schema-registry-icp-linux-2020-05-01-09.46.24-21cd0a7-dev@sha256:dffa70b4670140e4c9324ee11378586d74875480c36b59664476378278cbabba
   - name: eventstreams-schema-registry-avro-icp-linux-2020-04-09-16.03.17-cd87238
     image: cp.icr.io/cp/icp4i/es/eventstreams-schema-registry-avro-icp-linux-2020-04-09-16.03.17-cd87238@sha256:300004da677dfd029b5429366c1a0251bd64c178922b3e5a857b02dbda231d26
   - name: eventstreams-schema-proxy-icp-linux-2020-05-11-17.52.48-d1887e4
     image: cp.icr.io/cp/icp4i/es/eventstreams-schema-proxy-icp-linux-2020-05-11-17.52.48-d1887e4@sha256:150d88728581f6a8001c2810f146d409ef76253091048f884a08accb54b238a2
-  - name: eventstreams-admin-ui-icp-linux-2020-05-12-08.39.44-22e4a9c-dev
-    image: cp.icr.io/cp/icp4i/es/eventstreams-admin-ui-icp-linux-2020-05-12-08.39.44-22e4a9c-dev@sha256:855db2a6a2332ed55e646a0822bb0da13cd51e91f5522cfa14cb104ef3f3689d
+  - name: eventstreams-admin-ui-icp-linux-2020-05-18-10.54.10-acae45d-dev
+    image: cp.icr.io/cp/icp4i/es/eventstreams-admin-ui-icp-linux-2020-05-18-10.54.10-acae45d-dev@sha256:5f90b826bda2ffa0f573cee70412769cc636e1a0bc232a703f48ee0c5b94d7c9
   - name: eventstreams-session-store-icp-linux-2020-04-09-15.40.36-f32e234
     image: cp.icr.io/cp/icp4i/es/eventstreams-session-store-icp-linux-2020-04-09-15.40.36-f32e234@sha256:63bbdfe2e4ffc6442346fb59212b436191338fdace7de0bb909cdfd95c823518
   - name: eventstreams-metrics-collector-icp-linux-2020-04-08-11.08.41-3cb71d9
