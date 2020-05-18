@@ -88,23 +88,4 @@ overrides:
   - rule: "RequiredMetadataLabelsDefined"
     message: '^\[ERROR\] scanned-operatorgroup-\w+-[a-zA-Z0-9-:\.]+\.yaml:.*'
     reason: "OLM generated Operator Groups should not be scanned"
-
-##############################
-# TO FIX
-##############################
-
-  - rule: "RequiredMetadataLabelsDefined"
-    message: '^\[ERROR\] scanned-serviceaccount-\w+-(eventstreams|strimzi)-cluster-operator\.yaml:.*'
-    reason: "Operator SAs"
-
-  - rule: "RequiredMetadataLabelsDefined"
-    message: '^\[ERROR\] scanned-rolebinding-\w+-(eventstreams|strimzi)-cluster-operator(|-topic-operator-delegation|-user-operator-delegation|-entity-operator-delegation)\.yaml:.*'
-    reason: "Operator Rolebindings"
-
-  - rule: "RequiredMetadataLabelsDefined"
-    message: '^\[ERROR\] scanned-deployment-\w+-eventstreams-cluster-operator\.yaml:.*'
-    reason: "Operator Deployment"
-
-  - rule: "ContainerDefinesResources"
-    message: '^\[ERROR\] scanned-deployment-\w+-eventstreams-cluster-operator\.yaml:.*'
-    reason: "Operator Deployment"
+    

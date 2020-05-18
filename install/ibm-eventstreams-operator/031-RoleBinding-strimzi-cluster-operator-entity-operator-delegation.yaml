@@ -4,6 +4,9 @@ metadata:
   name: eventstreams-cluster-operator-entity-operator-delegation
   labels:
     app: eventstreams
+    app.kubernetes.io/instance: eventstreams-operator
+    app.kubernetes.io/managed-by: olm
+    app.kubernetes.io/name: eventstreams-operator
 subjects:
 - kind: ServiceAccount
   name: eventstreams-cluster-operator

@@ -408,7 +408,7 @@ metadata:
     categories: Streaming & Messaging
     certified: 'false'
     containerImage: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-operator-icp-linux:latest
-    createdAt: 2020-05-15T10:13:26Z
+    createdAt: 2020-05-18T09:54:07Z
     description: Kafka-based messaging platform for handling real-time data feeds.
     operators.operatorframework.io/internal-objects: '["kafkas.eventstreams.ibm.com","kafkamirrormaker2s.eventstreams.ibm.com"]'
     repository: https://github.ibm.com/mhub/qp-eventstreams-operator
@@ -1198,6 +1198,9 @@ spec:
                 prometheus.io/scrape: "true"
               labels:
                 app: eventstreams
+                app.kubernetes.io/instance: eventstreams-operator
+                app.kubernetes.io/managed-by: olm
+                app.kubernetes.io/name: eventstreams-operator
                 eventstreams.ibm.com/kind: cluster-operator
                 name: eventstreams-cluster-operator
             spec:
@@ -1328,7 +1331,13 @@ spec:
                       fieldPath: metadata.uid
                 image: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator-init:latest
                 name: install-validating-webhook
-                resources: {}
+                resources:
+                  limits:
+                    cpu: "1"
+                    memory: 256Mi
+                  requests:
+                    cpu: 200m
+                    memory: 256Mi
                 securityContext:
                   allowPrivilegeEscalation: false
                   capabilities:

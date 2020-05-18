@@ -69,6 +69,23 @@ helm_install: helm_template
 	$(FIND) $(CHART_RENDERED_TEMPLATES)/templates -type f -name '*.yaml' -exec yq d -i {} metadata.labels.heritage \;
 	$(FIND) $(CHART_RENDERED_TEMPLATES)/templates -type f -name '*.yaml' -exec yq d -i {} metadata.namespace \;
 
+     # Add required metadata labels
+	$(FIND) $(CHART_RENDERED_TEMPLATES)/templates -type f -name '031-RoleBinding-strimzi-cluster-operator-entity-operator-delegation.yaml' -exec yq w -i {} 'metadata.labels.[app.kubernetes.io/instance]' eventstreams-operator \;
+	$(FIND) $(CHART_RENDERED_TEMPLATES)/templates -type f -name '031-RoleBinding-strimzi-cluster-operator-entity-operator-delegation.yaml' -exec yq w -i {} 'metadata.labels.[app.kubernetes.io/managed-by]' olm \;
+	$(FIND) $(CHART_RENDERED_TEMPLATES)/templates -type f -name '031-RoleBinding-strimzi-cluster-operator-entity-operator-delegation.yaml' -exec yq w -i {} 'metadata.labels.[app.kubernetes.io/name]' eventstreams-operator \;
+
+	$(FIND) $(CHART_RENDERED_TEMPLATES)/templates -type f -name '032-RoleBinding-strimzi-cluster-operator-topic-operator-delegation.yaml' -exec yq w -i {} 'metadata.labels.[app.kubernetes.io/instance]' eventstreams-operator \;
+	$(FIND) $(CHART_RENDERED_TEMPLATES)/templates -type f -name '032-RoleBinding-strimzi-cluster-operator-topic-operator-delegation.yaml' -exec yq w -i {} 'metadata.labels.[app.kubernetes.io/managed-by]' olm \;
+	$(FIND) $(CHART_RENDERED_TEMPLATES)/templates -type f -name '032-RoleBinding-strimzi-cluster-operator-topic-operator-delegation.yaml' -exec yq w -i {} 'metadata.labels.[app.kubernetes.io/name]' eventstreams-operator \;
+
+	$(FIND) $(CHART_RENDERED_TEMPLATES)/templates -type f -name '020-RoleBinding-strimzi-cluster-operator.yaml' -exec yq w -i {} 'metadata.labels.[app.kubernetes.io/instance]' eventstreams-operator \;
+	$(FIND) $(CHART_RENDERED_TEMPLATES)/templates -type f -name '020-RoleBinding-strimzi-cluster-operator.yaml' -exec yq w -i {} 'metadata.labels.[app.kubernetes.io/managed-by]' olm \;
+	$(FIND) $(CHART_RENDERED_TEMPLATES)/templates -type f -name '020-RoleBinding-strimzi-cluster-operator.yaml' -exec yq w -i {} 'metadata.labels.[app.kubernetes.io/name]' eventstreams-operator \;
+
+	$(FIND) $(CHART_RENDERED_TEMPLATES)/templates -type f -name '010-ServiceAccount-strimzi-cluster-operator.yaml' -exec yq w -i {} 'metadata.labels.[app.kubernetes.io/instance]' eventstreams-operator \;
+	$(FIND) $(CHART_RENDERED_TEMPLATES)/templates -type f -name '010-ServiceAccount-strimzi-cluster-operator.yaml' -exec yq w -i {} 'metadata.labels.[app.kubernetes.io/managed-by]' olm \;
+	$(FIND) $(CHART_RENDERED_TEMPLATES)/templates -type f -name '010-ServiceAccount-strimzi-cluster-operator.yaml' -exec yq w -i {} 'metadata.labels.[app.kubernetes.io/name]' eventstreams-operator \;
+
 	mkdir -p $(CHART_RENDERED_TEMPLATES_INSTALL)
 
 	$(CP) -R $(CHART_RENDERED_TEMPLATES)/templates/* $(CHART_RENDERED_TEMPLATES_INSTALL)

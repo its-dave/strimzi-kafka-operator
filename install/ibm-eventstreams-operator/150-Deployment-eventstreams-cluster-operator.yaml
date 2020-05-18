@@ -16,6 +16,9 @@ metadata:
   name: eventstreams-cluster-operator
   labels:
     app: eventstreams
+    app.kubernetes.io/instance: eventstreams-operator
+    app.kubernetes.io/managed-by: olm
+    app.kubernetes.io/name: eventstreams-operator
 spec:
   replicas: 1
   selector:
@@ -36,6 +39,9 @@ spec:
         name: eventstreams-cluster-operator
         eventstreams.ibm.com/kind: cluster-operator
         app: eventstreams
+        app.kubernetes.io/instance: eventstreams-operator
+        app.kubernetes.io/managed-by: olm
+        app.kubernetes.io/name: eventstreams-operator
     spec:
       imagePullSecrets:
       - name: ibm-entitlement-key
@@ -60,6 +66,13 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.uid
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 256Mi
+          requests:
+            cpu: 200m
+            memory: 256Mi
       containers:
       - name: eventstreams-cluster-operator
         image: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator:latest
