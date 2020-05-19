@@ -12,7 +12,6 @@
  */
 package com.ibm.eventstreams.api.model;
 
-import com.ibm.eventstreams.Main;
 import com.ibm.eventstreams.api.model.utils.ModelUtils;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
@@ -68,7 +67,7 @@ public class ReplicatorModelTest {
     private final String nonDefaultClusterAlias = "nonDefaultClusterAlias";
     private final String kafkaInstanceName = EventStreamsKafkaModel.getKafkaInstanceName(instanceName);
     private final String namespace = "myproject";
-    private final String bootstrap = kafkaInstanceName + "-kafka-bootstrap." + namespace + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_PORT_TLS;
+    private final String bootstrap = kafkaInstanceName + "-kafka-bootstrap." + namespace + ".svc." + io.strimzi.operator.cluster.model.ModelUtils.KUBERNETES_SERVICE_DNS_DOMAIN + ":" + EventStreamsKafkaModel.KAFKA_PORT_TLS;
     private final String nonDefaultBootstrap = "nonDefaultBootstrap";
 
     private ReplicatorCredentials replicatorCredentials;

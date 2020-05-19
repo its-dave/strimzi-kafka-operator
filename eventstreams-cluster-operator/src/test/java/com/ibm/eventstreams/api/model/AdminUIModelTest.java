@@ -12,7 +12,6 @@
  */
 package com.ibm.eventstreams.api.model;
 
-import com.ibm.eventstreams.Main;
 import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.model.utils.ModelUtils;
 import com.ibm.eventstreams.api.spec.EventStreams;
@@ -223,8 +222,8 @@ public class AdminUIModelTest {
         assertThat(uiPodMetadata.getLabels(), hasEntry(Labels.KUBERNETES_INSTANCE_LABEL, instanceName));
 
         // confirm ui container has required envars
-        String adminApiService = "https://" + instanceName + "-" + AbstractModel.APP_NAME + "-" + AdminApiModel.COMPONENT_NAME + "-" + INTERNAL_SERVICE_SUFFIX + "." +  namespace + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.DEFAULT_P2P_TLS_PORT;
-        String schemaRegistryService = "https://" + instanceName + "-" + AbstractModel.APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME + "-" + INTERNAL_SERVICE_SUFFIX + "." +  namespace + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.DEFAULT_P2P_TLS_PORT;
+        String adminApiService = "https://" + instanceName + "-" + AbstractModel.APP_NAME + "-" + AdminApiModel.COMPONENT_NAME + "-" + INTERNAL_SERVICE_SUFFIX + "." +  namespace + ".svc:" + Endpoint.DEFAULT_P2P_TLS_PORT;
+        String schemaRegistryService = "https://" + instanceName + "-" + AbstractModel.APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME + "-" + INTERNAL_SERVICE_SUFFIX + "." +  namespace + ".svc:" + Endpoint.DEFAULT_P2P_TLS_PORT;
 
         assertThat(uiContainers.get(0).getEnv(), hasItems(
                 new EnvVarBuilder().withName("ID").withValue(instanceName).build(),
@@ -290,8 +289,8 @@ public class AdminUIModelTest {
         assertThat(uiPodMetadata.getLabels(), hasEntry(Labels.KUBERNETES_INSTANCE_LABEL, instanceName));
 
         // confirm ui container has required envars
-        String adminApiService = "https://" + instanceName + "-" + AbstractModel.APP_NAME + "-" + AdminApiModel.COMPONENT_NAME + "-" + INTERNAL_SERVICE_SUFFIX + "." +  namespace + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.DEFAULT_P2P_TLS_PORT;
-        String schemaRegistryService = "https://" + instanceName + "-" + AbstractModel.APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME + "-" + INTERNAL_SERVICE_SUFFIX + "." +  namespace + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.DEFAULT_P2P_TLS_PORT;
+        String adminApiService = "https://" + instanceName + "-" + AbstractModel.APP_NAME + "-" + AdminApiModel.COMPONENT_NAME + "-" + INTERNAL_SERVICE_SUFFIX + "." +  namespace + ".svc:" + Endpoint.DEFAULT_P2P_TLS_PORT;
+        String schemaRegistryService = "https://" + instanceName + "-" + AbstractModel.APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME + "-" + INTERNAL_SERVICE_SUFFIX + "." +  namespace + ".svc:" + Endpoint.DEFAULT_P2P_TLS_PORT;
 
         assertThat(uiContainers.get(0).getEnv(), hasItems(
                 new EnvVarBuilder().withName("ID").withValue(instanceName).build(),
@@ -345,8 +344,8 @@ public class AdminUIModelTest {
         assertThat(uiPodMetadata.getLabels(), hasEntry(Labels.KUBERNETES_INSTANCE_LABEL, instanceName));
 
         // confirm ui container has required envars
-        String adminApiService = "https://" + instanceName + "-" + AbstractModel.APP_NAME + "-" + AdminApiModel.COMPONENT_NAME + "-" + INTERNAL_SERVICE_SUFFIX + "." +  namespace + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.DEFAULT_P2P_TLS_PORT;
-        String schemaRegistryService = "https://" + instanceName + "-" + AbstractModel.APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME + "-" + INTERNAL_SERVICE_SUFFIX + "." +  namespace + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.DEFAULT_P2P_TLS_PORT;
+        String adminApiService = "https://" + instanceName + "-" + AbstractModel.APP_NAME + "-" + AdminApiModel.COMPONENT_NAME + "-" + INTERNAL_SERVICE_SUFFIX + "." +  namespace + ".svc:" + Endpoint.DEFAULT_P2P_TLS_PORT;
+        String schemaRegistryService = "https://" + instanceName + "-" + AbstractModel.APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME + "-" + INTERNAL_SERVICE_SUFFIX + "." +  namespace + ".svc:" + Endpoint.DEFAULT_P2P_TLS_PORT;
 
         assertThat(uiContainers.get(0).getEnv(), hasItems(
             new EnvVarBuilder().withName("ID").withValue(instanceName).build(),

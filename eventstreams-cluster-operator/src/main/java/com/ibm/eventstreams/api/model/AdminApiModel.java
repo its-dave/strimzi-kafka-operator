@@ -12,7 +12,6 @@
  */
 package com.ibm.eventstreams.api.model;
 
-import com.ibm.eventstreams.Main;
 import com.ibm.eventstreams.api.DefaultResourceRequirements;
 import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.EndpointServiceType;
@@ -24,6 +23,7 @@ import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.spec.ImagesSpec;
 import com.ibm.eventstreams.api.spec.SecurityComponentSpec;
 import com.ibm.eventstreams.controller.EventStreamsOperatorConfig;
+import com.ibm.iam.api.model.ClientModel;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.ContainerBuilder;
 import io.fabric8.kubernetes.api.model.EnvVar;
@@ -43,9 +43,12 @@ import io.fabric8.kubernetes.api.model.rbac.RoleBinding;
 import io.fabric8.kubernetes.api.model.rbac.RoleRefBuilder;
 import io.fabric8.kubernetes.api.model.rbac.SubjectBuilder;
 import io.strimzi.api.kafka.model.InlineLogging;
+import io.strimzi.api.kafka.model.KafkaMirrorMaker2Resources;
+import io.strimzi.api.kafka.model.KafkaResources;
 import io.strimzi.api.kafka.model.Logging;
 import io.strimzi.api.kafka.model.status.ListenerStatus;
 import io.strimzi.api.kafka.model.template.PodTemplate;
+import io.strimzi.operator.cluster.model.ModelUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -258,9 +261,20 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
      */
     private List<EnvVar> getAdminApiEnvVars(EventStreams instance) {
 
-        String schemaRegistryEndpoint =  getInternalServiceName(getInstanceName(), SchemaRegistryModel.COMPONENT_NAME) + "." +  getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.getPodToPodPort(tlsEnabled());
-        String zookeeperEndpoint = EventStreamsKafkaModel.getKafkaInstanceName(getInstanceName()) + "-" + EventStreamsKafkaModel.ZOOKEEPER_COMPONENT_NAME + "-client." + getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.ZOOKEEPER_PORT;
-        String kafkaConnectRestEndpoint = "http://" + getInstanceName() + "-mirrormaker2-api." + getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + ReplicatorModel.REPLICATOR_PORT;
+        String schemaRegistryEndpoint = String.format("%s:%s",
+                ModelUtils.serviceDnsNameWithoutClusterDomain(getNamespace(),
+                        getInternalServiceName(getInstanceName(), SchemaRegistryModel.COMPONENT_NAME)),
+                Endpoint.getPodToPodPort(tlsEnabled()));
+        String zookeeperEndpoint = String.format("%s:%s",
+                ModelUtils.serviceDnsNameWithoutClusterDomain(getNamespace(),
+                        KafkaResources.zookeeperServiceName(EventStreamsKafkaModel.getKafkaInstanceName(getInstanceName()))),
+                EventStreamsKafkaModel.ZOOKEEPER_PORT);
+        String kafkaConnectRestEndpoint = String.format("http://%s:%s",
+                ModelUtils.serviceDnsNameWithoutClusterDomain(getNamespace(),
+                        KafkaMirrorMaker2Resources.serviceName(getInstanceName())),
+                ReplicatorModel.REPLICATOR_PORT);
+
+        String oidcSecretName = ClientModel.getSecretName(getInstanceName());
 
         ArrayList<EnvVar> envVars = new ArrayList<>(Arrays.asList(
             new EnvVarBuilder().withName("RELEASE").withValue(getInstanceName()).build(),
@@ -292,7 +306,7 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
                 .withName("CLIENT_ID")
                 .withNewValueFrom()
                 .withNewSecretKeyRef()
-                .withName(getResourcePrefix() + "-oidc-secret")
+                .withName(oidcSecretName)
                 .withKey(CLIENT_ID_KEY)
                 .endSecretKeyRef()
                 .endValueFrom()
@@ -301,7 +315,7 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
                 .withName("CLIENT_SECRET")
                 .withNewValueFrom()
                 .withNewSecretKeyRef()
-                .withName(getResourcePrefix() + "-oidc-secret")
+                .withName(oidcSecretName)
                 .withKey(CLIENT_SECRET_KEY)
                 .endSecretKeyRef()
                 .endValueFrom()

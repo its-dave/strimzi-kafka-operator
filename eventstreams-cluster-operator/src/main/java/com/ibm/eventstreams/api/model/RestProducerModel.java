@@ -12,7 +12,6 @@
  */
 package com.ibm.eventstreams.api.model;
 
-import com.ibm.eventstreams.Main;
 import com.ibm.eventstreams.api.DefaultResourceRequirements;
 import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.EndpointServiceType;
@@ -40,6 +39,7 @@ import io.fabric8.kubernetes.api.model.networking.NetworkPolicy;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicyIngressRule;
 import io.strimzi.api.kafka.model.status.ListenerStatus;
 import io.strimzi.api.kafka.model.template.PodTemplate;
+import io.strimzi.operator.cluster.model.ModelUtils;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -163,10 +163,9 @@ public class RestProducerModel extends AbstractSecureEndpointsModel {
      * @return A list of default environment variables to go into the rest producer container
      */
     private List<EnvVar> getDefaultEnvVars() {
-        String schemaRegistryEndpoint = String.format("%s.%s.svc.%s:%d",
-                getInternalServiceName(getInstanceName(), SchemaRegistryModel.COMPONENT_NAME),
-                getNamespace(),
-                Main.CLUSTER_NAME,
+        String schemaRegistryEndpoint = String.format("%s:%d",
+                ModelUtils.serviceDnsNameWithoutClusterDomain(getNamespace(),
+                        getInternalServiceName(getInstanceName(), SchemaRegistryModel.COMPONENT_NAME)),
                 Endpoint.getPodToPodPort(tlsEnabled()));
 
         ArrayList<EnvVar> envVars = new ArrayList<>(Arrays.asList(

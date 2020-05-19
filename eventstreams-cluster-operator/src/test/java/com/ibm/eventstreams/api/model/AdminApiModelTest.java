@@ -12,7 +12,6 @@
  */
 package com.ibm.eventstreams.api.model;
 
-import com.ibm.eventstreams.Main;
 import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.EndpointServiceType;
 import com.ibm.eventstreams.api.TlsVersion;
@@ -187,9 +186,9 @@ public class AdminApiModelTest {
     @Test
     public void testDefaultAdminApiEnvVars() {
         AdminApiModel adminApiModel = createDefaultAdminApiModel();
-        String schemaRegistryEndpoint = instanceName  + "-" + AbstractModel.APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME + "-" + INTERNAL_SERVICE_SUFFIX  + "." + adminApiModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.getPodToPodPort(adminApiModel.tlsEnabled());
-        String zookeeperEndpoint = instanceName + "-" + EventStreamsKafkaModel.ZOOKEEPER_COMPONENT_NAME + "-client." + adminApiModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.ZOOKEEPER_PORT;
-        String kafkaConnectRestEndpoint = "http://" + instanceName  + "-mirrormaker2-api." + adminApiModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + ReplicatorModel.REPLICATOR_PORT;
+        String schemaRegistryEndpoint = instanceName  + "-" + AbstractModel.APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME + "-" + INTERNAL_SERVICE_SUFFIX  + "." + adminApiModel.getNamespace() + ".svc:" + Endpoint.getPodToPodPort(adminApiModel.tlsEnabled());
+        String zookeeperEndpoint = instanceName + "-" + EventStreamsKafkaModel.ZOOKEEPER_COMPONENT_NAME + "-client." + adminApiModel.getNamespace() + ".svc:" + EventStreamsKafkaModel.ZOOKEEPER_PORT;
+        String kafkaConnectRestEndpoint = "http://" + instanceName  + "-mirrormaker2-api." + adminApiModel.getNamespace() + ".svc:" + ReplicatorModel.REPLICATOR_PORT;
 
         EnvVar schemaRegistryUrlEnv = new EnvVarBuilder().withName("SCHEMA_REGISTRY_URL").withValue(schemaRegistryEndpoint).build();
         EnvVar zkConnectEnv = new EnvVarBuilder().withName("ZOOKEEPER_CONNECT").withValue(zookeeperEndpoint).build();
@@ -231,9 +230,9 @@ public class AdminApiModelTest {
     @Test
     public void testAdminApiEnvVarsWithAuthentication() {
         AdminApiModel adminApiModel = createAdminApiModelWithAuthentication();
-        String schemaRegistryEndpoint = instanceName  + "-" + AbstractModel.APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME + "-" + INTERNAL_SERVICE_SUFFIX  + "." + adminApiModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.getPodToPodPort(adminApiModel.tlsEnabled());
-        String zookeeperEndpoint = instanceName + "-" + EventStreamsKafkaModel.ZOOKEEPER_COMPONENT_NAME + "-client." + adminApiModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.ZOOKEEPER_PORT;
-        String kafkaConnectRestEndpoint = "http://" + instanceName + "-mirrormaker2-api." + adminApiModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + ReplicatorModel.REPLICATOR_PORT;
+        String schemaRegistryEndpoint = instanceName  + "-" + AbstractModel.APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME + "-" + INTERNAL_SERVICE_SUFFIX  + "." + adminApiModel.getNamespace() + ".svc:" + Endpoint.getPodToPodPort(adminApiModel.tlsEnabled());
+        String zookeeperEndpoint = instanceName + "-" + EventStreamsKafkaModel.ZOOKEEPER_COMPONENT_NAME + "-client." + adminApiModel.getNamespace() + ".svc:" + EventStreamsKafkaModel.ZOOKEEPER_PORT;
+        String kafkaConnectRestEndpoint = "http://" + instanceName + "-mirrormaker2-api." + adminApiModel.getNamespace() + ".svc:" + ReplicatorModel.REPLICATOR_PORT;
 
         EnvVar schemaRegistryUrlEnv = new EnvVarBuilder().withName("SCHEMA_REGISTRY_URL").withValue(schemaRegistryEndpoint).build();
         EnvVar zkConnectEnv = new EnvVarBuilder().withName("ZOOKEEPER_CONNECT").withValue(zookeeperEndpoint).build();
@@ -795,7 +794,7 @@ public class AdminApiModelTest {
         listeners.add(externalListener);
 
         AdminApiModel adminApiModel = new AdminApiModel(defaultEs, imageConfig, listeners, mockIcpClusterDataMap, false, kafkaPrincipal);
-        String expectedRunAsKafkaBootstrap = adminApiModel.getInstanceName() + "-kafka-bootstrap." + adminApiModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + runasPort;
+        String expectedRunAsKafkaBootstrap = adminApiModel.getInstanceName() + "-kafka-bootstrap." + adminApiModel.getNamespace() + ".svc:" + runasPort;
 
         EnvVar kafkaBootstrapUrlEnv = new EnvVarBuilder().withName("RUNAS_KAFKA_BOOTSTRAP_SERVERS").withValue(expectedRunAsKafkaBootstrap).build();
 

@@ -12,7 +12,6 @@
  */
 package com.ibm.eventstreams.api.model;
 
-import com.ibm.eventstreams.Main;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsReplicator;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
@@ -37,6 +36,8 @@ import io.strimzi.api.kafka.model.listener.KafkaListenerTls;
 import io.strimzi.api.kafka.model.listener.KafkaListeners;
 import io.strimzi.api.kafka.model.template.KafkaConnectTemplate;
 import io.strimzi.api.kafka.model.template.KafkaConnectTemplateBuilder;
+import io.strimzi.operator.cluster.model.KafkaCluster;
+import io.strimzi.operator.cluster.model.ModelUtils;
 import io.strimzi.operator.common.model.Labels;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -203,7 +204,7 @@ public class ReplicatorModel extends AbstractModel {
     private String getDefaultBootstrap(KafkaListenerTls internalTlsKafkaListener) {
         // Check is done on instance.getSpec()... as caCert might be null due to an error, or because oauth is on
         // We use the internal port for connect, so we don't query here on listeners.external
-        String bootstrap = getInstanceName() + "-kafka-bootstrap." + getNamespace() + ".svc." + Main.CLUSTER_NAME + ":";
+        String bootstrap = ModelUtils.serviceDnsName(getNamespace(), KafkaCluster.serviceName(getInstanceName())) + ":";
 
         if (internalTlsKafkaListener != null) {
             bootstrap += EventStreamsKafkaModel.KAFKA_PORT_TLS;

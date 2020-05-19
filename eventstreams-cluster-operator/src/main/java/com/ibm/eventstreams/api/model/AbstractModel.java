@@ -12,7 +12,6 @@
  */
 package com.ibm.eventstreams.api.model;
 
-import com.ibm.eventstreams.Main;
 import com.ibm.eventstreams.api.ListenerAuthentication;
 import com.ibm.eventstreams.api.ListenerType;
 import com.ibm.eventstreams.api.ProductUse;
@@ -70,6 +69,7 @@ import io.fabric8.openshift.api.model.TLSConfigBuilder;
 import io.strimzi.api.kafka.model.AclRule;
 import io.strimzi.api.kafka.model.ContainerEnvVar;
 import io.strimzi.api.kafka.model.KafkaClusterSpec;
+import io.strimzi.api.kafka.model.KafkaResources;
 import io.strimzi.api.kafka.model.KafkaSpec;
 import io.strimzi.api.kafka.model.KafkaUser;
 import io.strimzi.api.kafka.model.KafkaUserBuilder;
@@ -85,6 +85,7 @@ import io.strimzi.api.kafka.model.listener.KafkaListeners;
 import io.strimzi.api.kafka.model.status.ListenerAddress;
 import io.strimzi.api.kafka.model.status.ListenerStatus;
 import io.strimzi.api.kafka.model.template.PodTemplate;
+import io.strimzi.operator.cluster.model.ModelUtils;
 import io.strimzi.operator.common.model.Labels;
 
 import org.apache.logging.log4j.LogManager;
@@ -1022,7 +1023,11 @@ public abstract class AbstractModel {
         if (listenerAddress.isPresent()) {
             kafkaBootstrap = listenerAddress.get().getHost() + ":" + listenerAddress.get().getPort();
         } else if (RUNAS_LISTENER_TYPE.equals(listenerType)) {
-            kafkaBootstrap = EventStreamsKafkaModel.getKafkaInstanceName(getInstanceName()) + "-kafka-bootstrap." + getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_RUNAS_PORT;
+            kafkaBootstrap = String.format("%s:%s",
+                    ModelUtils.serviceDnsNameWithoutClusterDomain(
+                            namespace,
+                            KafkaResources.bootstrapServiceName(EventStreamsKafkaModel.getKafkaInstanceName(getInstanceName()))),
+                    EventStreamsKafkaModel.KAFKA_RUNAS_PORT);
         }
 
         return  Optional.ofNullable(kafkaBootstrap);

@@ -12,7 +12,6 @@
  */
 package com.ibm.eventstreams.api.model;
 
-import com.ibm.eventstreams.Main;
 import com.ibm.eventstreams.api.DefaultResourceRequirements;
 import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.TlsVersion;
@@ -57,6 +56,7 @@ import io.strimzi.api.kafka.model.KafkaClusterSpec;
 import io.strimzi.api.kafka.model.KafkaSpec;
 import io.strimzi.api.kafka.model.Logging;
 import io.strimzi.api.kafka.model.template.PodTemplate;
+import io.strimzi.operator.cluster.model.ModelUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -120,7 +120,7 @@ public class AdminUIModel extends AbstractModel {
         super(instance, COMPONENT_NAME, APPLICATION_NAME);
 
         this.icpClusterData = icpClusterData;
-        this.oidcSecretName = ClientModel.getSecretName(instance);
+        this.oidcSecretName = ClientModel.getSecretName(getInstanceName());
 
         Optional<AdminUISpec> userInterfaceSpec = Optional
             .ofNullable(instance.getSpec())
@@ -276,6 +276,7 @@ public class AdminUIModel extends AbstractModel {
      * 
      * @return The Admin UI container
      */
+    @SuppressWarnings({"checkstyle:MethodLength"})
     private Container getUIContainer(EventStreams instance) {
         boolean isSecurityEnabled = !Optional.ofNullable(instance)
             .map(EventStreams::getSpec)
@@ -284,8 +285,16 @@ public class AdminUIModel extends AbstractModel {
             .orElse(AbstractModel.DEFAULT_INTERNAL_TLS)
             .equals(TlsVersion.NONE);
 
-        String adminApiService = getUrlProtocol(crTlsVersionValue) + getInternalServiceName(getInstanceName(), AdminApiModel.COMPONENT_NAME) + "." +  getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.getPodToPodPort(isSecurityEnabled);
-        String schemaRegistryService = getUrlProtocol(crTlsVersionValue) + getInternalServiceName(getInstanceName(), SchemaRegistryModel.COMPONENT_NAME) + "." +  getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + Endpoint.getPodToPodPort(isSecurityEnabled);
+        String adminApiService = String.format("%s%s:%s",
+                getUrlProtocol(crTlsVersionValue),
+                ModelUtils.serviceDnsNameWithoutClusterDomain(getNamespace(),
+                        getInternalServiceName(getInstanceName(), AdminApiModel.COMPONENT_NAME)),
+                Endpoint.getPodToPodPort(isSecurityEnabled));
+        String schemaRegistryService =  String.format("%s%s:%s",
+                getUrlProtocol(crTlsVersionValue),
+                ModelUtils.serviceDnsNameWithoutClusterDomain(getNamespace(),
+                        getInternalServiceName(getInstanceName(), SchemaRegistryModel.COMPONENT_NAME)),
+                Endpoint.getPodToPodPort(isSecurityEnabled));
         Optional<String> externalRestProducerRoute = getRouteFromStatus(instance, RestProducerModel.COMPONENT_NAME);
         Optional<String> externalSchemaRegistryRoute = getRouteFromStatus(instance, SchemaRegistryModel.COMPONENT_NAME);
 
@@ -352,7 +361,7 @@ public class AdminUIModel extends AbstractModel {
                 .endValueFrom()
                 .build());
         envVarDefaults.add(new EnvVarBuilder().withName("REDIS_HOST").withValue("127.0.0.1").build());
-        envVarDefaults.add(new EnvVarBuilder().withName("CLUSTER_NAME").withValue(Main.CLUSTER_NAME).build());
+        envVarDefaults.add(new EnvVarBuilder().withName("CLUSTER_NAME").withValue(ModelUtils.KUBERNETES_SERVICE_DNS_DOMAIN).build());
         envVarDefaults.add(new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue(Boolean.toString(ReplicatorModel.isValidInstanceForGeoReplication(instance))).build());
         envVarDefaults.add(new EnvVarBuilder().withName("SCHEMA_REGISTRY_ENABLED").withValue(Boolean.toString(SchemaRegistryModel.isSchemaRegistryEnabled(instance))).build());
         envVarDefaults.add(new EnvVarBuilder().withName("SCHEMA_REGISTRY_URL").withValue(schemaRegistryService).build());

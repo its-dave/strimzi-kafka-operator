@@ -2563,8 +2563,8 @@ public class EventStreamsOperatorTest {
     @Test
     public void testDefaultEventStreamsUIEnvVars(VertxTestContext context) {
         boolean tlsEnabled = AbstractModel.DEFAULT_INTERNAL_TLS.equals(TlsVersion.TLS_V1_2);
-        String adminApiService =  "https://" + getInternalServiceName(CLUSTER_NAME, AdminApiModel.COMPONENT_NAME) + "." +  NAMESPACE + ".svc.cluster.local:" + Endpoint.getPodToPodPort(tlsEnabled);
-        String schemaRegistryService =  "https://" + getInternalServiceName(CLUSTER_NAME, SchemaRegistryModel.COMPONENT_NAME) + "." +  NAMESPACE + ".svc.cluster.local:" + Endpoint.getPodToPodPort(tlsEnabled);
+        String adminApiService =  "https://" + getInternalServiceName(CLUSTER_NAME, AdminApiModel.COMPONENT_NAME) + "." +  NAMESPACE + ".svc:" + Endpoint.getPodToPodPort(tlsEnabled);
+        String schemaRegistryService =  "https://" + getInternalServiceName(CLUSTER_NAME, SchemaRegistryModel.COMPONENT_NAME) + "." +  NAMESPACE + ".svc:" + Endpoint.getPodToPodPort(tlsEnabled);
 
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
         esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
@@ -2578,7 +2578,7 @@ public class EventStreamsOperatorTest {
                     .map(list -> list.stream()
                         .filter(deploy -> deploy.getMetadata().getName().equals(CLUSTER_NAME + "-" + APP_NAME + "-" + AdminUIModel.COMPONENT_NAME))
                         .findFirst())
-                    .map(deployment -> (Deployment) deployment.get());
+                    .map(Optional::get);
 
                 assertThat(adminUI.isPresent(), is(true));
                 Container uiContainer = adminUI.get().getSpec().getTemplate().getSpec().getContainers().get(0);

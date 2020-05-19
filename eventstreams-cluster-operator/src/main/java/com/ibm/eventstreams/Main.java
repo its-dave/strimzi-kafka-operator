@@ -53,7 +53,6 @@ import io.vertx.micrometer.VertxPrometheusOptions;
 
 import com.ibm.eventstreams.controller.EventStreamsOperatorConfig;
 import com.ibm.eventstreams.controller.EventStreamsVerticle;
-import java.util.Optional;
 
 import io.strimzi.operator.cluster.ClusterOperatorConfig;
 import io.strimzi.operator.cluster.ClusterOperator;
@@ -63,9 +62,6 @@ import io.strimzi.operator.cluster.ClusterOperator;
 public class Main {
 
     private static final Logger log = LogManager.getLogger(Main.class.getName());
-
-    public static final String CLUSTER_NAME = Optional.ofNullable(System.getenv("CLUSTER_NAME"))
-            .orElse("cluster.local");
 
     static {
         try {

@@ -49,7 +49,7 @@ public class ClientModel extends AbstractModel {
                   .withRedirectURIs(redirectURIs)
                   .withTrustedURIPrefixes(trustedURIPrefixes)
                .endOidcLibertyClient()
-               .withSecret(getSecretName(instance))
+               .withSecret(getSecretName(getInstanceName()))
             .endSpec()
             .build();
     }
@@ -58,7 +58,7 @@ public class ClientModel extends AbstractModel {
         return this.client;
     }
 
-    public static String getSecretName(EventStreams instance) {
-        return getDefaultResourceName(instance.getMetadata().getName(), SECRET_POSTFIX);
+    public static String getSecretName(String instanceName) {
+        return getDefaultResourceName(instanceName, SECRET_POSTFIX);
     }
 }

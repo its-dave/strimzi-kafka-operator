@@ -12,7 +12,6 @@
  */
 package com.ibm.eventstreams.api.model;
 
-import com.ibm.eventstreams.Main;
 import com.ibm.eventstreams.api.DefaultResourceRequirements;
 import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.EndpointServiceType;
@@ -24,6 +23,7 @@ import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.spec.ImagesSpec;
 import com.ibm.eventstreams.api.spec.SchemaRegistrySpec;
 import com.ibm.eventstreams.controller.EventStreamsOperatorConfig;
+import com.ibm.iam.api.model.ClientModel;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.ContainerBuilder;
 import io.fabric8.kubernetes.api.model.EnvVar;
@@ -50,6 +50,7 @@ import io.strimzi.api.kafka.model.storage.EphemeralStorage;
 import io.strimzi.api.kafka.model.storage.PersistentClaimStorage;
 import io.strimzi.api.kafka.model.storage.Storage;
 import io.strimzi.api.kafka.model.template.PodTemplate;
+import io.strimzi.operator.cluster.model.ModelUtils;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -303,7 +304,7 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
         ArrayList<EnvVar> envVarDefaults = new ArrayList<>(Arrays.asList(
             new EnvVarBuilder().withName("LICENSE").withValue("accept").build(),
             new EnvVarBuilder().withName("NAMESPACE").withValue(getNamespace()).build(),
-            new EnvVarBuilder().withName("CLUSTER_NAME").withValue(Main.CLUSTER_NAME).build(),
+            new EnvVarBuilder().withName("CLUSTER_NAME").withValue(ModelUtils.KUBERNETES_SERVICE_DNS_DOMAIN).build(),
             new EnvVarBuilder().withName("TRACE_LEVEL").withValue(logString).build(),
             new EnvVarBuilder().withName("NODE_ENV").withValue("production").build(),
             new EnvVarBuilder().withName("AVRO_CONTAINER_HOST").withValue("127.0.0.1").build(),
@@ -510,6 +511,8 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
      */
     private List<EnvVar> getSchemaRegistryProxyEnvVars() {
 
+        String oidcSecretName = ClientModel.getSecretName(getInstanceName());
+
         List<EnvVar> envVars = new ArrayList<>();
         envVars.addAll(Arrays.asList(
             new EnvVarBuilder().withName("RELEASE").withValue(getInstanceName()).build(),
@@ -536,7 +539,7 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
                 .withName("CLIENT_ID")
                 .withNewValueFrom()
                 .withNewSecretKeyRef()
-                .withName(getResourcePrefix() + "-oidc-secret")
+                .withName(oidcSecretName)
                 .withKey(CLIENT_ID_KEY)
                 .endSecretKeyRef()
                 .endValueFrom()
@@ -545,7 +548,7 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
                 .withName("CLIENT_SECRET")
                 .withNewValueFrom()
                 .withNewSecretKeyRef()
-                .withName(getResourcePrefix() + "-oidc-secret")
+                .withName(oidcSecretName)
                 .withKey(CLIENT_SECRET_KEY)
                 .endSecretKeyRef()
                 .endValueFrom()

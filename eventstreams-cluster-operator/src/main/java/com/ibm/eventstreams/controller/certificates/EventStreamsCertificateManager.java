@@ -147,8 +147,8 @@ public class EventStreamsCertificateManager {
 
                 dnsNumber = putSubjectAlternativeNameAndIncrementDnsNumber(sbjAltNames, dnsNumber, serviceName);
                 dnsNumber = putSubjectAlternativeNameAndIncrementDnsNumber(sbjAltNames, dnsNumber, String.format("%s.%s", serviceName, namespace));
-                dnsNumber = putSubjectAlternativeNameAndIncrementDnsNumber(sbjAltNames, dnsNumber, String.format("%s.%s.svc", serviceName, namespace));
-                putSubjectAlternativeNameAndIncrementDnsNumber(sbjAltNames, dnsNumber, String.format("%s.%s.svc.%s", serviceName, namespace, ModelUtils.KUBERNETES_SERVICE_DNS_DOMAIN));
+                dnsNumber = putSubjectAlternativeNameAndIncrementDnsNumber(sbjAltNames, dnsNumber, ModelUtils.serviceDnsNameWithoutClusterDomain(namespace, serviceName));
+                putSubjectAlternativeNameAndIncrementDnsNumber(sbjAltNames, dnsNumber, ModelUtils.serviceDnsName(namespace, serviceName));
             }
         }
 

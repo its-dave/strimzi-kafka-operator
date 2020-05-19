@@ -12,7 +12,6 @@
  */
 package com.ibm.eventstreams.api.model;
 
-import com.ibm.eventstreams.Main;
 import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.EndpointServiceType;
 import com.ibm.eventstreams.api.TlsVersion;
@@ -387,7 +386,7 @@ public class RestProducerModelTest {
         EventStreams defaultEs = createDefaultEventStreams().build();
         RestProducerModel restProducerModel = new RestProducerModel(defaultEs, imageConfig, listeners, mockIcpClusterDataMap);
 
-        String runasKafkaBootstrap = instanceName + "-kafka-bootstrap." + restProducerModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_RUNAS_PORT;
+        String runasKafkaBootstrap = instanceName + "-kafka-bootstrap." + restProducerModel.getNamespace() + ".svc:" + EventStreamsKafkaModel.KAFKA_RUNAS_PORT;
         EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:RUNAS-ANONYMOUS,7443:RUNAS-ANONYMOUS").build();
         EnvVar endpoints = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7443:p2ptls").build();
         EnvVar tlsVersion = new EnvVarBuilder().withName("TLS_VERSION").withValue("9443:TLSv1.2,7443:TLSv1.2").build();
@@ -406,7 +405,7 @@ public class RestProducerModelTest {
         EventStreams defaultEs = createEventStreamsWithAuth().build();
         RestProducerModel restProducerModel = new RestProducerModel(defaultEs, imageConfig, listeners, mockIcpClusterDataMap);
 
-        String runasKafkaBootstrap = instanceName + "-kafka-bootstrap." + restProducerModel.getNamespace() + ".svc." + Main.CLUSTER_NAME + ":" + EventStreamsKafkaModel.KAFKA_RUNAS_PORT;
+        String runasKafkaBootstrap = instanceName + "-kafka-bootstrap." + restProducerModel.getNamespace() + ".svc:" + EventStreamsKafkaModel.KAFKA_RUNAS_PORT;
         EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:TLS;SCRAM-SHA-512,7443:RUNAS-ANONYMOUS").build();
         EnvVar endpoints = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7443:p2ptls").build();
         EnvVar tlsVersion = new EnvVarBuilder().withName("TLS_VERSION").withValue("9443:TLSv1.2,7443:TLSv1.2").build();
