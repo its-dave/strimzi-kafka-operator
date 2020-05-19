@@ -10,10 +10,11 @@
  * divested of its trade secrets, irrespective of what has been
  * deposited with the U.S. Copyright Office.
  */
-package com.ibm.eventstreams.rest;
+package com.ibm.eventstreams.rest.eventstreams;
 
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.controller.models.StatusCondition;
+import com.ibm.eventstreams.rest.Validation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -32,13 +33,13 @@ public class NameValidation implements Validation {
 
     public static final String INVALID_INSTANCE_NAME_REASON = "InvalidInstanceName";
 
-    public static final String INSTANCE_NAME_TOO_LONG_MESSAGE = "%s instance name is too long."
-        + String.format("Instance names are no longer than %d characters. ", MAX_NAME_LENGTH)
-        + "Edit metadata.name to provide a valid instance name";
+    public static final String INSTANCE_NAME_TOO_LONG_MESSAGE = "'%s' instance name is too long."
+        + String.format("Instance names cannot be longer than %d characters. ", MAX_NAME_LENGTH)
+        + "Edit metadata.name to provide a valid instance name.";
 
-    public static final String INSTANCE_NAME_DOES_NOT_FOLLOW_REGEX_MESSAGE = "%s instance name is an invalid name."
-        + String.format("Instance names are lower case alphanumeric characters or '-', start with an alphabetic character, and end with an alphabetic character (%s). ", VALID_NAME_REGEX)
-        + "Edit metadata.name to provide a valid instance name";
+    public static final String INSTANCE_NAME_DOES_NOT_FOLLOW_REGEX_MESSAGE = "'%s' instance name is an invalid name."
+        + String.format("Instance names are lower case alphanumeric characters or dashes (-), and must start and end with an alphabetic character (%s). ", VALID_NAME_REGEX)
+        + "Edit metadata.name to provide a valid instance name.";
 
     public List<StatusCondition> validateCr(EventStreams customResourceSpec) {
         log.traceEntry(() -> customResourceSpec);

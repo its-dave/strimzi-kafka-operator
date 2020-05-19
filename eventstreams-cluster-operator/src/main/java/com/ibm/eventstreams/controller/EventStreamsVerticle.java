@@ -14,12 +14,12 @@ package com.ibm.eventstreams.controller;
 
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsGeoReplicator;
-import com.ibm.eventstreams.rest.EndpointValidation;
-import com.ibm.eventstreams.rest.EntityLabelValidation;
+import com.ibm.eventstreams.rest.eventstreams.EndpointValidation;
+import com.ibm.eventstreams.rest.eventstreams.EntityLabelValidation;
 import com.ibm.eventstreams.rest.KubernetesProbe;
-import com.ibm.eventstreams.rest.LicenseValidation;
-import com.ibm.eventstreams.rest.NameValidation;
-import com.ibm.eventstreams.rest.VersionValidation;
+import com.ibm.eventstreams.rest.eventstreams.LicenseValidation;
+import com.ibm.eventstreams.rest.eventstreams.NameValidation;
+import com.ibm.eventstreams.rest.eventstreams.VersionValidation;
 import com.ibm.iam.api.controller.Cp4iServicesBindingResourceOperator;
 import com.ibm.iam.api.spec.Cp4iServicesBinding;
 

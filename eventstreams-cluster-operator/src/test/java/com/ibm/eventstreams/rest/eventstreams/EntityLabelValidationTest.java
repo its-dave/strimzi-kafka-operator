@@ -11,9 +11,10 @@
  * deposited with the U.S. Copyright Office.
  */
 
-package com.ibm.eventstreams.rest;
+package com.ibm.eventstreams.rest.eventstreams;
 
 import com.ibm.eventstreams.controller.EventStreamsVerticle;
+import com.ibm.eventstreams.rest.RestApiTest;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.kubernetes.client.CustomResource;
 import io.strimzi.api.kafka.model.KafkaTopic;

@@ -12,20 +12,20 @@
  */
 package com.ibm.eventstreams.controller;
 
-import com.ibm.eventstreams.api.model.GeoReplicatorModel;
 import com.ibm.eventstreams.api.model.GeoReplicatorDestinationUsersModel;
+import com.ibm.eventstreams.api.model.GeoReplicatorModel;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsGeoReplicator;
 import com.ibm.eventstreams.api.spec.EventStreamsGeoReplicatorBuilder;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
-import com.ibm.eventstreams.api.status.EventStreamsGeoReplicatorStatusBuilder;
 import com.ibm.eventstreams.api.status.EventStreamsGeoReplicatorStatus;
-import com.ibm.eventstreams.georeplicator.GeoReplicatorCredentials;
+import com.ibm.eventstreams.api.status.EventStreamsGeoReplicatorStatusBuilder;
 import com.ibm.eventstreams.controller.models.PhaseState;
 import com.ibm.eventstreams.controller.models.StatusCondition;
-import com.ibm.eventstreams.rest.VersionValidation;
+import com.ibm.eventstreams.georeplicator.GeoReplicatorCredentials;
+import com.ibm.eventstreams.rest.eventstreams.VersionValidation;
+import com.ibm.eventstreams.rest.replicator.ReplicatorKafkaListenerValidation;
 import io.fabric8.kubernetes.client.KubernetesClient;
-import io.strimzi.api.kafka.model.status.ConditionBuilder;
 import io.strimzi.api.kafka.model.KafkaClusterSpec;
 import io.strimzi.api.kafka.model.KafkaSpec;
 import io.strimzi.api.kafka.model.listener.KafkaListenerAuthentication;
@@ -33,7 +33,6 @@ import io.strimzi.api.kafka.model.listener.KafkaListenerTls;
 import io.strimzi.api.kafka.model.listener.KafkaListeners;
 import io.strimzi.api.kafka.model.status.Condition;
 import io.strimzi.operator.PlatformFeaturesAvailability;
-import io.strimzi.operator.cluster.model.ModelUtils;
 import io.strimzi.operator.common.AbstractOperator;
 import io.strimzi.operator.common.MetricsProvider;
 import io.strimzi.operator.common.Reconciliation;
@@ -50,7 +49,6 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -102,9 +100,7 @@ public class EventStreamsGeoReplicatorOperator extends AbstractOperator<EventStr
     private Future<Void> reconcile(EventStreamsGeoReplicatorOperator.ReconciliationState reconcileState) {
 
         return reconcileState.validateCustomResource()
-                .compose(state -> {
-                    return state.createReplicator();
-                })
+                .compose(ReconciliationState::createReplicator)
                 .onSuccess(state -> {
                     state.finalStatusUpdate();
                     log.debug("GeoReplication reconciliation success");
@@ -113,8 +109,6 @@ public class EventStreamsGeoReplicatorOperator extends AbstractOperator<EventStr
                     reconcileState.recordFailure(thr);
                     log.error("GeoReplication reconciliation failed with error {} ", thr.getMessage());
                 }).map(res -> null);
-
-
     }
 
     @Override
@@ -127,7 +121,6 @@ public class EventStreamsGeoReplicatorOperator extends AbstractOperator<EventStr
         final String namespace;
         final EventStreamsGeoReplicatorStatusBuilder status;
         final List<Condition> previousConditions;
-
 
         ReconciliationState(EventStreamsGeoReplicator replicatorInstance) {
             this.replicatorInstance = replicatorInstance;
@@ -155,7 +148,10 @@ public class EventStreamsGeoReplicatorOperator extends AbstractOperator<EventStr
 
             //the name of the replicator instance doesn't match what has been set in the strimzi cluster label
             if (!replicatorInstance.getMetadata().getName().equals(replicatorInstance.getMetadata().getLabels().get(Labels.STRIMZI_CLUSTER_LABEL))) {
-                addNotReadyCondition("NotMatchedEventStreamsInstanceName", "The name of the eventstreamsgeoreplicator instance does not match the value of " + Labels.STRIMZI_CLUSTER_LABEL);
+                addToConditions(StatusCondition.createErrorCondition("MismatchEventStreamsAndReplictorInstanceNames",
+                    String.format("The name of the Event Streams geo-replicator instance '%s' does not match the Event Streams instance '%s'. ",
+                        replicatorInstance.getMetadata().getName(), replicatorInstance.getMetadata().getLabels().get(Labels.STRIMZI_CLUSTER_LABEL)) +
+                        String.format("Edit spec.metadata.name to provide the value of '%s'. ", replicatorInstance.getMetadata().getLabels().get(Labels.STRIMZI_CLUSTER_LABEL))).toCondition());
                 isValidCR = false;
             }
 
@@ -164,20 +160,13 @@ public class EventStreamsGeoReplicatorOperator extends AbstractOperator<EventStr
                         .stream()
                         // restore any previous readiness condition if this was set, so
                         // that timestamps remain consistent
-                        .filter(c -> "Ready".equals(c.getType()) || "Creating".equals(c.getType()))
+                        .filter(c -> c.getType().equals(PhaseState.PENDING.toValue()))
                         .findFirst()
                         // otherwise set a new condition saying that the reconcile loop is running
-                        .orElse(new ConditionBuilder()
-                                .withLastTransitionTime(ModelUtils.formatTimestamp(dateSupplier()))
-                                .withType("NotReady")
-                                .withStatus("True")
-                                .withReason("Creating")
-                                .withMessage("Event Streams is being deployed")
-                                .build()));
+                        .orElse(StatusCondition.createPendingCondition("Creating", "Event Streams geo-replicator is being deployed").toCondition()));
             } else {
                 phase = PhaseState.FAILED;
             }
-
 
             EventStreamsGeoReplicatorStatus statusSubresource = status.withPhase(phase).build();
             replicatorInstance.setStatus(statusSubresource);
@@ -208,9 +197,9 @@ public class EventStreamsGeoReplicatorOperator extends AbstractOperator<EventStr
                     .compose(instance -> {
                         if (instance != null) {
                             if (!adminAPIInstanceFound(instance)) {
-                                addNotReadyCondition("DependencyMissing", "AdminApi is required for Event Streams instance "
-                                        + replicatorInstance.getMetadata().getLabels().get(Labels.STRIMZI_CLUSTER_LABEL)
-                                        + " to enable replicator");
+                                String errorMessage = String.format("AdminApi is required to enable geo-replication for Event Streams instance '%s'. ", replicatorInstance.getMetadata().getLabels().get(Labels.STRIMZI_CLUSTER_LABEL))
+                                    + "Edit spec.adminApi to provide a valid adminApi value.";
+                                addCondition(StatusCondition.createErrorCondition("AdminApiMissingDependency", errorMessage).toCondition());
 
                                 EventStreamsGeoReplicatorStatus statusSubresource = status.withPhase(PhaseState.FAILED).build();
                                 replicatorInstance.setStatus(statusSubresource);
@@ -223,11 +212,8 @@ public class EventStreamsGeoReplicatorOperator extends AbstractOperator<EventStr
                                 return failReconcile.future();
 
                             }
-                            if (!GeoReplicatorDestinationUsersModel.isValidInstance(instance)) {
-
-                                addNotReadyCondition("UnsupportedAuthorization", "  Listener client authentication " +
-                                        "unsupported for GeoReplication. Supported versions are TLS and SCRAM");
-
+                            ReplicatorKafkaListenerValidation replicatorKafkaListenerValidation = new ReplicatorKafkaListenerValidation(instance);
+                            if (replicatorKafkaListenerValidation.hasInvalidAuthenticationCondition()) {
                                 EventStreamsGeoReplicatorStatus statusSubresource = status.withPhase(PhaseState.FAILED).build();
                                 replicatorInstance.setStatus(statusSubresource);
 
@@ -237,13 +223,9 @@ public class EventStreamsGeoReplicatorOperator extends AbstractOperator<EventStr
                                     failReconcile.fail("Exit Reconcile as listener client authentication unsupported for GeoReplication");
                                 });
                                 return failReconcile.future();
-
                             }
                             //if internal auth is on then external must be too.  Vice versa is ok
-                            if (!GeoReplicatorDestinationUsersModel.isValidInternExternalConfig(instance)) {
-                                addNotReadyCondition("UnsupoprtedInternalExternalListenerConfig", "If internal listener client authentication " +
-                                        "enabled, then external listner client authentication must also be enabled");
-
+                            if (replicatorKafkaListenerValidation.hasMismatchedExternalAndInternalListenerAuthentication()) {
                                 EventStreamsGeoReplicatorStatus statusSubresource = status.withPhase(PhaseState.FAILED).build();
                                 replicatorInstance.setStatus(statusSubresource);
 
@@ -254,7 +236,7 @@ public class EventStreamsGeoReplicatorOperator extends AbstractOperator<EventStr
                                 });
                                 return failReconcile.future();
                             }
-
+                            replicatorKafkaListenerValidation.getConditions().forEach(condition -> addToConditions(condition.toCondition()));
 
                             GeoReplicatorCredentials geoReplicatorCredentials = new GeoReplicatorCredentials(instance);
                             GeoReplicatorDestinationUsersModel replicatorUsersModel = new GeoReplicatorDestinationUsersModel(replicatorInstance, instance);
@@ -276,8 +258,10 @@ public class EventStreamsGeoReplicatorOperator extends AbstractOperator<EventStr
 
 
                         } else {
-                            addNotReadyCondition("EventStreamsInstanceNotFound", "Can't find Event Streams instance "
-                                    + eventStreamsInstanceName + " in namespace " + namespace + ". Ensure the Event Streams instance is created before deploying the Event Streams geo-replicator ");
+                            addToConditions(StatusCondition.createErrorCondition("EventStreamsInstanceNotFound",
+                                String.format("Could not find Event Streams instance '%s' in namespace '%s'. ", eventStreamsInstanceName, namespace)
+                                + "Geo-replication requires a running Event Streams instance. "
+                                + "Create an Event Streams instance before deploying the Event Streams geo-replicator").toCondition());
 
                             EventStreamsGeoReplicatorStatus statusSubresource = status.withPhase(PhaseState.FAILED).build();
                             replicatorInstance.setStatus(statusSubresource);
@@ -325,40 +309,6 @@ public class EventStreamsGeoReplicatorOperator extends AbstractOperator<EventStr
         }
 
         /**
-         * Adds a "Ready" condition to the status if there is not already one.
-         * This does nothing if there is already an existing ready condition from
-         * a previous reconcile.
-         */
-        private void addReadyCondition() {
-            boolean needsReadyCondition = status.getMatchingCondition(cond -> "Ready".equals(cond.getType())) == null;
-            if (needsReadyCondition) {
-                addCondition(new ConditionBuilder()
-                        .withLastTransitionTime(ModelUtils.formatTimestamp(dateSupplier()))
-                        .withType("Ready")
-                        .withStatus("True")
-                        .build());
-            }
-        }
-
-        /**
-         * Adds a "NotReady" condition to the status that documents a reason why the
-         * Event Streams geo-replicator operand is not ready yet.
-         *
-         * @param reason  A unique, one-word, CamelCase reason for why the operand is not ready.
-         * @param message A human-readable message indicating why the operand is not ready.
-         */
-        private void addNotReadyCondition(String reason, String message) {
-            addToConditions(
-                    new ConditionBuilder()
-                            .withLastTransitionTime(ModelUtils.formatTimestamp(dateSupplier()))
-                            .withType("NotReady")
-                            .withStatus("True")
-                            .withReason(reason)
-                            .withMessage(message)
-                            .build());
-        }
-
-        /**
          * Adds the provided condition to the current status.
          * <p>
          * This will check to see if a matching condition was previously seen, and if so
@@ -387,13 +337,10 @@ public class EventStreamsGeoReplicatorOperator extends AbstractOperator<EventStr
                     .thenComparing(Condition::getType, Comparator.reverseOrder()));
         }
 
-        Date dateSupplier() {
-            return new Date();
-        }
-
         void recordFailure(Throwable thr) {
             log.error("Recording reconcile failure", thr);
-            addNotReadyCondition("DeploymentFailed", thr.getMessage());
+            addToConditions(StatusCondition.createErrorCondition("DeploymentFailed",
+                String.format("An unexpected exception was encountered: %s. More detail can be found in the Event Streams geo-replication operator log.", thr.getMessage())).toCondition());
 
             EventStreamsGeoReplicatorStatus statusSubresource = status.withPhase(PhaseState.FAILED).build();
             replicatorInstance.setStatus(statusSubresource);
@@ -402,7 +349,6 @@ public class EventStreamsGeoReplicatorOperator extends AbstractOperator<EventStr
 
         Future<EventStreamsGeoReplicatorOperator.ReconciliationState> finalStatusUpdate() {
             status.withPhase(PhaseState.READY);
-            addReadyCondition();
 
             log.info("Updating status");
             EventStreamsGeoReplicatorStatus esStatus = status.build();

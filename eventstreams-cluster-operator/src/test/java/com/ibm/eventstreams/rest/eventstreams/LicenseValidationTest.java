@@ -11,11 +11,12 @@
  * deposited with the U.S. Copyright Office.
  */
 
-package com.ibm.eventstreams.rest;
+package com.ibm.eventstreams.rest.eventstreams;
 
 import com.ibm.eventstreams.api.model.utils.ModelUtils;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.controller.EventStreamsVerticle;
+import com.ibm.eventstreams.rest.RestApiTest;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.junit5.Checkpoint;

@@ -11,11 +11,12 @@
  * deposited with the U.S. Copyright Office.
  */
 
-package com.ibm.eventstreams.rest;
+package com.ibm.eventstreams.rest.eventstreams;
 
 import com.ibm.eventstreams.api.model.utils.ModelUtils;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.controller.EventStreamsVerticle;
+import com.ibm.eventstreams.rest.RestApiTest;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.junit5.VertxExtension;
@@ -29,7 +30,6 @@ import java.util.Map;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
-
 
 @ExtendWith(VertxExtension.class)
 public class VersionValidationTest extends RestApiTest {
@@ -88,7 +88,7 @@ public class VersionValidationTest extends RestApiTest {
                 assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is(VersionValidation.INVALID_VERSION_REASON));
                 assertThat(responseObj.getJsonObject("response").getJsonObject("status").getInteger("code"), is(400));
                 assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("message"),
-                        is(VersionValidation.INVALID_VERSION_MESSAGE));
+                    is(String.format(VersionValidation.INVALID_VERSION_MESSAGE, test.getSpec().getVersion())));
             } else {
                 fail("Failed to post webhook request");
             }

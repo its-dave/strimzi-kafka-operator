@@ -54,7 +54,7 @@ import static java.util.Collections.unmodifiableList;
                         @Crd.Spec.AdditionalPrinterColumn(
                                 name = "Ready",
                                 description = "The status of the Event Streams geo-replicator cluster",
-                                jsonPath = ".status.conditions[?(@.type==\"Ready\")].status",
+                                jsonPath = ".status.phase[?(@.type==\"Ready\")].status",
                                 type = "string",
                                 priority = 0
                         )

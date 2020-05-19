@@ -13,7 +13,17 @@
 package com.ibm.eventstreams.api;
 
 public enum ListenerType {
-    PLAIN,
-    EXTERNAL,
-    TLS;
+    PLAIN("plain"),
+    EXTERNAL("external"),
+    TLS("tls");
+
+    private final String value;
+
+    ListenerType(String value) {
+        this.value = value;
+    }
+
+    public String toValue() {
+        return this.value;
+    }
 }

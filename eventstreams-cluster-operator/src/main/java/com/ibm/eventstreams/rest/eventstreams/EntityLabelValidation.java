@@ -10,8 +10,10 @@
  * divested of its trade secrets, irrespective of what has been
  * deposited with the U.S. Copyright Office.
  */
-package com.ibm.eventstreams.rest;
+package com.ibm.eventstreams.rest.eventstreams;
 
+import com.ibm.eventstreams.rest.Validation;
+import com.ibm.eventstreams.rest.ValidationResponsePayload;
 import io.fabric8.kubernetes.client.CustomResource;
 import io.strimzi.api.kafka.model.Constants;
 import io.strimzi.api.kafka.model.KafkaTopic;

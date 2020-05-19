@@ -12,37 +12,20 @@
  */
 package com.ibm.eventstreams.api;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum TlsVersion {
-    TLS_V1_2,
-    NONE;
+    TLS_V1_2("TLSv1.2"),
+    NONE("NONE");
 
-    private static final String TLS_V1_2_STRING = "TLSv1.2";
-    private static final String NONE_STRING = "NONE";
+    private final String value;
 
-    @JsonCreator
-    public static TlsVersion forValue(String value) {
-        switch (value) {
-            case TLS_V1_2_STRING:
-                return TLS_V1_2;
-            case NONE_STRING:
-                return NONE;
-            default:
-                return null;
-        }
+    TlsVersion(String value) {
+        this.value = value;
     }
 
     @JsonValue
     public String toValue() {
-        switch (this) {
-            case TLS_V1_2:
-                return TLS_V1_2_STRING;
-            case NONE:
-                return NONE_STRING;
-            default:
-                return null;
-        }
+        return value;
     }
 }

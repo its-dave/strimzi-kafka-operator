@@ -12,6 +12,7 @@
  */
 package com.ibm.eventstreams.api;
 
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import io.strimzi.api.kafka.model.KafkaClusterSpec;
@@ -25,13 +26,26 @@ import io.strimzi.api.kafka.model.listener.KafkaListenerPlain;
 import io.strimzi.api.kafka.model.listener.KafkaListenerTls;
 import io.strimzi.api.kafka.model.listener.KafkaListeners;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 public enum ListenerAuthentication {
-    TLS,
-    SCRAM_SHA_512,
-    OAUTH,
-    NONE;
+    TLS("tls"),
+    SCRAM_SHA_512("scram-sha-512"),
+    OAUTH("oauth"),
+    NONE("none");
+
+    private final String value;
+
+    ListenerAuthentication(String value) {
+        this.value = value;
+    }
+
+    @JsonValue
+    public String toValue() {
+        return this.value;
+    }
 
     public static ListenerAuthentication toValue(KafkaListenerAuthentication auth) {
         switch (auth.getType()) {
@@ -54,36 +68,47 @@ public enum ListenerAuthentication {
             .map(KafkaClusterSpec::getListeners);
 
         if (listeners.isPresent()) {
-            KafkaListenerAuthentication authentication = null;
+            ListenerAuthentication authentication = null;
             switch (listener) {
                 case PLAIN:
-                    authentication = listeners
-                        .map(KafkaListeners::getPlain)
-                        .map(KafkaListenerPlain::getAuth)
-                        .orElse(null);
+                    Optional<KafkaListenerPlain> plainListener = listeners
+                        .map(KafkaListeners::getPlain);
+                    if (plainListener.isPresent()) {
+                        authentication = plainListener.map(KafkaListenerPlain::getAuth)
+                            .map(ListenerAuthentication::toValue)
+                            .orElse(NONE);
+                    }
                     break;
                 case EXTERNAL:
-                    authentication = listeners
-                        .map(KafkaListeners::getExternal)
-                        .map(KafkaListenerExternal::getAuth)
-                        .orElse(null);
+                    Optional<KafkaListenerExternal> externalListener = listeners
+                        .map(KafkaListeners::getExternal);
+                    if (externalListener.isPresent()) {
+                        authentication = externalListener.map(KafkaListenerExternal::getAuth)
+                            .map(ListenerAuthentication::toValue)
+                            .orElse(NONE);
+                    }
                     break;
                 case TLS:
-                    authentication = listeners
-                        .map(KafkaListeners::getTls)
-                        .map(KafkaListenerTls::getAuth)
-                        .orElse(null);
+                    Optional<KafkaListenerTls> tlsListener = listeners
+                        .map(KafkaListeners::getTls);
+                    if (tlsListener.isPresent()) {
+                        authentication = tlsListener.map(KafkaListenerTls::getAuth)
+                            .map(ListenerAuthentication::toValue)
+                            .orElse(NONE);
+                    }
             }
-
-            if (authentication == null) {
-                return null;
-            }
-
-            return Optional.of(authentication)
-                .map(ListenerAuthentication::toValue)
-                .orElse(ListenerAuthentication.NONE);
+            return authentication;
         }
-
         return NONE;
+    }
+
+    public static Map<ListenerType, ListenerAuthentication> getListenerAuth(EventStreams instance) {
+        HashMap<ListenerType, ListenerAuthentication> listenerAuth = new HashMap<>();
+
+        listenerAuth.put(ListenerType.PLAIN, ListenerAuthentication.getAuthentication(instance, ListenerType.PLAIN));
+        listenerAuth.put(ListenerType.TLS, ListenerAuthentication.getAuthentication(instance, ListenerType.TLS));
+        listenerAuth.put(ListenerType.EXTERNAL, ListenerAuthentication.getAuthentication(instance, ListenerType.EXTERNAL));
+
+        return listenerAuth;
     }
 }

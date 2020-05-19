@@ -38,12 +38,12 @@ import com.ibm.eventstreams.controller.certificates.EventStreamsCertificateExcep
 import com.ibm.eventstreams.controller.certificates.EventStreamsCertificateManager;
 import com.ibm.eventstreams.controller.models.PhaseState;
 import com.ibm.eventstreams.controller.models.StatusCondition;
-import com.ibm.eventstreams.rest.AuthenticationValidation;
-import com.ibm.eventstreams.rest.EndpointValidation;
-import com.ibm.eventstreams.rest.EventStreamsGeneralValidation;
-import com.ibm.eventstreams.rest.LicenseValidation;
-import com.ibm.eventstreams.rest.NameValidation;
-import com.ibm.eventstreams.rest.VersionValidation;
+import com.ibm.eventstreams.rest.eventstreams.AuthenticationValidation;
+import com.ibm.eventstreams.rest.eventstreams.EndpointValidation;
+import com.ibm.eventstreams.rest.eventstreams.EventStreamsGeneralValidation;
+import com.ibm.eventstreams.rest.eventstreams.LicenseValidation;
+import com.ibm.eventstreams.rest.eventstreams.NameValidation;
+import com.ibm.eventstreams.rest.eventstreams.VersionValidation;
 import com.ibm.iam.api.controller.Cp4iServicesBindingResourceOperator;
 import com.ibm.iam.api.model.ClientModel;
 import com.ibm.iam.api.model.Cp4iServicesBindingModel;
@@ -288,7 +288,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                         .filter(c -> c.getType().equals(PhaseState.PENDING.toValue()))
                         .findFirst()
                         // otherwise set a new condition saying that the reconcile loop is running
-                        .orElse(StatusCondition.createPendingCondition("Creating", "Event Streams is being deployed").toCondition()));
+                        .orElse(StatusCondition.createPendingCondition("Creating", "Event Streams is being deployed.").toCondition()));
             } else {
                 phase = PhaseState.FAILED;
             }
@@ -956,9 +956,10 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
 
                     if (allPullSecretsMissing) {
                         String errorMessage = String.format("The image pull secrets specified for the %s component do not exist.", component.getApplicationName())
-                            + "This may prevent images being pulled from the entitled registry. "
-                            + "Check your entitlement and get an entitlement key from https://myibm.ibm.com/products-services/containerlibrary. "
-                            + "Create an image pull secret called 'ibm-entitlement-key' using your entitlement key as the password, cp as the username, and cp.icr.io as the docker server for use with this deployment.";
+                            + "This can prevent images being pulled from the entitled registry. "
+                            + "Check your entitlement to see if you have access to Event Streams. "
+                            + "You can request an entitlement key from https://myibm.ibm.com/products-services/containerlibrary. "
+                            + "Create an image pull secret called 'ibm-entitlement-key' using your entitlement key as the password, cp as the username, and cp.icr.io as the docker server.";
                         addToConditions(StatusCondition.createWarningCondition("MissingPullSecret", errorMessage).toCondition());
                     }
 

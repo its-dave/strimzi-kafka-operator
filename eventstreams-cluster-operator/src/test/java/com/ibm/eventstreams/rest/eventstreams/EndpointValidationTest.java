@@ -11,7 +11,7 @@
  * deposited with the U.S. Copyright Office.
  */
 
-package com.ibm.eventstreams.rest;
+package com.ibm.eventstreams.rest.eventstreams;
 
 import com.ibm.eventstreams.api.EndpointServiceType;
 import com.ibm.eventstreams.api.model.utils.ModelUtils;
@@ -19,6 +19,7 @@ import com.ibm.eventstreams.api.spec.EndpointSpec;
 import com.ibm.eventstreams.api.spec.EndpointSpecBuilder;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.controller.EventStreamsVerticle;
+import com.ibm.eventstreams.rest.RestApiTest;
 import io.strimzi.api.kafka.model.KafkaClusterSpecBuilder;
 import io.strimzi.api.kafka.model.KafkaSpecBuilder;
 import io.vertx.core.json.JsonObject;

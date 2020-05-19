@@ -12,59 +12,31 @@
  */
 package com.ibm.eventstreams.api;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum EndpointServiceType {
-    ROUTE,
-    NODE_PORT,
-    INGRESS,
-    LOAD_BALANCER,
-    INTERNAL;
+    ROUTE("Route"),
+    NODE_PORT("NodePort"),
+    INGRESS("Ingress"),
+    LOAD_BALANCER("LoadBalancer"),
+    INTERNAL("Internal");
 
-    private static final String ROUTE_STRING = "Route";
-    private static final String NODE_PORT_STRING = "NodePort";
-    private static final String INGRESS_STRING = "Ingress";
-    private static final String LOAD_BALANCER_STRING = "LoadBalancer";
-    private static final String INTERNAL_STRING = "Internal";
+    private final String value;
 
-    private static final String CLUSTER_IP_STRING = "ClusterIP";
-
-    @JsonCreator
-    public static EndpointServiceType forValue(String value) {
-        switch (value) {
-            case ROUTE_STRING:
-                return ROUTE;
-            case NODE_PORT_STRING:
-                return NODE_PORT;
-            case INGRESS_STRING:
-                return INGRESS;
-            case LOAD_BALANCER_STRING:
-                return LOAD_BALANCER;
-            case INTERNAL_STRING:
-                return INTERNAL;
-            default:
-                return null;
-        }
+    EndpointServiceType(String value) {
+        this.value = value;
     }
 
     @JsonValue
     public String toValue() {
-        switch (this) {
-            case ROUTE:
-                return ROUTE_STRING;
-            case NODE_PORT:
-                return NODE_PORT_STRING;
-            case INGRESS:
-                return INGRESS_STRING;
-            case LOAD_BALANCER:
-                return LOAD_BALANCER_STRING;
-            case INTERNAL:
-                return INTERNAL_STRING;
-            default:
-                return null;
-        }
+        return this.value;
     }
+
+    private static final String NODE_PORT_STRING = "NodePort";
+    private static final String INGRESS_STRING = "Ingress";
+    private static final String LOAD_BALANCER_STRING = "LoadBalancer";
+
+    private static final String CLUSTER_IP_STRING = "ClusterIP";
 
     public String toServiceValue() {
         switch (this) {
@@ -82,6 +54,4 @@ public enum EndpointServiceType {
                 return null;
         }
     }
-
-
 }

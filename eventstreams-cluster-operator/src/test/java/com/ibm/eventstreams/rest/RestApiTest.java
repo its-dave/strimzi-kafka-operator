@@ -45,7 +45,7 @@ public abstract class RestApiTest {
     private static KubernetesClient mockClient;
     private static EventStreamsVerticle eventStreamsVerticle;
 
-    HttpClient httpClient;
+    public HttpClient httpClient;
 
     private static final String TEST_NAMESPACE = "test";
 

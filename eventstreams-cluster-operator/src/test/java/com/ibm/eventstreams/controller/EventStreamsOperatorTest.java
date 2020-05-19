@@ -52,10 +52,10 @@ import com.ibm.eventstreams.controller.models.PhaseState;
 import com.ibm.eventstreams.controller.utils.ConditionUtils;
 import com.ibm.eventstreams.controller.utils.ControllerUtils;
 import com.ibm.eventstreams.controller.utils.MetricsUtils;
-import com.ibm.eventstreams.rest.AuthenticationValidation;
-import com.ibm.eventstreams.rest.EndpointValidation;
-import com.ibm.eventstreams.rest.NameValidation;
-import com.ibm.eventstreams.rest.VersionValidation;
+import com.ibm.eventstreams.rest.eventstreams.AuthenticationValidation;
+import com.ibm.eventstreams.rest.eventstreams.EndpointValidation;
+import com.ibm.eventstreams.rest.eventstreams.NameValidation;
+import com.ibm.eventstreams.rest.eventstreams.VersionValidation;
 import com.ibm.iam.api.controller.Cp4iServicesBindingResourceOperator;
 import com.ibm.iam.api.spec.Cp4iServicesBinding;
 import io.fabric8.kubernetes.api.model.ConfigMap;
@@ -757,7 +757,7 @@ public class EventStreamsOperatorTest {
                     .map(Condition::getMessage).get();
 
                 assertThat("Status is incorrect, found status : " + updatedEventStreams.getValue().getStatus(),
-                        message, is(VersionValidation.INVALID_VERSION_MESSAGE));
+                        message, is(String.format(VersionValidation.INVALID_VERSION_MESSAGE, esCluster.getSpec().getVersion())));
                 async.flag();
             })));
     }

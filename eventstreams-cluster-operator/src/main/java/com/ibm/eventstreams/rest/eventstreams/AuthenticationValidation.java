@@ -10,7 +10,7 @@
  * divested of its trade secrets, irrespective of what has been
  * deposited with the U.S. Copyright Office.
  */
-package com.ibm.eventstreams.rest;
+package com.ibm.eventstreams.rest.eventstreams;
 
 import com.ibm.eventstreams.api.ListenerAuthentication;
 import com.ibm.eventstreams.api.ListenerType;
@@ -19,11 +19,11 @@ import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.spec.SecurityComponentSpec;
 import com.ibm.eventstreams.controller.models.StatusCondition;
+import com.ibm.eventstreams.rest.Validation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -46,7 +46,7 @@ public class AuthenticationValidation implements Validation {
 
     public List<StatusCondition> validateCr(EventStreams instance) {
         log.traceEntry(() -> instance);
-        Map<ListenerType, ListenerAuthentication> listenerAuth = getListenerAuth(instance);
+        Map<ListenerType, ListenerAuthentication> listenerAuth = ListenerAuthentication.getListenerAuth(instance);
         Optional<List<EndpointSpec>> adminApiEndpoints =  Optional.ofNullable(instance.getSpec())
                                                             .map(EventStreamsSpec::getAdminApi)
                                                             .map(SecurityComponentSpec::getEndpoints);
@@ -83,17 +83,6 @@ public class AuthenticationValidation implements Validation {
             conditions.add(StatusCondition.createWarningCondition(ENDPOINT_AUTHENTICATED_WHEN_KAFKA_UNAUTHENTICATED_REASON, String.format(AUTH_ENDPOINT_UNAUTH_ES_WARNING, EndpointValidation.SCHEMA_REGISTRY_SPEC_NAME, EndpointValidation.SCHEMA_REGISTRY_SPEC_NAME)));
         }
         return conditions;
-    }
-
-    private static Map<ListenerType, ListenerAuthentication> getListenerAuth(EventStreams instance) {
-        log.traceEntry(() -> instance);
-        HashMap<ListenerType, ListenerAuthentication> listenerAuth = new HashMap<>();
-
-        listenerAuth.put(ListenerType.PLAIN, ListenerAuthentication.getAuthentication(instance, ListenerType.PLAIN));
-        listenerAuth.put(ListenerType.TLS, ListenerAuthentication.getAuthentication(instance, ListenerType.TLS));
-        listenerAuth.put(ListenerType.EXTERNAL, ListenerAuthentication.getAuthentication(instance, ListenerType.EXTERNAL));
-
-        return log.traceExit(listenerAuth);
     }
 
     private static boolean isAuthenticated(Map<ListenerType, ListenerAuthentication> listenerAuth) {
