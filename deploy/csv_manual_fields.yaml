@@ -14,7 +14,7 @@ metadata:
           "resources": {
             "cpu": "4",
             "memory": "4 GB",
-            "vpc": "1"
+            "vpc": "0.5"
           }
         },
         "sample-1-broker": {
@@ -23,7 +23,7 @@ metadata:
           "resources": {
             "cpu": "4",
             "memory": "4 GB",
-            "vpc": "1"
+            "vpc": "0.5"
           }
         },
         "sample-3-broker": {
@@ -32,7 +32,7 @@ metadata:
           "resources": {
             "cpu": "16",
             "memory": "29 GB",
-            "vpc": "13"
+            "vpc": "12"
           }
         },
         "sample-6-broker": {
@@ -41,7 +41,7 @@ metadata:
           "resources": {
             "cpu": "28",
             "memory": "53 GB",
-            "vpc": "25"
+            "vpc": "24"
           }
         },
         "sample-9-broker": {
@@ -50,7 +50,7 @@ metadata:
           "resources": {
             "cpu": "40",
             "memory": "78 GB",
-            "vpc": "37"
+            "vpc": "36"
           }
         },
         "georeplicator": {
