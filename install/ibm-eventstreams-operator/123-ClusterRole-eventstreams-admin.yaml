@@ -13,13 +13,16 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  creationTimestamp: null
   name: eventstreams-admin-clusterrole
   labels:
     app: eventstreams
+# The Event Streams Admin requires various cluster permissions to list, inspect and modify state of the Event Streams
+# cluster
 rules:
 - apiGroups:
   - ""
+  # The Event Streams Admin requires the "list" and "patch" permissions for pods
+  # This is to inspect the state of pods within the deployment and for labelling
   resources:
   - pods
   verbs:
@@ -27,12 +30,16 @@ rules:
   - patch
 - apiGroups:
   - ""
+  # The Event Streams Admin requires the "list" permissions for services
+  # This is used for various API calls which require knowledge of the cluster services
   resources:
   - services
   verbs:
   - list
 - apiGroups:
   - ""
+  # The Event Streams Admin requires the "get" and "patch" permissions for secrets
+  # This is used for managing secrets for EventStreams such as for geo-replication
   resources:
   - secrets
   verbs:
@@ -40,6 +47,8 @@ rules:
   - patch
 - apiGroups:
   - "apps"
+  # The Event Streams Admin requires the "list" and "get" permissions for deployments
+  # This is used to inspect deployment states
   resources:
   - deployments
   verbs:
@@ -47,12 +56,16 @@ rules:
   - get
 - apiGroups:
   - "route.openshift.io"
+  # The Event Streams Admin requires the "list" and "get" permissions for deployments
+  # This is used for listing the external access routes for setting up clients and connecting to an Event Streams instance
   resources:
   - routes
   verbs:
   - list
 - apiGroups:
   - "eventstreams.ibm.com"
+  # The Event Streams Admin requires the "list" and "get" permissions for deployments
+  # This is used for various API calls to read and modify the state of Event Streams geo-replicator
   resources:
   - kafkamirrormaker2s
   verbs:

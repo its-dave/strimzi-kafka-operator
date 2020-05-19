@@ -15,6 +15,6 @@ package com.ibm.eventstreams.api.spec;
 
 import io.fabric8.kubernetes.client.CustomResourceList;
 
-public class EventStreamsReplicatorList  extends CustomResourceList<EventStreamsReplicator> {
+public class EventStreamsGeoReplicatorList extends CustomResourceList<EventStreamsGeoReplicator> {
     private static final long serialVersionUID = 1L;
 }

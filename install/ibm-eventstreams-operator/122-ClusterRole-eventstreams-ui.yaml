@@ -19,7 +19,10 @@ metadata:
 rules:
 - apiGroups:
   - ""
+  # The Event Streams UI requires the "get" and "list" permissions for pods
+  # This is for the rendering of the pod statuses in the system health status bar
   resources:
   - pods
   verbs:
-  - "*"
+  - get
+  - list

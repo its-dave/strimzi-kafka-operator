@@ -12,17 +12,17 @@
  */
 package com.ibm.eventstreams.controller;
 
-import com.ibm.eventstreams.api.model.ReplicatorModel;
-import com.ibm.eventstreams.api.model.ReplicatorDestinationUsersModel;
+import com.ibm.eventstreams.api.model.GeoReplicatorModel;
+import com.ibm.eventstreams.api.model.GeoReplicatorDestinationUsersModel;
 import com.ibm.eventstreams.api.spec.EventStreams;
-import com.ibm.eventstreams.api.spec.EventStreamsReplicator;
-import com.ibm.eventstreams.api.spec.EventStreamsReplicatorBuilder;
+import com.ibm.eventstreams.api.spec.EventStreamsGeoReplicator;
+import com.ibm.eventstreams.api.spec.EventStreamsGeoReplicatorBuilder;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
-import com.ibm.eventstreams.api.status.EventStreamsReplicatorStatusBuilder;
-import com.ibm.eventstreams.api.status.EventStreamsReplicatorStatus;
+import com.ibm.eventstreams.api.status.EventStreamsGeoReplicatorStatusBuilder;
+import com.ibm.eventstreams.api.status.EventStreamsGeoReplicatorStatus;
+import com.ibm.eventstreams.georeplicator.GeoReplicatorCredentials;
 import com.ibm.eventstreams.controller.models.PhaseState;
 import com.ibm.eventstreams.controller.models.StatusCondition;
-import com.ibm.eventstreams.replicator.ReplicatorCredentials;
 import com.ibm.eventstreams.rest.VersionValidation;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.strimzi.api.kafka.model.status.ConditionBuilder;
@@ -54,12 +54,12 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
-public class EventStreamsReplicatorOperator extends AbstractOperator<EventStreamsReplicator, EventStreamsReplicatorResourceOperator> {
+public class EventStreamsGeoReplicatorOperator extends AbstractOperator<EventStreamsGeoReplicator, EventStreamsGeoReplicatorResourceOperator> {
 
-    private static final Logger log = LogManager.getLogger(EventStreamsReplicatorOperator.class.getName());
+    private static final Logger log = LogManager.getLogger(EventStreamsGeoReplicatorOperator.class.getName());
 
     private final KubernetesClient client;
-    private final EventStreamsReplicatorResourceOperator replicatorResourceOperator;
+    private final EventStreamsGeoReplicatorResourceOperator replicatorResourceOperator;
     private final KafkaMirrorMaker2Operator kafkaMirrorMaker2Operator;
     private final NetworkPolicyOperator networkPolicyOperator;
     private final SecretOperator secretOperator;
@@ -72,12 +72,12 @@ public class EventStreamsReplicatorOperator extends AbstractOperator<EventStream
     private static final String CLUSTER_CA_CERT_SECRET_NAME = "cluster-ca-cert";
 
 
-    public EventStreamsReplicatorOperator(Vertx vertx, KubernetesClient client, String kind, PlatformFeaturesAvailability pfa,
-                                          EventStreamsReplicatorResourceOperator replicatorResourceOperator,
-                                          EventStreamsResourceOperator resourceOperator,
-                                          RouteOperator routeOperator,
-                                          MetricsProvider metricsProvider,
-                                          long kafkaStatusReadyTimeoutMs) {
+    public EventStreamsGeoReplicatorOperator(Vertx vertx, KubernetesClient client, String kind, PlatformFeaturesAvailability pfa,
+                                             EventStreamsGeoReplicatorResourceOperator replicatorResourceOperator,
+                                             EventStreamsResourceOperator resourceOperator,
+                                             RouteOperator routeOperator,
+                                             MetricsProvider metricsProvider,
+                                             long kafkaStatusReadyTimeoutMs) {
         super(vertx, kind, replicatorResourceOperator, metricsProvider);
 
         this.replicatorResourceOperator = replicatorResourceOperator;
@@ -92,14 +92,14 @@ public class EventStreamsReplicatorOperator extends AbstractOperator<EventStream
     }
 
     @Override
-    protected Future<Void> createOrUpdate(Reconciliation reconciliation, EventStreamsReplicator replicatorInstance) {
+    protected Future<Void> createOrUpdate(Reconciliation reconciliation, EventStreamsGeoReplicator replicatorInstance) {
         log.debug("createOrUpdate reconciliation {} for instance {}", reconciliation, replicatorInstance);
-        EventStreamsReplicatorOperator.ReconciliationState reconcileState = new EventStreamsReplicatorOperator.ReconciliationState(replicatorInstance);
+        EventStreamsGeoReplicatorOperator.ReconciliationState reconcileState = new EventStreamsGeoReplicatorOperator.ReconciliationState(replicatorInstance);
 
         return reconcile(reconcileState);
     }
 
-    private Future<Void> reconcile(EventStreamsReplicatorOperator.ReconciliationState reconcileState) {
+    private Future<Void> reconcile(EventStreamsGeoReplicatorOperator.ReconciliationState reconcileState) {
 
         return reconcileState.validateCustomResource()
                 .compose(state -> {
@@ -123,25 +123,25 @@ public class EventStreamsReplicatorOperator extends AbstractOperator<EventStream
     }
 
     class ReconciliationState {
-        final EventStreamsReplicator replicatorInstance;
+        final EventStreamsGeoReplicator replicatorInstance;
         final String namespace;
-        final EventStreamsReplicatorStatusBuilder status;
+        final EventStreamsGeoReplicatorStatusBuilder status;
         final List<Condition> previousConditions;
 
 
-        ReconciliationState(EventStreamsReplicator replicatorInstance) {
+        ReconciliationState(EventStreamsGeoReplicator replicatorInstance) {
             this.replicatorInstance = replicatorInstance;
             this.namespace = replicatorInstance.getMetadata().getNamespace();
-            this.previousConditions = Optional.ofNullable(replicatorInstance.getStatus()).map(EventStreamsReplicatorStatus::getConditions).orElse(new ArrayList<>());
-            this.status = replicatorInstance.getStatus() == null ? new EventStreamsReplicatorStatusBuilder()
+            this.previousConditions = Optional.ofNullable(replicatorInstance.getStatus()).map(EventStreamsGeoReplicatorStatus::getConditions).orElse(new ArrayList<>());
+            this.status = replicatorInstance.getStatus() == null ? new EventStreamsGeoReplicatorStatusBuilder()
                     .withConditions()
                     .withNewVersions()
                     .endVersions()
-                    : new EventStreamsReplicatorStatusBuilder(replicatorInstance.getStatus()).withConditions(new ArrayList<>());
+                    : new EventStreamsGeoReplicatorStatusBuilder(replicatorInstance.getStatus()).withConditions(new ArrayList<>());
 
         }
 
-        Future<EventStreamsReplicatorOperator.ReconciliationState> validateCustomResource() {
+        Future<EventStreamsGeoReplicatorOperator.ReconciliationState> validateCustomResource() {
 
             PhaseState phase = Optional.ofNullable(status.getPhase()).orElse(PhaseState.PENDING);
 
@@ -179,7 +179,7 @@ public class EventStreamsReplicatorOperator extends AbstractOperator<EventStream
             }
 
 
-            EventStreamsReplicatorStatus statusSubresource = status.withPhase(phase).build();
+            EventStreamsGeoReplicatorStatus statusSubresource = status.withPhase(phase).build();
             replicatorInstance.setStatus(statusSubresource);
 
             // Update if we need to notify the user of an error, otherwise
@@ -212,10 +212,10 @@ public class EventStreamsReplicatorOperator extends AbstractOperator<EventStream
                                         + replicatorInstance.getMetadata().getLabels().get(Labels.STRIMZI_CLUSTER_LABEL)
                                         + " to enable replicator");
 
-                                EventStreamsReplicatorStatus statusSubresource = status.withPhase(PhaseState.FAILED).build();
+                                EventStreamsGeoReplicatorStatus statusSubresource = status.withPhase(PhaseState.FAILED).build();
                                 replicatorInstance.setStatus(statusSubresource);
 
-                                Promise<EventStreamsReplicatorOperator.ReconciliationState> failReconcile = Promise.promise();
+                                Promise<EventStreamsGeoReplicatorOperator.ReconciliationState> failReconcile = Promise.promise();
                                 updateStatus(statusSubresource).onComplete(f -> {
                                     log.info("AdminApi not present : " + f.succeeded());
                                     failReconcile.fail("Exit Reconcile as AdminApi not present");
@@ -223,15 +223,15 @@ public class EventStreamsReplicatorOperator extends AbstractOperator<EventStream
                                 return failReconcile.future();
 
                             }
-                            if (!ReplicatorDestinationUsersModel.isValidInstance(instance)) {
+                            if (!GeoReplicatorDestinationUsersModel.isValidInstance(instance)) {
 
                                 addNotReadyCondition("UnsupportedAuthorization", "  Listener client authentication " +
                                         "unsupported for GeoReplication. Supported versions are TLS and SCRAM");
 
-                                EventStreamsReplicatorStatus statusSubresource = status.withPhase(PhaseState.FAILED).build();
+                                EventStreamsGeoReplicatorStatus statusSubresource = status.withPhase(PhaseState.FAILED).build();
                                 replicatorInstance.setStatus(statusSubresource);
 
-                                Promise<EventStreamsReplicatorOperator.ReconciliationState> failReconcile = Promise.promise();
+                                Promise<EventStreamsGeoReplicatorOperator.ReconciliationState> failReconcile = Promise.promise();
                                 updateStatus(statusSubresource).onComplete(f -> {
                                     log.info("UnsupportedAuthorization : " + f.succeeded());
                                     failReconcile.fail("Exit Reconcile as listener client authentication unsupported for GeoReplication");
@@ -240,14 +240,14 @@ public class EventStreamsReplicatorOperator extends AbstractOperator<EventStream
 
                             }
                             //if internal auth is on then external must be too.  Vice versa is ok
-                            if (!ReplicatorDestinationUsersModel.isValidInternExternalConfig(instance)) {
+                            if (!GeoReplicatorDestinationUsersModel.isValidInternExternalConfig(instance)) {
                                 addNotReadyCondition("UnsupoprtedInternalExternalListenerConfig", "If internal listener client authentication " +
                                         "enabled, then external listner client authentication must also be enabled");
 
-                                EventStreamsReplicatorStatus statusSubresource = status.withPhase(PhaseState.FAILED).build();
+                                EventStreamsGeoReplicatorStatus statusSubresource = status.withPhase(PhaseState.FAILED).build();
                                 replicatorInstance.setStatus(statusSubresource);
 
-                                Promise<EventStreamsReplicatorOperator.ReconciliationState> failReconcile = Promise.promise();
+                                Promise<EventStreamsGeoReplicatorOperator.ReconciliationState> failReconcile = Promise.promise();
                                 updateStatus(statusSubresource).onComplete(f -> {
                                     log.info("UnsupportedAuthorization : " + f.succeeded());
                                     failReconcile.fail("Exit Reconcile as listener client authentication unsupported for GeoReplication");
@@ -256,20 +256,20 @@ public class EventStreamsReplicatorOperator extends AbstractOperator<EventStream
                             }
 
 
-                            ReplicatorCredentials replicatorCredentials = new ReplicatorCredentials(instance);
-                            ReplicatorDestinationUsersModel replicatorUsersModel = new ReplicatorDestinationUsersModel(replicatorInstance, instance);
+                            GeoReplicatorCredentials geoReplicatorCredentials = new GeoReplicatorCredentials(instance);
+                            GeoReplicatorDestinationUsersModel replicatorUsersModel = new GeoReplicatorDestinationUsersModel(replicatorInstance, instance);
                             return kafkaUserOperator.reconcile(namespace, replicatorUsersModel.getConnectKafkaUserName(), replicatorUsersModel.getConnectKafkaUser())
                                     .compose(state -> kafkaUserOperator.reconcile(namespace, replicatorUsersModel.getTargetConnectorKafkaUserName(), replicatorUsersModel.getTargetConnectorKafkaUser()))
                                     .compose(state -> kafkaUserOperator.reconcile(namespace, replicatorUsersModel.getConnectExternalKafkaUserName(), replicatorUsersModel.getConnectExternalKafkaUser()))
-                                    .compose(state -> setTrustStoreForReplicator(replicatorCredentials, instance))
-                                    .compose(state -> setClientAuthForReplicator(replicatorCredentials, replicatorInstance, instance))
+                                    .compose(state -> setTrustStoreForReplicator(geoReplicatorCredentials, instance))
+                                    .compose(state -> setClientAuthForReplicator(geoReplicatorCredentials, replicatorInstance, instance))
                                     .compose(state -> kafkaMirrorMaker2Operator.getAsync(namespace, instance.getMetadata().getName()))
                                     //Can't make the ReplicatorModel until after setTrustStoreForReplicator and setClientAuthForReplicator have completed
                                     .compose(mirrorMaker2 -> {
-                                        ReplicatorModel replicatorModel = new ReplicatorModel(replicatorInstance, instance, replicatorCredentials, mirrorMaker2);
+                                        GeoReplicatorModel geoReplicatorModel = new GeoReplicatorModel(replicatorInstance, instance, geoReplicatorCredentials, mirrorMaker2);
                                         List<Future> replicatorFutures = new ArrayList<>();
-                                        replicatorFutures.add(networkPolicyOperator.reconcile(namespace, replicatorModel.getDefaultResourceName(), replicatorModel.getNetworkPolicy()));
-                                        replicatorFutures.add(kafkaMirrorMaker2Operator.reconcile(namespace, replicatorModel.getReplicatorName(), replicatorModel.getReplicator()));
+                                        replicatorFutures.add(networkPolicyOperator.reconcile(namespace, geoReplicatorModel.getDefaultResourceName(), geoReplicatorModel.getNetworkPolicy()));
+                                        replicatorFutures.add(kafkaMirrorMaker2Operator.reconcile(namespace, geoReplicatorModel.getReplicatorName(), geoReplicatorModel.getReplicator()));
                                         return CompositeFuture.join(replicatorFutures);
                                     })
                                     .map(cf -> this);
@@ -279,10 +279,10 @@ public class EventStreamsReplicatorOperator extends AbstractOperator<EventStream
                             addNotReadyCondition("EventStreamsInstanceNotFound", "Can't find Event Streams instance "
                                     + eventStreamsInstanceName + " in namespace " + namespace + ". Ensure the Event Streams instance is created before deploying the Event Streams geo-replicator ");
 
-                            EventStreamsReplicatorStatus statusSubresource = status.withPhase(PhaseState.FAILED).build();
+                            EventStreamsGeoReplicatorStatus statusSubresource = status.withPhase(PhaseState.FAILED).build();
                             replicatorInstance.setStatus(statusSubresource);
 
-                            Promise<EventStreamsReplicatorOperator.ReconciliationState> failReconcile = Promise.promise();
+                            Promise<EventStreamsGeoReplicatorOperator.ReconciliationState> failReconcile = Promise.promise();
                             updateStatus(statusSubresource).onComplete(f -> {
                                 log.info("Can't find Event Streams instance : " + f.succeeded());
                                 failReconcile.fail("Exit Reconcile as can't find Event Streams instance for GeoReplication");
@@ -294,15 +294,15 @@ public class EventStreamsReplicatorOperator extends AbstractOperator<EventStream
 
         }
 
-        Future<EventStreamsReplicatorOperator.ReconciliationState> updateStatus(EventStreamsReplicatorStatus newStatus) {
-            Promise<EventStreamsReplicatorOperator.ReconciliationState> updateStatusPromise = Promise.promise();
+        Future<EventStreamsGeoReplicatorOperator.ReconciliationState> updateStatus(EventStreamsGeoReplicatorStatus newStatus) {
+            Promise<EventStreamsGeoReplicatorOperator.ReconciliationState> updateStatusPromise = Promise.promise();
 
             replicatorResourceOperator.getAsync(namespace, replicatorInstance.getMetadata().getName()).setHandler(getRes -> {
                 if (getRes.succeeded()) {
-                    EventStreamsReplicator current = getRes.result();
+                    EventStreamsGeoReplicator current = getRes.result();
                     if (current != null) {
-                        EventStreamsReplicator updatedStatus = new EventStreamsReplicatorBuilder(current).withStatus(newStatus).build();
-                        replicatorResourceOperator.updateEventStreamsReplicatorStatus(updatedStatus)
+                        EventStreamsGeoReplicator updatedStatus = new EventStreamsGeoReplicatorBuilder(current).withStatus(newStatus).build();
+                        replicatorResourceOperator.updateEventStreamsGeoReplicatorStatus(updatedStatus)
                                 .setHandler(updateRes -> {
                                     if (updateRes.succeeded()) {
                                         updateStatusPromise.complete(this);
@@ -395,17 +395,17 @@ public class EventStreamsReplicatorOperator extends AbstractOperator<EventStream
             log.error("Recording reconcile failure", thr);
             addNotReadyCondition("DeploymentFailed", thr.getMessage());
 
-            EventStreamsReplicatorStatus statusSubresource = status.withPhase(PhaseState.FAILED).build();
+            EventStreamsGeoReplicatorStatus statusSubresource = status.withPhase(PhaseState.FAILED).build();
             replicatorInstance.setStatus(statusSubresource);
             updateStatus(statusSubresource);
         }
 
-        Future<EventStreamsReplicatorOperator.ReconciliationState> finalStatusUpdate() {
+        Future<EventStreamsGeoReplicatorOperator.ReconciliationState> finalStatusUpdate() {
             status.withPhase(PhaseState.READY);
             addReadyCondition();
 
             log.info("Updating status");
-            EventStreamsReplicatorStatus esStatus = status.build();
+            EventStreamsGeoReplicatorStatus esStatus = status.build();
             replicatorInstance.setStatus(esStatus);
             return updateStatus(esStatus);
         }
@@ -422,11 +422,11 @@ public class EventStreamsReplicatorOperator extends AbstractOperator<EventStream
             return true;
         }
 
-        private Future<Void> setClientAuthForReplicator(ReplicatorCredentials replicatorCredentials, EventStreamsReplicator replicatorInstance, EventStreams instance) {
+        private Future<Void> setClientAuthForReplicator(GeoReplicatorCredentials geoReplicatorCredentials, EventStreamsGeoReplicator replicatorInstance, EventStreams instance) {
 
             Promise<Void> setAuthSet = Promise.promise();
 
-            String connectKafkaUserName = ReplicatorDestinationUsersModel.getConnectKafkaUserName(replicatorInstance.getMetadata().getName());
+            String connectKafkaUserName = GeoReplicatorDestinationUsersModel.getConnectKafkaUserName(replicatorInstance.getMetadata().getName());
 
             Optional<KafkaListenerAuthentication> internalClientAuth =
                     Optional.ofNullable(instance.getSpec())
@@ -443,7 +443,7 @@ public class EventStreamsReplicatorOperator extends AbstractOperator<EventStream
                 secretOperator.getAsync(instance.getMetadata().getNamespace(), connectKafkaUserName).setHandler(getRes -> {
                     if (getRes.succeeded()) {
                         if (getRes.result() != null) {
-                            replicatorCredentials.setReplicatorClientAuth(getRes.result());
+                            geoReplicatorCredentials.setGeoReplicatorClientAuth(getRes.result());
                             setAuthSet.complete();
                         } else {
                             log.info("Replicator Connect User secret " + connectKafkaUserName + " doesn't exist");
@@ -460,7 +460,7 @@ public class EventStreamsReplicatorOperator extends AbstractOperator<EventStream
             return setAuthSet.future();
         }
 
-        private Future<Void> setTrustStoreForReplicator(ReplicatorCredentials replicatorCredentials, EventStreams instance) {
+        private Future<Void> setTrustStoreForReplicator(GeoReplicatorCredentials geoReplicatorCredentials, EventStreams instance) {
 
             Promise<Void> setAuthSet = Promise.promise();
 
@@ -478,7 +478,7 @@ public class EventStreamsReplicatorOperator extends AbstractOperator<EventStream
 
                     if (getRes.succeeded()) {
                         if (getRes.result() != null) {
-                            replicatorCredentials.setReplicatorTrustStore(getRes.result());
+                            geoReplicatorCredentials.setGeoReplicatorTrustStore(getRes.result());
                             setAuthSet.complete();
                         } else {
                             log.info("Setting up Replicator TrustStore - CA cert " + resourceNameCA + " does not exist");

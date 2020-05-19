@@ -24,9 +24,9 @@ import com.ibm.eventstreams.api.model.EventStreamsKafkaModel;
 import com.ibm.eventstreams.api.model.InternalKafkaUserModel;
 import com.ibm.eventstreams.api.model.KafkaNetworkPolicyExtensionModel;
 import com.ibm.eventstreams.api.model.MessageAuthenticationModel;
-import com.ibm.eventstreams.api.model.ReplicatorModel;
-import com.ibm.eventstreams.api.model.ReplicatorSecretModel;
-import com.ibm.eventstreams.api.model.ReplicatorSourceUsersModel;
+import com.ibm.eventstreams.api.model.GeoReplicatorModel;
+import com.ibm.eventstreams.api.model.GeoReplicatorSecretModel;
+import com.ibm.eventstreams.api.model.GeoReplicatorSourceUsersModel;
 import com.ibm.eventstreams.api.model.RestProducerModel;
 import com.ibm.eventstreams.api.model.SchemaRegistryModel;
 import com.ibm.eventstreams.api.spec.EventStreams;
@@ -112,7 +112,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
     private final KubernetesClient client;
     private final EventStreamsResourceOperator esResourceOperator;
     private final Cp4iServicesBindingResourceOperator cp4iResourceOperator;
-    private final EventStreamsReplicatorResourceOperator replicatorResourceOperator;
+    private final EventStreamsGeoReplicatorResourceOperator replicatorResourceOperator;
     private final KafkaUserOperator kafkaUserOperator;
     private final DeploymentOperator deploymentOperator;
     private final ServiceAccountOperator serviceAccountOperator;
@@ -140,7 +140,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
     public EventStreamsOperator(Vertx vertx, KubernetesClient client, String kind, PlatformFeaturesAvailability pfa,
                                 EventStreamsResourceOperator esResourceOperator,
                                 Cp4iServicesBindingResourceOperator cp4iResourceOperator,
-                                EventStreamsReplicatorResourceOperator replicatorResourceOperator,
+                                EventStreamsGeoReplicatorResourceOperator replicatorResourceOperator,
                                 KafkaUserOperator kafkaUserOperator,
                                 EventStreamsOperatorConfig.ImageLookup imageConfig,
                                 RouteOperator routeOperator,
@@ -205,7 +205,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 .compose(state -> state.createMessageAuthenticationSecret())
                 .compose(state -> state.createRestProducer(this::dateSupplier))
                 .compose(state -> state.createReplicatorSecret())
-                .compose(state -> state.hasEventStreamsReplicator())
+                .compose(state -> state.hasEventStreamsGeoReplicator())
                 .compose(state -> state.createAdminApi(this::dateSupplier))
                 .compose(state -> state.createSchemaRegistry(this::dateSupplier))
                 .compose(state -> state.createAdminUI())
@@ -267,7 +267,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             errorConditions.addAll(new NameValidation().validateCr(instance));
             errorConditions.addAll(new VersionValidation().validateCr(instance));
             errorConditions.addAll(new EndpointValidation().validateCr(instance));
-            errorConditions.addAll(ReplicatorSourceUsersModel.validateCr(instance));
+            errorConditions.addAll(GeoReplicatorSourceUsersModel.validateCr(instance));
 
             if (!errorConditions.isEmpty()) {
                 errorConditions.forEach(condition -> addToConditions(condition.toCondition()));
@@ -520,33 +520,33 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 .map(v -> this));
         }
 
-        Future<ReconciliationState> hasEventStreamsReplicator() {
+        Future<ReconciliationState> hasEventStreamsGeoReplicator() {
             log.traceEntry();
             return log.traceExit(replicatorResourceOperator.getAsync(namespace, instance.getMetadata().getName()).compose(replicator -> {
-                isGeoReplicationEnabled = ReplicatorModel.isReplicatorEnabled(replicator) && ReplicatorModel.isValidInstanceForGeoReplication(instance);
+                isGeoReplicationEnabled = GeoReplicatorModel.isReplicatorEnabled(replicator) && GeoReplicatorModel.isValidInstanceForGeoReplication(instance);
                 return Future.succeededFuture(this);
             }));
         }
 
         Future<ReconciliationState> createReplicatorUsers() {
             log.traceEntry();
-            ReplicatorSourceUsersModel replicatorSourceUsersModel = new ReplicatorSourceUsersModel(instance);
+            GeoReplicatorSourceUsersModel geoReplicatorSourceUsersModel = new GeoReplicatorSourceUsersModel(instance);
             return log.traceExit(kafkaUserOperator.reconcile(namespace,
-                    replicatorSourceUsersModel.getSourceConnectorKafkaUserName(),
-                    replicatorSourceUsersModel.getSourceConnectorKafkaUser()).map(v -> this));
+                    geoReplicatorSourceUsersModel.getSourceConnectorKafkaUserName(),
+                    geoReplicatorSourceUsersModel.getSourceConnectorKafkaUser()).map(v -> this));
         }
 
         Future<ReconciliationState> createReplicatorSecret() {
             log.traceEntry();
-            ReplicatorSecretModel replicatorSecretModel = new ReplicatorSecretModel(instance);
-            String secretName = replicatorSecretModel.getSecretName();
+            GeoReplicatorSecretModel geoReplicatorSecretModel = new GeoReplicatorSecretModel(instance);
+            String secretName = geoReplicatorSecretModel.getSecretName();
 
             return log.traceExit(secretOperator.getAsync(namespace, secretName)
                     .compose(secret -> {
                         // Secret should only be created once
                         if (secret == null) {
                             log.debug("Creating replicator secret {} as not found", secretName);
-                            return secretOperator.reconcile(namespace, secretName, replicatorSecretModel.getSecret());
+                            return secretOperator.reconcile(namespace, secretName, geoReplicatorSecretModel.getSecret());
                         }
                         return Future.succeededFuture(ReconcileResult.noop(secret));
                     }).map(res -> this));

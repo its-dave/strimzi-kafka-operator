@@ -16,8 +16,8 @@ package com.ibm.eventstreams.api.model;
 import com.ibm.eventstreams.api.model.utils.ModelUtils;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
-import com.ibm.eventstreams.api.spec.EventStreamsReplicator;
-import com.ibm.eventstreams.api.spec.EventStreamsReplicatorBuilder;
+import com.ibm.eventstreams.api.spec.EventStreamsGeoReplicator;
+import com.ibm.eventstreams.api.spec.EventStreamsGeoReplicatorBuilder;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.strimzi.api.kafka.model.AclOperation;
 import io.strimzi.api.kafka.model.AclResourcePatternType;
@@ -50,7 +50,7 @@ import static org.hamcrest.Matchers.hasEntry;
 
 @SuppressWarnings({"checkstyle:JavaNCSS", "checkstyle:MethodLength"})
 
-public class ReplicatorDestinationUsersModelTest {
+public class GeoReplicatorDestinationUsersModelTest {
 
     private final String instanceName = "test";
     private final int defaultReplicas = 1;
@@ -80,40 +80,40 @@ public class ReplicatorDestinationUsersModelTest {
                 .endSpec();
     }
 
-    private EventStreamsReplicatorBuilder createDefaultEventStreamsReplicator() {
-        return ModelUtils.createDefaultEventStreamsReplicator(instanceName);
+    private EventStreamsGeoReplicatorBuilder createDefaultEventStreamsGeoReplicator() {
+        return ModelUtils.createDefaultEventStreamsGeoReplicator(instanceName);
     }
 
-    private ReplicatorSecretModel createDefaultReplicatorSecretModel() {
+    private GeoReplicatorSecretModel createDefaultReplicatorSecretModel() {
         EventStreams instance = createDefaultEventStreams(ModelUtils.getMutualTLSOnBothInternalAndExternalListenerSpec()).build();
-        EventStreamsReplicator replicatorInstance = createDefaultEventStreamsReplicator().build();
-        return new ReplicatorSecretModel(instance);
+        EventStreamsGeoReplicator replicatorInstance = createDefaultEventStreamsGeoReplicator().build();
+        return new GeoReplicatorSecretModel(instance);
     }
 
-    private ReplicatorDestinationUsersModel createDefaultReplicatorDestinationUserModel() {
+    private GeoReplicatorDestinationUsersModel createDefaultReplicatorDestinationUserModel() {
         EventStreams instance = createDefaultEventStreams(ModelUtils.getMutualTLSOnBothInternalAndExternalListenerSpec()).build();
-        EventStreamsReplicator replicatorInstance = createDefaultEventStreamsReplicator().build();
-        return new ReplicatorDestinationUsersModel(replicatorInstance, instance);
+        EventStreamsGeoReplicator replicatorInstance = createDefaultEventStreamsGeoReplicator().build();
+        return new GeoReplicatorDestinationUsersModel(replicatorInstance, instance);
     }
 
-    private ReplicatorDestinationUsersModel createReplicatorUserModel(KafkaListeners listenerSpec) {
+    private GeoReplicatorDestinationUsersModel createReplicatorUserModel(KafkaListeners listenerSpec) {
         EventStreams instance = createDefaultEventStreams(listenerSpec).build();
-        EventStreamsReplicator replicatorInstance = createDefaultEventStreamsReplicator().build();
-        return new ReplicatorDestinationUsersModel(replicatorInstance, instance);
+        EventStreamsGeoReplicator replicatorInstance = createDefaultEventStreamsGeoReplicator().build();
+        return new GeoReplicatorDestinationUsersModel(replicatorInstance, instance);
     }
 
     @Test
     public void testReplicatorUsersCreatedWithTlsAuthentication() {
 
-        ReplicatorDestinationUsersModel replicatorDestinationUsers = createDefaultReplicatorDestinationUserModel();
+        GeoReplicatorDestinationUsersModel replicatorDestinationUsers = createDefaultReplicatorDestinationUserModel();
         KafkaUser connectKafkaUser = replicatorDestinationUsers.getConnectKafkaUser();
         KafkaUser connectExternalKafkaUser = replicatorDestinationUsers.getConnectExternalKafkaUser();
         KafkaUser targetConnectorKafkaUser = replicatorDestinationUsers.getTargetConnectorKafkaUser();
 
 
-        assertThat(connectKafkaUser.getMetadata().getName(), is(instanceName + "-" + AbstractModel.APP_NAME + "-" + ReplicatorDestinationUsersModel.CONNECT_KAFKA_USER_NAME));
-        assertThat(connectExternalKafkaUser.getMetadata().getName(), is(instanceName + "-" + AbstractModel.APP_NAME + "-" + ReplicatorDestinationUsersModel.CONNECT_EXTERNAL_KAFKA_USER_NAME));
-        assertThat(targetConnectorKafkaUser.getMetadata().getName(), is(instanceName + "-" + AbstractModel.APP_NAME + "-" + ReplicatorDestinationUsersModel.TARGET_CONNECTOR_KAFKA_USER_NAME));
+        assertThat(connectKafkaUser.getMetadata().getName(), is(instanceName + "-" + AbstractModel.APP_NAME + "-" + GeoReplicatorDestinationUsersModel.CONNECT_KAFKA_USER_NAME));
+        assertThat(connectExternalKafkaUser.getMetadata().getName(), is(instanceName + "-" + AbstractModel.APP_NAME + "-" + GeoReplicatorDestinationUsersModel.CONNECT_EXTERNAL_KAFKA_USER_NAME));
+        assertThat(targetConnectorKafkaUser.getMetadata().getName(), is(instanceName + "-" + AbstractModel.APP_NAME + "-" + GeoReplicatorDestinationUsersModel.TARGET_CONNECTOR_KAFKA_USER_NAME));
 
         Map<String, String> replicatorConnectUserLabels = connectKafkaUser.getMetadata().getLabels();
         for (Map.Entry<String, String> label : replicatorConnectUserLabels.entrySet()) {
@@ -158,7 +158,7 @@ public class ReplicatorDestinationUsersModelTest {
     @Test
     public void testReplicatorConnectUserAcls() {
 
-        ReplicatorDestinationUsersModel replicatorUsers = createDefaultReplicatorDestinationUserModel();
+        GeoReplicatorDestinationUsersModel replicatorUsers = createDefaultReplicatorDestinationUserModel();
         KafkaUser replicatorConnectUser = replicatorUsers.getConnectKafkaUser();
 
         //Connect User ACLs
@@ -184,7 +184,7 @@ public class ReplicatorDestinationUsersModelTest {
         AclRule rule1read = acls.get(0);
         assertThat(rule1read.getResource(), instanceOf(AclRuleTopicResource.class));
         AclRuleTopicResource rule1readTopic = (AclRuleTopicResource) rule1read.getResource();
-        assertThat(rule1readTopic.getName(), is(ReplicatorModel.CONFIG_STORAGE_TOPIC_NAME));
+        assertThat(rule1readTopic.getName(), is(GeoReplicatorModel.CONFIG_STORAGE_TOPIC_NAME));
         assertThat(rule1readTopic.getPatternType(), is(AclResourcePatternType.LITERAL));
         assertThat(rule1read.getOperation(), is(AclOperation.READ));
         assertThat(rule1read.getHost(), is("*"));
@@ -192,7 +192,7 @@ public class ReplicatorDestinationUsersModelTest {
         AclRule rule1write = acls.get(1);
         assertThat(rule1write.getResource(), instanceOf(AclRuleTopicResource.class));
         AclRuleTopicResource rule1writeTopic = (AclRuleTopicResource) rule1write.getResource();
-        assertThat(rule1writeTopic.getName(), is(ReplicatorModel.CONFIG_STORAGE_TOPIC_NAME));
+        assertThat(rule1writeTopic.getName(), is(GeoReplicatorModel.CONFIG_STORAGE_TOPIC_NAME));
         assertThat(rule1writeTopic.getPatternType(), is(AclResourcePatternType.LITERAL));
         assertThat(rule1write.getOperation(), is(AclOperation.DESCRIBE));
         assertThat(rule1write.getHost(), is("*"));
@@ -200,7 +200,7 @@ public class ReplicatorDestinationUsersModelTest {
         AclRule rule1describe = acls.get(2);
         assertThat(rule1describe.getResource(), instanceOf(AclRuleTopicResource.class));
         AclRuleTopicResource rule1describeTopic = (AclRuleTopicResource) rule1describe.getResource();
-        assertThat(rule1describeTopic.getName(), is(ReplicatorModel.CONFIG_STORAGE_TOPIC_NAME));
+        assertThat(rule1describeTopic.getName(), is(GeoReplicatorModel.CONFIG_STORAGE_TOPIC_NAME));
         assertThat(rule1describeTopic.getPatternType(), is(AclResourcePatternType.LITERAL));
         assertThat(rule1describe.getOperation(), is(AclOperation.WRITE));
         assertThat(rule1describe.getHost(), is("*"));
@@ -208,7 +208,7 @@ public class ReplicatorDestinationUsersModelTest {
         AclRule rule2read = acls.get(3);
         assertThat(rule2read.getResource(), instanceOf(AclRuleTopicResource.class));
         AclRuleTopicResource rule2readTopic = (AclRuleTopicResource) rule2read.getResource();
-        assertThat(rule2readTopic.getName(), is(ReplicatorModel.OFFSET_STORAGE_TOPIC_NAME));
+        assertThat(rule2readTopic.getName(), is(GeoReplicatorModel.OFFSET_STORAGE_TOPIC_NAME));
         assertThat(rule2readTopic.getPatternType(), is(AclResourcePatternType.LITERAL));
         assertThat(rule2read.getOperation(), is(AclOperation.READ));
         assertThat(rule2read.getHost(), is("*"));
@@ -216,7 +216,7 @@ public class ReplicatorDestinationUsersModelTest {
         AclRule rule2describe = acls.get(4);
         assertThat(rule2describe.getResource(), instanceOf(AclRuleTopicResource.class));
         AclRuleTopicResource rule2describeTopic = (AclRuleTopicResource) rule2describe.getResource();
-        assertThat(rule2describeTopic.getName(), is(ReplicatorModel.OFFSET_STORAGE_TOPIC_NAME));
+        assertThat(rule2describeTopic.getName(), is(GeoReplicatorModel.OFFSET_STORAGE_TOPIC_NAME));
         assertThat(rule2describeTopic.getPatternType(), is(AclResourcePatternType.LITERAL));
         assertThat(rule2describe.getOperation(), is(AclOperation.DESCRIBE));
         assertThat(rule2describe.getHost(), is("*"));
@@ -224,7 +224,7 @@ public class ReplicatorDestinationUsersModelTest {
         AclRule rule2write = acls.get(5);
         assertThat(rule2write.getResource(), instanceOf(AclRuleTopicResource.class));
         AclRuleTopicResource rule2writeTopic = (AclRuleTopicResource) rule2write.getResource();
-        assertThat(rule2writeTopic.getName(), is(ReplicatorModel.OFFSET_STORAGE_TOPIC_NAME));
+        assertThat(rule2writeTopic.getName(), is(GeoReplicatorModel.OFFSET_STORAGE_TOPIC_NAME));
         assertThat(rule2writeTopic.getPatternType(), is(AclResourcePatternType.LITERAL));
         assertThat(rule2write.getOperation(), is(AclOperation.WRITE));
         assertThat(rule2write.getHost(), is("*"));
@@ -232,7 +232,7 @@ public class ReplicatorDestinationUsersModelTest {
         AclRule rule3read = acls.get(6);
         assertThat(rule3read.getResource(), instanceOf(AclRuleTopicResource.class));
         AclRuleTopicResource rule3readTopic = (AclRuleTopicResource) rule3read.getResource();
-        assertThat(rule3readTopic.getName(), is(ReplicatorModel.STATUS_STORAGE_TOPIC_NAME));
+        assertThat(rule3readTopic.getName(), is(GeoReplicatorModel.STATUS_STORAGE_TOPIC_NAME));
         assertThat(rule3readTopic.getPatternType(), is(AclResourcePatternType.LITERAL));
         assertThat(rule3read.getOperation(), is(AclOperation.READ));
         assertThat(rule3read.getHost(), is("*"));
@@ -240,7 +240,7 @@ public class ReplicatorDestinationUsersModelTest {
         AclRule rule3describe = acls.get(7);
         assertThat(rule3describe.getResource(), instanceOf(AclRuleTopicResource.class));
         AclRuleTopicResource rule3describeTopic = (AclRuleTopicResource) rule3describe.getResource();
-        assertThat(rule3describeTopic.getName(), is(ReplicatorModel.STATUS_STORAGE_TOPIC_NAME));
+        assertThat(rule3describeTopic.getName(), is(GeoReplicatorModel.STATUS_STORAGE_TOPIC_NAME));
         assertThat(rule3describeTopic.getPatternType(), is(AclResourcePatternType.LITERAL));
         assertThat(rule3describe.getOperation(), is(AclOperation.DESCRIBE));
         assertThat(rule3describe.getHost(), is("*"));
@@ -248,7 +248,7 @@ public class ReplicatorDestinationUsersModelTest {
         AclRule rule3write = acls.get(8);
         assertThat(rule3write.getResource(), instanceOf(AclRuleTopicResource.class));
         AclRuleTopicResource rule3writeTopic = (AclRuleTopicResource) rule3write.getResource();
-        assertThat(rule3writeTopic.getName(), is(ReplicatorModel.STATUS_STORAGE_TOPIC_NAME));
+        assertThat(rule3writeTopic.getName(), is(GeoReplicatorModel.STATUS_STORAGE_TOPIC_NAME));
         assertThat(rule3writeTopic.getPatternType(), is(AclResourcePatternType.LITERAL));
         assertThat(rule3write.getOperation(), is(AclOperation.WRITE));
         assertThat(rule3write.getHost(), is("*"));
@@ -266,7 +266,7 @@ public class ReplicatorDestinationUsersModelTest {
         AclRule rule5read = acls.get(11);
         assertThat(rule5read.getResource(), instanceOf(AclRuleGroupResource.class));
         AclRuleGroupResource rule5readgroup = (AclRuleGroupResource) rule5read.getResource();
-        assertThat(rule5readgroup.getName(), is(ReplicatorModel.getDefaultReplicatorClusterName(instanceName)));
+        assertThat(rule5readgroup.getName(), is(GeoReplicatorModel.getDefaultReplicatorClusterName(instanceName)));
         assertThat(rule5readgroup.getPatternType(), is(AclResourcePatternType.PREFIX));
         assertThat(rule5read.getOperation(), is(AclOperation.READ));
         assertThat(rule5read.getHost(), is("*"));
@@ -274,7 +274,7 @@ public class ReplicatorDestinationUsersModelTest {
         AclRule rule5describe = acls.get(12);
         assertThat(rule5describe.getResource(), instanceOf(AclRuleGroupResource.class));
         AclRuleGroupResource rule5describegroup = (AclRuleGroupResource) rule5describe.getResource();
-        assertThat(rule5describegroup.getName(), is(ReplicatorModel.getDefaultReplicatorClusterName(instanceName)));
+        assertThat(rule5describegroup.getName(), is(GeoReplicatorModel.getDefaultReplicatorClusterName(instanceName)));
         assertThat(rule5describegroup.getPatternType(), is(AclResourcePatternType.LITERAL));
         assertThat(rule5describe.getOperation(), is(AclOperation.DESCRIBE));
         assertThat(rule5describe.getHost(), is("*"));
@@ -307,7 +307,7 @@ public class ReplicatorDestinationUsersModelTest {
         AclRule configStorageTopicDescribeConfigs = acls.get(16);
         assertThat(configStorageTopicDescribeConfigs.getResource(), instanceOf(AclRuleTopicResource.class));
         AclRuleTopicResource configStorageTopicDescribeConfigsTopic = (AclRuleTopicResource) configStorageTopicDescribeConfigs.getResource();
-        assertThat(configStorageTopicDescribeConfigsTopic.getName(), is(ReplicatorModel.CONFIG_STORAGE_TOPIC_NAME));
+        assertThat(configStorageTopicDescribeConfigsTopic.getName(), is(GeoReplicatorModel.CONFIG_STORAGE_TOPIC_NAME));
         assertThat(configStorageTopicDescribeConfigsTopic.getPatternType(), is(AclResourcePatternType.LITERAL));
         assertThat(configStorageTopicDescribeConfigs.getOperation(), is(AclOperation.DESCRIBECONFIGS));
         assertThat(configStorageTopicDescribeConfigs.getHost(), is("*"));
@@ -315,7 +315,7 @@ public class ReplicatorDestinationUsersModelTest {
         AclRule offsetStorageTopicDescribeConfigs = acls.get(17);
         assertThat(offsetStorageTopicDescribeConfigs.getResource(), instanceOf(AclRuleTopicResource.class));
         AclRuleTopicResource offsetStorageTopicDescribeConfigsTopic = (AclRuleTopicResource) offsetStorageTopicDescribeConfigs.getResource();
-        assertThat(offsetStorageTopicDescribeConfigsTopic.getName(), is(ReplicatorModel.OFFSET_STORAGE_TOPIC_NAME));
+        assertThat(offsetStorageTopicDescribeConfigsTopic.getName(), is(GeoReplicatorModel.OFFSET_STORAGE_TOPIC_NAME));
         assertThat(offsetStorageTopicDescribeConfigsTopic.getPatternType(), is(AclResourcePatternType.LITERAL));
         assertThat(offsetStorageTopicDescribeConfigs.getOperation(), is(AclOperation.DESCRIBECONFIGS));
         assertThat(offsetStorageTopicDescribeConfigs.getHost(), is("*"));
@@ -323,7 +323,7 @@ public class ReplicatorDestinationUsersModelTest {
         AclRule statusStorageTopicDescribeConfigs = acls.get(18);
         assertThat(statusStorageTopicDescribeConfigs.getResource(), instanceOf(AclRuleTopicResource.class));
         AclRuleTopicResource statusStorageTopicDescribeConfigsTopic = (AclRuleTopicResource) statusStorageTopicDescribeConfigs.getResource();
-        assertThat(statusStorageTopicDescribeConfigsTopic.getName(), is(ReplicatorModel.STATUS_STORAGE_TOPIC_NAME));
+        assertThat(statusStorageTopicDescribeConfigsTopic.getName(), is(GeoReplicatorModel.STATUS_STORAGE_TOPIC_NAME));
         assertThat(statusStorageTopicDescribeConfigsTopic.getPatternType(), is(AclResourcePatternType.LITERAL));
         assertThat(statusStorageTopicDescribeConfigs.getOperation(), is(AclOperation.DESCRIBECONFIGS));
         assertThat(statusStorageTopicDescribeConfigs.getHost(), is("*"));
@@ -331,7 +331,7 @@ public class ReplicatorDestinationUsersModelTest {
 
     @Test
     public void testReplicatorConnectorUserAcls() {
-        ReplicatorDestinationUsersModel replicatorDestinationUsers = createDefaultReplicatorDestinationUserModel();
+        GeoReplicatorDestinationUsersModel replicatorDestinationUsers = createDefaultReplicatorDestinationUserModel();
         KafkaUser replicatorDestinationConnectorUser = replicatorDestinationUsers.getTargetConnectorKafkaUser();
 
         //MM2 to destination Kafka ACL
@@ -361,7 +361,7 @@ public class ReplicatorDestinationUsersModelTest {
 
     @Test
     public void testReplicatorConnectUsersWhenInternalTLSOnlyEnabledWithNoMutualAuth() {
-        ReplicatorDestinationUsersModel replicatorDestinationUsers =  createReplicatorUserModel(ModelUtils.getServerAuthOnlyInternalListenerSpec());
+        GeoReplicatorDestinationUsersModel replicatorDestinationUsers =  createReplicatorUserModel(ModelUtils.getServerAuthOnlyInternalListenerSpec());
         assertThat(replicatorDestinationUsers.getConnectKafkaUser(), is(nullValue()));
         assertThat(replicatorDestinationUsers.getConnectExternalKafkaUser(), is(nullValue()));
         assertThat(replicatorDestinationUsers.getTargetConnectorKafkaUser(), is(nullValue()));
@@ -379,7 +379,7 @@ public class ReplicatorDestinationUsersModelTest {
 
     @Test
     public void testReplicatorConnectUserWhenExternalTLSOnlyEnabledWithNoMutualAuth() {
-        ReplicatorDestinationUsersModel replicatorDestinationUsers = createReplicatorUserModel(ModelUtils.getServerAuthOnlyExternalListenerSpec());
+        GeoReplicatorDestinationUsersModel replicatorDestinationUsers = createReplicatorUserModel(ModelUtils.getServerAuthOnlyExternalListenerSpec());
         assertThat(replicatorDestinationUsers.getConnectKafkaUser(), is(nullValue()));
         assertThat(replicatorDestinationUsers.getConnectExternalKafkaUser(), is(nullValue()));
         assertThat(replicatorDestinationUsers.getTargetConnectorKafkaUser(), is(nullValue()));
@@ -387,7 +387,7 @@ public class ReplicatorDestinationUsersModelTest {
 
     @Test
     public void testReplicatorConnectUserWhenExternalTLSOnlyEnabledWithMutualAuthTLS() {
-        ReplicatorDestinationUsersModel replicatorDestinationUsers = createReplicatorUserModel(ModelUtils.getMutualTLSOnExternalListenerSpec());
+        GeoReplicatorDestinationUsersModel replicatorDestinationUsers = createReplicatorUserModel(ModelUtils.getMutualTLSOnExternalListenerSpec());
 
         assertThat(replicatorDestinationUsers.getConnectKafkaUser(), is(nullValue()));
 
@@ -400,7 +400,7 @@ public class ReplicatorDestinationUsersModelTest {
 
     @Test
     public void testReplicatorConnectUserWhenExternalTLSOnlyEnabledWithMutualAuthScram() {
-        ReplicatorDestinationUsersModel replicatorDestinationUsers = createReplicatorUserModel(ModelUtils.getMutualScramOnExternalListenerSpec());
+        GeoReplicatorDestinationUsersModel replicatorDestinationUsers = createReplicatorUserModel(ModelUtils.getMutualScramOnExternalListenerSpec());
 
         assertThat(replicatorDestinationUsers.getConnectKafkaUser(), is(nullValue()));
         assertThat(replicatorDestinationUsers.getTargetConnectorKafkaUser(), is(nullValue()));
@@ -412,7 +412,7 @@ public class ReplicatorDestinationUsersModelTest {
 
     @Test
     public void testReplicatorConnectUserWhenNoSecurity() {
-        ReplicatorDestinationUsersModel replicatorDestinationUsers = createReplicatorUserModel(ModelUtils.getNoSecurityListenerSpec());
+        GeoReplicatorDestinationUsersModel replicatorDestinationUsers = createReplicatorUserModel(ModelUtils.getNoSecurityListenerSpec());
 
         assertThat(replicatorDestinationUsers.getConnectKafkaUser(), is(nullValue()));
         assertThat(replicatorDestinationUsers.getConnectExternalKafkaUser(), is(nullValue()));

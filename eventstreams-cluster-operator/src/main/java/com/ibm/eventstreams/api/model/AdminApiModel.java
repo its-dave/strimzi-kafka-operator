@@ -171,11 +171,11 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
 
         List<Volume> volumes = new ArrayList<>();
         volumes.add(new VolumeBuilder()
-            .withNewName(ReplicatorSecretModel.REPLICATOR_SECRET_NAME)
+            .withNewName(GeoReplicatorSecretModel.REPLICATOR_SECRET_NAME)
             .withNewSecret()
-                .withNewSecretName(getResourcePrefix() + "-" + ReplicatorSecretModel.REPLICATOR_SECRET_NAME)
-                .addNewItem().withNewKey(ReplicatorSecretModel.REPLICATOR_TARGET_CLUSTERS_SECRET_KEY_NAME)
-                .withNewPath(ReplicatorSecretModel.REPLICATOR_TARGET_CLUSTERS_SECRET_KEY_NAME)
+                .withNewSecretName(getResourcePrefix() + "-" + GeoReplicatorSecretModel.REPLICATOR_SECRET_NAME)
+                .addNewItem().withNewKey(GeoReplicatorSecretModel.REPLICATOR_TARGET_CLUSTERS_SECRET_KEY_NAME)
+                .withNewPath(GeoReplicatorSecretModel.REPLICATOR_TARGET_CLUSTERS_SECRET_KEY_NAME)
             .endItem()
             .endSecret()
             .build());
@@ -227,8 +227,8 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
             .withEnv(envVars)
             .withSecurityContext(getSecurityContext(false))
             .addNewVolumeMount()
-                .withNewName(ReplicatorSecretModel.REPLICATOR_SECRET_NAME)
-                .withMountPath(ReplicatorModel.REPLICATOR_SECRET_MOUNT_PATH)
+                .withNewName(GeoReplicatorSecretModel.REPLICATOR_SECRET_NAME)
+                .withMountPath(GeoReplicatorModel.REPLICATOR_SECRET_MOUNT_PATH)
                 .withNewReadOnly(true)
             .endVolumeMount()
             .addNewVolumeMount()
@@ -272,7 +272,7 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
         String kafkaConnectRestEndpoint = String.format("http://%s:%s",
                 ModelUtils.serviceDnsNameWithoutClusterDomain(getNamespace(),
                         KafkaMirrorMaker2Resources.serviceName(getInstanceName())),
-                ReplicatorModel.REPLICATOR_PORT);
+                GeoReplicatorModel.REPLICATOR_PORT);
 
         String oidcSecretName = ClientModel.getSecretName(getInstanceName());
 
@@ -290,12 +290,12 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
             new EnvVarBuilder().withName("KAFKA_CONNECT_REST_API_ADDRESS").withValue(kafkaConnectRestEndpoint).build(),
             new EnvVarBuilder().withName("KAFKA_PRINCIPAL").withValue(internalKafkaUsername).build(),
             new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue(Boolean.toString(isGeoReplicationEnabled)).build(),
-            new EnvVarBuilder().withName("GEOREPLICATION_SECRET_NAME").withValue(getResourcePrefix() + "-" + ReplicatorSecretModel.REPLICATOR_SECRET_NAME).build(),
+            new EnvVarBuilder().withName("GEOREPLICATION_SECRET_NAME").withValue(getResourcePrefix() + "-" + GeoReplicatorSecretModel.REPLICATOR_SECRET_NAME).build(),
             new EnvVarBuilder().withName("GEOREPLICATION_INTERNAL_CLIENT_AUTH_ENABLED").withValue(Boolean.toString(isReplicatorInternalClientAuthForConnectEnabled(instance))).build(),
             new EnvVarBuilder().withName("GEOREPLICATION_EXTERNAL_CLIENT_AUTH_ENABLED").withValue(Boolean.toString(isReplicatorExternalClientAuthForConnectEnabled(instance))).build(),
             new EnvVarBuilder().withName("GEOREPLICATION_INTERNAL_SERVER_AUTH_ENABLED").withValue(Boolean.toString(isReplicatorInternalServerAuthForConnectEnabled(instance))).build(),
             new EnvVarBuilder().withName("GEOREPLICATION_EXTERNAL_SERVER_AUTH_ENABLED").withValue(Boolean.toString(isReplicatorExternalServerAuthForConnectEnabled(instance))).build(),
-            new EnvVarBuilder().withName("GEOREPLICATION_INTERNAL_CLIENT_AUTH_TYPE").withValue(isReplicatorInternalClientAuthForConnectEnabled(instance) ? ReplicatorModel.getInternalTlsKafkaListenerAuthentication(instance).getType() : "NONE").build(),
+            new EnvVarBuilder().withName("GEOREPLICATION_INTERNAL_CLIENT_AUTH_TYPE").withValue(isReplicatorInternalClientAuthForConnectEnabled(instance) ? GeoReplicatorModel.getInternalTlsKafkaListenerAuthentication(instance).getType() : "NONE").build(),
 
         // Add The IAM Specific Envars.  If we need to build without IAM Support we can put a variable check
         // here.

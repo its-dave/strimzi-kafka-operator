@@ -14,7 +14,7 @@
 package com.ibm.eventstreams.api.model;
 
 import com.ibm.eventstreams.api.spec.EventStreams;
-import com.ibm.eventstreams.api.spec.EventStreamsReplicator;
+import com.ibm.eventstreams.api.spec.EventStreamsGeoReplicator;
 import io.strimzi.api.kafka.model.AclOperation;
 import io.strimzi.api.kafka.model.AclResourcePatternType;
 import io.strimzi.api.kafka.model.AclRule;
@@ -29,7 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @SuppressWarnings({"checkstyle:MethodLength"})
-public class ReplicatorDestinationUsersModel extends AbstractModel {
+public class GeoReplicatorDestinationUsersModel extends AbstractModel {
 
     public static final String CONNECT_KAFKA_USER_NAME = "georep-user";
     public static final String CONNECT_EXTERNAL_KAFKA_USER_NAME = "georep-ext-user";
@@ -39,20 +39,20 @@ public class ReplicatorDestinationUsersModel extends AbstractModel {
     private KafkaUser targetConnectorKafkaUser;
     private KafkaUser connectExternalKafkaUser;
 
-    private static final Logger log = LogManager.getLogger(ReplicatorDestinationUsersModel.class.getName());
+    private static final Logger log = LogManager.getLogger(GeoReplicatorDestinationUsersModel.class.getName());
 
     /**
      * This class is used to create the KafkaUser custom resources required to deploy the geo-replicator
      * @param replicatorInstance The EventStreams geo-replicator instance
      * @param instance The Event Streams instance is used to get the security information from the main install
      */
-    public ReplicatorDestinationUsersModel(EventStreamsReplicator replicatorInstance, EventStreams instance) {
-        super(instance, ReplicatorModel.COMPONENT_NAME, ReplicatorModel.APPLICATION_NAME);
+    public GeoReplicatorDestinationUsersModel(EventStreamsGeoReplicator replicatorInstance, EventStreams instance) {
+        super(instance, GeoReplicatorModel.COMPONENT_NAME, GeoReplicatorModel.APPLICATION_NAME);
 
         setOwnerReference(replicatorInstance);
 
-        KafkaListenerAuthentication internalClientAuth = ReplicatorModel.getInternalTlsKafkaListenerAuthentication(instance);
-        KafkaListenerAuthentication externalClientAuth = ReplicatorModel.getExternalKafkaListenerAuthentication(instance);
+        KafkaListenerAuthentication internalClientAuth = GeoReplicatorModel.getInternalTlsKafkaListenerAuthentication(instance);
+        KafkaListenerAuthentication externalClientAuth = GeoReplicatorModel.getExternalKafkaListenerAuthentication(instance);
 
         createConnectKafkaUser(replicatorInstance, internalClientAuth);
         createExternalConnectKafkaUser(replicatorInstance, externalClientAuth);
@@ -65,9 +65,9 @@ public class ReplicatorDestinationUsersModel extends AbstractModel {
     // all the gre-rep stuff before mapping to the internal equivalent
     // Two users are needed because the external enpoint may have a different auth mechanism in place to the internal one
     // https://docs.confluent.io/4.1.0/connect/security.html
-    private void createExternalConnectKafkaUser(EventStreamsReplicator replicatorInstance, KafkaListenerAuthentication externalClientAuth) {
+    private void createExternalConnectKafkaUser(EventStreamsGeoReplicator replicatorInstance, KafkaListenerAuthentication externalClientAuth) {
 
-        if (ReplicatorModel.isReplicatorEnabled(replicatorInstance) && externalClientAuth != null) {
+        if (GeoReplicatorModel.isReplicatorEnabled(replicatorInstance) && externalClientAuth != null) {
             List<AclRule> connectAclList = createConnectAclList();
             connectExternalKafkaUser = createKafkaUser(connectAclList, getConnectExternalKafkaUserName(), externalClientAuth);
         } else {
@@ -78,12 +78,12 @@ public class ReplicatorDestinationUsersModel extends AbstractModel {
 
     // Used to store the credentials for the Connect workers connecting to Kafka
     // https://docs.confluent.io/4.1.0/connect/security.html
-    private void createConnectKafkaUser(EventStreamsReplicator replicatorInstance, KafkaListenerAuthentication internalClientAuth) {
+    private void createConnectKafkaUser(EventStreamsGeoReplicator replicatorInstance, KafkaListenerAuthentication internalClientAuth) {
 
         // connectKafkaUser is not needed if the internalClientAuth isn't set as no special permissions are needed
         //  to write to Kafka topics
 
-        if (ReplicatorModel.isReplicatorEnabled(replicatorInstance) && internalClientAuth != null) {
+        if (GeoReplicatorModel.isReplicatorEnabled(replicatorInstance) && internalClientAuth != null) {
             List<AclRule> connectAclList = createConnectAclList();
             connectKafkaUser = createKafkaUser(connectAclList, getConnectKafkaUserName(), internalClientAuth);
         } else {
@@ -98,7 +98,7 @@ public class ReplicatorDestinationUsersModel extends AbstractModel {
 // Kakfa Connect needs the ability to read/write to/from the three configuration topics
         AclRule configStorageTopicRead = new AclRuleBuilder()
                 .withNewAclRuleTopicResource()
-                .withName(ReplicatorModel.CONFIG_STORAGE_TOPIC_NAME)
+                .withName(GeoReplicatorModel.CONFIG_STORAGE_TOPIC_NAME)
                 .withPatternType(AclResourcePatternType.LITERAL)
                 .endAclRuleTopicResource()
                 .withOperation(AclOperation.READ)
@@ -107,7 +107,7 @@ public class ReplicatorDestinationUsersModel extends AbstractModel {
 
         AclRule configStorageTopicWrite = new AclRuleBuilder()
                 .withNewAclRuleTopicResource()
-                .withName(ReplicatorModel.CONFIG_STORAGE_TOPIC_NAME)
+                .withName(GeoReplicatorModel.CONFIG_STORAGE_TOPIC_NAME)
                 .withPatternType(AclResourcePatternType.LITERAL)
                 .endAclRuleTopicResource()
                 .withOperation(AclOperation.WRITE)
@@ -116,7 +116,7 @@ public class ReplicatorDestinationUsersModel extends AbstractModel {
 
         AclRule configStorageTopicDescribe = new AclRuleBuilder()
                 .withNewAclRuleTopicResource()
-                .withName(ReplicatorModel.CONFIG_STORAGE_TOPIC_NAME)
+                .withName(GeoReplicatorModel.CONFIG_STORAGE_TOPIC_NAME)
                 .withPatternType(AclResourcePatternType.LITERAL)
                 .endAclRuleTopicResource()
                 .withOperation(AclOperation.DESCRIBE)
@@ -125,7 +125,7 @@ public class ReplicatorDestinationUsersModel extends AbstractModel {
 
         AclRule configStorageTopicDescribeConfigs = new AclRuleBuilder()
                 .withNewAclRuleTopicResource()
-                .withName(ReplicatorModel.CONFIG_STORAGE_TOPIC_NAME)
+                .withName(GeoReplicatorModel.CONFIG_STORAGE_TOPIC_NAME)
                 .withPatternType(AclResourcePatternType.LITERAL)
                 .endAclRuleTopicResource()
                 .withOperation(AclOperation.DESCRIBECONFIGS)
@@ -134,7 +134,7 @@ public class ReplicatorDestinationUsersModel extends AbstractModel {
 
         AclRule offsetStorageTopicRead = new AclRuleBuilder()
                 .withNewAclRuleTopicResource()
-                .withName(ReplicatorModel.OFFSET_STORAGE_TOPIC_NAME)
+                .withName(GeoReplicatorModel.OFFSET_STORAGE_TOPIC_NAME)
                 .withPatternType(AclResourcePatternType.LITERAL)
                 .endAclRuleTopicResource()
                 .withOperation(AclOperation.READ)
@@ -143,7 +143,7 @@ public class ReplicatorDestinationUsersModel extends AbstractModel {
 
         AclRule offsetStorageTopicWrite = new AclRuleBuilder()
                 .withNewAclRuleTopicResource()
-                .withName(ReplicatorModel.OFFSET_STORAGE_TOPIC_NAME)
+                .withName(GeoReplicatorModel.OFFSET_STORAGE_TOPIC_NAME)
                 .withPatternType(AclResourcePatternType.LITERAL)
                 .endAclRuleTopicResource()
                 .withOperation(AclOperation.WRITE)
@@ -152,7 +152,7 @@ public class ReplicatorDestinationUsersModel extends AbstractModel {
 
         AclRule offsetStorageTopicDescribe = new AclRuleBuilder()
                 .withNewAclRuleTopicResource()
-                .withName(ReplicatorModel.OFFSET_STORAGE_TOPIC_NAME)
+                .withName(GeoReplicatorModel.OFFSET_STORAGE_TOPIC_NAME)
                 .withPatternType(AclResourcePatternType.LITERAL)
                 .endAclRuleTopicResource()
                 .withOperation(AclOperation.DESCRIBE)
@@ -161,7 +161,7 @@ public class ReplicatorDestinationUsersModel extends AbstractModel {
 
         AclRule offsetStorageTopicDescribeConfigs = new AclRuleBuilder()
                 .withNewAclRuleTopicResource()
-                .withName(ReplicatorModel.OFFSET_STORAGE_TOPIC_NAME)
+                .withName(GeoReplicatorModel.OFFSET_STORAGE_TOPIC_NAME)
                 .withPatternType(AclResourcePatternType.LITERAL)
                 .endAclRuleTopicResource()
                 .withOperation(AclOperation.DESCRIBECONFIGS)
@@ -170,7 +170,7 @@ public class ReplicatorDestinationUsersModel extends AbstractModel {
 
         AclRule statusStorageTopicRead = new AclRuleBuilder()
                 .withNewAclRuleTopicResource()
-                .withName(ReplicatorModel.STATUS_STORAGE_TOPIC_NAME)
+                .withName(GeoReplicatorModel.STATUS_STORAGE_TOPIC_NAME)
                 .withPatternType(AclResourcePatternType.LITERAL)
                 .endAclRuleTopicResource()
                 .withOperation(AclOperation.READ)
@@ -179,7 +179,7 @@ public class ReplicatorDestinationUsersModel extends AbstractModel {
 
         AclRule statusStorageTopicWrite = new AclRuleBuilder()
                 .withNewAclRuleTopicResource()
-                .withName(ReplicatorModel.STATUS_STORAGE_TOPIC_NAME)
+                .withName(GeoReplicatorModel.STATUS_STORAGE_TOPIC_NAME)
                 .withPatternType(AclResourcePatternType.LITERAL)
                 .endAclRuleTopicResource()
                 .withOperation(AclOperation.WRITE)
@@ -188,7 +188,7 @@ public class ReplicatorDestinationUsersModel extends AbstractModel {
 
         AclRule statusStorageTopicDescribe = new AclRuleBuilder()
                 .withNewAclRuleTopicResource()
-                .withName(ReplicatorModel.STATUS_STORAGE_TOPIC_NAME)
+                .withName(GeoReplicatorModel.STATUS_STORAGE_TOPIC_NAME)
                 .withPatternType(AclResourcePatternType.LITERAL)
                 .endAclRuleTopicResource()
                 .withOperation(AclOperation.DESCRIBE)
@@ -197,7 +197,7 @@ public class ReplicatorDestinationUsersModel extends AbstractModel {
 
         AclRule statusStorageTopicDescribeConfigs = new AclRuleBuilder()
                 .withNewAclRuleTopicResource()
-                .withName(ReplicatorModel.STATUS_STORAGE_TOPIC_NAME)
+                .withName(GeoReplicatorModel.STATUS_STORAGE_TOPIC_NAME)
                 .withPatternType(AclResourcePatternType.LITERAL)
                 .endAclRuleTopicResource()
                 .withOperation(AclOperation.DESCRIBECONFIGS)
@@ -223,7 +223,7 @@ public class ReplicatorDestinationUsersModel extends AbstractModel {
         //Connect also needs read on group.id
         AclRule connectClusterGroupRead = new AclRuleBuilder()
                 .withNewAclRuleGroupResource()
-                .withName(ReplicatorModel.getDefaultReplicatorClusterName(getInstanceName()))
+                .withName(GeoReplicatorModel.getDefaultReplicatorClusterName(getInstanceName()))
                 .withPatternType(AclResourcePatternType.PREFIX)
                 .endAclRuleGroupResource()
                 .withOperation(AclOperation.READ)
@@ -233,7 +233,7 @@ public class ReplicatorDestinationUsersModel extends AbstractModel {
         //Connect also needs describe on group.id
         AclRule connectClusterGroupDescribe = new AclRuleBuilder()
                 .withNewAclRuleGroupResource()
-                .withName(ReplicatorModel.getDefaultReplicatorClusterName(getInstanceName()))
+                .withName(GeoReplicatorModel.getDefaultReplicatorClusterName(getInstanceName()))
                 .withPatternType(AclResourcePatternType.LITERAL)
                 .endAclRuleGroupResource()
                 .withOperation(AclOperation.DESCRIBE)
@@ -296,11 +296,11 @@ public class ReplicatorDestinationUsersModel extends AbstractModel {
 
     // A User to allow the mirror maker connector to create target topics and ACLs
     //  Only created if the cluster is a target cluster
-    private void createTargetConnectorKafkaUser(EventStreamsReplicator replicatorInstance, KafkaListenerAuthentication internalClientAuth) {
+    private void createTargetConnectorKafkaUser(EventStreamsGeoReplicator replicatorInstance, KafkaListenerAuthentication internalClientAuth) {
 
         // targetConnectorKafkaUser is not needed if the internalClientAuth isn't set as no special permissions are needed
         //  to write to Kafka topics
-        if (ReplicatorModel.isReplicatorEnabled(replicatorInstance) && internalClientAuth != null) {
+        if (GeoReplicatorModel.isReplicatorEnabled(replicatorInstance) && internalClientAuth != null) {
             List<AclRule> connectorTargetAcls = new ArrayList<>();
 
             // Need the ability to create the target topics (eg sourceClusterName.topic1)
@@ -342,12 +342,12 @@ public class ReplicatorDestinationUsersModel extends AbstractModel {
     public static boolean isValidInstance(EventStreams instance) {
         boolean validInstance = true;
 
-        KafkaListenerAuthentication internalClientAuth = ReplicatorModel.getInternalTlsKafkaListenerAuthentication(instance);
+        KafkaListenerAuthentication internalClientAuth = GeoReplicatorModel.getInternalTlsKafkaListenerAuthentication(instance);
         if (internalClientAuth != null && !isSupportedAuthType(internalClientAuth)) {
             validInstance = false;
         }
 
-        KafkaListenerAuthentication externalClientAuth = ReplicatorModel.getExternalKafkaListenerAuthentication(instance);
+        KafkaListenerAuthentication externalClientAuth = GeoReplicatorModel.getExternalKafkaListenerAuthentication(instance);
         if (externalClientAuth != null && !isSupportedAuthType(externalClientAuth)) {
             validInstance = false;
         }
@@ -358,8 +358,8 @@ public class ReplicatorDestinationUsersModel extends AbstractModel {
     public static boolean isValidInternExternalConfig(EventStreams instance) {
         boolean validInstance = true;
 
-        KafkaListenerAuthentication internalClientAuth = ReplicatorModel.getInternalTlsKafkaListenerAuthentication(instance);
-        KafkaListenerAuthentication externalClientAuth = ReplicatorModel.getExternalKafkaListenerAuthentication(instance);
+        KafkaListenerAuthentication internalClientAuth = GeoReplicatorModel.getInternalTlsKafkaListenerAuthentication(instance);
+        KafkaListenerAuthentication externalClientAuth = GeoReplicatorModel.getExternalKafkaListenerAuthentication(instance);
 
         if (internalClientAuth != null && externalClientAuth == null) {
             validInstance = false;

@@ -13,7 +13,7 @@
 package com.ibm.eventstreams.controller;
 
 import com.ibm.eventstreams.api.spec.EventStreams;
-import com.ibm.eventstreams.api.spec.EventStreamsReplicator;
+import com.ibm.eventstreams.api.spec.EventStreamsGeoReplicator;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.Watch;
 import io.fabric8.kubernetes.internal.KubernetesDeserializer;
@@ -31,9 +31,9 @@ import io.vertx.core.Handler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class EventStreamsReplicatorVerticle extends AbstractVerticle {
+public class EventStreamsGeoReplicatorVerticle extends AbstractVerticle {
 
-    private static final Logger log = LogManager.getLogger(EventStreamsReplicatorVerticle.class);
+    private static final Logger log = LogManager.getLogger(EventStreamsGeoReplicatorVerticle.class);
     private final EventStreamsOperatorConfig.ImageLookup imageConfig;
     private RouteOperator routeOperator;
     private final MetricsProvider metricsProvider;
@@ -51,10 +51,10 @@ public class EventStreamsReplicatorVerticle extends AbstractVerticle {
 
     private final long replicatorStatusReadyTimeoutMilliSecs;
     private final long reconciliationIntervalMilliSecs;
-    private Watch eventStreamsReplicatorCRWatcher;
+    private Watch eventStreamsGeoReplicatorCRWatcher;
     private long reconcileTimer;
 
-    public EventStreamsReplicatorVerticle(Vertx vertx, KubernetesClient client, String namespace, MetricsProvider metricsProvider, PlatformFeaturesAvailability pfa, EventStreamsOperatorConfig config) {
+    public EventStreamsGeoReplicatorVerticle(Vertx vertx, KubernetesClient client, String namespace, MetricsProvider metricsProvider, PlatformFeaturesAvailability pfa, EventStreamsOperatorConfig config) {
         log.info("Creating EventStreamsVerticle for namespace {}", namespace);
         this.vertx = vertx;
         this.client = client;
@@ -70,46 +70,46 @@ public class EventStreamsReplicatorVerticle extends AbstractVerticle {
     @Override
     public void start(Promise<Void> start) {
         try {
-            log.info("EventStreamsReplicatorVerticle for namespace {} started." + this.namespace);
-            KubernetesDeserializer.registerCustomKind(EventStreamsReplicator.RESOURCE_GROUP + "/" + EventStreamsReplicator.V1BETA1, EventStreamsReplicator.RESOURCE_KIND, EventStreamsReplicator.class);
+            log.info("EventStreamsGeoReplicatorVerticle for namespace {} started." + this.namespace);
+            KubernetesDeserializer.registerCustomKind(EventStreamsGeoReplicator.RESOURCE_GROUP + "/" + EventStreamsGeoReplicator.V1BETA1, EventStreamsGeoReplicator.RESOURCE_KIND, EventStreamsGeoReplicator.class);
 
-            EventStreamsReplicatorResourceOperator replicatorResourceOperator = new EventStreamsReplicatorResourceOperator(vertx, client, EventStreamsReplicator.RESOURCE_KIND);
+            EventStreamsGeoReplicatorResourceOperator geoReplicatorResourceOperator = new EventStreamsGeoReplicatorResourceOperator(vertx, client, EventStreamsGeoReplicator.RESOURCE_KIND);
             EventStreamsResourceOperator esResourceOperator = new EventStreamsResourceOperator(vertx, client);
-            EventStreamsReplicatorOperator eventStreamsReplicatorOperator = new EventStreamsReplicatorOperator(
+            EventStreamsGeoReplicatorOperator eventStreamsGeoReplicatorOperator = new EventStreamsGeoReplicatorOperator(
                     vertx,
                     client,
                     EventStreams.RESOURCE_KIND,
                     pfa,
-                    replicatorResourceOperator,
+                    geoReplicatorResourceOperator,
                     esResourceOperator,
                     routeOperator,
                     metricsProvider,
                     replicatorStatusReadyTimeoutMilliSecs);
 
-            eventStreamsReplicatorOperator.createWatch(namespace, eventStreamsReplicatorOperator.recreateWatch(namespace))
+            eventStreamsGeoReplicatorOperator.createWatch(namespace, eventStreamsGeoReplicatorOperator.recreateWatch(namespace))
                     .compose(w -> {
                         log.info("Started operator for EventStreamsGeoReplicator kind.");
-                        eventStreamsReplicatorCRWatcher = w;
+                        eventStreamsGeoReplicatorCRWatcher = w;
                         log.info("Setting up periodic reconciliation for geo-replicator for namespace {}" + namespace);
                         reconcileTimer = vertx.setPeriodic(reconciliationIntervalMilliSecs, handler -> {
                             Handler<AsyncResult<Void>> asyncHandler = ignoredHandler -> { };
                             log.info("Triggering periodic reconciliation for geo-replicator for namespace {}..." + namespace);
-                            eventStreamsReplicatorOperator.reconcileAll("timer", namespace, asyncHandler);
+                            eventStreamsGeoReplicatorOperator.reconcileAll("timer", namespace, asyncHandler);
                         });
                         return Future.<Void>succeededFuture();
                     })
                     .setHandler(start);
         } catch (Exception e) {
-            log.error("Failed to start EventStreamsReplicatorVerticle", e);
+            log.error("Failed to start EventStreamsGeoReplicatorVerticle", e);
         }
     }
 
     @Override
     public void stop(Promise<Void> stop) {
-        log.info("Stopping EventStreamsReplicatorVerticle for namespace {}", namespace);
+        log.info("Stopping EventStreamsGeoReplicatorVerticle for namespace {}", namespace);
         vertx.cancelTimer(reconcileTimer);
-        if (eventStreamsReplicatorCRWatcher != null) {
-            eventStreamsReplicatorCRWatcher.close();
+        if (eventStreamsGeoReplicatorCRWatcher != null) {
+            eventStreamsGeoReplicatorCRWatcher.close();
         }
         if (client != null) {
             client.close();

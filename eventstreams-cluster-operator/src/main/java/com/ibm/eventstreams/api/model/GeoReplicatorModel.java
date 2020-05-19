@@ -13,10 +13,10 @@
 package com.ibm.eventstreams.api.model;
 
 import com.ibm.eventstreams.api.spec.EventStreams;
-import com.ibm.eventstreams.api.spec.EventStreamsReplicator;
+import com.ibm.eventstreams.api.spec.EventStreamsGeoReplicator;
+import com.ibm.eventstreams.api.spec.EventStreamsGeoReplicatorSpec;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
-import com.ibm.eventstreams.api.spec.ReplicatorSpec;
-import com.ibm.eventstreams.replicator.ReplicatorCredentials;
+import com.ibm.eventstreams.georeplicator.GeoReplicatorCredentials;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicy;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicyEgressRule;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicyIngressRule;
@@ -49,7 +49,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public class ReplicatorModel extends AbstractModel {
+public class GeoReplicatorModel extends AbstractModel {
 
 
     public static final String COMPONENT_NAME = "georep";
@@ -66,23 +66,23 @@ public class ReplicatorModel extends AbstractModel {
     private NetworkPolicy networkPolicy;
     private KafkaMirrorMaker2 kafkaMirrorMaker2;
 
-    private static final Logger log = LogManager.getLogger(ReplicatorModel.class.getName());
+    private static final Logger log = LogManager.getLogger(GeoReplicatorModel.class.getName());
 
     /**
      * This class is used to model a KafkaMirrorMaker2 custom resource used by the strimzi cluster operator,
      * it is also used to create the kube resources required to correctly deploy the geo-replicator
      * @param replicatorInstance
      * @param instance
-     * @param replicatorCredentials
+     * @param geoReplicatorCredentials
      */
-    public ReplicatorModel(EventStreamsReplicator replicatorInstance, EventStreams instance, ReplicatorCredentials replicatorCredentials, KafkaMirrorMaker2 mirrorMaker2) {
+    public GeoReplicatorModel(EventStreamsGeoReplicator replicatorInstance, EventStreams instance, GeoReplicatorCredentials geoReplicatorCredentials, KafkaMirrorMaker2 mirrorMaker2) {
         //always set the namespace to be that of the owning EventStreams instance
         super(instance, COMPONENT_NAME, APPLICATION_NAME);
 
         setOwnerReference(replicatorInstance);
         
         if (isReplicatorEnabled(replicatorInstance)) {
-            kafkaMirrorMaker2 = createMirrorMaker2(replicatorInstance, instance, replicatorCredentials, mirrorMaker2);
+            kafkaMirrorMaker2 = createMirrorMaker2(replicatorInstance, instance, geoReplicatorCredentials, mirrorMaker2);
             networkPolicy = createNetworkPolicy();
         } else {
             kafkaMirrorMaker2 = null;
@@ -91,19 +91,19 @@ public class ReplicatorModel extends AbstractModel {
 
     }
 
-    private KafkaMirrorMaker2 createMirrorMaker2(EventStreamsReplicator replicatorInstance, EventStreams instance,  ReplicatorCredentials replicatorCredentials, KafkaMirrorMaker2 mirrorMaker2) {
+    private KafkaMirrorMaker2 createMirrorMaker2(EventStreamsGeoReplicator replicatorInstance, EventStreams instance, GeoReplicatorCredentials geoReplicatorCredentials, KafkaMirrorMaker2 mirrorMaker2) {
 
-        Optional<ReplicatorSpec> eventStreamsreplicatorSpec = Optional.ofNullable(replicatorInstance.getSpec());
+        Optional<EventStreamsGeoReplicatorSpec> eventStreamsGeoReplicatorSpec = Optional.ofNullable(replicatorInstance.getSpec());
         KafkaMirrorMaker2Spec mm2Spec = mirrorMaker2 == null || mirrorMaker2.getSpec() == null ? new KafkaMirrorMaker2Spec() : mirrorMaker2.getSpec();
 
-        int replicas = eventStreamsreplicatorSpec.map(ReplicatorSpec::getReplicas).orElse(DEFAULT_REPLICAS);
+        int replicas = eventStreamsGeoReplicatorSpec.map(EventStreamsGeoReplicatorSpec::getReplicas).orElse(DEFAULT_REPLICAS);
         mm2Spec.setReplicas(replicas);
 
-        KafkaMirrorMaker2Tls caCert = replicatorCredentials.getReplicatorConnectTrustStore();
-        KafkaClientAuthentication clientAuthentication = replicatorCredentials.getReplicatorConnectClientAuth();
+        KafkaMirrorMaker2Tls caCert = geoReplicatorCredentials.getGeoReplicatorConnectTrustStore();
+        KafkaClientAuthentication clientAuthentication = geoReplicatorCredentials.getGeoReplicatorConnectClientAuth();
         KafkaListenerTls internalTlsKafkaListener = getInternalTlsKafkaListener(instance);
 
-        String connectClusterName = ReplicatorModel.getDefaultReplicatorClusterName(getInstanceName());
+        String connectClusterName = GeoReplicatorModel.getDefaultReplicatorClusterName(getInstanceName());
         mm2Spec.setConnectCluster(connectClusterName);
 
         String bootstrap = getDefaultBootstrap(internalTlsKafkaListener);
@@ -216,7 +216,7 @@ public class ReplicatorModel extends AbstractModel {
         return bootstrap;
     }
 
-    public static boolean isReplicatorEnabled(EventStreamsReplicator replicatorInstance) {
+    public static boolean isReplicatorEnabled(EventStreamsGeoReplicator replicatorInstance) {
         return Optional.ofNullable(replicatorInstance)
                 .map(replicator -> replicator.getSpec().getReplicas())
                 .orElse(DEFAULT_REPLICAS) > 0;
@@ -293,7 +293,7 @@ public class ReplicatorModel extends AbstractModel {
     }
 
     public static String getDefaultReplicatorClusterName(String instanceName) {
-        return instanceName + "-" + ReplicatorModel.REPLICATOR_CLUSTER_NAME;
+        return instanceName + "-" + GeoReplicatorModel.REPLICATOR_CLUSTER_NAME;
     }
 
     /**

@@ -23,17 +23,17 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.Map;
 
-public class ReplicatorSecretModel extends AbstractModel {
+public class GeoReplicatorSecretModel extends AbstractModel {
 
     public static final String REPLICATOR_TARGET_CLUSTERS_SECRET_KEY_NAME = "georeplicationdestinationclusters";
     public static final String REPLICATOR_SECRET_NAME = "georep-secret";
 
     private Secret secret;
 
-    private static final Logger log = LogManager.getLogger(ReplicatorSecretModel.class.getName());
+    private static final Logger log = LogManager.getLogger(GeoReplicatorSecretModel.class.getName());
 
-    public ReplicatorSecretModel(EventStreams instance) {
-        super(instance, ReplicatorModel.COMPONENT_NAME, ReplicatorModel.APPLICATION_NAME);
+    public GeoReplicatorSecretModel(EventStreams instance) {
+        super(instance, GeoReplicatorModel.COMPONENT_NAME, GeoReplicatorModel.APPLICATION_NAME);
         setOwnerReference(instance);
 
         Base64.Encoder encoder = Base64.getEncoder();

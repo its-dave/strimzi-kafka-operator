@@ -42,7 +42,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 @SuppressWarnings({"checkstyle:JavaNCSS", "checkstyle:MethodLength"})
 
-public class ReplicatorSourceUserModelTest {
+public class GeoReplicatorSourceUserModelTest {
 
     private final String instanceName = "test";
     private final int defaultReplicas = 1;
@@ -73,27 +73,27 @@ public class ReplicatorSourceUserModelTest {
                 .endSpec();
     }
 
-    private ReplicatorSecretModel createDefaultReplicatorSecretModel() {
+    private GeoReplicatorSecretModel createDefaultReplicatorSecretModel() {
         EventStreams instance = createDefaultEventStreams(ModelUtils.getMutualTLSOnBothInternalAndExternalListenerSpec()).build();
-        return new ReplicatorSecretModel(instance);
+        return new GeoReplicatorSecretModel(instance);
     }
 
-    private ReplicatorSourceUsersModel createDefaultReplicatorSourceUserModel() {
+    private GeoReplicatorSourceUsersModel createDefaultGeoReplicatorSourceUserModel() {
         EventStreams instance = createDefaultEventStreams(ModelUtils.getMutualTLSOnBothInternalAndExternalListenerSpec()).build();
-        return new ReplicatorSourceUsersModel(instance);
+        return new GeoReplicatorSourceUsersModel(instance);
     }
 
-    private ReplicatorSourceUsersModel createReplicatorSourceUserModel(KafkaListeners listenerSpec) {
+    private GeoReplicatorSourceUsersModel createGeoReplicatorSourceUserModel(KafkaListeners listenerSpec) {
         EventStreams instance = createDefaultEventStreams(listenerSpec).build();
-        return new ReplicatorSourceUsersModel(instance);
+        return new GeoReplicatorSourceUsersModel(instance);
     }
 
     @Test
     public void testReplicatorUserCreatedWithTlsAuthentication() {
-        ReplicatorSourceUsersModel replicatorSourceUsersModel = createDefaultReplicatorSourceUserModel();
-        KafkaUser sourceConnectorKafkaUser = replicatorSourceUsersModel.getSourceConnectorKafkaUser();
+        GeoReplicatorSourceUsersModel geoReplicatorSourceUsersModel = createDefaultGeoReplicatorSourceUserModel();
+        KafkaUser sourceConnectorKafkaUser = geoReplicatorSourceUsersModel.getSourceConnectorKafkaUser();
 
-        assertThat(sourceConnectorKafkaUser.getMetadata().getName(), is(instanceName + "-" + AbstractModel.APP_NAME + "-" + ReplicatorSourceUsersModel.SOURCE_CONNECTOR_KAFKA_USER_NAME));
+        assertThat(sourceConnectorKafkaUser.getMetadata().getName(), is(instanceName + "-" + AbstractModel.APP_NAME + "-" + GeoReplicatorSourceUsersModel.SOURCE_CONNECTOR_KAFKA_USER_NAME));
 
         Map<String, String> replicatorSourceConnectorUserLabels = sourceConnectorKafkaUser.getMetadata().getLabels();
         for (Map.Entry<String, String> label : replicatorSourceConnectorUserLabels.entrySet()) {
@@ -109,7 +109,7 @@ public class ReplicatorSourceUserModelTest {
 
     @Test
     public void testReplicatorSourceConnectorUserAcls() {
-        ReplicatorSourceUsersModel replicatorSourceUsers = createDefaultReplicatorSourceUserModel();
+        GeoReplicatorSourceUsersModel replicatorSourceUsers = createDefaultGeoReplicatorSourceUserModel();
         KafkaUser replicatorSourceConnectorUser = replicatorSourceUsers.getSourceConnectorKafkaUser();
 
         //MM2 to source Kafka ACL
@@ -169,48 +169,48 @@ public class ReplicatorSourceUserModelTest {
 
     @Test
     public void testReplicatorConnectSourceUserWhenInternalTLSOnlyEnabledWithNoMutualAuth() {
-        ReplicatorSourceUsersModel replicatorSourceUsersModel = createReplicatorSourceUserModel(ModelUtils.getServerAuthOnlyInternalListenerSpec());
-        assertThat(replicatorSourceUsersModel.getSourceConnectorKafkaUser(), is(nullValue()));
+        GeoReplicatorSourceUsersModel geoReplicatorSourceUsersModel = createGeoReplicatorSourceUserModel(ModelUtils.getServerAuthOnlyInternalListenerSpec());
+        assertThat(geoReplicatorSourceUsersModel.getSourceConnectorKafkaUser(), is(nullValue()));
     }
 
     @Test
     public void testReplicatorConnectSourceUserWhenInternalTLSOnlyEnabledWithMutualAuthTLS() {
-        ReplicatorSourceUsersModel replicatorSourceUsersModel = createReplicatorSourceUserModel(ModelUtils.getMutualTLSOnInternalListenerSpec());
-        assertThat(replicatorSourceUsersModel.getSourceConnectorKafkaUser(), is(nullValue()));
+        GeoReplicatorSourceUsersModel geoReplicatorSourceUsersModel = createGeoReplicatorSourceUserModel(ModelUtils.getMutualTLSOnInternalListenerSpec());
+        assertThat(geoReplicatorSourceUsersModel.getSourceConnectorKafkaUser(), is(nullValue()));
     }
 
     @Test
     public void testReplicatorConnectSourceUserWhenInternalTLSOnlyEnabledWithMutualAuthScram() {
-        ReplicatorSourceUsersModel replicatorSourceUsersModel = createReplicatorSourceUserModel(ModelUtils.getMutualScramOnInternalListenerSpec());
-        assertThat(replicatorSourceUsersModel.getSourceConnectorKafkaUser(), is(nullValue()));
+        GeoReplicatorSourceUsersModel geoReplicatorSourceUsersModel = createGeoReplicatorSourceUserModel(ModelUtils.getMutualScramOnInternalListenerSpec());
+        assertThat(geoReplicatorSourceUsersModel.getSourceConnectorKafkaUser(), is(nullValue()));
     }
 
     @Test
     public void testReplicatorConnecSourcetUserWhenExternalTLSOnlyEnabledWithNoMutualAuth() {
-        ReplicatorSourceUsersModel replicatorSourceUsersModel = createReplicatorSourceUserModel(ModelUtils.getServerAuthOnlyExternalListenerSpec());
-        assertThat(replicatorSourceUsersModel.getSourceConnectorKafkaUser(), is(nullValue()));
+        GeoReplicatorSourceUsersModel geoReplicatorSourceUsersModel = createGeoReplicatorSourceUserModel(ModelUtils.getServerAuthOnlyExternalListenerSpec());
+        assertThat(geoReplicatorSourceUsersModel.getSourceConnectorKafkaUser(), is(nullValue()));
     }
 
     @Test
     public void testReplicatorConnecSourcetUserWhenExternalTLSOnlyEnabledWithMutualAuthTLS() {
-        ReplicatorSourceUsersModel replicatorSourceUsersModel = createDefaultReplicatorSourceUserModel();
-        KafkaUser replicatorSourceConnectorUser = replicatorSourceUsersModel.getSourceConnectorKafkaUser();
+        GeoReplicatorSourceUsersModel geoReplicatorSourceUsersModel = createDefaultGeoReplicatorSourceUserModel();
+        KafkaUser replicatorSourceConnectorUser = geoReplicatorSourceUsersModel.getSourceConnectorKafkaUser();
         assertThat(replicatorSourceConnectorUser.getSpec().getAuthentication(), is(instanceOf(KafkaUserTlsClientAuthentication.class)));
         assertThat(replicatorSourceConnectorUser.getSpec().getAuthorization().getType(), is("simple"));
     }
 
     @Test
     public void testReplicatorConnectUserWhenExternalTLSOnlyEnabledWithMutualAuthScram() {
-        ReplicatorSourceUsersModel replicatorSourceUsersModel = createReplicatorSourceUserModel(ModelUtils.getMutualScramOnExternalListenerSpec());
-        KafkaUser replicatorSourceConnectorUser = replicatorSourceUsersModel.getSourceConnectorKafkaUser();
+        GeoReplicatorSourceUsersModel geoReplicatorSourceUsersModel = createGeoReplicatorSourceUserModel(ModelUtils.getMutualScramOnExternalListenerSpec());
+        KafkaUser replicatorSourceConnectorUser = geoReplicatorSourceUsersModel.getSourceConnectorKafkaUser();
         assertThat(replicatorSourceConnectorUser.getSpec().getAuthentication(), is(instanceOf(KafkaUserScramSha512ClientAuthentication.class)));
         assertThat(replicatorSourceConnectorUser.getSpec().getAuthorization().getType(), is("simple"));
     }
 
     @Test
     public void testReplicatorConnectUserWhenNoSecurity() {
-        ReplicatorSourceUsersModel replicatorSourceUsersModel = createReplicatorSourceUserModel(ModelUtils.getNoSecurityListenerSpec());
-        assertThat(replicatorSourceUsersModel.getSourceConnectorKafkaUser(), is(nullValue()));
+        GeoReplicatorSourceUsersModel geoReplicatorSourceUsersModel = createGeoReplicatorSourceUserModel(ModelUtils.getNoSecurityListenerSpec());
+        assertThat(geoReplicatorSourceUsersModel.getSourceConnectorKafkaUser(), is(nullValue()));
     }
 
 }

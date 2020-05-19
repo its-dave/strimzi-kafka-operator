@@ -312,7 +312,7 @@
                                 <argument>--label</argument><argument>eventstreams.ibm.com/crd-install:true</argument>
                                 <argument>--yaml</argument>
                                 <argument>com.ibm.eventstreams.api.spec.EventStreams=${pom.basedir}/../eventstreams-helm-charts/ibm-eventstreams-operator/templates/140-Crd-eventstreams.yaml</argument>
-                                <argument>com.ibm.eventstreams.api.spec.EventStreamsReplicator=${pom.basedir}/../eventstreams-helm-charts/ibm-eventstreams-operator/templates/143-Crd-eventstreamsreplicator.yaml</argument>
+                                <argument>com.ibm.eventstreams.api.spec.EventStreamsGeoReplicator=${pom.basedir}/../eventstreams-helm-charts/ibm-eventstreams-operator/templates/143-Crd-eventstreamsgeoreplicator.yaml</argument>
                             </arguments>
                         </configuration>
                     </execution>

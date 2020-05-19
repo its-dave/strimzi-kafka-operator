@@ -18,7 +18,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
-import com.ibm.eventstreams.api.status.EventStreamsReplicatorStatus;
+import com.ibm.eventstreams.api.status.EventStreamsGeoReplicatorStatus;
 import io.fabric8.kubernetes.api.model.Doneable;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.client.CustomResource;
@@ -37,15 +37,15 @@ import static java.util.Collections.unmodifiableList;
 @Crd(
         apiVersion = EventStreams.CRD_API_VERSION,
         spec = @Crd.Spec(
-                group = EventStreamsReplicator.RESOURCE_GROUP,
+                group = EventStreamsGeoReplicator.RESOURCE_GROUP,
                 names = @Crd.Spec.Names(
-                        kind = EventStreamsReplicator.RESOURCE_KIND,
-                        plural = EventStreamsReplicator.RESOURCE_PLURAL,
-                        singular = EventStreamsReplicator.RESOURCE_SINGULAR,
-                        shortNames = {EventStreamsReplicator.SHORT_NAME}),
-                scope = EventStreamsReplicator.SCOPE,
+                        kind = EventStreamsGeoReplicator.RESOURCE_KIND,
+                        plural = EventStreamsGeoReplicator.RESOURCE_PLURAL,
+                        singular = EventStreamsGeoReplicator.RESOURCE_SINGULAR,
+                        shortNames = {EventStreamsGeoReplicator.SHORT_NAME}),
+                scope = EventStreamsGeoReplicator.SCOPE,
                 versions = {
-                        @Crd.Spec.Version(name = EventStreamsReplicator.V1BETA1, served = true, storage = true)
+                        @Crd.Spec.Version(name = EventStreamsGeoReplicator.V1BETA1, served = true, storage = true)
                 },
                 subresources = @Crd.Spec.Subresources(
                         status = @Crd.Spec.Subresources.Status()
@@ -71,7 +71,7 @@ import static java.util.Collections.unmodifiableList;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({"apiVersion", "kind", "metadata", "spec", "status"})
 @EqualsAndHashCode
-public class EventStreamsReplicator extends CustomResource {
+public class EventStreamsGeoReplicator extends CustomResource {
 
     private static final long serialVersionUID = 1L;
     public static final String V1BETA1 = "v1beta1";
@@ -90,8 +90,8 @@ public class EventStreamsReplicator extends CustomResource {
 
     private String apiVersion;
     private ObjectMeta metadata;
-    private ReplicatorSpec spec;
-    private EventStreamsReplicatorStatus status;
+    private EventStreamsGeoReplicatorSpec spec;
+    private EventStreamsGeoReplicatorStatus status;
 
 
     @Override
@@ -122,21 +122,19 @@ public class EventStreamsReplicator extends CustomResource {
 
     @JsonProperty(required = true)
     @Description("The Event Streams geo-replicator specification")
-    public ReplicatorSpec getSpec() {
+    public EventStreamsGeoReplicatorSpec getSpec() {
         return spec;
     }
 
-    public void setSpec(ReplicatorSpec spec) {
+    public void setSpec(EventStreamsGeoReplicatorSpec spec) {
         this.spec = spec;
     }
 
-
-
-    public EventStreamsReplicatorStatus getStatus() {
+    public EventStreamsGeoReplicatorStatus getStatus() {
         return status;
     }
 
-    public void setStatus(EventStreamsReplicatorStatus status) {
+    public void setStatus(EventStreamsGeoReplicatorStatus status) {
         this.status = status;
     }
 

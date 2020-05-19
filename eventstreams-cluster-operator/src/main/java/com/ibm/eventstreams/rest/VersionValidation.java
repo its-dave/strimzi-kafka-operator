@@ -13,9 +13,10 @@
 package com.ibm.eventstreams.rest;
 
 import com.ibm.eventstreams.api.spec.EventStreams;
-import com.ibm.eventstreams.api.spec.EventStreamsReplicator;
+import com.ibm.eventstreams.api.spec.EventStreamsGeoReplicator;
 import com.ibm.eventstreams.api.status.EventStreamsVersions;
 import com.ibm.eventstreams.controller.models.StatusCondition;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -32,7 +33,7 @@ public class VersionValidation implements Validation {
     public static final String INVALID_VERSION_REASON = "InvalidVersion";
     public static final String INVALID_VERSION_MESSAGE = "Invalid custom resource: Unsupported version. Supported versions are " + VersionValidation.VALID_APP_VERSIONS.toString();
 
-    public List<StatusCondition> validateCr(EventStreamsReplicator spec) {
+    public List<StatusCondition> validateCr(EventStreamsGeoReplicator spec) {
         log.traceEntry(() -> spec);
         return log.traceExit(!VALID_APP_VERSIONS.contains(spec.getSpec().getVersion())
             ? Collections.singletonList(StatusCondition.createErrorCondition(INVALID_VERSION_REASON, INVALID_VERSION_MESSAGE))
@@ -43,7 +44,7 @@ public class VersionValidation implements Validation {
     public List<StatusCondition> validateCr(EventStreams spec) {
         log.traceEntry(() -> spec);
         return log.traceExit(!VALID_APP_VERSIONS.contains(spec.getSpec().getVersion())
-            ? Collections.singletonList(StatusCondition.createErrorCondition(INVALID_VERSION_REASON, INVALID_VERSION_MESSAGE))
-            : Collections.emptyList());
+                ? Collections.singletonList(StatusCondition.createErrorCondition(INVALID_VERSION_REASON, INVALID_VERSION_MESSAGE))
+                : Collections.emptyList());
     }
 }

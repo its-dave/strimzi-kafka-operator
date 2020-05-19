@@ -19,10 +19,10 @@ import com.ibm.eventstreams.api.ProductUse;
 import com.ibm.eventstreams.api.TlsVersion;
 import com.ibm.eventstreams.api.model.AbstractSecureEndpointsModel;
 import com.ibm.eventstreams.api.model.EventStreamsKafkaModel;
-import com.ibm.eventstreams.api.model.ReplicatorSourceUsersModel;
+import com.ibm.eventstreams.api.model.GeoReplicatorSourceUsersModel;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
-import com.ibm.eventstreams.api.spec.EventStreamsReplicatorBuilder;
+import com.ibm.eventstreams.api.spec.EventStreamsGeoReplicatorBuilder;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.spec.SecurityComponentSpec;
 import io.fabric8.kubernetes.api.model.Container;
@@ -68,8 +68,8 @@ public class ModelUtils {
 
     }
 
-    public static EventStreamsReplicatorBuilder createDefaultEventStreamsReplicator(String instanceName) {
-        return new EventStreamsReplicatorBuilder()
+    public static EventStreamsGeoReplicatorBuilder createDefaultEventStreamsGeoReplicator(String instanceName) {
+        return new EventStreamsGeoReplicatorBuilder()
                 .withMetadata(new ObjectMetaBuilder().withName(instanceName).build())
                 .withNewSpec()
                 .withReplicas(1)
@@ -191,7 +191,7 @@ public class ModelUtils {
         Map<String, String> labels = Labels.forStrimziCluster(EventStreamsKafkaModel.getKafkaInstanceName(clusterName)).withStrimziKind(Kafka.RESOURCE_KIND).toMap();
         Secret replicatorConnectorSource = new SecretBuilder()
             .withNewMetadata()
-                .withName(clusterName + "-" + appName + "-" + ReplicatorSourceUsersModel.SOURCE_CONNECTOR_KAFKA_USER_NAME)
+                .withName(clusterName + "-" + appName + "-" + GeoReplicatorSourceUsersModel.SOURCE_CONNECTOR_KAFKA_USER_NAME)
                 .withNamespace(namespace)
                 .addToAnnotations(Ca.ANNO_STRIMZI_IO_CA_KEY_GENERATION, "0")
                 .withLabels(labels)

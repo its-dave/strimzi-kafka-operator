@@ -186,9 +186,10 @@ public class AdminApiModelTest {
     @Test
     public void testDefaultAdminApiEnvVars() {
         AdminApiModel adminApiModel = createDefaultAdminApiModel();
+
         String schemaRegistryEndpoint = instanceName  + "-" + AbstractModel.APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME + "-" + INTERNAL_SERVICE_SUFFIX  + "." + adminApiModel.getNamespace() + ".svc:" + Endpoint.getPodToPodPort(adminApiModel.tlsEnabled());
         String zookeeperEndpoint = instanceName + "-" + EventStreamsKafkaModel.ZOOKEEPER_COMPONENT_NAME + "-client." + adminApiModel.getNamespace() + ".svc:" + EventStreamsKafkaModel.ZOOKEEPER_PORT;
-        String kafkaConnectRestEndpoint = "http://" + instanceName  + "-mirrormaker2-api." + adminApiModel.getNamespace() + ".svc:" + ReplicatorModel.REPLICATOR_PORT;
+        String kafkaConnectRestEndpoint = "http://" + instanceName  + "-mirrormaker2-api." + adminApiModel.getNamespace() + ".svc:" + GeoReplicatorModel.REPLICATOR_PORT;
 
         EnvVar schemaRegistryUrlEnv = new EnvVarBuilder().withName("SCHEMA_REGISTRY_URL").withValue(schemaRegistryEndpoint).build();
         EnvVar zkConnectEnv = new EnvVarBuilder().withName("ZOOKEEPER_CONNECT").withValue(zookeeperEndpoint).build();
@@ -200,7 +201,7 @@ public class AdminApiModelTest {
         EnvVar kafkaConnectRestApiEnv = new EnvVarBuilder().withName("KAFKA_CONNECT_REST_API_ADDRESS").withValue(kafkaConnectRestEndpoint).build();
         EnvVar apiVersionEnv = new EnvVarBuilder().withName("EVENTSTREAMS_API_GROUP").withValue(apiVersion).build();
         EnvVar geoRepEnabledEnv = new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue("false").build();
-        EnvVar geoRepSecretNameEnv = new EnvVarBuilder().withName("GEOREPLICATION_SECRET_NAME").withValue(instanceName  + "-" + AbstractModel.APP_NAME + "-" + ReplicatorSecretModel.REPLICATOR_SECRET_NAME).build();
+        EnvVar geoRepSecretNameEnv = new EnvVarBuilder().withName("GEOREPLICATION_SECRET_NAME").withValue(instanceName  + "-" + AbstractModel.APP_NAME + "-" + GeoReplicatorSecretModel.REPLICATOR_SECRET_NAME).build();
         EnvVar geoRepInternalClientAuthEnv = new EnvVarBuilder().withName("GEOREPLICATION_INTERNAL_CLIENT_AUTH_ENABLED").withValue("false").build();
         EnvVar geoRepExternalClientAuthEnv = new EnvVarBuilder().withName("GEOREPLICATION_EXTERNAL_CLIENT_AUTH_ENABLED").withValue("false").build();
         EnvVar geoRepInternalServerAuthEnv = new EnvVarBuilder().withName("GEOREPLICATION_INTERNAL_SERVER_AUTH_ENABLED").withValue("false").build();
@@ -230,9 +231,10 @@ public class AdminApiModelTest {
     @Test
     public void testAdminApiEnvVarsWithAuthentication() {
         AdminApiModel adminApiModel = createAdminApiModelWithAuthentication();
+
         String schemaRegistryEndpoint = instanceName  + "-" + AbstractModel.APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME + "-" + INTERNAL_SERVICE_SUFFIX  + "." + adminApiModel.getNamespace() + ".svc:" + Endpoint.getPodToPodPort(adminApiModel.tlsEnabled());
         String zookeeperEndpoint = instanceName + "-" + EventStreamsKafkaModel.ZOOKEEPER_COMPONENT_NAME + "-client." + adminApiModel.getNamespace() + ".svc:" + EventStreamsKafkaModel.ZOOKEEPER_PORT;
-        String kafkaConnectRestEndpoint = "http://" + instanceName + "-mirrormaker2-api." + adminApiModel.getNamespace() + ".svc:" + ReplicatorModel.REPLICATOR_PORT;
+        String kafkaConnectRestEndpoint = "http://" + instanceName + "-mirrormaker2-api." + adminApiModel.getNamespace() + ".svc:" + GeoReplicatorModel.REPLICATOR_PORT;
 
         EnvVar schemaRegistryUrlEnv = new EnvVarBuilder().withName("SCHEMA_REGISTRY_URL").withValue(schemaRegistryEndpoint).build();
         EnvVar zkConnectEnv = new EnvVarBuilder().withName("ZOOKEEPER_CONNECT").withValue(zookeeperEndpoint).build();
@@ -245,7 +247,7 @@ public class AdminApiModelTest {
         EnvVar kafkaConnectRestApiEnv = new EnvVarBuilder().withName("KAFKA_CONNECT_REST_API_ADDRESS").withValue(kafkaConnectRestEndpoint).build();
         EnvVar apiVersionEnv = new EnvVarBuilder().withName("EVENTSTREAMS_API_GROUP").withValue(apiVersion).build();
         EnvVar geoRepEnabledEnv = new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue("false").build();
-        EnvVar geoRepSecretNameEnv = new EnvVarBuilder().withName("GEOREPLICATION_SECRET_NAME").withValue(instanceName  + "-" + AbstractModel.APP_NAME + "-" + ReplicatorSecretModel.REPLICATOR_SECRET_NAME).build();
+        EnvVar geoRepSecretNameEnv = new EnvVarBuilder().withName("GEOREPLICATION_SECRET_NAME").withValue(instanceName  + "-" + AbstractModel.APP_NAME + "-" + GeoReplicatorSecretModel.REPLICATOR_SECRET_NAME).build();
         EnvVar geoRepInternalClientAuthEnv = new EnvVarBuilder().withName("GEOREPLICATION_INTERNAL_CLIENT_AUTH_ENABLED").withValue("false").build();
         EnvVar geoRepExternalClientAuthEnv = new EnvVarBuilder().withName("GEOREPLICATION_EXTERNAL_CLIENT_AUTH_ENABLED").withValue("false").build();
         EnvVar geoRepInternalServerAuthEnv = new EnvVarBuilder().withName("GEOREPLICATION_INTERNAL_SERVER_AUTH_ENABLED").withValue("false").build();
@@ -278,7 +280,7 @@ public class AdminApiModelTest {
     }
 
     @Test
-    public void testAdminApiEnvVarsWithEventStreamsReplicator() {
+    public void testAdminApiEnvVarsWithEventStreamsGeoReplicator() {
         EventStreams eventStreams = createDefaultEventStreams().build();
         AdminApiModel adminApiModel = new AdminApiModel(eventStreams, imageConfig, null, mockIcpClusterDataMap, true, kafkaPrincipal);
 
@@ -960,9 +962,9 @@ public class AdminApiModelTest {
 
         assertThat(volumeMounts.size(), is(7));
 
-        assertThat(volumeMounts.get(0).getName(), is(ReplicatorSecretModel.REPLICATOR_SECRET_NAME));
+        assertThat(volumeMounts.get(0).getName(), is(GeoReplicatorSecretModel.REPLICATOR_SECRET_NAME));
         assertThat(volumeMounts.get(0).getReadOnly(), is(true));
-        assertThat(volumeMounts.get(0).getMountPath(), is(ReplicatorModel.REPLICATOR_SECRET_MOUNT_PATH));
+        assertThat(volumeMounts.get(0).getMountPath(), is(GeoReplicatorModel.REPLICATOR_SECRET_MOUNT_PATH));
 
         assertThat(volumeMounts.get(1).getName(), is(AdminApiModel.KAFKA_CONFIGMAP_MOUNT_NAME));
         assertThat(volumeMounts.get(1).getReadOnly(), is(true));

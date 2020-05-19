@@ -15,9 +15,9 @@ package com.ibm.eventstreams.api.model;
 import com.ibm.eventstreams.api.model.utils.ModelUtils;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
-import com.ibm.eventstreams.api.spec.EventStreamsReplicator;
-import com.ibm.eventstreams.api.spec.EventStreamsReplicatorBuilder;
-import com.ibm.eventstreams.replicator.ReplicatorCredentials;
+import com.ibm.eventstreams.api.spec.EventStreamsGeoReplicator;
+import com.ibm.eventstreams.api.spec.EventStreamsGeoReplicatorBuilder;
+import com.ibm.eventstreams.georeplicator.GeoReplicatorCredentials;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.SecretBuilder;
@@ -55,10 +55,10 @@ import static org.hamcrest.Matchers.aMapWithSize;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.hasEntry;
 
-public class ReplicatorModelTest {
+public class GeoReplicatorModelTest {
 
     private final String instanceName = "test";
-    private final String componentPrefix = instanceName + "-" + AbstractModel.APP_NAME + "-" + ReplicatorModel.COMPONENT_NAME;
+    private final String componentPrefix = instanceName + "-" + AbstractModel.APP_NAME + "-" + GeoReplicatorModel.COMPONENT_NAME;
     private final int defaultReplicas = 1;
     private final int nonDefaultReplicas = 2;
     private final int defaultKafkaReplicas = 3;
@@ -70,7 +70,7 @@ public class ReplicatorModelTest {
     private final String bootstrap = kafkaInstanceName + "-kafka-bootstrap." + namespace + ".svc." + io.strimzi.operator.cluster.model.ModelUtils.KUBERNETES_SERVICE_DNS_DOMAIN + ":" + EventStreamsKafkaModel.KAFKA_PORT_TLS;
     private final String nonDefaultBootstrap = "nonDefaultBootstrap";
 
-    private ReplicatorCredentials replicatorCredentials;
+    private GeoReplicatorCredentials geoReplicatorCredentials;
 
     @Test
     public void testDefaultReplicatorIsCreated() {
@@ -89,23 +89,23 @@ public class ReplicatorModelTest {
 
 
         assertThat(replicator.getSpec().getReplicas(), is(defaultReplicas));
-        assertThat(replicator.getSpec().getConnectCluster(), is(ReplicatorModel.getDefaultReplicatorClusterName(instanceName)));
+        assertThat(replicator.getSpec().getConnectCluster(), is(GeoReplicatorModel.getDefaultReplicatorClusterName(instanceName)));
 
         KafkaMirrorMaker2ClusterSpec clusterSpec = replicator.getSpec().getClusters().get(0);
 
-        assertThat(clusterSpec.getAlias(), is(ReplicatorModel.getDefaultReplicatorClusterName(instanceName)));
+        assertThat(clusterSpec.getAlias(), is(GeoReplicatorModel.getDefaultReplicatorClusterName(instanceName)));
         assertThat(clusterSpec.getBootstrapServers(), is(bootstrap));
         assertThat(clusterSpec.getAuthentication().getType(), is("tls"));
         assertThat(clusterSpec.getTls().getTrustedCertificates().size(), is(1));
         assertThat(clusterSpec.getConfig().get("config.storage.replication.factor"), is(defaultKafkaReplicas));
         assertThat(clusterSpec.getConfig().get("offset.storage.replication.factor"), is(defaultKafkaReplicas));
         assertThat(clusterSpec.getConfig().get("status.storage.replication.factor"), is(defaultKafkaReplicas));
-        assertThat(clusterSpec.getConfig().get("config.storage.topic"), is(ReplicatorModel.CONFIG_STORAGE_TOPIC_NAME));
-        assertThat(clusterSpec.getConfig().get("offset.storage.topic"), is(ReplicatorModel.OFFSET_STORAGE_TOPIC_NAME));
-        assertThat(clusterSpec.getConfig().get("status.storage.topic"), is(ReplicatorModel.STATUS_STORAGE_TOPIC_NAME));
-        assertThat(clusterSpec.getConfig().get("key.converter"), is(ReplicatorModel.BYTE_ARRAY_CONVERTER_NAME));
-        assertThat(clusterSpec.getConfig().get("value.converter"), is(ReplicatorModel.BYTE_ARRAY_CONVERTER_NAME));
-        assertThat(clusterSpec.getConfig().get("group.id"), is(ReplicatorModel.getDefaultReplicatorClusterName(instanceName)));
+        assertThat(clusterSpec.getConfig().get("config.storage.topic"), is(GeoReplicatorModel.CONFIG_STORAGE_TOPIC_NAME));
+        assertThat(clusterSpec.getConfig().get("offset.storage.topic"), is(GeoReplicatorModel.OFFSET_STORAGE_TOPIC_NAME));
+        assertThat(clusterSpec.getConfig().get("status.storage.topic"), is(GeoReplicatorModel.STATUS_STORAGE_TOPIC_NAME));
+        assertThat(clusterSpec.getConfig().get("key.converter"), is(GeoReplicatorModel.BYTE_ARRAY_CONVERTER_NAME));
+        assertThat(clusterSpec.getConfig().get("value.converter"), is(GeoReplicatorModel.BYTE_ARRAY_CONVERTER_NAME));
+        assertThat(clusterSpec.getConfig().get("group.id"), is(GeoReplicatorModel.getDefaultReplicatorClusterName(instanceName)));
 
     }
 
@@ -132,11 +132,11 @@ public class ReplicatorModelTest {
         assertThat(clusterSpec.getConfig().get("offset.storage.replication.factor"), is(nonDefaultKafkaReplicas));
         assertThat(clusterSpec.getConfig().get("status.storage.replication.factor"), is(nonDefaultKafkaReplicas));
 
-        assertThat(clusterSpec.getConfig().get("config.storage.topic"), is(ReplicatorModel.CONFIG_STORAGE_TOPIC_NAME));
-        assertThat(clusterSpec.getConfig().get("offset.storage.topic"), is(ReplicatorModel.OFFSET_STORAGE_TOPIC_NAME));
-        assertThat(clusterSpec.getConfig().get("status.storage.topic"), is(ReplicatorModel.STATUS_STORAGE_TOPIC_NAME));
-        assertThat(clusterSpec.getConfig().get("key.converter"), is(ReplicatorModel.BYTE_ARRAY_CONVERTER_NAME));
-        assertThat(clusterSpec.getConfig().get("value.converter"), is(ReplicatorModel.BYTE_ARRAY_CONVERTER_NAME));
+        assertThat(clusterSpec.getConfig().get("config.storage.topic"), is(GeoReplicatorModel.CONFIG_STORAGE_TOPIC_NAME));
+        assertThat(clusterSpec.getConfig().get("offset.storage.topic"), is(GeoReplicatorModel.OFFSET_STORAGE_TOPIC_NAME));
+        assertThat(clusterSpec.getConfig().get("status.storage.topic"), is(GeoReplicatorModel.STATUS_STORAGE_TOPIC_NAME));
+        assertThat(clusterSpec.getConfig().get("key.converter"), is(GeoReplicatorModel.BYTE_ARRAY_CONVERTER_NAME));
+        assertThat(clusterSpec.getConfig().get("value.converter"), is(GeoReplicatorModel.BYTE_ARRAY_CONVERTER_NAME));
 
         assertThat(clusterSpec.getAuthentication().getType(), is("tls"));
         assertThat(clusterSpec.getTls().getTrustedCertificates().size(), is(1));
@@ -153,7 +153,7 @@ public class ReplicatorModelTest {
                 .getMetadata()
                 .getLabels();
 
-        assertThat(replicatorPodLabels, hasEntry(Labels.KUBERNETES_NAME_LABEL, ReplicatorModel.APPLICATION_NAME));
+        assertThat(replicatorPodLabels, hasEntry(Labels.KUBERNETES_NAME_LABEL, GeoReplicatorModel.APPLICATION_NAME));
     }
 
 
@@ -178,7 +178,7 @@ public class ReplicatorModelTest {
     public void testDefaultReplicatorNetworkPolicy() {
 
 
-        ReplicatorModel replicator = createDefaultReplicatorModel();
+        GeoReplicatorModel replicator = createDefaultReplicatorModel();
         NetworkPolicy networkPolicy = replicator.getNetworkPolicy();
 
         String expectedClusterOperatorName = "eventstreams-cluster-operator";
@@ -190,7 +190,7 @@ public class ReplicatorModelTest {
         assertThat(networkPolicy.getSpec().getIngress().size(), is(1));
 
         assertThat(networkPolicy.getSpec().getIngress().get(0).getPorts().size(), is(1));
-        assertThat(networkPolicy.getSpec().getIngress().get(0).getPorts().get(0).getPort().getIntVal(), is(ReplicatorModel.REPLICATOR_PORT));
+        assertThat(networkPolicy.getSpec().getIngress().get(0).getPorts().get(0).getPort().getIntVal(), is(GeoReplicatorModel.REPLICATOR_PORT));
         assertThat(networkPolicy.getSpec().getIngress().get(0).getFrom().size(), is(2));
         assertThat(networkPolicy.getSpec().getIngress().get(0).getFrom().get(0).getPodSelector().getMatchLabels().size(), is(1));
 
@@ -205,17 +205,17 @@ public class ReplicatorModelTest {
     @Test
     public void testDefaultReplicatorSecret() {
 
-        ReplicatorSecretModel replicatorSecretModel = createDefaultReplicatorSecretModel();
-        Secret replicatorSecret = replicatorSecretModel.getSecret();
+        GeoReplicatorSecretModel geoReplicatorSecretModel = createDefaultReplicatorSecretModel();
+        Secret replicatorSecret = geoReplicatorSecretModel.getSecret();
 
-        assertThat(replicatorSecret.getMetadata().getName(), is(instanceName + "-" + AbstractModel.APP_NAME + "-"  + ReplicatorSecretModel.REPLICATOR_SECRET_NAME));
+        assertThat(replicatorSecret.getMetadata().getName(), is(instanceName + "-" + AbstractModel.APP_NAME + "-"  + GeoReplicatorSecretModel.REPLICATOR_SECRET_NAME));
         assertThat(replicatorSecret.getKind(), is("Secret"));
         assertThat(replicatorSecret.getMetadata().getNamespace(), is(namespace));
 
         Base64.Encoder encoder = Base64.getEncoder();
-        assertThat(replicatorSecret.getData().get(ReplicatorSecretModel.REPLICATOR_TARGET_CLUSTERS_SECRET_KEY_NAME), is(encoder.encodeToString("[]".getBytes(StandardCharsets.UTF_8))));
+        assertThat(replicatorSecret.getData().get(GeoReplicatorSecretModel.REPLICATOR_TARGET_CLUSTERS_SECRET_KEY_NAME), is(encoder.encodeToString("[]".getBytes(StandardCharsets.UTF_8))));
 
-        Map<String, String> replicatorSecretLabels = replicatorSecretModel.getSecret().getMetadata().getLabels();
+        Map<String, String> replicatorSecretLabels = geoReplicatorSecretModel.getSecret().getMetadata().getLabels();
 
         assertThat(replicatorSecretLabels,  allOf(
                 aMapWithSize(7),
@@ -228,8 +228,8 @@ public class ReplicatorModelTest {
                 hasEntry(Labels.STRIMZI_KIND_LABEL, "EventStreams")));
     }
 
-    private EventStreamsReplicatorBuilder createDefaultEventStreamsReplicator() {
-        return ModelUtils.createDefaultEventStreamsReplicator(instanceName);
+    private EventStreamsGeoReplicatorBuilder createDefaultEventStreamsGeoReplicator() {
+        return ModelUtils.createDefaultEventStreamsGeoReplicator(instanceName);
     }
 
     private EventStreamsBuilder createDefaultEventStreams() {
@@ -250,7 +250,7 @@ public class ReplicatorModelTest {
                 .endSpec();
     }
 
-    private EventStreamsReplicatorBuilder createNonDefaultEventStreamsReplicator() {
+    private EventStreamsGeoReplicatorBuilder createNonDefaultEventStreamsGeoReplicator() {
 
         KafkaClientAuthentication replicatorConnectClientAuth = new KafkaClientAuthenticationTlsBuilder()
                 .build();
@@ -271,7 +271,7 @@ public class ReplicatorModelTest {
                 .withNewConnectCluster(nonDefaultConnectClusterName)
                 .build();
 
-        return ModelUtils.createDefaultEventStreamsReplicator(instanceName)
+        return ModelUtils.createDefaultEventStreamsGeoReplicator(instanceName)
                 .withMetadata(new ObjectMetaBuilder()
                         .withNewName(instanceName)
                         .withNewNamespace(namespace)
@@ -309,20 +309,20 @@ public class ReplicatorModelTest {
         return createReplicatorModel(false).getReplicator();
     }
 
-    private ReplicatorModel createDefaultReplicatorModel() {
+    private GeoReplicatorModel createDefaultReplicatorModel() {
         return createReplicatorModel(true);
     }
 
-    private ReplicatorModel createReplicatorModel(boolean defaults) {
+    private GeoReplicatorModel createReplicatorModel(boolean defaults) {
         EventStreams instance = defaults ? createDefaultEventStreams().build() : createNonDefaultEventStreams().build();
 
-        EventStreamsReplicator replicatorInstance = defaults ? createDefaultEventStreamsReplicator().build() : createNonDefaultEventStreamsReplicator().build();
+        EventStreamsGeoReplicator replicatorInstance = defaults ? createDefaultEventStreamsGeoReplicator().build() : createNonDefaultEventStreamsGeoReplicator().build();
 
-        replicatorCredentials = new ReplicatorCredentials(instance);
+        geoReplicatorCredentials = new GeoReplicatorCredentials(instance);
 
         Secret replicatorConnectSecret = new SecretBuilder()
                 .withNewMetadata()
-                .withName(instanceName + "-ibm-es-" + ReplicatorDestinationUsersModel.CONNECT_KAFKA_USER_NAME)
+                .withName(instanceName + "-ibm-es-" + GeoReplicatorDestinationUsersModel.CONNECT_KAFKA_USER_NAME)
                 .withNamespace(namespace)
                 .addToAnnotations(Ca.ANNO_STRIMZI_IO_CA_KEY_GENERATION, "0")
                 .endMetadata()
@@ -331,15 +331,15 @@ public class ReplicatorModelTest {
                 .addToData("user.password", "password")
                 .build();
 
-        replicatorCredentials.setReplicatorClientAuth(replicatorConnectSecret);
-        replicatorCredentials.setReplicatorTrustStore(replicatorConnectSecret);
+        geoReplicatorCredentials.setGeoReplicatorClientAuth(replicatorConnectSecret);
+        geoReplicatorCredentials.setGeoReplicatorTrustStore(replicatorConnectSecret);
         KafkaMirrorMaker2 mm2 = null;
-        return new ReplicatorModel(replicatorInstance, instance, replicatorCredentials, mm2);
+        return new GeoReplicatorModel(replicatorInstance, instance, geoReplicatorCredentials, mm2);
     }
 
-    private ReplicatorSecretModel createDefaultReplicatorSecretModel() {
+    private GeoReplicatorSecretModel createDefaultReplicatorSecretModel() {
         EventStreams instance = createDefaultEventStreams().build();
-        return new ReplicatorSecretModel(instance);
+        return new GeoReplicatorSecretModel(instance);
     }
 
 

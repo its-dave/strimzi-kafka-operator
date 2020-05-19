@@ -12,7 +12,7 @@
  */
 package com.ibm.eventstreams;
 
-import com.ibm.eventstreams.controller.EventStreamsReplicatorVerticle;
+import com.ibm.eventstreams.controller.EventStreamsGeoReplicatorVerticle;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.fabric8.kubernetes.api.model.rbac.ClusterRole;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
@@ -154,7 +154,7 @@ public class Main {
                     promise.handle(result);
                 });
 
-            EventStreamsReplicatorVerticle eventSteamsReplicatorVerticle = new EventStreamsReplicatorVerticle(vertx,
+            EventStreamsGeoReplicatorVerticle eventSteamsReplicatorVerticle = new EventStreamsGeoReplicatorVerticle(vertx,
                     client,
                     namespace,
                     metricsProvider,

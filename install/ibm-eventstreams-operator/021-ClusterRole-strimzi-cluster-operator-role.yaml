@@ -34,6 +34,9 @@ rules:
   - list
 - apiGroups:
   - admissionregistration.k8s.io
+  # The Event Streams Operator requires the "get", "create", "patch" and "delete" permissions for validatingwebhookconfigurations
+  # This is to allow the operator to create and manage validation webhooks required for an Event Streams custom resources to
+  # be validated prior to application to the Kubernetes server
   resources:
   - validatingwebhookconfigurations
   verbs:
@@ -43,6 +46,8 @@ rules:
   - delete
 - apiGroups:
   - rbac.authorization.k8s.io
+  # The Event Streams Operator requires the "get" and "list" permissions for clusterroles and clusterrolebindings
+  # This is to allow the operator to query the Kubernetes server for whether the required cluster roles and bindings are present
   resources:
   - clusterroles
   - clusterrolebindings
@@ -51,6 +56,8 @@ rules:
   - list
 - apiGroups:
   - console.openshift.io
+  # The Event Streams Operator requires the "get", "create", "patch" and "delete" permissions for consoleyamlsamples
+  # This is to allow the operator to setup samples for the OLM UI
   resources:
   - consoleyamlsamples
   verbs:
@@ -60,6 +67,8 @@ rules:
   - delete
 - apiGroups:
   - apiextensions.k8s.io
+  # The Event Streams Operator requires the "get", "create" and "patch" permissions for custom resource definitions
+  # This is to allow the operator to query the kubernetes server for whether certain CRDs are present
   resources:
   - customresourcedefinitions
   verbs:

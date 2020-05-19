@@ -11,10 +11,10 @@
  * deposited with the U.S. Copyright Office.
  */
 
-package com.ibm.eventstreams.replicator;
+package com.ibm.eventstreams.georeplicator;
 
-import com.ibm.eventstreams.api.model.ReplicatorModel;
-import com.ibm.eventstreams.api.model.ReplicatorDestinationUsersModel;
+import com.ibm.eventstreams.api.model.GeoReplicatorModel;
+import com.ibm.eventstreams.api.model.GeoReplicatorDestinationUsersModel;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.strimzi.api.kafka.model.CertAndKeySecretSource;
@@ -37,19 +37,19 @@ import org.apache.logging.log4j.Logger;
 import java.util.Optional;
 
 
-public class ReplicatorCredentials {
+public class GeoReplicatorCredentials {
 
-    KafkaMirrorMaker2Tls replicatorConnectTrustStore;
-    KafkaClientAuthentication replicatorConnectClientAuth;
+    KafkaMirrorMaker2Tls geoReplicatorConnectTrustStore;
+    KafkaClientAuthentication geoReplicatorConnectClientAuth;
     EventStreams instance;
 
-    private static final Logger log = LogManager.getLogger(ReplicatorCredentials.class.getName());
+    private static final Logger log = LogManager.getLogger(GeoReplicatorCredentials.class.getName());
 
-    public ReplicatorCredentials(EventStreams instance) {
+    public GeoReplicatorCredentials(EventStreams instance) {
         this.instance = instance;
     }
 
-    public void setReplicatorTrustStore(Secret clusterCa) {
+    public void setGeoReplicatorTrustStore(Secret clusterCa) {
 
         CertSecretSource caCrt = new CertSecretSourceBuilder()
             .withCertificate("ca.crt")
@@ -61,13 +61,13 @@ public class ReplicatorCredentials {
 
 
         if (kafaServerTLS.isPresent()) {
-            replicatorConnectTrustStore = new KafkaMirrorMaker2TlsBuilder()
+            geoReplicatorConnectTrustStore = new KafkaMirrorMaker2TlsBuilder()
                     .withTrustedCertificates(caCrt)
                     .build();
         }
     }
 
-    public void setReplicatorClientAuth(Secret connectUserSecret) {
+    public void setGeoReplicatorClientAuth(Secret connectUserSecret) {
 
         Optional<KafkaListenerAuthentication> kafkaClientAuth = Optional.ofNullable(instance.getSpec().getStrimziOverrides().getKafka().getListeners())
                 .map(KafkaListeners::getTls)
@@ -77,31 +77,30 @@ public class ReplicatorCredentials {
             if (kafkaClientAuth.get() instanceof KafkaListenerAuthenticationTls) {
                 CertAndKeySecretSource certKey = new CertAndKeySecretSource();
                 certKey.setSecretName(connectUserSecret.getMetadata().getName());
-                certKey.setKey(ReplicatorModel.USER_KEY);
-                certKey.setCertificate(ReplicatorModel.USER_CERT);
-                replicatorConnectClientAuth = new KafkaClientAuthenticationTlsBuilder()
+                certKey.setKey(GeoReplicatorModel.USER_KEY);
+                certKey.setCertificate(GeoReplicatorModel.USER_CERT);
+                geoReplicatorConnectClientAuth = new KafkaClientAuthenticationTlsBuilder()
                         .withCertificateAndKey(certKey)
                         .build();
 
             } else if (kafkaClientAuth.get() instanceof KafkaListenerAuthenticationScramSha512) {
 
-                replicatorConnectClientAuth = new KafkaClientAuthenticationScramSha512Builder()
+                geoReplicatorConnectClientAuth = new KafkaClientAuthenticationScramSha512Builder()
                         .withPasswordSecret(new PasswordSecretSourceBuilder()
                             .withSecretName(connectUserSecret.getMetadata().getName())
-                            .withPassword(ReplicatorModel.SCRAM_PASSWORD)
+                            .withPassword(GeoReplicatorModel.SCRAM_PASSWORD)
                             .build())
-                        .withNewUsername(ReplicatorDestinationUsersModel.getConnectKafkaUserName(instance.getMetadata().getName()))
+                        .withNewUsername(GeoReplicatorDestinationUsersModel.getConnectKafkaUserName(instance.getMetadata().getName()))
                         .build();
             }
         }
     }
 
-    public KafkaMirrorMaker2Tls getReplicatorConnectTrustStore() {
-
-        return this.replicatorConnectTrustStore;
+    public KafkaMirrorMaker2Tls getGeoReplicatorConnectTrustStore() {
+        return this.geoReplicatorConnectTrustStore;
     }
 
-    public KafkaClientAuthentication getReplicatorConnectClientAuth() {
-        return this.replicatorConnectClientAuth;
+    public KafkaClientAuthentication getGeoReplicatorConnectClientAuth() {
+        return this.geoReplicatorConnectClientAuth;
     }
 }

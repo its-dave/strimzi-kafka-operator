@@ -29,7 +29,7 @@ import java.io.Serializable;
 @JsonInclude(JsonInclude.Include.NON_DEFAULT)
 @JsonPropertyOrder({ "replicas", "mirrorMaker2Spec" })
 @EqualsAndHashCode
-public class ReplicatorSpec implements Serializable  {
+public class EventStreamsGeoReplicatorSpec implements Serializable  {
 
     private static final long serialVersionUID = 1L;
 

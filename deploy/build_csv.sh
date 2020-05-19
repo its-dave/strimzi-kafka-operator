@@ -14,7 +14,7 @@ ${CP} "${INSTALL_DIR}/047-Crd-kafkaconnector.yaml" "${KAFKA_CONNECTOR_CRD_FILE}"
 ${CP} "${INSTALL_DIR}/048-Crd-kafkamirrormaker2.yaml" "${KAFKA_MIRROR_MAKER_2_CRD_FILE}"
 ${CP} "${INSTALL_DIR}/049-Crd-kafkarebalance.yaml" "${KAFKA_REBALANCE_CRD_FILE}"
 ${CP} "${INSTALL_DIR}/140-Crd-eventstreams.yaml" "${EVENTSTREAMS_CRD_FILE}"
-${CP} "${INSTALL_DIR}/143-Crd-eventstreamsreplicator.yaml" "${EVENTSTREAMS_GEOREP_CRD_FILE}"
+${CP} "${INSTALL_DIR}/143-Crd-eventstreamsgeoreplicator.yaml" "${EVENTSTREAMS_GEOREP_CRD_FILE}"
 yq w -i "${EVENTSTREAMS_CRD_FILE}" spec.version v1beta1
 yq w -i "${EVENTSTREAMS_GEOREP_CRD_FILE}" spec.version v1beta1
 
@@ -24,7 +24,10 @@ ${CP} "${INSTALL_DIR}/020-ClusterRole-strimzi-cluster-operator-role.yaml" "${ROL
 ${CP} "${INSTALL_DIR}/020-RoleBinding-strimzi-cluster-operator.yaml" "${ROLE_BINDING_FILE}"
 ${CP} "${INSTALL_DIR}/010-ServiceAccount-strimzi-cluster-operator.yaml" "${SERVICE_ACCOUNT_FILE}"
 ${CP} "${INSTALL_DIR}/150-Deployment-eventstreams-cluster-operator.yaml" "${OPERATOR_FILE}"
+# Inject the expected service account name (the name of the operator role) into the operator deployment
 yq r ${ROLE_FILE} metadata.name | xargs yq w -i ${OPERATOR_FILE} spec.template.spec.serviceAccountName
+# Inject the entity operator delegation ClusterRole rules into the Operator Role
+yq m -i -a ${ROLE_FILE} "${INSTALL_DIR}/031-ClusterRole-strimzi-entity-operator.yaml"
 ${SED} -i "s/metadata.namespace/metadata.annotations['olm.targetNamespaces']/" "${OPERATOR_FILE}"
 ${SED} -i "0,/metadata.annotations\['olm.targetNamespaces'\]/{s/metadata.annotations\['olm.targetNamespaces'\]/metadata.namespace/}" "${OPERATOR_FILE}"
 

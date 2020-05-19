@@ -15,9 +15,9 @@ package com.ibm.eventstreams.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ibm.eventstreams.api.Crds;
-import com.ibm.eventstreams.api.spec.EventStreamsReplicatorDoneable;
-import com.ibm.eventstreams.api.spec.EventStreamsReplicator;
-import com.ibm.eventstreams.api.spec.EventStreamsReplicatorList;
+import com.ibm.eventstreams.api.spec.EventStreamsGeoReplicator;
+import com.ibm.eventstreams.api.spec.EventStreamsGeoReplicatorDoneable;
+import com.ibm.eventstreams.api.spec.EventStreamsGeoReplicatorList;
 import io.fabric8.kubernetes.api.model.Status;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
@@ -45,8 +45,8 @@ import java.util.Collections;
 import java.util.Optional;
 
 
-public class EventStreamsReplicatorResourceOperator extends
-        AbstractWatchableResourceOperator<KubernetesClient, EventStreamsReplicator, EventStreamsReplicatorList, EventStreamsReplicatorDoneable, Resource<EventStreamsReplicator, EventStreamsReplicatorDoneable>> {
+public class EventStreamsGeoReplicatorResourceOperator extends
+        AbstractWatchableResourceOperator<KubernetesClient, EventStreamsGeoReplicator, EventStreamsGeoReplicatorList, EventStreamsGeoReplicatorDoneable, Resource<EventStreamsGeoReplicator, EventStreamsGeoReplicatorDoneable>> {
 
     private static final Logger log = LogManager.getLogger(EventStreamsResourceOperator.class.getName());
 
@@ -54,17 +54,17 @@ public class EventStreamsReplicatorResourceOperator extends
 
     public final CrdOperator<KubernetesClient, KafkaMirrorMaker2, KafkaMirrorMaker2List, DoneableKafkaMirrorMaker2> mirrorMaker2Operator;
 
-    public EventStreamsReplicatorResourceOperator(Vertx vertx, KubernetesClient client, String resourceKind) {
+    public EventStreamsGeoReplicatorResourceOperator(Vertx vertx, KubernetesClient client, String resourceKind) {
         super(vertx, client, resourceKind);
-        log.info("Creating EventStreamsReplicatorResourceOperator");
+        log.info("Creating EventStreamsGeoReplicatorResourceOperator");
         this.client = client;
-        this.mirrorMaker2Operator = new CrdOperator<>(vertx, client, KafkaMirrorMaker2.class, KafkaMirrorMaker2List.class, DoneableKafkaMirrorMaker2.class, Crds.getCrd(EventStreamsReplicator.class));
+        this.mirrorMaker2Operator = new CrdOperator<>(vertx, client, KafkaMirrorMaker2.class, KafkaMirrorMaker2List.class, DoneableKafkaMirrorMaker2.class, Crds.getCrd(EventStreamsGeoReplicator.class));
     }
 
     @Override
-    protected MixedOperation<EventStreamsReplicator, EventStreamsReplicatorList, EventStreamsReplicatorDoneable, Resource<EventStreamsReplicator, EventStreamsReplicatorDoneable>> operation() {
-        return client.customResources(Crds.getCrd(EventStreamsReplicator.class), EventStreamsReplicator.class, EventStreamsReplicatorList.class,
-                EventStreamsReplicatorDoneable.class);
+    protected MixedOperation<EventStreamsGeoReplicator, EventStreamsGeoReplicatorList, EventStreamsGeoReplicatorDoneable, Resource<EventStreamsGeoReplicator, EventStreamsGeoReplicatorDoneable>> operation() {
+        return client.customResources(Crds.getCrd(EventStreamsGeoReplicator.class), EventStreamsGeoReplicator.class, EventStreamsGeoReplicatorList.class,
+                EventStreamsGeoReplicatorDoneable.class);
 
     }
 
@@ -88,8 +88,8 @@ public class EventStreamsReplicatorResourceOperator extends
      * @param resource instance of Event Streams with an updated status subresource
      * @return A future that succeeds with the status has been updated.
      */
-    public Future<EventStreamsReplicator> updateEventStreamsReplicatorStatus(EventStreamsReplicator resource) {
-        Promise<EventStreamsReplicator> blockingPromise = Promise.promise();
+    public Future<EventStreamsGeoReplicator> updateEventStreamsGeoReplicatorStatus(EventStreamsGeoReplicator resource) {
+        Promise<EventStreamsGeoReplicator> blockingPromise = Promise.promise();
         vertx.createSharedWorkerExecutor("kubernetes-ops-pool").executeBlocking(future -> {
             try {
                 OkHttpClient client = this.client.adapt(OkHttpClient.class);
@@ -105,7 +105,7 @@ public class EventStreamsReplicatorResourceOperator extends
 
                 String method = request.method();
                 Response response = client.newCall(request).execute();
-                EventStreamsReplicator returnedResource = null;
+                EventStreamsGeoReplicator returnedResource = null;
                 try {
                     final int code = response.code();
 
@@ -115,7 +115,7 @@ public class EventStreamsReplicatorResourceOperator extends
                         throw OperationSupport.requestFailure(request, status);
                     } else if (response.body() != null) {
                         try (InputStream bodyInputStream = response.body().byteStream()) {
-                            returnedResource = Serialization.unmarshal(bodyInputStream, EventStreamsReplicator.class, Collections.emptyMap());
+                            returnedResource = Serialization.unmarshal(bodyInputStream, EventStreamsGeoReplicator.class, Collections.emptyMap());
                         }
                     }
                 } finally {

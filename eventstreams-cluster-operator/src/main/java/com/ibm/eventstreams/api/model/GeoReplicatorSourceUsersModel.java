@@ -29,23 +29,23 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-public class ReplicatorSourceUsersModel extends AbstractModel {
+public class GeoReplicatorSourceUsersModel extends AbstractModel {
 
     public static final String SOURCE_CONNECTOR_KAFKA_USER_NAME = "georep-source-user";
     private KafkaUser sourceConnectorKafkaUser;
 
-    private static final Logger log = LogManager.getLogger(ReplicatorSourceUsersModel.class.getName());
+    private static final Logger log = LogManager.getLogger(GeoReplicatorSourceUsersModel.class.getName());
     public static final String INVALID_REASON = "AuthenticationNotSupportedByGeoReplication";
     public static final String INVALID_MESSAGE = "A Kafka Listener is configured with authentication that is not supported by geo-replication. "
         + "Valid authentication types for geo-replication are 'tls' or 'scram-sha-512'. "
         + "Edit spec.strimziOverrides.kafka.listeners.external to provide a valid authentication type.";
 
-    public ReplicatorSourceUsersModel(EventStreams instance) {
-        super(instance, ReplicatorModel.COMPONENT_NAME, ReplicatorModel.APPLICATION_NAME);
+    public GeoReplicatorSourceUsersModel(EventStreams instance) {
+        super(instance, GeoReplicatorModel.COMPONENT_NAME, GeoReplicatorModel.APPLICATION_NAME);
 
         setOwnerReference(instance);
 
-        KafkaListenerAuthentication externalClientAuth = ReplicatorModel.getExternalKafkaListenerAuthentication(instance);
+        KafkaListenerAuthentication externalClientAuth = GeoReplicatorModel.getExternalKafkaListenerAuthentication(instance);
         createSourceConnectorKafkaUser(externalClientAuth);
 
     }
@@ -137,7 +137,7 @@ public class ReplicatorSourceUsersModel extends AbstractModel {
     }
 
     public static List<StatusCondition> validateCr(EventStreams spec) {
-        boolean isInvalidKafkaListenerAuth = Optional.ofNullable(ReplicatorModel.getExternalKafkaListenerAuthentication(spec))
+        boolean isInvalidKafkaListenerAuth = Optional.ofNullable(GeoReplicatorModel.getExternalKafkaListenerAuthentication(spec))
             .map(auth -> !isSupportedAuthType(auth))
             .orElse(false);
         if (isInvalidKafkaListenerAuth) {

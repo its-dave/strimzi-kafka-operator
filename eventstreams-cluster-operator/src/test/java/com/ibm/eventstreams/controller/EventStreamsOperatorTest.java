@@ -26,8 +26,8 @@ import com.ibm.eventstreams.api.model.ClusterSecretsModel;
 import com.ibm.eventstreams.api.model.CollectorModel;
 import com.ibm.eventstreams.api.model.InternalKafkaUserModel;
 import com.ibm.eventstreams.api.model.MessageAuthenticationModel;
-import com.ibm.eventstreams.api.model.ReplicatorSecretModel;
-import com.ibm.eventstreams.api.model.ReplicatorSourceUsersModel;
+import com.ibm.eventstreams.api.model.GeoReplicatorSecretModel;
+import com.ibm.eventstreams.api.model.GeoReplicatorSourceUsersModel;
 import com.ibm.eventstreams.api.model.RestProducerModel;
 import com.ibm.eventstreams.api.model.SchemaRegistryModel;
 import com.ibm.eventstreams.api.model.utils.MockEventStreamsKube;
@@ -36,7 +36,7 @@ import com.ibm.eventstreams.api.spec.EndpointSpec;
 import com.ibm.eventstreams.api.spec.EndpointSpecBuilder;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
-import com.ibm.eventstreams.api.spec.EventStreamsReplicator;
+import com.ibm.eventstreams.api.spec.EventStreamsGeoReplicator;
 import com.ibm.eventstreams.api.spec.SchemaRegistrySpec;
 import com.ibm.eventstreams.api.spec.SecurityComponentSpec;
 import com.ibm.eventstreams.api.spec.SecurityComponentSpecBuilder;
@@ -202,7 +202,7 @@ public class EventStreamsOperatorTest {
     private KubernetesClient mockClient;
     private EventStreamsResourceOperator esResourceOperator;
     private Cp4iServicesBindingResourceOperator cp4iResourceOperator;
-    private EventStreamsReplicatorResourceOperator esReplicatorResourceOperator;
+    private EventStreamsGeoReplicatorResourceOperator esReplicatorResourceOperator;
     private EventStreamsOperator esOperator;
     private KafkaUserOperator kafkaUserOperator;
     private EventStreamsOperatorConfig.ImageLookup imageConfig;
@@ -275,9 +275,9 @@ public class EventStreamsOperatorTest {
         when(cp4iResourceOperator.waitForCp4iServicesBindingStatusAndMaybeGetUrl(anyString(), anyString(), anyLong(), anyLong())).thenReturn(Future.succeededFuture());
         when(cp4iResourceOperator.getCp4iHeaderUrl(anyString(), anyString())).thenReturn(Optional.of("header"));
 
-        EventStreamsReplicator mockEventStreamsReplicator = ModelUtils.createDefaultEventStreamsReplicator(CLUSTER_NAME).build();
-        esReplicatorResourceOperator = mock(EventStreamsReplicatorResourceOperator.class);
-        when(esReplicatorResourceOperator.getAsync(anyString(), anyString())).thenReturn(Future.succeededFuture(mockEventStreamsReplicator));
+        EventStreamsGeoReplicator mockEventStreamsGeoReplicator = ModelUtils.createDefaultEventStreamsGeoReplicator(CLUSTER_NAME).build();
+        esReplicatorResourceOperator = mock(EventStreamsGeoReplicatorResourceOperator.class);
+        when(esReplicatorResourceOperator.getAsync(anyString(), anyString())).thenReturn(Future.succeededFuture(mockEventStreamsGeoReplicator));
 
         kafkaUserOperator = mock(KafkaUserOperator.class);
         when(kafkaUserOperator.getAsync(anyString(), anyString())).thenReturn(Future.succeededFuture(mockKafkaUser));
@@ -799,12 +799,12 @@ public class EventStreamsOperatorTest {
                 // check status
                 verify(esResourceOperator, times(2)).updateEventStreamsStatus(updatedEventStreams.capture());
                 List<String> messages = updatedEventStreams.getValue().getStatus().getConditions()
-                    .stream().filter(condition -> condition.getReason().matches(ReplicatorSourceUsersModel.INVALID_REASON))
+                    .stream().filter(condition -> condition.getReason().matches(GeoReplicatorSourceUsersModel.INVALID_REASON))
                     .map(Condition::getMessage).collect(Collectors.toList());
 
                 assertThat("Status is incorrect, found status : " + updatedEventStreams.getValue().getStatus(),
                         messages,
-                        hasItem(ReplicatorSourceUsersModel.INVALID_MESSAGE));
+                        hasItem(GeoReplicatorSourceUsersModel.INVALID_MESSAGE));
                 async.flag();
             })));
     }
@@ -2563,6 +2563,7 @@ public class EventStreamsOperatorTest {
     @Test
     public void testDefaultEventStreamsUIEnvVars(VertxTestContext context) {
         boolean tlsEnabled = AbstractModel.DEFAULT_INTERNAL_TLS.equals(TlsVersion.TLS_V1_2);
+
         String adminApiService =  "https://" + getInternalServiceName(CLUSTER_NAME, AdminApiModel.COMPONENT_NAME) + "." +  NAMESPACE + ".svc:" + Endpoint.getPodToPodPort(tlsEnabled);
         String schemaRegistryService =  "https://" + getInternalServiceName(CLUSTER_NAME, SchemaRegistryModel.COMPONENT_NAME) + "." +  NAMESPACE + ".svc:" + Endpoint.getPodToPodPort(tlsEnabled);
 
@@ -2596,10 +2597,10 @@ public class EventStreamsOperatorTest {
             if (item instanceof Secret) {
                 Secret replicatorSecret = (Secret) item;
 
-                if (replicatorSecret.getMetadata().getName().contains(ReplicatorSecretModel.REPLICATOR_SECRET_NAME)) {
+                if (replicatorSecret.getMetadata().getName().contains(GeoReplicatorSecretModel.REPLICATOR_SECRET_NAME)) {
                     Encoder encoder = Base64.getEncoder();
                     String newSecretString = encoder.encodeToString(REPLICATOR_DATA.getBytes(StandardCharsets.UTF_8));
-                    Map<String, String> newSecretData = Collections.singletonMap(ReplicatorSecretModel.REPLICATOR_TARGET_CLUSTERS_SECRET_KEY_NAME, newSecretString);
+                    Map<String, String> newSecretData = Collections.singletonMap(GeoReplicatorSecretModel.REPLICATOR_TARGET_CLUSTERS_SECRET_KEY_NAME, newSecretString);
                     replicatorSecret.setData(newSecretData);
                 } else {
                     LOGGER.debug("Replicator secret not found to set data");
@@ -2612,7 +2613,7 @@ public class EventStreamsOperatorTest {
         List<Secret> replicatorSecrets = actualResourcesList.stream()
                 .filter(Secret.class::isInstance)
                 .map(Secret.class::cast)
-                .filter(secret -> secret.getMetadata().getName().contains(ReplicatorSecretModel.REPLICATOR_SECRET_NAME))
+                .filter(secret -> secret.getMetadata().getName().contains(GeoReplicatorSecretModel.REPLICATOR_SECRET_NAME))
                 .collect(Collectors.toList()
                 );
         assertEquals(1, replicatorSecrets.size(), "Replicator secret Not Found");
@@ -2620,7 +2621,7 @@ public class EventStreamsOperatorTest {
         Encoder encoder = Base64.getEncoder();
         String newSecretString = encoder.encodeToString(REPLICATOR_DATA.getBytes(StandardCharsets.UTF_8));
         context.verify(() -> assertThat(
-                replicatorSecret.getData().get(ReplicatorSecretModel.REPLICATOR_TARGET_CLUSTERS_SECRET_KEY_NAME), is(newSecretString)));
+                replicatorSecret.getData().get(GeoReplicatorSecretModel.REPLICATOR_TARGET_CLUSTERS_SECRET_KEY_NAME), is(newSecretString)));
     }
 
     private void verifyKafkaBootstrapUrl(String namespace, String deploymentName, String expectedKafkaBootstrap) {
@@ -2783,13 +2784,13 @@ public class EventStreamsOperatorTest {
     private Set<String> getExpectedSecretNames(String clusterName) {
         Set<String> expectedSecrets = new HashSet<>();
         expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + MessageAuthenticationModel.SECRET_SUFFIX);
-        expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + ReplicatorSecretModel.REPLICATOR_SECRET_NAME);
+        expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + GeoReplicatorSecretModel.REPLICATOR_SECRET_NAME);
         expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + RestProducerModel.COMPONENT_NAME + "-" + CertificateSecretModel.CERT_SECRET_NAME_POSTFIX);
         expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME + "-" + CertificateSecretModel.CERT_SECRET_NAME_POSTFIX);
         expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + AdminApiModel.COMPONENT_NAME + "-" + CertificateSecretModel.CERT_SECRET_NAME_POSTFIX);
         expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + CollectorModel.COMPONENT_NAME + "-" + CertificateSecretModel.CERT_SECRET_NAME_POSTFIX);
         expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + ClusterSecretsModel.COMPONENT_NAME);
-        expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + ReplicatorSourceUsersModel.SOURCE_CONNECTOR_KAFKA_USER_NAME);
+        expectedSecrets.add(clusterName + "-" + APP_NAME + "-" + GeoReplicatorSourceUsersModel.SOURCE_CONNECTOR_KAFKA_USER_NAME);
 
         expectedSecrets.add(clusterName + "-cluster-ca");
         expectedSecrets.add(clusterName + "-cluster-ca-cert");
@@ -2805,7 +2806,7 @@ public class EventStreamsOperatorTest {
 
     private Set<String> getExpectedKafkaUsers(String clusterName) {
         Set<String> expectedKafkaUsers = new HashSet<>();
-        expectedKafkaUsers.add(clusterName + "-" + APP_NAME + "-" + ReplicatorSourceUsersModel.SOURCE_CONNECTOR_KAFKA_USER_NAME);
+        expectedKafkaUsers.add(clusterName + "-" + APP_NAME + "-" + GeoReplicatorSourceUsersModel.SOURCE_CONNECTOR_KAFKA_USER_NAME);
         expectedKafkaUsers.add(clusterName + "-" + APP_NAME + "-" + InternalKafkaUserModel.COMPONENT_NAME);
 
         return expectedKafkaUsers;

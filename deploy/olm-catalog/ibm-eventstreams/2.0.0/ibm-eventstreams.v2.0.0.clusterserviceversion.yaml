@@ -408,7 +408,7 @@ metadata:
     categories: Streaming & Messaging
     certified: 'false'
     containerImage: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-operator-icp-linux:latest
-    createdAt: 2020-05-18T15:44:47Z
+    createdAt: 2020-05-19T10:31:23Z
     description: Kafka-based messaging platform for handling real-time data feeds.
     operators.operatorframework.io/internal-objects: '["kafkas.eventstreams.ibm.com","kafkamirrormaker2s.eventstreams.ibm.com"]'
     repository: https://github.ibm.com/mhub/qp-eventstreams-operator
@@ -726,7 +726,8 @@ spec:
           resources:
           - pods
           verbs:
-          - '*'
+          - get
+          - list
         serviceAccountName: eventstreams-ui-clusterrole
       - rules:
         - apiGroups:
@@ -1048,53 +1049,15 @@ spec:
         - apiGroups:
           - ""
           resources:
-          - services
-          - configmaps
-          - pods
-          - serviceaccounts
-          - persistentvolumeclaims
-          verbs:
-          - '*'
-        - apiGroups:
-          - ""
-          resources:
           - namespaces
           verbs:
           - get
           - list
-          - patch
-          - delete
         - apiGroups:
-          - apps
+          - ""
           resources:
-          - statefulsets
-          - replicasets
-          - deployments
+          - pods
           verbs:
-          - '*'
-        - apiGroups:
-          - extensions
-          resources:
-          - statefulsets
-          - deployments
-          - networkpolicies
-          verbs:
-          - '*'
-        - apiGroups:
-          - rbac.authorization.k8s.io
-          resources:
-          - rolebindings
-          verbs:
-          - get
-          - create
-          - patch
-        - apiGroups:
-          - networking.k8s.io
-          resources:
-          - networkpolicies
-          verbs:
-          - get
-          - create
           - patch
         - apiGroups:
           - admissionregistration.k8s.io
@@ -1121,7 +1084,6 @@ spec:
           - get
           - create
           - patch
-          - delete
         - apiGroups:
           - monitoring.coreos.com
           resources:
@@ -1129,45 +1091,40 @@ spec:
           verbs:
           - get
           - create
+          - patch
         - apiGroups:
           - eventstreams.ibm.com
           resources:
-          - '*'
+          - eventstreams
+          - eventstreams/status
+          - eventstreamsgeoreplicators
+          - eventstreamsgeoreplicators/status
           verbs:
-          - '*'
-        - apiGroups:
-          - eventstreams.ibm.com
-          resources:
-          - '*'
-          - kafkausers
-          - kafkausers/status
-          verbs:
-          - '*'
-        - apiGroups:
-          - route.openshift.io
-          resources:
-          - routes
-          verbs:
-          - '*'
+          - get
+          - list
+          - watch
+          - create
+          - delete
+          - patch
+          - update
         - apiGroups:
           - oidc.security.ibm.com
           resources:
           - clients
           verbs:
           - get
-          - list
           - create
           - patch
           - delete
-          - update
         - apiGroups:
           - cp4i.ibm.com
           resources:
           - cp4iservicesbindings
           verbs:
           - get
-          - list
           - create
+          - patch
+          - delete
         - apiGroups:
           - apiextensions.k8s.io
           resources:
@@ -1175,6 +1132,49 @@ spec:
           verbs:
           - get
           - list
+        - apiGroups:
+          - eventstreams.ibm.com
+          resources:
+          - kafkatopics
+          - kafkatopics/status
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - patch
+          - update
+          - delete
+        - apiGroups:
+          - ""
+          resources:
+          - events
+          verbs:
+          - create
+        - apiGroups:
+          - eventstreams.ibm.com
+          resources:
+          - kafkausers
+          - kafkausers/status
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - patch
+          - update
+          - delete
+        - apiGroups:
+          - ""
+          resources:
+          - secrets
+          verbs:
+          - get
+          - list
+          - create
+          - patch
+          - update
+          - delete
         serviceAccountName: eventstreams-cluster-operator-namespaced
       deployments:
       - name: eventstreams-cluster-operator

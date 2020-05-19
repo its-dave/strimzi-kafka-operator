@@ -16,10 +16,10 @@ package com.ibm.eventstreams.api.model.utils;
 import com.ibm.eventstreams.api.Crds;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsDoneable;
+import com.ibm.eventstreams.api.spec.EventStreamsGeoReplicator;
+import com.ibm.eventstreams.api.spec.EventStreamsGeoReplicatorDoneable;
+import com.ibm.eventstreams.api.spec.EventStreamsGeoReplicatorList;
 import com.ibm.eventstreams.api.spec.EventStreamsList;
-import com.ibm.eventstreams.api.spec.EventStreamsReplicator;
-import com.ibm.eventstreams.api.spec.EventStreamsReplicatorDoneable;
-import com.ibm.eventstreams.api.spec.EventStreamsReplicatorList;
 import com.ibm.iam.api.spec.Client;
 import com.ibm.iam.api.spec.ClientDoneable;
 import com.ibm.iam.api.spec.ClientList;
@@ -42,19 +42,22 @@ public class MockEventStreamsKube extends MockKube {
     public MockEventStreamsKube() {
         super();
 
+        // EventStreams CRDs
         super.withCustomResourceDefinition(Crds.getCrd(EventStreams.class), EventStreams.class, EventStreamsList.class, EventStreamsDoneable.class)
             .end()
+            .withCustomResourceDefinition(Crds.getCrd(EventStreamsGeoReplicator.class), EventStreamsGeoReplicator.class, EventStreamsGeoReplicatorList.class, EventStreamsGeoReplicatorDoneable.class)
+            .end()
+        // Strimzi CRDs
             .withCustomResourceDefinition(io.strimzi.api.kafka.Crds.kafka(), Kafka.class, KafkaList.class, DoneableKafka.class)
             .end()
             .withCustomResourceDefinition(io.strimzi.api.kafka.Crds.kafkaUser(), KafkaUser.class, KafkaUserList.class, DoneableKafkaUser.class)
             .end()
-            .withCustomResourceDefinition(Crds.getCrd(Client.class), Client.class, ClientList.class, ClientDoneable.class)
-            .end()
             .withCustomResourceDefinition(io.strimzi.api.kafka.Crds.kafkaMirrorMaker2(), KafkaMirrorMaker2.class, KafkaMirrorMaker2List.class, DoneableKafkaMirrorMaker2.class)
             .end()
-            .withCustomResourceDefinition(Crds.getCrd(EventStreamsReplicator.class), EventStreamsReplicator.class, EventStreamsReplicatorList.class, EventStreamsReplicatorDoneable.class)
-            .end()
             .withCustomResourceDefinition(Crds.getCrd(Cp4iServicesBinding.class), Cp4iServicesBinding.class, Cp4iServicesBindingList.class, Cp4iServicesBindingDoneable.class)
+            .end()
+        // Dependency CRDs
+            .withCustomResourceDefinition(Crds.getCrd(Client.class), Client.class, ClientList.class, ClientDoneable.class)
             .end();
     }
 }
