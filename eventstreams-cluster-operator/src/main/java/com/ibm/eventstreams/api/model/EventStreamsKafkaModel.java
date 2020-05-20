@@ -41,6 +41,7 @@ import io.strimzi.api.kafka.model.ContainerEnvVarBuilder;
 import io.strimzi.api.kafka.model.EntityOperatorSpec;
 import io.strimzi.api.kafka.model.EntityTopicOperatorSpec;
 import io.strimzi.api.kafka.model.EntityUserOperatorSpec;
+import io.strimzi.api.kafka.model.JmxTransSpec;
 import io.strimzi.api.kafka.model.Kafka;
 import io.strimzi.api.kafka.model.KafkaBuilder;
 import io.strimzi.api.kafka.model.KafkaClusterSpec;
@@ -74,6 +75,7 @@ public class EventStreamsKafkaModel extends AbstractModel {
     private final KafkaClusterSpec kafkaClusterSpec;
     private final ZookeeperClusterSpec zookeeperClusterSpec;
     private final EntityOperatorSpec entityOperatorSpec;
+    private final JmxTransSpec jmxTransSpec;
 
     private final Kafka kafka;
 
@@ -107,6 +109,8 @@ public class EventStreamsKafkaModel extends AbstractModel {
         entityOperatorSpec = strimziOverrides.map(KafkaSpec::getEntityOperator)
                 .orElseGet(EntityOperatorSpec::new);
         
+        jmxTransSpec = strimziOverrides.map(KafkaSpec::getJmxTrans)
+            .orElse(null);
         
         kafka = createKafka(strimziOverrides.orElseGet(KafkaSpec::new));
     }
@@ -271,8 +275,7 @@ public class EventStreamsKafkaModel extends AbstractModel {
         if (Optional.ofNullable(strimziOverrides).map(KafkaSpec::getJmxTrans).isPresent()) {
             builder.editSpec()
                     .editJmxTrans()
-                         // These need to be defined
-//                        .withResources(getJmxTransResources())
+                         .withResources(getJmxTransResources())
                         .editOrNewTemplate()
                             .editOrNewContainer()
                                 .withSecurityContext(readOnlyFsSecurityContext)
@@ -386,6 +389,16 @@ public class EventStreamsKafkaModel extends AbstractModel {
                 .map(TlsSidecar::getResources)
                 .orElseGet(ResourceRequirements::new);
         return getResourceRequirements(tlsSidecarResources, DefaultResourceRequirements.TLS_SIDECAR);
+    }
+
+    /**
+     * 
+     * @return The JMX trans resource requirements
+     */
+    private ResourceRequirements getJmxTransResources() {
+        ResourceRequirements jmxTransResources = Optional.ofNullable(jmxTransSpec.getResources())
+                .orElseGet(ResourceRequirements::new);
+        return getResourceRequirements(jmxTransResources, DefaultResourceRequirements.JMX_TRANS);
     }
 
     /**

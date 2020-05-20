@@ -127,9 +127,9 @@ public class RestProducerModelTest {
         RestProducerModel restProducerModel = createDefaultRestProducerModel();
 
         ResourceRequirements resourceRequirements = restProducerModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getResources();
-        assertThat(resourceRequirements.getRequests().get("cpu").getAmount(), is("500m"));
-        assertThat(resourceRequirements.getRequests().get("memory").getAmount(), is("512Mi"));
-        assertThat(resourceRequirements.getLimits().get("cpu").getAmount(), is("4000m"));
+        assertThat(resourceRequirements.getRequests().get("cpu").getAmount(), is("250m"));
+        assertThat(resourceRequirements.getRequests().get("memory").getAmount(), is("1Gi"));
+        assertThat(resourceRequirements.getLimits().get("cpu").getAmount(), is("1000m"));
         assertThat(resourceRequirements.getLimits().get("memory").getAmount(), is("1Gi"));
     }
 
@@ -149,7 +149,7 @@ public class RestProducerModelTest {
         RestProducerModel restProducerModel = new RestProducerModel(eventStreamsResource, imageConfig, listeners, mockCommonServicesConfig);
 
         ResourceRequirements resourceRequirements = restProducerModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getResources();
-        assertThat(resourceRequirements.getRequests().get("cpu").getAmount(), is("500m"));
+        assertThat(resourceRequirements.getRequests().get("cpu").getAmount(), is("250m"));
         assertThat(resourceRequirements.getRequests().get("memory").getAmount(), is("3Gi"));
         assertThat(resourceRequirements.getLimits().get("cpu").getAmount(), is("100m"));
         assertThat(resourceRequirements.getLimits().get("memory").getAmount(), is("1Gi"));

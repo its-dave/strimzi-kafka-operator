@@ -178,10 +178,10 @@ kafkaMirrorMaker2:
     tagPrefix: latest
 resources:
   limits:
-    memory: 256Mi
+    memory: 1Gi
     cpu: 1000m
   requests:
-    memory: 256Mi
+    memory: 1Gi
     cpu: 200m
 livenessProbe:
   initialDelaySeconds: 10

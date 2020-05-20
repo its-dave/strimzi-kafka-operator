@@ -182,11 +182,14 @@ public class SchemaRegistryModelTest {
         SchemaRegistryModel schemaRegistryModel = createDefaultSchemaRegistryModel();
         List<Container> containerList = schemaRegistryModel.getDeployment().getSpec().getTemplate().getSpec().getContainers();
         containerList.forEach(container -> {
-            if (container.getName() != SchemaRegistryModel.SCHEMA_REGISTRY_PROXY_CONTAINER_NAME) {
-                assertThat(container.getResources().getRequests().get("cpu").getAmount(), is("500m"));
+            assertThat(container.getResources().getRequests().get("cpu").getAmount(), is("500m"));
+            assertThat(container.getResources().getLimits().get("cpu").getAmount(), is("500m"));
+            if (container.getName() == SchemaRegistryModel.COMPONENT_NAME) {
                 assertThat(container.getResources().getRequests().get("memory").getAmount(), is("256Mi"));
-                assertThat(container.getResources().getLimits().get("cpu").getAmount(), is("500m"));
                 assertThat(container.getResources().getLimits().get("memory").getAmount(), is("256Mi"));
+            } else {
+                assertThat(container.getResources().getRequests().get("memory").getAmount(), is("1Gi"));
+                assertThat(container.getResources().getLimits().get("memory").getAmount(), is("1Gi"));
             }
         });
     }
@@ -201,6 +204,10 @@ public class SchemaRegistryModelTest {
                 .addToRequests("cpu", new Quantity("100m"))
                 .addToLimits("memory", new Quantity("50Mi"))
                 .build();
+        ResourceRequirements customSchemaProxyResourceRequirements = new ResourceRequirementsBuilder()
+                .addToRequests("cpu", new Quantity("150m"))
+                .addToLimits("memory", new Quantity("70Mi"))
+                .build();
 
         EventStreams eventStreamsResource = createDefaultEventStreams()
                 .editSpec()
@@ -209,6 +216,9 @@ public class SchemaRegistryModelTest {
                         .editAvro()
                             .withResources(customAvroResourceRequirements)
                         .endAvro()
+                        .editProxy()
+                            .withResources(customSchemaProxyResourceRequirements)
+                        .endProxy()
                     .endSchemaRegistry()
                 .endSpec()
                 .build();
@@ -229,9 +239,15 @@ public class SchemaRegistryModelTest {
 
         ResourceRequirements avroResources = resourceRequirements.get(SchemaRegistryModel.AVRO_SERVICE_CONTAINER_NAME);
         assertThat(avroResources.getRequests().get("cpu").getAmount(), is("100m"));
-        assertThat(avroResources.getRequests().get("memory").getAmount(), is("256Mi"));
+        assertThat(avroResources.getRequests().get("memory").getAmount(), is("1Gi"));
         assertThat(avroResources.getLimits().get("cpu").getAmount(), is("500m"));
         assertThat(avroResources.getLimits().get("memory").getAmount(), is("50Mi"));
+
+        ResourceRequirements schemaProxyResources = resourceRequirements.get(SchemaRegistryModel.SCHEMA_REGISTRY_PROXY_CONTAINER_NAME);
+        assertThat(schemaProxyResources.getRequests().get("cpu").getAmount(), is("150m"));
+        assertThat(schemaProxyResources.getRequests().get("memory").getAmount(), is("1Gi"));
+        assertThat(schemaProxyResources.getLimits().get("cpu").getAmount(), is("500m"));
+        assertThat(schemaProxyResources.getLimits().get("memory").getAmount(), is("70Mi"));
     }
 
     @Test

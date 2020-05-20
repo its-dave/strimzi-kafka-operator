@@ -295,6 +295,57 @@ public class EventStreamsKafkaModelTest {
     }
 
     @Test
+    public void testDefaultJmxTransResources() {
+        EventStreams instance = createDefaultEventStreams()
+            .editSpec()
+            .withStrimziOverrides(new KafkaSpecBuilder()
+                    .editOrNewJmxTrans()
+                        .editOrNewTemplate()
+                            .editOrNewPod()
+                                .editOrNewMetadata()
+                                    .addToLabels("foo", "bar")
+                                .endMetadata()
+                            .endPod()
+                        .endTemplate()
+                    .endJmxTrans()
+                    .build())
+            .endSpec()
+            .build();
+        Kafka kafka = new EventStreamsKafkaModel(instance).getKafka();
+
+        ResourceRequirements resources = kafka.getSpec().getJmxTrans().getResources();
+        assertThat(resources.getRequests().get("cpu"), is(new Quantity("250m")));
+        assertThat(resources.getLimits().get("cpu"), is(new Quantity("1000m")));
+        assertThat(resources.getRequests().get("memory"), is(new Quantity("1Gi")));
+        assertThat(resources.getLimits().get("memory"), is(new Quantity("1Gi")));
+    }
+
+    @Test
+    public void testJmxTransResourcesWithOverrides() {
+        ResourceRequirements customResources = new ResourceRequirementsBuilder()
+                .addToRequests("cpu", new Quantity("400m"))
+                .addToLimits("memory", new Quantity("500Mi"))
+                .build();
+
+        EventStreams instance = createDefaultEventStreams()
+            .editSpec()
+            .withStrimziOverrides(new KafkaSpecBuilder()
+                    .editOrNewJmxTrans()
+                        .withResources(customResources)
+                    .endJmxTrans()
+                    .build())
+            .endSpec()
+            .build();
+        Kafka kafka = new EventStreamsKafkaModel(instance).getKafka();
+
+        ResourceRequirements actualResources = kafka.getSpec().getJmxTrans().getResources();
+        assertThat(actualResources.getRequests().get("cpu"), is(new Quantity("400m")));
+        assertThat(actualResources.getLimits().get("cpu"), is(new Quantity("1000m")));
+        assertThat(actualResources.getRequests().get("memory"), is(new Quantity("1Gi")));
+        assertThat(actualResources.getLimits().get("memory"), is(new Quantity("500Mi")));
+    }
+
+    @Test
     public void testDefaultZookeeperResources() {
         ZookeeperClusterSpec zookeeper = createDefaultKafkaModel().getKafka().getSpec().getZookeeper();
 
@@ -354,15 +405,15 @@ public class EventStreamsKafkaModelTest {
         ResourceRequirements resources = kafka.getSpec().getEntityOperator().getTopicOperator().getResources();
         assertThat(resources.getRequests().get("cpu"), is(new Quantity("10m")));
         assertThat(resources.getLimits().get("cpu"), is(new Quantity("1000m")));
-        assertThat(resources.getRequests().get("memory"), is(new Quantity("50Mi")));
-        assertThat(resources.getLimits().get("memory"), is(new Quantity("500Mi")));
+        assertThat(resources.getRequests().get("memory"), is(new Quantity("1Gi")));
+        assertThat(resources.getLimits().get("memory"), is(new Quantity("1Gi")));
     }
 
     @Test
     public void testTopicOperatorResourcesWithOverrides() {
         ResourceRequirements customResources = new ResourceRequirementsBuilder()
                 .addToRequests("cpu", new Quantity("20m"))
-                .addToLimits("memory", new Quantity("1Gi"))
+                .addToLimits("memory", new Quantity("2Gi"))
                 .build();
         EventStreams instance = createDefaultEventStreams()
             .editSpec()
@@ -380,8 +431,8 @@ public class EventStreamsKafkaModelTest {
         ResourceRequirements actualResources = kafka.getSpec().getEntityOperator().getTopicOperator().getResources();
         assertThat(actualResources.getRequests().get("cpu"), is(new Quantity("20m")));
         assertThat(actualResources.getLimits().get("cpu"), is(new Quantity("1000m")));
-        assertThat(actualResources.getRequests().get("memory"), is(new Quantity("50Mi")));
-        assertThat(actualResources.getLimits().get("memory"), is(new Quantity("1Gi")));
+        assertThat(actualResources.getRequests().get("memory"), is(new Quantity("1Gi")));
+        assertThat(actualResources.getLimits().get("memory"), is(new Quantity("2Gi")));
     }
 
     @Test
@@ -391,15 +442,15 @@ public class EventStreamsKafkaModelTest {
         ResourceRequirements resources = entityOperator.getUserOperator().getResources();
         assertThat(resources.getRequests().get("cpu"), is(new Quantity("10m")));
         assertThat(resources.getLimits().get("cpu"), is(new Quantity("1000m")));
-        assertThat(resources.getRequests().get("memory"), is(new Quantity("50Mi")));
-        assertThat(resources.getLimits().get("memory"), is(new Quantity("500Mi")));
+        assertThat(resources.getRequests().get("memory"), is(new Quantity("1Gi")));
+        assertThat(resources.getLimits().get("memory"), is(new Quantity("1Gi")));
     }
 
     @Test
     public void testUserOperatorResourcesWithOverrides() {
         ResourceRequirements resources = new ResourceRequirementsBuilder()
                 .addToRequests("cpu", new Quantity("20m"))
-                .addToLimits("memory", new Quantity("1Gi"))
+                .addToLimits("memory", new Quantity("2Gi"))
                 .build();
         EventStreams eventStreamsInstance = createDefaultEventStreams()
                 .editSpec()
@@ -417,8 +468,8 @@ public class EventStreamsKafkaModelTest {
         ResourceRequirements actualResources = kafka.getSpec().getEntityOperator().getUserOperator().getResources();
         assertThat(actualResources.getRequests().get("cpu"), is(new Quantity("20m")));
         assertThat(actualResources.getLimits().get("cpu"), is(new Quantity("1000m")));
-        assertThat(actualResources.getRequests().get("memory"), is(new Quantity("50Mi")));
-        assertThat(actualResources.getLimits().get("memory"), is(new Quantity("1Gi")));
+        assertThat(actualResources.getRequests().get("memory"), is(new Quantity("1Gi")));
+        assertThat(actualResources.getLimits().get("memory"), is(new Quantity("2Gi")));
     }
 
     @Test
@@ -436,7 +487,7 @@ public class EventStreamsKafkaModelTest {
     public void testEntityOperatorTlsResourcesWithOverrides() {
         ResourceRequirements resources = new ResourceRequirementsBuilder()
                 .addToRequests("cpu", new Quantity("20m"))
-                .addToLimits("memory", new Quantity("1Gi"))
+                .addToLimits("memory", new Quantity("2Gi"))
                 .build();
         EventStreams eventStreamsInstance = createDefaultEventStreams()
                 .editOrNewSpec()
@@ -455,7 +506,7 @@ public class EventStreamsKafkaModelTest {
         assertThat(actualResources.getRequests().get("cpu"), is(new Quantity("20m")));
         assertThat(actualResources.getLimits().get("cpu"), is(new Quantity("100m")));
         assertThat(actualResources.getRequests().get("memory"), is(new Quantity("10Mi")));
-        assertThat(actualResources.getLimits().get("memory"), is(new Quantity("1Gi")));
+        assertThat(actualResources.getLimits().get("memory"), is(new Quantity("2Gi")));
     }
 
     @Test

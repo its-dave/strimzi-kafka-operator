@@ -412,10 +412,10 @@ public class AdminUIModelTest {
                 .collect(Collectors.toMap(Container::getName, Container::getResources));
 
         ResourceRequirements userInterfaceResources = resourceRequirements.get(AdminUIModel.COMPONENT_NAME);
-        assertThat(userInterfaceResources.getRequests().get("cpu").getAmount(), is("1000m"));
-        assertThat(userInterfaceResources.getRequests().get("memory").getAmount(), is("1Gi"));
+        assertThat(userInterfaceResources.getRequests().get("cpu").getAmount(), is("250m"));
+        assertThat(userInterfaceResources.getRequests().get("memory").getAmount(), is("512Mi"));
         assertThat(userInterfaceResources.getLimits().get("cpu").getAmount(), is("1000m"));
-        assertThat(userInterfaceResources.getLimits().get("memory").getAmount(), is("1Gi"));
+        assertThat(userInterfaceResources.getLimits().get("memory").getAmount(), is("512Mi"));
 
         ResourceRequirements redisResources = resourceRequirements.get(AdminUIModel.REDIS_CONTAINER_NAME);
         assertThat(redisResources.getRequests().get("cpu").getAmount(), is("100m"));
@@ -447,10 +447,10 @@ public class AdminUIModelTest {
 
 
         ResourceRequirements schemaResources = resourceRequirements.get(AdminUIModel.COMPONENT_NAME);
-        assertThat(schemaResources.getRequests().get("cpu").getAmount(), is("1000m"));
+        assertThat(schemaResources.getRequests().get("cpu").getAmount(), is("250m"));
         assertThat(schemaResources.getRequests().get("memory").getAmount(), is("450Mi"));
         assertThat(schemaResources.getLimits().get("cpu").getAmount(), is("100m"));
-        assertThat(schemaResources.getLimits().get("memory").getAmount(), is("1Gi"));
+        assertThat(schemaResources.getLimits().get("memory").getAmount(), is("512Mi"));
 
         ResourceRequirements avroResources = resourceRequirements.get(AdminUIModel.REDIS_CONTAINER_NAME);
         assertThat(avroResources.getRequests().get("cpu").getAmount(), is("100m"));

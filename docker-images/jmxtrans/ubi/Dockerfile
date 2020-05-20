@@ -26,7 +26,7 @@ RUN mkdir -p /usr/share/jmxtrans/lib/ \
     && rm jmxtrans-${JMXTRANS_VERSION}-all.jar.sha512 \
     && mv jmxtrans-${JMXTRANS_VERSION}-all.jar ${JAR_FILE}
 
-COPY docker-entrypoint.sh /docker-entrypoint.sh
+COPY docker-entrypoint-ubi.sh /docker-entrypoint-ubi.sh
 COPY jmxtrans_readiness_check.sh /opt/jmx/
 
 #####

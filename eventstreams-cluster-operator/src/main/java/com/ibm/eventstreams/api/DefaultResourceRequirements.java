@@ -19,10 +19,10 @@ import io.fabric8.kubernetes.api.model.ResourceRequirementsBuilder;
 public class DefaultResourceRequirements {
 
     public static final ResourceRequirements ADMIN_UI = new ResourceRequirementsBuilder()
-        .addToRequests("cpu", new Quantity("1000m"))
-        .addToRequests("memory", new Quantity("1Gi"))
+        .addToRequests("cpu", new Quantity("250m"))
+        .addToRequests("memory", new Quantity("512Mi"))
         .addToLimits("cpu", new Quantity("1000m"))
-        .addToLimits("memory", new Quantity("1Gi"))
+        .addToLimits("memory", new Quantity("512Mi"))
         .build();
         
     public static final ResourceRequirements ADMIN_UI_REDIS = new ResourceRequirementsBuilder()
@@ -35,7 +35,7 @@ public class DefaultResourceRequirements {
     public static final ResourceRequirements ADMIN_API = new ResourceRequirementsBuilder()
         .addToRequests("cpu", new Quantity("500m"))
         .addToRequests("memory", new Quantity("1Gi"))
-        .addToLimits("cpu", new Quantity("4000m"))
+        .addToLimits("cpu", new Quantity("2000m"))
         .addToLimits("memory", new Quantity("1Gi"))
         .build();
     
@@ -60,7 +60,6 @@ public class DefaultResourceRequirements {
         .addToLimits("memory", new Quantity("1Gi"))
         .build();
 
-
     public static final ResourceRequirements TLS_SIDECAR = new ResourceRequirementsBuilder()
         .addToRequests("cpu", new Quantity("10m"))
         .addToRequests("memory", new Quantity("10Mi"))
@@ -70,15 +69,15 @@ public class DefaultResourceRequirements {
 
     public static final ResourceRequirements ENTITY_OPERATOR = new ResourceRequirementsBuilder()
         .addToRequests("cpu", new Quantity("10m"))
-        .addToRequests("memory", new Quantity("50Mi"))
+        .addToRequests("memory", new Quantity("1Gi"))
         .addToLimits("cpu", new Quantity("1000m"))
-        .addToLimits("memory", new Quantity("500Mi"))
+        .addToLimits("memory", new Quantity("1Gi"))
         .build();
 
     public static final ResourceRequirements REST_PRODUCER = new ResourceRequirementsBuilder()
-        .addToRequests("cpu", new Quantity("500m"))
-        .addToRequests("memory", new Quantity("512Mi"))
-        .addToLimits("cpu", new Quantity("4000m"))
+        .addToRequests("cpu", new Quantity("250m"))
+        .addToRequests("memory", new Quantity("1Gi"))
+        .addToLimits("cpu", new Quantity("1000m"))
         .addToLimits("memory", new Quantity("1Gi"))
         .build();
 
@@ -89,12 +88,25 @@ public class DefaultResourceRequirements {
         .addToLimits("memory", new Quantity("256Mi"))
         .build();
 
-    public static final ResourceRequirements AVRO_SERVICE = new ResourceRequirementsBuilder()
+    public static final ResourceRequirements SCHEMA_PROXY = new ResourceRequirementsBuilder()
         .addToRequests("cpu", new Quantity("500m"))
-        .addToRequests("memory", new Quantity("256Mi"))
+        .addToRequests("memory", new Quantity("1Gi"))
         .addToLimits("cpu", new Quantity("500m"))
-        .addToLimits("memory", new Quantity("256Mi"))
+        .addToLimits("memory", new Quantity("1Gi"))
         .build();
 
+    public static final ResourceRequirements AVRO_SERVICE = new ResourceRequirementsBuilder()
+        .addToRequests("cpu", new Quantity("500m"))
+        .addToRequests("memory", new Quantity("1Gi"))
+        .addToLimits("cpu", new Quantity("500m"))
+        .addToLimits("memory", new Quantity("1Gi"))
+        .build();
+
+    public static final ResourceRequirements JMX_TRANS = new ResourceRequirementsBuilder()
+        .addToRequests("cpu", new Quantity("250m"))
+        .addToRequests("memory", new Quantity("1Gi"))
+        .addToLimits("cpu", new Quantity("1000m"))
+        .addToLimits("memory", new Quantity("1Gi"))
+        .build();
         
 }

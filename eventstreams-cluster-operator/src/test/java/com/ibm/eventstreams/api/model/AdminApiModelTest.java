@@ -299,7 +299,7 @@ public class AdminApiModelTest {
         ResourceRequirements resourceRequirements = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getResources();
         assertThat(resourceRequirements.getRequests().get("cpu").getAmount(), is("500m"));
         assertThat(resourceRequirements.getRequests().get("memory").getAmount(), is("1Gi"));
-        assertThat(resourceRequirements.getLimits().get("cpu").getAmount(), is("4000m"));
+        assertThat(resourceRequirements.getLimits().get("cpu").getAmount(), is("2000m"));
         assertThat(resourceRequirements.getLimits().get("memory").getAmount(), is("1Gi"));
     }
 
@@ -321,7 +321,7 @@ public class AdminApiModelTest {
         ResourceRequirements resourceRequirements = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getResources();
         assertThat(resourceRequirements.getRequests().get("cpu").getAmount(), is("200m"));
         assertThat(resourceRequirements.getRequests().get("memory").getAmount(), is("1Gi"));
-        assertThat(resourceRequirements.getLimits().get("cpu").getAmount(), is("4000m"));
+        assertThat(resourceRequirements.getLimits().get("cpu").getAmount(), is("2000m"));
         assertThat(resourceRequirements.getLimits().get("memory").getAmount(), is("3Gi"));
     }
 

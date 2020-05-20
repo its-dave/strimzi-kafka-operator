@@ -489,7 +489,7 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
             .withImage(schemaRegistryProxyImage)
             .withEnv(envVars)
             .withSecurityContext(getSecurityContext(false))
-            .withResources(getResourceRequirements(schemaRegistryProxyResourceRequirements, DefaultResourceRequirements.ADMIN_API))
+            .withResources(getResourceRequirements(schemaRegistryProxyResourceRequirements, DefaultResourceRequirements.SCHEMA_PROXY))
             .withLivenessProbe(createProxyLivenessProbe())
             .withReadinessProbe(createProxyReadinessProbe());
 
