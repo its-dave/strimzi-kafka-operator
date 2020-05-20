@@ -33,12 +33,17 @@ public class ReplicatorKafkaListenerValidation implements Validation {
     public static final String AUTHENTICATED_TLS_BUT_UNAUTHENTICATED_EXTERNAL_MESSAGE = String.format("'%s' Kafka Listener is authenticated but '%s' Kafka Listener is not authenticated. ", ListenerType.TLS.toValue(), ListenerType.EXTERNAL.toValue())
         + String.format("If Kafka authentication is not required for geo-replication, then remove both spec.strimziOverrides.kafka.listeners.%s.authentication and spec.strimziOverrides.kafka.listeners.%s.authentication. ", ListenerType.EXTERNAL.toValue(), ListenerType.TLS.toValue())
         + String.format("If Kafka authentication is required for geo-replication, then set the authentication type on both spec.strimziOverrides.kafka.listeners.%s.authentication.type and spec.strimziOverrides.kafka.listeners.%s.authentication.type.", ListenerType.EXTERNAL.toValue(), ListenerType.TLS.toValue());
-    public static final String INVALID_KAFKA_LISTENER_REASON = "ReplicatorInvalidKafkaListener";
-    public static final String INVALID_KAFKA_LISTENER_MESSAGE = "Invalid authentication type '%s' for '%s' Kafka Listener. "
+    public static final String INVALID_INTERNAL_KAFKA_LISTENER_REASON = "ReplicatorInvalidInternalKafkaListener";
+    public static final String INVALID_INTERNAL_KAFKA_LISTENER_MESSAGE = "Invalid authentication type '%s' for '%s' Kafka Listener. "
         + "Acceptable authentication types for geo-replication are one of the following: 'tls', 'scram-sha-512', or no authentication. "
-        + "Edit spec.strimziOverrides.kafka.listeners.%s.type to provide a valid authentication type.";
+        + "Edit spec.strimziOverrides.kafka.listeners.%s.authentication.type to provide a valid authentication type.";
+    public static final String INVALID_EXTERNAL_KAFKA_LISTENER_REASON = "ReplicatorInvalidExternalKafkaListener";
+    public static final String INVALID_EXTERNAL_KAFKA_LISTENER_MESSAGE = "Invalid authentication type '%s' for external Kafka Listener. "
+        + "Acceptable external authentication types for geo-replication are 'tls' or 'scram-sha-512'. "
+        + "Edit spec.strimziOverrides.kafka.listeners.external.authentication.type to provide a valid authentication type.";
 
-    private static final List<ListenerAuthentication> VALID_LISTENER_AUTHENTICATION = Arrays.asList(ListenerAuthentication.SCRAM_SHA_512, ListenerAuthentication.TLS, ListenerAuthentication.NONE);
+    private static final List<ListenerAuthentication> VALID_INTERNAL_LISTENER_AUTHENTICATION = Arrays.asList(ListenerAuthentication.SCRAM_SHA_512, ListenerAuthentication.TLS, ListenerAuthentication.NONE);
+    private static final List<ListenerAuthentication> VALID_EXTERNAL_LISTENER_AUTHENTICATION = Arrays.asList(ListenerAuthentication.SCRAM_SHA_512, ListenerAuthentication.TLS);
 
     private final List<StatusCondition> conditions;
 
@@ -51,7 +56,8 @@ public class ReplicatorKafkaListenerValidation implements Validation {
         Map<ListenerType, ListenerAuthentication> listenerAuthentications = ListenerAuthentication.getListenerAuth(instance);
         List<StatusCondition> conditions = new ArrayList<>();
 
-        hasCorrectKafkaListenerAuthentication(listenerAuthentications, conditions);
+        hasCorrectInternalKafkaListenerAuthentication(listenerAuthentications, conditions);
+        hasCorrectExternalKafkaListenerAuthentication(listenerAuthentications, conditions);
         hasInternalAndExternalKafkaListenersWithValidAuthentication(listenerAuthentications, conditions);
         return conditions;
     }
@@ -64,20 +70,28 @@ public class ReplicatorKafkaListenerValidation implements Validation {
         }
     }
 
-    private void hasCorrectKafkaListenerAuthentication(Map<ListenerType, ListenerAuthentication> listenerAuthentications, List<StatusCondition> conditions) {
-        if (!VALID_LISTENER_AUTHENTICATION.contains(listenerAuthentications.get(ListenerType.EXTERNAL))) {
-            Optional<ListenerAuthentication> authentication = Optional.ofNullable(listenerAuthentications.get(ListenerType.EXTERNAL));
-            authentication.ifPresent(listenerAuthentication -> conditions.add(invalidKafkaListenerAuthenticationCondition(listenerAuthentication.toValue(), ListenerType.EXTERNAL.toValue())));
-        }
-        if (!VALID_LISTENER_AUTHENTICATION.contains(listenerAuthentications.get(ListenerType.TLS))) {
+    private void hasCorrectInternalKafkaListenerAuthentication(Map<ListenerType, ListenerAuthentication> listenerAuthentications, List<StatusCondition> conditions) {
+        if (!VALID_INTERNAL_LISTENER_AUTHENTICATION.contains(listenerAuthentications.get(ListenerType.TLS))) {
             Optional<ListenerAuthentication> authentication = Optional.ofNullable(listenerAuthentications.get(ListenerType.TLS));
-            authentication.ifPresent(listenerAuthentication -> conditions.add(invalidKafkaListenerAuthenticationCondition(listenerAuthentication.toValue(), ListenerType.TLS.toValue())));
+            authentication.ifPresent(listenerAuthentication -> conditions.add(invalidInternalKafkaListenerAuthenticationCondition(listenerAuthentication.toValue(), ListenerType.TLS.toValue())));
         }
     }
 
-    private StatusCondition invalidKafkaListenerAuthenticationCondition(String authentication, String listener) {
-        return StatusCondition.createErrorCondition(INVALID_KAFKA_LISTENER_REASON,
-            String.format(INVALID_KAFKA_LISTENER_MESSAGE, authentication, listener, listener));
+    private void hasCorrectExternalKafkaListenerAuthentication(Map<ListenerType, ListenerAuthentication> listenerAuthentications, List<StatusCondition> conditions) {
+        if (!VALID_EXTERNAL_LISTENER_AUTHENTICATION.contains(listenerAuthentications.get(ListenerType.EXTERNAL))) {
+            Optional<ListenerAuthentication> authentication = Optional.ofNullable(listenerAuthentications.get(ListenerType.EXTERNAL));
+            authentication.ifPresent(listenerAuthentication -> conditions.add(invalidExternalKafkaListenerAuthenticationCondition(listenerAuthentication.toValue(), ListenerType.EXTERNAL.toValue())));
+        }
+    }
+
+    private StatusCondition invalidInternalKafkaListenerAuthenticationCondition(String authentication, String listener) {
+        return StatusCondition.createErrorCondition(INVALID_INTERNAL_KAFKA_LISTENER_REASON,
+            String.format(INVALID_INTERNAL_KAFKA_LISTENER_MESSAGE, authentication, listener, listener));
+    }
+
+    private StatusCondition invalidExternalKafkaListenerAuthenticationCondition(String authentication, String listener) {
+        return StatusCondition.createErrorCondition(INVALID_EXTERNAL_KAFKA_LISTENER_REASON,
+            String.format(INVALID_EXTERNAL_KAFKA_LISTENER_MESSAGE, authentication));
     }
 
     public List<StatusCondition> getConditions() {
@@ -85,7 +99,7 @@ public class ReplicatorKafkaListenerValidation implements Validation {
     }
 
     public boolean hasInvalidAuthenticationCondition() {
-        return conditions.stream().anyMatch(condition -> condition.getReason().contains(INVALID_KAFKA_LISTENER_REASON));
+        return conditions.stream().anyMatch(condition -> condition.getReason().contains(INVALID_INTERNAL_KAFKA_LISTENER_REASON) || condition.getReason().contains(INVALID_EXTERNAL_KAFKA_LISTENER_REASON));
     }
 
     public boolean hasMismatchedExternalAndInternalListenerAuthentication() {

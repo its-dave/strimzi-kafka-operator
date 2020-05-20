@@ -222,8 +222,12 @@ public class GeoReplicatorModel extends AbstractModel {
                 .orElse(DEFAULT_REPLICAS) > 0;
     }
 
-    public static boolean isValidInstanceForGeoReplication(EventStreams instance) {
+    public static boolean hasValidExternalAuthenticationForGeoReplication(EventStreams instance) {
         return isSupportedAuthType(getExternalKafkaListenerAuthentication(instance));
+    }
+
+    public static boolean canBeSourceOrTargetForGeoReplication(EventStreams instance) {
+        return hasValidExternalAuthenticationForGeoReplication(instance);
     }
 
     public String getReplicatorName() {
