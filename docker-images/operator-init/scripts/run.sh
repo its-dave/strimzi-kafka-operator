@@ -16,6 +16,14 @@ set -e
 # Some resources required by the Event Streams Cluster Operator cannot be created
 # by OLM, so we create/patch these manually in an init container.
 #
+# Resources required for Common Services integration:
+# 1. OperandRequest
+# The init container will wait for the IAM component in Common Services to
+# be up and running before continuing.
+# The OperandRequest does not have an owner reference and will get left behind after
+# the operator is removed incase there are still operands running.
+#
+# Resources required for the Event Streams operator directly:
 # 1. Service
 # 2. ConfigMap
 # 3. ValidatingWebhookConfiguration
@@ -35,7 +43,13 @@ echo "   running in              : $EVENTSTREAMS_OPERATOR_NAMESPACE"
 
 echo "---------------------------------------------------------------"
 
+#
+# Create OperandRequest
+#
 
+source ./createAndWaitForCommonServices.sh
+
+echo "---------------------------------------------------------------"
 
 #
 # 0.   Identifying suitable owner reference

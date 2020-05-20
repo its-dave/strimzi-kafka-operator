@@ -385,6 +385,15 @@ rules:
   - patch
   - delete
 - apiGroups:
+  - "operator.ibm.com"
+  resources:
+  - operandrequests
+  verbs:
+  - get
+  - list
+  - create
+  - patch
+- apiGroups:
   - apiextensions.k8s.io
   # The Event Streams Operator requires the "get", "create" and "patch" permissions for custom resource definitions
   # This is to allow the operator to query the kubernetes server for whether certain CRDs are present

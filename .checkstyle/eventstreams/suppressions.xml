@@ -11,6 +11,6 @@
     <suppress checks=".*"
               files="com[/\\]ibm[/\\]eventstreams[/\\]api[/\\](spec|status)[/\\].*(Builder|Fluent|FluentImpl|Doneable)\.java"/>
     <suppress checks=".*"
-              files="com[/\\]ibm[/\\]iam[/\\]api[/\\](spec|status)[/\\].*(Builder|Fluent|FluentImpl|Doneable)\.java"/>
+              files="com[/\\]ibm[/\\]commonservices[/\\]api[/\\](spec|status)[/\\].*(Builder|Fluent|FluentImpl|Doneable)\.java"/>
 
 </suppressions>

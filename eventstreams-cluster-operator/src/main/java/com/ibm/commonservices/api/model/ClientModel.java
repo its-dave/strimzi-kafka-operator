@@ -10,12 +10,12 @@
  * divested of its trade secrets, irrespective of what has been
  * deposited with the U.S. Copyright Office.
  */
-package com.ibm.iam.api.model;
+package com.ibm.commonservices.api.model;
 
 import com.ibm.eventstreams.api.model.AbstractModel;
 import com.ibm.eventstreams.api.spec.EventStreams;
-import com.ibm.iam.api.spec.Client;
-import com.ibm.iam.api.spec.ClientBuilder;
+import com.ibm.commonservices.api.spec.Client;
+import com.ibm.commonservices.api.spec.ClientBuilder;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.strimzi.operator.common.model.Labels;
 

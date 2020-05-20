@@ -12,6 +12,7 @@
  */
 package com.ibm.eventstreams.controller;
 
+import com.ibm.commonservices.CommonServicesConfig;
 import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.EndpointServiceType;
 import com.ibm.eventstreams.api.model.AbstractModel;
@@ -44,19 +45,18 @@ import com.ibm.eventstreams.rest.eventstreams.EventStreamsGeneralValidation;
 import com.ibm.eventstreams.rest.eventstreams.LicenseValidation;
 import com.ibm.eventstreams.rest.eventstreams.NameValidation;
 import com.ibm.eventstreams.rest.eventstreams.VersionValidation;
-import com.ibm.iam.api.controller.Cp4iServicesBindingResourceOperator;
-import com.ibm.iam.api.model.ClientModel;
-import com.ibm.iam.api.model.Cp4iServicesBindingModel;
-import com.ibm.iam.api.spec.Client;
-import com.ibm.iam.api.spec.ClientDoneable;
-import com.ibm.iam.api.spec.ClientList;
-import com.ibm.iam.api.spec.Cp4iServicesBinding;
+import com.ibm.commonservices.api.controller.Cp4iServicesBindingResourceOperator;
+import com.ibm.commonservices.api.model.ClientModel;
+import com.ibm.commonservices.api.model.Cp4iServicesBindingModel;
+import com.ibm.commonservices.api.spec.Client;
+import com.ibm.commonservices.api.spec.ClientDoneable;
+import com.ibm.commonservices.api.spec.ClientList;
+import com.ibm.commonservices.api.spec.Cp4iServicesBinding;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.client.KubernetesClient;
-import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
 import io.fabric8.openshift.api.model.Route;
@@ -128,12 +128,13 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
 
     private final MetricsProvider metricsProvider;
 
+    private final String operatorNamespace;
+
     private long defaultPollIntervalMs = 1000;
     private long kafkaStatusReadyTimeoutMs;
 
     private int customImageCount = 0;
-    private static final String ENCODED_IBMCLOUD_CA_CERT = "icp_public_cacert_encoded";
-    private static final String CLUSTER_CA_CERT_SECRET_NAME = "cluster-ca-cert";
+
     public static final String COMMON_SERVICES_NOT_FOUND_REASON = "CommonServicesNotFound";
     public static final String COMMON_SERVICES_CERTIFICATE_NOT_FOUND_REASON = "CommonServicesCertificateNotFound";
 
@@ -145,6 +146,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                                 EventStreamsOperatorConfig.ImageLookup imageConfig,
                                 RouteOperator routeOperator,
                                 MetricsProvider metricsProvider,
+                                String operatorNamespace,
                                 long kafkaStatusReadyTimeoutMs) {
         super(vertx, kind, esResourceOperator, metricsProvider);
         log.traceEntry(() -> vertx, () -> client, () -> kind, () -> pfa, () -> esResourceOperator,
@@ -169,6 +171,8 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         this.networkPolicyOperator = new NetworkPolicyOperator(vertx, client);
         this.metricsProvider = metricsProvider;
 
+        this.operatorNamespace = operatorNamespace;
+
         this.kafkaStatusReadyTimeoutMs = kafkaStatusReadyTimeoutMs;
 
         log.traceExit();
@@ -191,8 +195,8 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         customImageCount =  0;
 
         return log.traceExit(reconcileState.validateCustomResource()
-                .compose(state -> state.getCloudPakClusterData())
-                .compose(state -> state.getCloudPakClusterCert())
+                .compose(state -> state.getCommonServicesConfig())
+                .compose(state -> state.getCommonServicesClusterCert())
                 .compose(state -> state.createCloudPakClusterCertSecret())
                 .compose(state -> state.createCp4iServicesBinding())
                 .compose(state -> state.waitForCp4iServicesBindingStatus())
@@ -231,7 +235,8 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         final List<Condition> previousConditions;
         final EventStreamsOperatorConfig.ImageLookup imageConfig;
         final EventStreamsCertificateManager certificateManager;
-        Map<String, String> icpClusterData = null;
+        CommonServicesConfig commonServicesConfig = null;
+        String cloudPakHeaderURL = null;
         boolean isGeoReplicationEnabled = false;
         String kafkaPrincipal;
         boolean cp4iPresent = false;
@@ -312,73 +317,73 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             }
         }
 
-        Future<ReconciliationState> getCloudPakClusterData() {
+        Future<ReconciliationState> getCommonServicesConfig() {
             log.traceEntry();
-            String namespace = "kube-public";
-            String icpConfigMapName = "ibmcloud-cluster-info";
-            boolean iamPresent = false;
-            ConfigMap icpConfigMap = null;
-            try {
-                icpConfigMap = client.configMaps().inNamespace(namespace).withName(icpConfigMapName).get();
-                iamPresent = icpConfigMap != null;
-            } catch (KubernetesClientException kubeError) {
-                log.error("IAM config map could not be retrieved.");
-            }
-
-            log.info("{}: IAM status: {}", reconciliation, iamPresent);
-
-            if (!iamPresent) {
-                String failureMessage = "Common Services is required by Event Streams, but the Event Streams Operator could not find the Common Services CA certificate. "
-                    + "Contact IBM Support for assistance in diagnosing the cause.";
-                addToConditions(StatusCondition.createErrorCondition(COMMON_SERVICES_NOT_FOUND_REASON, failureMessage).toCondition());
-
-                EventStreamsStatus statusSubresource = status.withPhase(PhaseState.FAILED).build();
-                instance.setStatus(statusSubresource);
-
-                Promise<ReconciliationState> failReconcile = Promise.promise();
-                updateStatus(statusSubresource).onComplete(f -> {
-                    log.info("IAM not present : " + f.succeeded());
-                    failReconcile.fail("Exit Reconcile as IAM not present");
-                });
-                return log.traceExit(failReconcile.future());
-            }
-            icpClusterData = icpConfigMap.getData();
-
-            return log.traceExit(Future.succeededFuture(this));
+            Promise<Void> getCommonServicesConfig = Promise.promise();
+            configMapOperator.getAsync(operatorNamespace, CommonServicesConfig.INGRESS_CM_NAME)
+                    .onComplete(res -> {
+                        if (res.failed()) {
+                            log.error("Failed to get Common Services Managment Ingress configmap: {}", res.cause());
+                            updateStatusWithCommonServicesMissing(getCommonServicesConfig);
+                            return;
+                        }
+                        ConfigMap ingressCM = res.result();
+                        if (ingressCM == null) {
+                            log.error("Configmap for Common Services Managment Ingress missing.");
+                            updateStatusWithCommonServicesMissing(getCommonServicesConfig);
+                            return;
+                        }
+                        Map<String, String> ingressConfigMapData = ingressCM.getData();
+                        String clusterName = ingressConfigMapData.get(CommonServicesConfig.CLUSTER_NAME_KEY);
+                        String ingressEndpoint = ingressConfigMapData.get(CommonServicesConfig.INGRESS_ENDPOINT_KEY);
+                        String consoleHost = ingressConfigMapData.get(CommonServicesConfig.CONSOLE_HOST_KEY);
+                        String consolePort = ingressConfigMapData.get(CommonServicesConfig.CONSOLE_PORT_KEY);
+                        commonServicesConfig = new CommonServicesConfig(clusterName, ingressEndpoint, consoleHost, consolePort);
+                        getCommonServicesConfig.complete();
+                    });
+            return log.traceExit(getCommonServicesConfig.future().map(v -> this));
         }
 
-        Future<ReconciliationState> getCloudPakClusterCert() {
+        Future<ReconciliationState> getCommonServicesClusterCert() {
             log.traceEntry();
-            Promise<Void> clusterCaSecretPromise = Promise.promise();
+            Promise<Void> getCommonServicesClusterCert = Promise.promise();
             // get common services info for prometheus metrics
-            secretOperator.getAsync("kube-public", "ibmcloud-cluster-ca-cert").setHandler(getRes -> {
+            secretOperator.getAsync(operatorNamespace, CommonServicesConfig.CA_CERT_SECRET_NAME).setHandler(getRes -> {
                 if (getRes.result() != null)  {
                     try {
                         String clusterCaCert = getRes.result().getData().get("ca.crt");
-                        icpClusterData.put(EventStreamsOperator.ENCODED_IBMCLOUD_CA_CERT, clusterCaCert);
                         byte[] clusterCaCertArray = Base64.getDecoder().decode(clusterCaCert);
-                        icpClusterData.put("icp_public_cacert", new String(clusterCaCertArray, "US-ASCII"));
-                        clusterCaSecretPromise.complete();
+                        commonServicesConfig.setCaCerts(clusterCaCert, new String(clusterCaCertArray, "US-ASCII"));
+                        getCommonServicesClusterCert.complete();
                     } catch (UnsupportedEncodingException e) {
-                        log.error("unable to decode icp public cert: {}", e);
-                        clusterCaSecretPromise.fail(e);
+                        log.error("unable to decode Common Services public cert: {}", e);
+                        getCommonServicesClusterCert.fail(e);
                     }
                 } else {
-                    String failureMessage = "Common Services is required by Event Streams, but the Event Streams Operator could not find the Common Services configmap."
-                        + " Contact IBM Support for assistance in diagnosing the cause.";
-                    addToConditions(StatusCondition.createErrorCondition(COMMON_SERVICES_NOT_FOUND_REASON, failureMessage).toCondition());
-
-                    EventStreamsStatus statusSubresource = status.withPhase(PhaseState.FAILED).build();
-                    instance.setStatus(statusSubresource);
-
-                    updateStatus(statusSubresource).onComplete(f -> {
-                        log.info("'ibmcloud-cluster-ca-cert' not present : {}", f.succeeded());
-                        clusterCaSecretPromise.fail("could not get secret 'ibmcloud-cluster-ca-cert' in namespace 'kube-public'");
-                    });
+                    log.error("Secret with cluster cert for Common Services missing.");
+                    updateStatusWithCommonServicesMissing(getCommonServicesClusterCert);
                 }
             });
+            return log.traceExit(getCommonServicesClusterCert.future().map(v -> this));
+        }
 
-            return log.traceExit(clusterCaSecretPromise.future().map(v -> this));
+        void updateStatusWithCommonServicesMissing(Promise reconcile) {
+            log.traceEntry();
+
+            String failureMessage = "Common Services is required by Event Streams, but the Event Streams Operator could not find the Common Services CA certificate. "
+                    + "Contact IBM Support for assistance in diagnosing the cause.";
+            addToConditions(StatusCondition.createErrorCondition(COMMON_SERVICES_NOT_FOUND_REASON, failureMessage).toCondition());
+
+            EventStreamsStatus statusSubresource = status.withPhase(PhaseState.FAILED).build();
+            instance.setStatus(statusSubresource);
+
+            updateStatus(statusSubresource).onComplete(f -> {
+                if (f.failed()) {
+                    log.error("Failed to update status with Common Services resources missing: {}", f.cause());
+                }
+                reconcile.fail("Exit Reconcile as IAM not present");
+            });
+            log.traceExit();
         }
 
         Future<ReconciliationState> createCloudPakClusterCertSecret() {
@@ -386,7 +391,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             Promise<Void> clusterCaSecretPromise = Promise.promise();
             ClusterSecretsModel clusterSecrets = new ClusterSecretsModel(instance, secretOperator);
             // get common services info for prometheus metrics
-            String clusterCert = icpClusterData.get(EventStreamsOperator.ENCODED_IBMCLOUD_CA_CERT);
+            String clusterCert = commonServicesConfig.getEncodedCaCert();
             if (clusterCert != null) {
                 clusterSecrets.createIBMCloudCASecret(clusterCert)
                     .onSuccess(ar -> clusterCaSecretPromise.complete())
@@ -456,10 +461,10 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                             return "";
                         });
                         log.debug("Putting the header URL " + cp4iHeaderUrl + " into the Admin UI");
-                        icpClusterData.put(AdminUIModel.ICP_CM_CLUSTER_PLATFORM_SERVICES_URL, cp4iHeaderUrl);
+                        cloudPakHeaderURL = cp4iHeaderUrl;
                     } else {
-                        log.error("Failed waiting for CP4I binding status so putting empty string into the Admin UI");
-                        icpClusterData.put(AdminUIModel.ICP_CM_CLUSTER_PLATFORM_SERVICES_URL, "");
+                        log.debug("Putting the header URL (empty string) into the Admin UI");
+                        cloudPakHeaderURL = "";
                     }
                     waitForCp4iServicesBindingStatus.complete(this);
                 });
@@ -593,7 +598,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         Future<ReconciliationState> createRestProducer(Supplier<Date> dateSupplier) {
             log.traceEntry(() -> dateSupplier);
             List<Future> restProducerFutures = new ArrayList<>();
-            RestProducerModel restProducer = new RestProducerModel(instance, imageConfig, status.getKafkaListeners(), icpClusterData);
+            RestProducerModel restProducer = new RestProducerModel(instance, imageConfig, status.getKafkaListeners(), commonServicesConfig);
             if (restProducer.getCustomImage()) {
                 customImageCount++;
             }
@@ -620,7 +625,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         Future<ReconciliationState> createAdminApi(Supplier<Date> dateSupplier) {
             log.traceEntry(() -> dateSupplier);
             List<Future> adminApiFutures = new ArrayList<>();
-            AdminApiModel adminApi = new AdminApiModel(instance, imageConfig, status.getKafkaListeners(), icpClusterData, isGeoReplicationEnabled, kafkaPrincipal);
+            AdminApiModel adminApi = new AdminApiModel(instance, imageConfig, status.getKafkaListeners(), commonServicesConfig, isGeoReplicationEnabled, kafkaPrincipal);
             if (adminApi.getCustomImage()) {
                 customImageCount++;
             }
@@ -657,7 +662,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         Future<ReconciliationState> createSchemaRegistry(Supplier<Date> dateSupplier) {
             log.traceEntry(() -> dateSupplier);
             List<Future> schemaRegistryFutures = new ArrayList<>();
-            SchemaRegistryModel schemaRegistry = new SchemaRegistryModel(instance, imageConfig, status.getKafkaListeners(), icpClusterData, kafkaPrincipal);
+            SchemaRegistryModel schemaRegistry = new SchemaRegistryModel(instance, imageConfig, status.getKafkaListeners(), commonServicesConfig, kafkaPrincipal);
             if (schemaRegistry.getCustomImage()) {
                 customImageCount++;
             }
@@ -720,7 +725,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         Future<ReconciliationState> createAdminUI() {
             log.traceEntry();
             List<Future> adminUIFutures = new ArrayList<>();
-            AdminUIModel ui = new AdminUIModel(instance, imageConfig, pfa.hasRoutes(), icpClusterData);
+            AdminUIModel ui = new AdminUIModel(instance, imageConfig, pfa.hasRoutes(), commonServicesConfig, cloudPakHeaderURL);
             if (ui.getCustomImage()) {
                 customImageCount++;
             }

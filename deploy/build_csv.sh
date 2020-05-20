@@ -28,8 +28,8 @@ ${CP} "${INSTALL_DIR}/150-Deployment-eventstreams-cluster-operator.yaml" "${OPER
 yq r ${ROLE_FILE} metadata.name | xargs yq w -i ${OPERATOR_FILE} spec.template.spec.serviceAccountName
 # Inject the entity operator delegation ClusterRole rules into the Operator Role
 yq m -i -a ${ROLE_FILE} "${INSTALL_DIR}/031-ClusterRole-strimzi-entity-operator.yaml"
-${SED} -i "s/metadata.namespace/metadata.annotations['olm.targetNamespaces']/" "${OPERATOR_FILE}"
-${SED} -i "0,/metadata.annotations\['olm.targetNamespaces'\]/{s/metadata.annotations\['olm.targetNamespaces'\]/metadata.namespace/}" "${OPERATOR_FILE}"
+
+${SED} -i "/WATCHED_NAMESPACE/,/EVENTSTREAMS_OPERATOR_NAMESPACE/ s/metadata.namespace/metadata.annotations['olm.targetNamespaces']/" "${OPERATOR_FILE}"
 
 ${CP} "${INSTALL_DIR}/031-ClusterRole-strimzi-entity-operator.yaml" "${BUNDLE_DIR}/entityoperator.clusterrole.yaml"
 ${CP} "${INSTALL_DIR}/122-ClusterRole-eventstreams-ui.yaml" "${BUNDLE_DIR}/adminui.clusterrole.yaml"

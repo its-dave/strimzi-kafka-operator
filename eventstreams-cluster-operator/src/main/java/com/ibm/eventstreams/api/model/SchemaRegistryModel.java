@@ -12,6 +12,7 @@
  */
 package com.ibm.eventstreams.api.model;
 
+import com.ibm.commonservices.CommonServicesConfig;
 import com.ibm.eventstreams.api.DefaultResourceRequirements;
 import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.EndpointServiceType;
@@ -23,7 +24,7 @@ import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.spec.ImagesSpec;
 import com.ibm.eventstreams.api.spec.SchemaRegistrySpec;
 import com.ibm.eventstreams.controller.EventStreamsOperatorConfig;
-import com.ibm.iam.api.model.ClientModel;
+import com.ibm.commonservices.api.model.ClientModel;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.ContainerBuilder;
 import io.fabric8.kubernetes.api.model.EnvVar;
@@ -100,7 +101,7 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
     private List<ContainerEnvVar> schemaRegistryProxyEnvVars;
     private ResourceRequirements schemaRegistryProxyResourceRequirements;
     private String defaultProxyTraceString = "info";
-    private final String icpClusterName;
+    private final String iamClusterName;
     private final String iamServerURL;
     private final String ibmcloudCASecretName;
     private final String internalKafkaUsername;
@@ -115,19 +116,19 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
      * @param instance
      * @param imageConfig
      * @param kafkaListeners
-     * @param icpClusterData
+     * @param commonServicesConfig
      * @param internalKafkaUsername
      */
     public SchemaRegistryModel(EventStreams instance,
                                EventStreamsOperatorConfig.ImageLookup imageConfig,
                                List<ListenerStatus> kafkaListeners,
-                               Map<String, String> icpClusterData,
+                               CommonServicesConfig commonServicesConfig,
                                String internalKafkaUsername) {
 
         super(instance, COMPONENT_NAME, APPLICATION_NAME);
         this.kafkaListeners = kafkaListeners != null ? new ArrayList<>(kafkaListeners) : new ArrayList<>();
-        this.icpClusterName = icpClusterData.getOrDefault("cluster_name", "null");
-        this.iamServerURL = icpClusterData.getOrDefault("cluster_endpoint", "null");
+        this.iamClusterName = commonServicesConfig.getClusterName();
+        this.iamServerURL = commonServicesConfig.getIngressEndpoint();
         this.internalKafkaUsername = internalKafkaUsername;
         this.kafkaAuthorizationEnabled = isKafkaAuthorizationEnabled(instance);
 
@@ -532,7 +533,7 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
                 .build(),
             // Add The IAM Specific Envars.  If we need to build without IAM Support we can put a variable check
             // here.
-            new EnvVarBuilder().withName("IAM_CLUSTER_NAME").withValue(icpClusterName).build(),
+            new EnvVarBuilder().withName("IAM_CLUSTER_NAME").withValue(iamClusterName).build(),
             new EnvVarBuilder().withName("IAM_SERVER_URL").withValue(iamServerURL).build(),
             new EnvVarBuilder().withName("IAM_SERVER_CA_CERT").withValue(IBMCLOUD_CA_CERTIFICATE_PATH + File.separator + CA_CERT).build(),
             new EnvVarBuilder()

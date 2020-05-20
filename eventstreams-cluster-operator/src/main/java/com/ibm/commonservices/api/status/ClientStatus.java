@@ -10,7 +10,7 @@
  * divested of its trade secrets, irrespective of what has been
  * deposited with the U.S. Copyright Office.
  */
-package com.ibm.iam.api.status;
+package com.ibm.commonservices.api.status;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;

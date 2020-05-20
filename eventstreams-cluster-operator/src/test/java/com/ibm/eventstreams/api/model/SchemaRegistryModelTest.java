@@ -12,6 +12,7 @@
  */
 package com.ibm.eventstreams.api.model;
 
+import com.ibm.commonservices.CommonServicesConfig;
 import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.EndpointServiceType;
 import com.ibm.eventstreams.api.model.utils.CustomMatchers;
@@ -80,7 +81,7 @@ public class SchemaRegistryModelTest {
     private final String instanceName = "test-instance";
     private final String componentPrefix = instanceName + "-" + AbstractModel.APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME;
     private final int defaultReplicas = 1;
-    private final Map<String, String> mockIcpClusterDataMap = new HashMap<>();
+    private final CommonServicesConfig mockCommonServicesConfig = new CommonServicesConfig("mycluster", "ingress", "consoleHost", "443");
     private final String kafkaPrincipal = InternalKafkaUserModel.getInternalKafkaUserName(instanceName);
 
     @Mock
@@ -116,7 +117,7 @@ public class SchemaRegistryModelTest {
 
     private SchemaRegistryModel createDefaultSchemaRegistryModel() {
         EventStreams eventStreamsResource = createDefaultEventStreams().build();
-        return new SchemaRegistryModel(eventStreamsResource, imageConfig, null, mockIcpClusterDataMap, kafkaPrincipal);
+        return new SchemaRegistryModel(eventStreamsResource, imageConfig, null, mockCommonServicesConfig, kafkaPrincipal);
     }
 
     @Test
@@ -212,7 +213,7 @@ public class SchemaRegistryModelTest {
                 .endSpec()
                 .build();
         SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(eventStreamsResource, Mockito.mock(
-            EventStreamsOperatorConfig.ImageLookup.class), null, mockIcpClusterDataMap, kafkaPrincipal);
+            EventStreamsOperatorConfig.ImageLookup.class), null, mockCommonServicesConfig, kafkaPrincipal);
 
         List<Container> containerList = schemaRegistryModel.getDeployment().getSpec().getTemplate().getSpec().getContainers();
 
@@ -258,7 +259,7 @@ public class SchemaRegistryModelTest {
         expectedImages.put(SchemaRegistryModel.AVRO_SERVICE_CONTAINER_NAME, avroImage);
         expectedImages.put(SchemaRegistryModel.SCHEMA_REGISTRY_PROXY_CONTAINER_NAME, schemaRegistryProxyImage);
 
-        List<Container> containers = new SchemaRegistryModel(instance, imageConfig, null, mockIcpClusterDataMap, kafkaPrincipal).getDeployment().getSpec().getTemplate()
+        List<Container> containers = new SchemaRegistryModel(instance, imageConfig, null, mockCommonServicesConfig, kafkaPrincipal).getDeployment().getSpec().getTemplate()
                 .getSpec().getContainers();
 
         ModelUtils.assertCorrectImageOverridesOnContainers(containers, expectedImages);
@@ -313,7 +314,7 @@ public class SchemaRegistryModelTest {
                 .endSpec()
                 .build();
 
-        List<Container> containers = new SchemaRegistryModel(instance, imageConfig, null, mockIcpClusterDataMap, kafkaPrincipal).getDeployment().getSpec().getTemplate()
+        List<Container> containers = new SchemaRegistryModel(instance, imageConfig, null, mockCommonServicesConfig, kafkaPrincipal).getDeployment().getSpec().getTemplate()
                 .getSpec().getContainers();
 
         Map<String, String> expectedImages = new HashMap<>();
@@ -345,7 +346,7 @@ public class SchemaRegistryModelTest {
             .endSpec()
             .build();
 
-        assertThat(new SchemaRegistryModel(eventStreams, imageConfig, null, mockIcpClusterDataMap, kafkaPrincipal).getServiceAccount()
+        assertThat(new SchemaRegistryModel(eventStreams, imageConfig, null, mockCommonServicesConfig, kafkaPrincipal).getServiceAccount()
                         .getImagePullSecrets(), contains(imagePullSecretOverride));
     }
 
@@ -365,7 +366,7 @@ public class SchemaRegistryModelTest {
             .endSpec()
             .build();
 
-        assertThat(new SchemaRegistryModel(eventStreams, imageConfig, null, mockIcpClusterDataMap, kafkaPrincipal).getServiceAccount()
+        assertThat(new SchemaRegistryModel(eventStreams, imageConfig, null, mockCommonServicesConfig, kafkaPrincipal).getServiceAccount()
                         .getImagePullSecrets(), contains(imagePullSecretOverride));
     }
 
@@ -405,14 +406,14 @@ public class SchemaRegistryModelTest {
             .endSpec()
             .build();
 
-        assertThat(new SchemaRegistryModel(eventStreams, imageConfig, null, mockIcpClusterDataMap, kafkaPrincipal).getServiceAccount()
+        assertThat(new SchemaRegistryModel(eventStreams, imageConfig, null, mockCommonServicesConfig, kafkaPrincipal).getServiceAccount()
                         .getImagePullSecrets(), containsInAnyOrder(globalPullSecretOverride, componentPullSecretOverride));
     }
 
     @Test
     public void testSchemaRegistryProxyAuthenticationEnvVarsSetWithNoAuth() {
         EventStreams defaultEs = createDefaultEventStreams().build();
-        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockIcpClusterDataMap, kafkaPrincipal);
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockCommonServicesConfig, kafkaPrincipal);
 
         EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:RUNAS-ANONYMOUS,7443:RUNAS-ANONYMOUS").build();
         EnvVar endpoints = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7443:p2ptls").build();
@@ -427,7 +428,7 @@ public class SchemaRegistryModelTest {
     @Test
     public void testSchemaRegistryProxyAuthenticationEnvVarsWithAuth() {
         EventStreams defaultEs = createEventStreamsWithAuthorization().build();
-        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockIcpClusterDataMap, kafkaPrincipal);
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockCommonServicesConfig, kafkaPrincipal);
 
         EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:IAM-BEARER;TLS;SCRAM-SHA-512,7443:IAM-BEARER;MAC").build();
         EnvVar endpoints = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7443:p2ptls").build();
@@ -442,7 +443,7 @@ public class SchemaRegistryModelTest {
     @Test
     public void testDefaultLogging() {
         EventStreams defaultEs = createDefaultEventStreams().build();
-        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockIcpClusterDataMap, kafkaPrincipal);
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockCommonServicesConfig, kafkaPrincipal);
 
         EnvVar expectedEnvVar = new EnvVarBuilder()
                 .withName(SchemaRegistryModel.LOG_LEVEL_ENV_NAME)
@@ -468,7 +469,7 @@ public class SchemaRegistryModelTest {
                     .endSchemaRegistry()
                 .endSpec()
                 .build();
-        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockIcpClusterDataMap, kafkaPrincipal);
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockCommonServicesConfig, kafkaPrincipal);
 
         EnvVar expectedEnvVar = new EnvVarBuilder()
                 .withName(SchemaRegistryModel.LOG_LEVEL_ENV_NAME)
@@ -490,7 +491,7 @@ public class SchemaRegistryModelTest {
                     .endSchemaRegistry()
                 .endSpec()
                 .build();
-        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockIcpClusterDataMap, kafkaPrincipal);
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockCommonServicesConfig, kafkaPrincipal);
 
         EnvVar expectedEnvVar = new EnvVarBuilder()
                 .withName(SchemaRegistryModel.LOG_LEVEL_ENV_NAME)
@@ -512,7 +513,7 @@ public class SchemaRegistryModelTest {
                     .endSchemaRegistry()
                 .endSpec()
                 .build();
-        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockIcpClusterDataMap, kafkaPrincipal);
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockCommonServicesConfig, kafkaPrincipal);
 
         EnvVar expectedEnvVar = new EnvVarBuilder()
                 .withName(SchemaRegistryModel.LOG_LEVEL_ENV_NAME)
@@ -526,7 +527,7 @@ public class SchemaRegistryModelTest {
     @Test
     public void testAvroDefaultLogging() {
         EventStreams defaultEs = createDefaultEventStreams().build();
-        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockIcpClusterDataMap, kafkaPrincipal);
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockCommonServicesConfig, kafkaPrincipal);
 
         EnvVar expectedEnvVar = new EnvVarBuilder()
                 .withName(SchemaRegistryModel.AVRO_LOG_LEVEL_ENV_NAME)
@@ -554,7 +555,7 @@ public class SchemaRegistryModelTest {
                     .endSchemaRegistry()
                 .endSpec()
                 .build();
-        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockIcpClusterDataMap, kafkaPrincipal);
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockCommonServicesConfig, kafkaPrincipal);
 
         EnvVar expectedEnvVar = new EnvVarBuilder()
                 .withName(SchemaRegistryModel.AVRO_LOG_LEVEL_ENV_NAME)
@@ -578,7 +579,7 @@ public class SchemaRegistryModelTest {
                     .endSchemaRegistry()
                 .endSpec()
                 .build();
-        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockIcpClusterDataMap, kafkaPrincipal);
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockCommonServicesConfig, kafkaPrincipal);
 
         EnvVar expectedEnvVar = new EnvVarBuilder()
                 .withName(SchemaRegistryModel.AVRO_LOG_LEVEL_ENV_NAME)
@@ -602,7 +603,7 @@ public class SchemaRegistryModelTest {
                     .endSchemaRegistry()
                 .endSpec()
                 .build();
-        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockIcpClusterDataMap, kafkaPrincipal);
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockCommonServicesConfig, kafkaPrincipal);
 
         EnvVar expectedEnvVar = new EnvVarBuilder()
                 .withName(SchemaRegistryModel.AVRO_LOG_LEVEL_ENV_NAME)
@@ -616,7 +617,7 @@ public class SchemaRegistryModelTest {
     @Test
     public void testCreateSchemaRegistryRouteWithTlsEncryption() {
         EventStreams eventStreams = createDefaultEventStreams().build();
-        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(eventStreams, imageConfig, null, mockIcpClusterDataMap, kafkaPrincipal);
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(eventStreams, imageConfig, null, mockCommonServicesConfig, kafkaPrincipal);
         String expectedRouteName = instanceName + "-" + AbstractModel.APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME + "-" + Endpoint.DEFAULT_EXTERNAL_NAME;
         assertThat(schemaRegistryModel.getRoutes(), IsMapContaining.hasKey(expectedRouteName));
         assertThat(schemaRegistryModel.getRoutes().get(expectedRouteName).getSpec().getTls().getTermination(),  is("passthrough"));
@@ -625,7 +626,7 @@ public class SchemaRegistryModelTest {
     @Test
     public void testGenerationIdLabelOnDeployment() {
         EventStreams eventStreams = createDefaultEventStreams().build();
-        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(eventStreams, imageConfig, null, mockIcpClusterDataMap, kafkaPrincipal);
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(eventStreams, imageConfig, null, mockCommonServicesConfig, kafkaPrincipal);
 
         assertThat(schemaRegistryModel.getDeployment("newID").getMetadata().getLabels().containsKey(AbstractSecureEndpointsModel.CERT_GENERATION_KEY), is(true));
         assertThat(schemaRegistryModel.getDeployment("newID").getMetadata().getLabels().get(AbstractSecureEndpointsModel.CERT_GENERATION_KEY), is("newID"));
@@ -719,7 +720,7 @@ public class SchemaRegistryModelTest {
                 .endSchemaRegistry()
             .endSpec()
             .build();
-        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(eventStreams, imageConfig, null, mockIcpClusterDataMap, kafkaPrincipal);
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(eventStreams, imageConfig, null, mockCommonServicesConfig, kafkaPrincipal);
 
         PersistentVolumeClaim pvc = schemaRegistryModel.getPersistentVolumeClaim();
         assertThat("Owner Reference should be empty by default so that pvcs are not deleted",
@@ -751,7 +752,7 @@ public class SchemaRegistryModelTest {
                 .endSchemaRegistry()
             .endSpec()
             .build();
-        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(eventStreams, imageConfig, null, mockIcpClusterDataMap, kafkaPrincipal);
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(eventStreams, imageConfig, null, mockCommonServicesConfig, kafkaPrincipal);
 
         PersistentVolumeClaim pvc = schemaRegistryModel.getPersistentVolumeClaim();
 
@@ -764,16 +765,15 @@ public class SchemaRegistryModelTest {
 
     @Test
     public void testWhenICPClusterDataEnvironmentVariablesSet() {
-        String clusterIAM = "iam-endpoint:9080";
+        String ingressEndpoint = "https://ingress-endpoint.cs-ns.svc:443";
         String clusterName = "test-cluster";
-        mockIcpClusterDataMap.put("cluster_name", clusterName);
-        mockIcpClusterDataMap.put("cluster_endpoint", clusterIAM);
+        CommonServicesConfig commonServicesConfig = new CommonServicesConfig(clusterName, ingressEndpoint, "consoleHost", "443");
 
         EventStreams eventStreams = createDefaultEventStreams().build();
-        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(eventStreams, imageConfig, null, mockIcpClusterDataMap, kafkaPrincipal);
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(eventStreams, imageConfig, null, commonServicesConfig, kafkaPrincipal);
 
         EnvVar expectedEnvVarIAMClusterName = new EnvVarBuilder().withName("IAM_CLUSTER_NAME").withValue(clusterName).build();
-        EnvVar expectedEnvVarIAMClusterEndpoint = new EnvVarBuilder().withName("IAM_SERVER_URL").withValue(clusterIAM).build();
+        EnvVar expectedEnvVarIAMClusterEndpoint = new EnvVarBuilder().withName("IAM_SERVER_URL").withValue(ingressEndpoint).build();
         EnvVar expectedEnvVarKafkaPrincipal = new EnvVarBuilder().withName("KAFKA_PRINCIPAL").withValue(kafkaPrincipal).build();
 
         List<EnvVar> actualSchemaProxyEnvVars = schemaRegistryModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(2).getEnv();

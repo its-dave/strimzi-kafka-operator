@@ -8,10 +8,10 @@
     <Package name="io.strimzi.certs"/>
   </Match>
   <Match>
-    <Class name="~com\.ibm\.iam\.api\.spec\..+(Doneable|Builder|FluentImpl)(\$.*)?" />
+    <Class name="~com\.ibm\.commonservices\.api\.spec\..+(Doneable|Builder|FluentImpl)(\$.*)?" />
   </Match>
   <Match>
-    <Class name="~com\.ibm\.iam\.api\.status\..+(Builder|FluentImpl)(\$.*)?" />
+    <Class name="~com\.ibm\.commonservices\.api\.status\..+(Builder|FluentImpl)(\$.*)?" />
   </Match>
   <Match>
     <Class name="~com\.ibm\.eventstreams\.api\.spec\..+(Doneable|Builder|FluentImpl)(\$.*)?" />

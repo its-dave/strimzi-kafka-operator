@@ -113,6 +113,7 @@ docker_push:
 	oc set image-lookup $(IMAGE_BASE_NAME) -n $(MARKETPLACE_NAMESPACE)
 
 deploy: build_bundle docker_push
+	oc apply -f common-services-operator-source.yaml
 	$(SED) s/@image@/$(IMAGE_NAME)/ custom-catalog-source.yaml.template | oc apply -f -
 
 delete_deploy:

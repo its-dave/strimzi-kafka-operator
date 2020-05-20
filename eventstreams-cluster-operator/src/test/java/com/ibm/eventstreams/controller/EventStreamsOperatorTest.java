@@ -13,6 +13,7 @@
 
 package com.ibm.eventstreams.controller;
 
+import com.ibm.commonservices.CommonServicesConfig;
 import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.EndpointServiceType;
 import com.ibm.eventstreams.api.ProductUse;
@@ -56,8 +57,8 @@ import com.ibm.eventstreams.rest.eventstreams.AuthenticationValidation;
 import com.ibm.eventstreams.rest.eventstreams.EndpointValidation;
 import com.ibm.eventstreams.rest.eventstreams.NameValidation;
 import com.ibm.eventstreams.rest.eventstreams.VersionValidation;
-import com.ibm.iam.api.controller.Cp4iServicesBindingResourceOperator;
-import com.ibm.iam.api.spec.Cp4iServicesBinding;
+import com.ibm.commonservices.api.controller.Cp4iServicesBindingResourceOperator;
+import com.ibm.commonservices.api.spec.Cp4iServicesBinding;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.DoneableConfigMap;
@@ -182,6 +183,7 @@ public class EventStreamsOperatorTest {
     private static final Logger LOGGER = LogManager.getLogger(EventStreamsOperatorTest.class);
 
     private static final String NAMESPACE = "test-namespace";
+    private static final String OPERATOR_NAMESPACE = "operator-namespace";
     private static final String CLUSTER_NAME = "my-es";
     private static final String UI_ROUTE_NAME = CLUSTER_NAME + "-ibm-es-" + AdminUIModel.COMPONENT_NAME;
     private static final String REST_PRODUCER_ROUTE_NAME = CLUSTER_NAME + "-ibm-es-" + RestProducerModel.COMPONENT_NAME;
@@ -197,6 +199,12 @@ public class EventStreamsOperatorTest {
     private static final String IAM_BEARER_LABEL = "IAM-BEARER";
     private static final String SCRAM_SHA_512_LABEL = "SCRAM-SHA-512";
     private static final String TLS_LABEL = "TLS";
+    private static final String COMMON_SERVICES_NAMESPACE = "ibm-common-services";
+    private static final String IAM_CLUSTER_NAME = "my-cluster";
+    private static final String INGRESS_SERVICE = "ingress-service.ns";
+    private static final String CLUSTER_ENDPOINT = "https://" + INGRESS_SERVICE + ".svc:443";
+    private static final String CLUSTER_ADDRESS = "0.0.0.0";
+    private static final String CLUSTER_ROUTER_HTTPS_PORT = "443";
 
     private static Vertx vertx;
     private KubernetesClient mockClient;
@@ -304,15 +312,20 @@ public class EventStreamsOperatorTest {
 
         NonNamespaceOperation mockNamespaceOperation = mock(NonNamespaceOperation.class);
 
-        // mock ICP Config Map is present
-        Map<String, String> configMapData = new HashMap<>();
-        configMapData.put("cluster_address", "0.0.0.0");
-        ConfigMap testICPConfigMap = new ConfigMap();
-        testICPConfigMap.setData(configMapData);
-        Resource<ConfigMap, DoneableConfigMap> mockResource = mock(Resource.class);
-        when(mockClient.configMaps().inNamespace("kube-public")).thenReturn(mockNamespaceOperation);
-        when(mockNamespaceOperation.withName("ibmcloud-cluster-info")).thenReturn(mockResource);
-        when(mockResource.get()).thenReturn(testICPConfigMap);
+        // mock Management Ingress Config Map is present
+        Map<String, String> mockIngressConfigMapData = new HashMap<>();
+        mockIngressConfigMapData.put("cluster_address", CLUSTER_ADDRESS);
+        mockIngressConfigMapData.put("cluster_router_https_port", CLUSTER_ROUTER_HTTPS_PORT);
+        mockIngressConfigMapData.put("cluster_endpoint", CLUSTER_ENDPOINT);
+        mockIngressConfigMapData.put("cluster_name", IAM_CLUSTER_NAME);
+        ConfigMap testIngressConfigMap = new ConfigMap();
+        testIngressConfigMap.setData(mockIngressConfigMapData);
+
+        Resource<ConfigMap, DoneableConfigMap> mockIngressCMResource = mock(Resource.class);
+
+        when(mockClient.configMaps().inNamespace(OPERATOR_NAMESPACE)).thenReturn(mockNamespaceOperation);
+        when(mockNamespaceOperation.withName("management-ingress-ibmcloud-cluster-info")).thenReturn(mockIngressCMResource);
+        when(mockIngressCMResource.get()).thenReturn(testIngressConfigMap);
 
         // mock ICP cluster ca cert
         Map<String, String> secretData = new HashMap<>();
@@ -320,8 +333,8 @@ public class EventStreamsOperatorTest {
         Secret ibmCloudClusterCaCert = new Secret();
         ibmCloudClusterCaCert.setData(secretData);
         Resource<Secret, DoneableSecret> mockSecret = mock(Resource.class);
-        when(mockClient.secrets().inNamespace("kube-public")).thenReturn(mockNamespaceOperation);
-        when(mockNamespaceOperation.withName("ibmcloud-cluster-ca-cert")).thenReturn(mockSecret);
+        when(mockClient.secrets().inNamespace(OPERATOR_NAMESPACE)).thenReturn(mockNamespaceOperation);
+        when(mockNamespaceOperation.withName("management-ingress-ibmcloud-cluster-ca-cert")).thenReturn(mockSecret);
         when(mockSecret.get()).thenReturn(ibmCloudClusterCaCert);
 
         mockRoutes();
@@ -332,11 +345,28 @@ public class EventStreamsOperatorTest {
         mockClient.close();
     }
 
+    private EventStreamsOperator createDefaultEventStreamsOperator(boolean isOpenShift) {
+        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(isOpenShift, KubernetesVersion.V1_9);
+        return new EventStreamsOperator(
+                vertx,
+                mockClient,
+                EventStreams.RESOURCE_KIND,
+                pfa,
+                esResourceOperator,
+                cp4iResourceOperator,
+                esReplicatorResourceOperator,
+                kafkaUserOperator,
+                imageConfig,
+                routeOperator,
+                metricsProvider,
+                OPERATOR_NAMESPACE,
+                kafkaStatusReadyTimeoutMs
+        );
+    }
+
     @Test
     public void testCreateDefaultEventStreamsInstanceOpenShift(VertxTestContext context) {
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
-
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(true);
         
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
         Map<String, Integer> expectedResourcesWithReplicas = getExpectedResourcesWithReplicas(CLUSTER_NAME);
@@ -382,10 +412,7 @@ public class EventStreamsOperatorTest {
 
     @Test
     public void testCreateDefaultEventStreamsInstanceK8s(VertxTestContext context) {
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(false, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator,
-                                              cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider,
-                                              kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(false);
 
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
         Map<String, Integer> expectedResourcesWithReplicas = getExpectedResourcesWithReplicas(CLUSTER_NAME);
@@ -410,8 +437,7 @@ public class EventStreamsOperatorTest {
 
     @Test
     public void testStatusHasCorrectVersions(VertxTestContext context) {
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(true);
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
 
         Checkpoint async = context.checkpoint();
@@ -430,8 +456,7 @@ public class EventStreamsOperatorTest {
 
     @Test
     public void testStatusHasAuthenticationChangeWhenAuthChanged(VertxTestContext context) {
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(true);
 
         EventStreams unauthES = new EventStreamsBuilder()
             .withMetadata(new ObjectMetaBuilder()
@@ -530,8 +555,7 @@ public class EventStreamsOperatorTest {
         Optional<Kafka> mockKafkaInstance = Optional.of(mockKafka);
         when(esResourceOperator.getKafkaInstance(anyString(), anyString())).thenReturn(mockKafkaInstance);
 
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(true);
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
 
         Checkpoint async = context.checkpoint();
@@ -557,8 +581,7 @@ public class EventStreamsOperatorTest {
         Optional<Kafka> mockKafkaInstance = Optional.of(mockKafka);
         when(esResourceOperator.getKafkaInstance(anyString(), anyString())).thenReturn(mockKafkaInstance);
 
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(true);
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
 
         Checkpoint async = context.checkpoint();
@@ -576,8 +599,7 @@ public class EventStreamsOperatorTest {
 
     @Test
     public void testDefaultClusterHasEndpointsInStatus(VertxTestContext context) {
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(true);
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
 
         Checkpoint async = context.checkpoint();
@@ -612,40 +634,39 @@ public class EventStreamsOperatorTest {
     }
 
     @Test
-    public void testIamNotPresentThrows(VertxTestContext context) {
-        mockRoutes();
+    public void testManagementIngressCMNotPresentFailsWithCondition(VertxTestContext context) {
 
-        // mock ICP Config Map not present
+        // mock Management Ingress Config Map not present
         NonNamespaceOperation mockNamespaceOperation = mock(NonNamespaceOperation.class);
         Resource<ConfigMap, DoneableConfigMap> mockResource = mock(Resource.class);
-        when(mockClient.configMaps().inNamespace("kube-public")).thenReturn(mockNamespaceOperation);
-        when(mockNamespaceOperation.withName("ibmcloud-cluster-info")).thenReturn(mockResource);
+        when(mockClient.configMaps().inNamespace(OPERATOR_NAMESPACE)).thenReturn(mockNamespaceOperation);
+        when(mockNamespaceOperation.withName("management-ingress-ibmcloud-cluster-info")).thenReturn(mockResource);
         when(mockResource.get()).thenReturn(null);
 
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(true);
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
 
         Checkpoint async = context.checkpoint();
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster)
-            .onComplete(context.failing(e -> context.verify(() -> {
-                ArgumentCaptor<EventStreams> argument = ArgumentCaptor.forClass(EventStreams.class);
-                verify(esResourceOperator, times(3)).updateEventStreamsStatus(argument.capture());
-                assertThat(argument.getValue().getStatus().getConditions(),
-                        hasItem(hasProperty("message", is("Common Services is required by Event Streams, but the Event Streams Operator could not find the Common Services CA certificate. Contact IBM Support for assistance in diagnosing the cause."))));
-                async.flag();
-            })));
+                .onComplete(context.failing(e -> context.verify(() -> {
+                    ArgumentCaptor<EventStreams> argument = ArgumentCaptor.forClass(EventStreams.class);
+                    verify(esResourceOperator, times(3)).updateEventStreamsStatus(argument.capture());
+                    String failureMessage = "Common Services is required by Event Streams, but the Event Streams Operator could not find the Common Services CA certificate. "
+                            + "Contact IBM Support for assistance in diagnosing the cause.";
+                    assertThat(argument.getValue().getStatus().getConditions(),
+                            hasItem(hasProperty("message", is(failureMessage))));
+                    async.flag();
+                })));
     }
 
     @Test
-    public void testIAMPresentIsFalseInStatusWhenExceptionThrownGettingICPConfigMap(VertxTestContext context) {
+    public void testCommonServicesMissingConditionWhenExceptionThrownGettingConfigMap(VertxTestContext context) {
         mockRoutes();
 
-        // mock an exception when attempting to get ICP Config Map
-        when(mockClient.configMaps().inNamespace("kube-public")).thenThrow(new KubernetesClientException("Exception"));
+        // mock an exception when attempting to get Management Ingress Config Map
+        when(mockClient.configMaps().inNamespace(OPERATOR_NAMESPACE)).thenThrow(new KubernetesClientException("Exception"));
 
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(true);
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
 
         Checkpoint async = context.checkpoint();
@@ -662,11 +683,30 @@ public class EventStreamsOperatorTest {
     }
 
     @Test
+    public void testGetCommonServicesConfigInitialisesCommonServicesConfig(VertxTestContext context) {
+        esOperator = createDefaultEventStreamsOperator(false);
+        Checkpoint async = context.checkpoint(1);
+
+        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
+        Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
+        EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
+
+        reconciliationState.getCommonServicesConfig().onComplete(context.succeeding(state -> context.verify(() -> {
+            CommonServicesConfig config = state.commonServicesConfig;
+            assertThat(config.getClusterName(), is(IAM_CLUSTER_NAME));
+            assertThat(config.getIngressServiceNameAndNamespace(), is(INGRESS_SERVICE));
+            assertThat(config.getIngressEndpoint(), is(CLUSTER_ENDPOINT));
+            assertThat(config.getConsoleHost(), is(CLUSTER_ADDRESS));
+            assertThat(config.getConsolePort(), is(CLUSTER_ROUTER_HTTPS_PORT));
+            async.flag();
+        })));
+    }
+
+    @Test
     public void testCustomImagesOverride(VertxTestContext context) {
         mockRoutes();
 
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(false, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(false);
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
 
         esCluster.getSpec().getAdminUI().setImage("adminUi-image:test");
@@ -684,8 +724,7 @@ public class EventStreamsOperatorTest {
     public void testCustomImagesOverrideWithDefaultIBMCom(VertxTestContext context) {
         mockRoutes();
 
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(true);
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
 
         esCluster.getSpec().getAdminApi().setImage(AdminApiModel.DEFAULT_IBMCOM_IMAGE);
@@ -702,9 +741,7 @@ public class EventStreamsOperatorTest {
     @Test
     public void testEventStreamsNameValidationThrows(VertxTestContext context) {
         mockRoutes();
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
-
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(true);
 
         String clusterName = "bad.char-with-a-superlong-name";
 
@@ -735,9 +772,7 @@ public class EventStreamsOperatorTest {
     @Test
     public void testEventStreamsUnsupportedVersionThrows(VertxTestContext context) {
         mockRoutes();
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
-
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(true);
 
         String clusterName = "instancename";
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, clusterName);
@@ -765,9 +800,7 @@ public class EventStreamsOperatorTest {
     @Test
     public void testEventStreamsInvalidListenerAuthenticationOauthThrows(VertxTestContext context) {
         mockRoutes();
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
-
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(true);
 
         KafkaSpec kafka = new KafkaSpecBuilder()
                 .editOrNewKafka()
@@ -812,9 +845,7 @@ public class EventStreamsOperatorTest {
     @Test
     public void testEventStreamsHasMultipleEndpointWarningsThrows(VertxTestContext context) {
         mockRoutes();
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
-
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(true);
 
         EndpointSpec endpoint = new EndpointSpecBuilder()
             .withName("Bad-Name")
@@ -862,11 +893,7 @@ public class EventStreamsOperatorTest {
 
     @Test
     public void testUpdateEventStreamsInstanceOpenShiftNoChanges(VertxTestContext context) {
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
-
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator,
-                                              cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider,
-                                              kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(true);
 
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
         Map<String, Integer> expectedResourcesWithReplicas = getExpectedResourcesWithReplicas(CLUSTER_NAME);
@@ -903,9 +930,7 @@ public class EventStreamsOperatorTest {
 
     @Test
     public void testReplicatorSecretContentNotResetOnReconciliation(VertxTestContext context) {
-
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(false, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(false);
 
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
         Set<String> expectedSecrets = getExpectedSecretNames(CLUSTER_NAME);
@@ -943,8 +968,7 @@ public class EventStreamsOperatorTest {
         final Integer externalPort = 9876;
 
         mockRoutes();
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(true);
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
 
         ListenerStatus internalListener = new ListenerStatusBuilder()
@@ -1015,8 +1039,7 @@ public class EventStreamsOperatorTest {
 
     @Test
     public void testStatusIsCorrectlyDisplayed(VertxTestContext context) {
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(true);
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
 
         Set<String> expectedRouteHosts = getExpectedRouteNames(CLUSTER_NAME).stream()
@@ -1044,13 +1067,12 @@ public class EventStreamsOperatorTest {
     @Test
     public void testSingleEndpointRouteCertificateSecretContentIsValid(VertxTestContext context) {
         String componentName = "endpoint-component";
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(false, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(false);
         Checkpoint async = context.checkpoint(1);
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
-        reconciliationState.icpClusterData = Collections.emptyMap();
+        reconciliationState.commonServicesConfig = new CommonServicesConfig("mycluster", "ingress", "consoleHost", "443");
 
         ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, new SecurityComponentSpec(), componentName, "endpoint-component-label");
         List<Endpoint> endpoints = endpointModel.createEndpoints(esCluster, new SecurityComponentSpec());
@@ -1077,13 +1099,12 @@ public class EventStreamsOperatorTest {
     @Test
     public void testSingleNonRouteEndpointCertificateSecretContentIsValid(VertxTestContext context) {
         String componentName = "endpoint-component";
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(false, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(false);
         Checkpoint async = context.checkpoint(1);
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
-        reconciliationState.icpClusterData = Collections.emptyMap();
+        reconciliationState.commonServicesConfig = new CommonServicesConfig("mycluster", "ingress", "consoleHost", "443");
 
         EndpointSpec internal = new EndpointSpecBuilder()
             .withName("internal")
@@ -1116,14 +1137,13 @@ public class EventStreamsOperatorTest {
 
     @Test
     public void testNonTlsInternalEndpointCertificateSecretContentIsValid(VertxTestContext context) {
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(false, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(false);
         Checkpoint async = context.checkpoint(1);
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
 
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
-        reconciliationState.icpClusterData = Collections.emptyMap();
+        reconciliationState.commonServicesConfig = new CommonServicesConfig("mycluster", "ingress", "consoleHost", "443");
 
         EndpointSpec internal = new EndpointSpecBuilder()
             .withName("internal")
@@ -1153,15 +1173,14 @@ public class EventStreamsOperatorTest {
 
     @Test
     public void testMultiplePlainEndpointCertificateSecretContentIsEmpty(VertxTestContext context) {
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(false, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(false);
         Checkpoint async = context.checkpoint(1);
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
 
         esCluster.getSpec().setSecurity(new SecuritySpecBuilder().withInternalTls(TlsVersion.TLS_V1_2).build());
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
-        reconciliationState.icpClusterData = Collections.emptyMap();
+        reconciliationState.commonServicesConfig = new CommonServicesConfig("mycluster", "ingress", "consoleHost", "443");
 
         EndpointSpec plainInternal = new EndpointSpecBuilder()
             .withName("route")
@@ -1197,15 +1216,14 @@ public class EventStreamsOperatorTest {
 
     @Test
     public void testAllTlsEndpointCertificateSecretContentHasAllKeyss(VertxTestContext context) {
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(false, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(false);
         Checkpoint async = context.checkpoint(1);
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
 
         esCluster.getSpec().setSecurity(new SecuritySpecBuilder().withInternalTls(TlsVersion.TLS_V1_2).build());
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
-        reconciliationState.icpClusterData = Collections.emptyMap();
+        reconciliationState.commonServicesConfig = new CommonServicesConfig("mycluster", "ingress", "consoleHost", "443");
 
         EndpointSpec route = new EndpointSpecBuilder()
             .withName("route")
@@ -1250,15 +1268,14 @@ public class EventStreamsOperatorTest {
 
     @Test
     public void testEndpointsCertificateSecretContentUnchangedByStandardReconciliation(VertxTestContext context) {
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(false, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(false);
         Checkpoint async = context.checkpoint(1);
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
 
         esCluster.getSpec().setSecurity(new SecuritySpecBuilder().withInternalTls(TlsVersion.TLS_V1_2).build());
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
-        reconciliationState.icpClusterData = Collections.emptyMap();
+        reconciliationState.commonServicesConfig = new CommonServicesConfig("mycluster", "ingress", "consoleHost", "443");
 
         EndpointSpec tlsInternal = new EndpointSpecBuilder()
             .withName("internal")
@@ -1288,15 +1305,14 @@ public class EventStreamsOperatorTest {
 
     @Test
     public void testEndpointsCertificateSecretRegeneratedWhenExpired(VertxTestContext context) {
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(false, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(false);
         Checkpoint async = context.checkpoint(1);
 
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
         esCluster.getSpec().setSecurity(new SecuritySpecBuilder().withInternalTls(TlsVersion.TLS_V1_2).build());
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
-        reconciliationState.icpClusterData = Collections.emptyMap();
+        reconciliationState.commonServicesConfig = new CommonServicesConfig("mycluster", "ingress", "consoleHost", "443");
 
         EndpointSpec tlsInternal = new EndpointSpecBuilder()
             .withName("internal")
@@ -1326,15 +1342,14 @@ public class EventStreamsOperatorTest {
 
     @Test
     public void testEndpointsCertificateSecretRegeneratedWhenCAChanges(VertxTestContext context) {
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(false, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(false);
         Checkpoint async = context.checkpoint(1);
 
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
         esCluster.getSpec().setSecurity(new SecuritySpecBuilder().withInternalTls(TlsVersion.TLS_V1_2).build());
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
-        reconciliationState.icpClusterData = Collections.emptyMap();
+        reconciliationState.commonServicesConfig = new CommonServicesConfig("mycluster", "ingress", "consoleHost", "443");
 
         EndpointSpec tlsInternal = new EndpointSpecBuilder()
             .withName("internal")
@@ -1367,15 +1382,14 @@ public class EventStreamsOperatorTest {
 
     @Test
     public void testEndpointsCertificateSecretRegeneratedWhenSansAreChanged(VertxTestContext context) {
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(false, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(false);
         Checkpoint async = context.checkpoint(1);
 
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         esCluster.getSpec().setSecurity(new SecuritySpecBuilder().withInternalTls(TlsVersion.TLS_V1_2).build());
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
-        reconciliationState.icpClusterData = Collections.emptyMap();
+        reconciliationState.commonServicesConfig = new CommonServicesConfig("mycluster", "ingress", "consoleHost", "443");
 
         EndpointSpec tlsRoute = new EndpointSpecBuilder()
             .withName("route")
@@ -1432,15 +1446,14 @@ public class EventStreamsOperatorTest {
         Secret providedSecret = ModelUtils.generateSecret(NAMESPACE, secretName, data);
         mockClient.secrets().create(providedSecret);
 
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(false, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(false);
         EventStreams esCluster = createESClusterWithProvidedBrokerCerts(NAMESPACE, CLUSTER_NAME, secretName, secretKey, secretCertificate);
         esCluster.getSpec().setSecurity(new SecuritySpecBuilder().withInternalTls(TlsVersion.TLS_V1_2).build());
 
         Checkpoint async = context.checkpoint(1);
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
-        reconciliationState.icpClusterData = Collections.emptyMap();
+        reconciliationState.commonServicesConfig = new CommonServicesConfig("mycluster", "ingress", "consoleHost", "443");
 
         CertAndKeySecretSource certOverrides = new CertAndKeySecretSourceBuilder()
             .withSecretName(secretName)
@@ -1497,15 +1510,14 @@ public class EventStreamsOperatorTest {
         Secret firstProvidedSecret = ModelUtils.generateSecret(NAMESPACE, secretName, firstDataSet);
         mockClient.secrets().create(firstProvidedSecret);
 
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(false, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(false);
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
         esCluster.getSpec().setSecurity(new SecuritySpecBuilder().withInternalTls(TlsVersion.TLS_V1_2).build());
 
         Checkpoint async = context.checkpoint();
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
-        reconciliationState.icpClusterData = Collections.emptyMap();
+        reconciliationState.commonServicesConfig = new CommonServicesConfig("mycluster", "ingress", "consoleHost", "443");
 
         CertAndKeySecretSource certOverrides = new CertAndKeySecretSourceBuilder()
             .withSecretName(secretName)
@@ -1552,13 +1564,12 @@ public class EventStreamsOperatorTest {
 
     @Test
     public void testAllSecureEndpointModelsCertsCreatedOpenShift(VertxTestContext context) {
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(true);
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
         Checkpoint async = context.checkpoint(2);
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState state = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
-        state.icpClusterData = Collections.emptyMap();
+        state.commonServicesConfig = new CommonServicesConfig("mycluster", "ingress", "consoleHost", "443");
 
         CompositeFuture.join(state.createRestProducer(Date::new),
             state.createSchemaRegistry(Date::new),
@@ -1597,8 +1608,7 @@ public class EventStreamsOperatorTest {
 
     @Test
     public void testEndpointSecretsChangeWhenSecurityTurnsOn(VertxTestContext context) {
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(true);
 
         EndpointSpec internalTlsBearer = new EndpointSpecBuilder()
             .withName("bearer")
@@ -1706,8 +1716,7 @@ public class EventStreamsOperatorTest {
 
     @Test
     public void testEndpointSecretsChangeWhenSecurityTurnsOff(VertxTestContext context) {
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(true);
 
         EndpointSpec internalTlsBearer = new EndpointSpecBuilder()
             .withName("bearer")
@@ -1834,8 +1843,7 @@ public class EventStreamsOperatorTest {
 
     @Test
     public void testEndpointCertificateSecretCreatedIfNotPresent(VertxTestContext context) {
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(true);
 
         EndpointSpec internalTlsMutualTls = new EndpointSpecBuilder()
             .withName("mutual")
@@ -1900,13 +1908,12 @@ public class EventStreamsOperatorTest {
     // implemented properly in the mockClient
     @Test
     public void testNoRollingUpdateForDeploymentWhenCertificatesDoNotChange(VertxTestContext context) {
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(false, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(false);
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
         Checkpoint async = context.checkpoint(3);
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
-        reconciliationState.icpClusterData = Collections.emptyMap();
+        reconciliationState.commonServicesConfig = new CommonServicesConfig("mycluster", "ingress", "consoleHost", "443");
 
         reconciliationState.createRestProducer(Date::new)
             .compose(v -> reconciliationState.createSchemaRegistry(Date::new))
@@ -1935,8 +1942,7 @@ public class EventStreamsOperatorTest {
     }
 
     public void testCreateMinimalEventStreams(VertxTestContext context) {
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(false, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(false);
         EventStreams minimalCluster = createMinimalESInstance();
 
         Set<String> expectedDeployments = new HashSet<>();
@@ -1967,8 +1973,7 @@ public class EventStreamsOperatorTest {
 
     @Test
     public void testComponentResourcesAreDeletedWhenRemovedFromCR(VertxTestContext context) {
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(false, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(false);
         EventStreams instanceMinimal = createMinimalESInstance();
 
         EventStreams instance = new EventStreamsBuilder()
@@ -2012,8 +2017,7 @@ public class EventStreamsOperatorTest {
 
     @Test
     public void testRestProducerComponentCreatedAndDeletedWhenAddedAndRemovedFromCR(VertxTestContext context) {
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(true);
 
         EventStreams minimalInstance = createMinimalESInstance();
 
@@ -2082,8 +2086,7 @@ public class EventStreamsOperatorTest {
 
     @Test
     public void testAdminUIComponentCreatedAndDeletedWhenAddedAndRemovedFromCR(VertxTestContext context) {
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(true);
 
         EventStreams minimalInstance = createMinimalESInstance();
 
@@ -2139,8 +2142,7 @@ public class EventStreamsOperatorTest {
 
     @Test
     public void testCollectorComponentCreatedAndDeletedWhenAddedAndRemovedFromCR(VertxTestContext context) {
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(true);
 
         EventStreams minimalInstance = createMinimalESInstance();
 
@@ -2193,8 +2195,7 @@ public class EventStreamsOperatorTest {
 
     @Test
     public void testSchemaRegistryComponentCreatedAndDeletedWhenAddedAndRemovedFromCR(VertxTestContext context) {
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(true);
 
         EventStreams instance = new EventStreamsBuilder()
                 .withMetadata(new ObjectMetaBuilder()
@@ -2291,8 +2292,7 @@ public class EventStreamsOperatorTest {
 
     @Test
     public void testRoutesAreDeletedFromStatus(VertxTestContext context) {
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(true);
 
         String componentName = "endpoint-component";
 
@@ -2309,7 +2309,7 @@ public class EventStreamsOperatorTest {
             .build());
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
-        reconciliationState.icpClusterData = Collections.emptyMap();
+        reconciliationState.commonServicesConfig = new CommonServicesConfig("mycluster", "ingress", "consoleHost", "443");
 
         Checkpoint async = context.checkpoint();
 
@@ -2328,8 +2328,7 @@ public class EventStreamsOperatorTest {
 
     @Test
     public void testRoutesFromDifferentComponentAreDeletedFromStatus(VertxTestContext context) {
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(true);
 
         String differentComponentName = "different-component";
         String componentName = "endpoint-component";
@@ -2347,7 +2346,7 @@ public class EventStreamsOperatorTest {
             .build());
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
-        reconciliationState.icpClusterData = Collections.emptyMap();
+        reconciliationState.commonServicesConfig = new CommonServicesConfig("mycluster", "ingress", "consoleHost", "443");
 
         Checkpoint async = context.checkpoint();
 
@@ -2364,8 +2363,7 @@ public class EventStreamsOperatorTest {
 
     @Test
     public void testCreateCp4iServicesBindingWithCrd(VertxTestContext context) {
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(true);
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
 
         Checkpoint async = context.checkpoint();
@@ -2379,8 +2377,7 @@ public class EventStreamsOperatorTest {
     public void testCreateCp4iServicesBindingWithoutCrd(VertxTestContext context) {
         when(mockClient.customResourceDefinitions().withName(Cp4iServicesBinding.CRD_NAME).get()).thenReturn(null);
 
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(true);
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
 
         Checkpoint async = context.checkpoint();
@@ -2394,8 +2391,7 @@ public class EventStreamsOperatorTest {
     public void testCreateCp4iServicesBindingFails(VertxTestContext context) {
         when(cp4iResourceOperator.reconcile(anyString(), anyString(), any())).thenReturn(Future.failedFuture("Failed to reconcile binding"));
 
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(true);
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
 
         Checkpoint async = context.checkpoint();
@@ -2409,8 +2405,7 @@ public class EventStreamsOperatorTest {
     public void testWaitForCp4iServicesBindingStatusSetsHeaderURL(VertxTestContext context) {
         when(cp4iResourceOperator.getCp4iHeaderUrl(anyString(), anyString())).thenReturn(Optional.of(CP4I_TEST_HEADER_URL));
 
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(true);
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
 
         Checkpoint async = context.checkpoint();
@@ -2435,8 +2430,7 @@ public class EventStreamsOperatorTest {
     public void testWaitForCp4iServicesBindingStatusWithEmptyHeaderUrl(VertxTestContext context) {
         when(cp4iResourceOperator.getCp4iHeaderUrl(anyString(), anyString())).thenReturn(Optional.of(""));
 
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(true);
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
 
         Checkpoint async = context.checkpoint();
@@ -2461,8 +2455,7 @@ public class EventStreamsOperatorTest {
         when(cp4iResourceOperator.waitForCp4iServicesBindingStatusAndMaybeGetUrl(anyString(), anyString(), anyLong(), anyLong()))
                 .thenReturn(Future.failedFuture("Failed to get status"));
 
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(true);
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
 
         Checkpoint async = context.checkpoint();
@@ -2486,8 +2479,7 @@ public class EventStreamsOperatorTest {
     public void testWaitForCp4iServicesBindingStatusWithMissingHeaderUrl(VertxTestContext context) {
         when(cp4iResourceOperator.getCp4iHeaderUrl(anyString(), anyString())).thenReturn(Optional.ofNullable(null));
 
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(true);
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
 
         Checkpoint async = context.checkpoint();
@@ -2509,8 +2501,7 @@ public class EventStreamsOperatorTest {
 
     @Test
     public void testAdminUiUpdatesWhenKafkaListenerUpdates(VertxTestContext context) {
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(true);
         EventStreams noAuth = createEventStreamsWithStrimziOverrides(NAMESPACE, CLUSTER_NAME, new KafkaSpecBuilder()
             .withNewKafka()
                 .withNewListeners()
@@ -2567,8 +2558,7 @@ public class EventStreamsOperatorTest {
         String adminApiService =  "https://" + getInternalServiceName(CLUSTER_NAME, AdminApiModel.COMPONENT_NAME) + "." +  NAMESPACE + ".svc:" + Endpoint.getPodToPodPort(tlsEnabled);
         String schemaRegistryService =  "https://" + getInternalServiceName(CLUSTER_NAME, SchemaRegistryModel.COMPONENT_NAME) + "." +  NAMESPACE + ".svc:" + Endpoint.getPodToPodPort(tlsEnabled);
 
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(true);
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
 
         Checkpoint async = context.checkpoint();
@@ -3112,8 +3102,7 @@ public class EventStreamsOperatorTest {
 
     @Test
     public void testCustomRouteDomainCreatedWhenConfigured(VertxTestContext context) {
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(true);
 
         String adminUIHost = "test-it.com";
         EndpointSpec customHostSpec = new EndpointSpecBuilder()
@@ -3153,8 +3142,7 @@ public class EventStreamsOperatorTest {
 
     @Test
     public void testDefaultEndpointRouteLabelsChangeWhenCustomEndpointsProvided(VertxTestContext context) {
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(true);
 
         EndpointSpec secureRouteMutualTls = new EndpointSpecBuilder()
             .withName("secure-mutual")
@@ -3209,8 +3197,7 @@ public class EventStreamsOperatorTest {
 
     @Test
     public void testEndpointRouteLabelsChangeWhenEndpointsUpdated(VertxTestContext context) {
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(true);
 
         EndpointSpec secureRouteBearer = new EndpointSpecBuilder()
             .withName("secure-bearer")
@@ -3352,8 +3339,7 @@ public class EventStreamsOperatorTest {
 
     @Test
     public void testDefaultEventStreamsSchemaRegistryHasKafkaPrincipal(VertxTestContext context) {
-        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, kafkaStatusReadyTimeoutMs);
+        esOperator = createDefaultEventStreamsOperator(true);
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
 
         Checkpoint async = context.checkpoint();

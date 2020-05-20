@@ -20,8 +20,8 @@ import com.ibm.eventstreams.rest.KubernetesProbe;
 import com.ibm.eventstreams.rest.eventstreams.LicenseValidation;
 import com.ibm.eventstreams.rest.eventstreams.NameValidation;
 import com.ibm.eventstreams.rest.eventstreams.VersionValidation;
-import com.ibm.iam.api.controller.Cp4iServicesBindingResourceOperator;
-import com.ibm.iam.api.spec.Cp4iServicesBinding;
+import com.ibm.commonservices.api.controller.Cp4iServicesBindingResourceOperator;
+import com.ibm.commonservices.api.spec.Cp4iServicesBinding;
 
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.Watch;
@@ -58,6 +58,7 @@ public class EventStreamsVerticle extends AbstractVerticle {
     private Vertx vertx;
 
     private final String namespace;
+    private final String operatorNamespace;
     private PlatformFeaturesAvailability pfa;
 
     public static final int API_SERVER_PORT = 8081;
@@ -76,6 +77,7 @@ public class EventStreamsVerticle extends AbstractVerticle {
         this.client = client;
         this.pfa = pfa;
         this.namespace = namespace;
+        this.operatorNamespace = config.getOperatorNamespace();
         this.kafkaStatusReadyTimeoutMilliSecs = config.getKafkaStatusReadyTimeoutMs();
         this.reconciliationIntervalMilliSecs = config.getReconciliationIntervalMilliSecs();
         this.imageConfig = config.getImages();
@@ -105,6 +107,7 @@ public class EventStreamsVerticle extends AbstractVerticle {
                     imageConfig,
                     routeOperator,
                     metricsProvider,
+                    operatorNamespace,
                     kafkaStatusReadyTimeoutMilliSecs);
             eventStreamsOperator.createWatch(namespace, eventStreamsOperator.recreateWatch(namespace))
                     .compose(w -> {

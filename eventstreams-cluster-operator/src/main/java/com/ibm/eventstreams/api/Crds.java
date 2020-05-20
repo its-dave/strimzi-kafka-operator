@@ -15,10 +15,10 @@ package com.ibm.eventstreams.api;
 import com.ibm.eventstreams.api.spec.EventStreams;
 
 import com.ibm.eventstreams.api.spec.EventStreamsGeoReplicator;
-import com.ibm.iam.api.spec.Client;
-import com.ibm.iam.api.spec.Cp4iServicesBinding;
-import com.ibm.iam.api.spec.Cp4iServicesBindingDoneable;
-import com.ibm.iam.api.spec.Cp4iServicesBindingList;
+import com.ibm.commonservices.api.spec.Client;
+import com.ibm.commonservices.api.spec.Cp4iServicesBinding;
+import com.ibm.commonservices.api.spec.Cp4iServicesBindingDoneable;
+import com.ibm.commonservices.api.spec.Cp4iServicesBindingList;
 import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinition;
 import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceDefinitionBuilder;
 import io.fabric8.kubernetes.api.model.apiextensions.CustomResourceSubresourceStatus;

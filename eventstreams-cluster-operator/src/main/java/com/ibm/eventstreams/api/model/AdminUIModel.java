@@ -12,6 +12,7 @@
  */
 package com.ibm.eventstreams.api.model;
 
+import com.ibm.commonservices.CommonServicesConfig;
 import com.ibm.eventstreams.api.DefaultResourceRequirements;
 import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.TlsVersion;
@@ -28,7 +29,7 @@ import com.ibm.eventstreams.api.spec.SecuritySpec;
 import com.ibm.eventstreams.api.status.EventStreamsStatus;
 import com.ibm.eventstreams.api.status.EventStreamsVersions;
 import com.ibm.eventstreams.controller.EventStreamsOperatorConfig;
-import com.ibm.iam.api.model.ClientModel;
+import com.ibm.commonservices.api.model.ClientModel;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.ContainerBuilder;
 import io.fabric8.kubernetes.api.model.EnvVar;
@@ -79,10 +80,6 @@ public class AdminUIModel extends AbstractModel {
     protected static final String TRACE_STATE = "TRACE_STATE";
     private static final String DEFAULT_IBMCOM_UI_IMAGE = "ibmcom/admin-ui:latest";
     private static final String DEFAULT_IBMCOM_REDIS_IMAGE = "ibmcom/redis:latest";
-    public static final String ICP_CM_CLUSTER_ADDRESS_KEY = "cluster_address";
-    public static final String ICP_CM_CLUSTER_ROUTER_PORT_KEY = "cluster_router_https_port";
-    public static final String ICP_CM_CLUSTER_NAME_KEY = "cluster_name";
-    public static final String ICP_CM_CLUSTER_PLATFORM_SERVICES_URL = "header_url";
 
 
     // deployable objects
@@ -99,7 +96,8 @@ public class AdminUIModel extends AbstractModel {
     private io.strimzi.api.kafka.model.Probe redisLivenessProbe;
     private io.strimzi.api.kafka.model.Probe redisReadinessProbe;
     private String traceString = "ExpressApp;INFO,Simulated;INFO,KubernetesClient;INFO";
-    private Map<String, String> icpClusterData;
+    private CommonServicesConfig commonServicesConfig;
+    private String cloudPakHeaderURL;
     private String oidcSecretName;
     private TlsVersion crTlsVersionValue;
     private String enableProducerMetricsPanels;
@@ -110,16 +108,18 @@ public class AdminUIModel extends AbstractModel {
      * @param instance
      * @param imageConfig
      * @param hasRoutes
-     * @param icpClusterData
+     * @param commonServicesConfig
      */
     public AdminUIModel(EventStreams instance,
                         EventStreamsOperatorConfig.ImageLookup imageConfig,
                         Boolean hasRoutes,
-                        Map<String, String> icpClusterData) {
+                        CommonServicesConfig commonServicesConfig,
+                        String cloudPakHeaderURL) {
 
         super(instance, COMPONENT_NAME, APPLICATION_NAME);
 
-        this.icpClusterData = icpClusterData;
+        this.commonServicesConfig = commonServicesConfig;
+        this.cloudPakHeaderURL = cloudPakHeaderURL;
         this.oidcSecretName = ClientModel.getSecretName(getInstanceName());
 
         Optional<AdminUISpec> userInterfaceSpec = Optional
@@ -375,20 +375,18 @@ public class AdminUIModel extends AbstractModel {
                 .build()
         );
 
-        envVarDefaults.add(new EnvVarBuilder().withName("ICP_USER_MGMT_IP").withValue("icp-management-ingress.kube-system").build());
         envVarDefaults.add(new EnvVarBuilder().withName("ICP_USER_MGMT_PORT").withValue("443").build());
         envVarDefaults.add(new EnvVarBuilder().withName("ICP_USER_MGMT_HIGHEST_ROLE_FOR_CRN").withValue("idmgmt/identity/api/v1/teams/highestRole").build());
 
-        if (icpClusterData != null && icpClusterData.size() > 0) {
-            String clusterIp = icpClusterData.get(ICP_CM_CLUSTER_ADDRESS_KEY);
-            String secureClusterPort = icpClusterData.get(ICP_CM_CLUSTER_ROUTER_PORT_KEY);
-            String iamClusterName = icpClusterData.get(ICP_CM_CLUSTER_NAME_KEY);
-            String platformServicesUrl = icpClusterData.get(ICP_CM_CLUSTER_PLATFORM_SERVICES_URL);
+        if (commonServicesConfig != null) {
+            String clusterIp = commonServicesConfig.getConsoleHost();
+            String secureClusterPort = commonServicesConfig.getConsolePort();
+            String iamClusterName = commonServicesConfig.getClusterName();
+            String iamIp = commonServicesConfig.getIngressServiceNameAndNamespace();
             envVarDefaults.add(new EnvVarBuilder().withName("CLUSTER_EXTERNAL_IP").withValue(clusterIp).build());
             envVarDefaults.add(new EnvVarBuilder().withName("CLUSTER_EXTERNAL_PORT").withValue(secureClusterPort).build());
             envVarDefaults.add(new EnvVarBuilder().withName("IAM_CLUSTER_NAME").withValue(iamClusterName).build());
-            envVarDefaults.add(new EnvVarBuilder().withName("ICP4I_PLATFORM_SERVICES_URL").withValue(platformServicesUrl).build());
-
+            envVarDefaults.add(new EnvVarBuilder().withName("ICP_USER_MGMT_IP").withValue(iamIp).build());
             envVarDefaults.add(
                 new EnvVarBuilder()
                     .withName("CLIENT_ID")
@@ -414,13 +412,15 @@ public class AdminUIModel extends AbstractModel {
         } else {
             envVarDefaults.add(new EnvVarBuilder().withName("CLUSTER_EXTERNAL_IP").withValue("").build());
             envVarDefaults.add(new EnvVarBuilder().withName("CLUSTER_EXTERNAL_PORT").withValue("").build());
+            envVarDefaults.add(new EnvVarBuilder().withName("IAM_CLUSTER_NAME").withValue("mycluster").build());
+            envVarDefaults.add(new EnvVarBuilder().withName("ICP_USER_MGMT_IP").withValue("icp-management-ingress.ibm-common-services").build());
         }
 
         envVarDefaults.add(new EnvVarBuilder().withName("ESFF_SECURITY_AUTH").withValue(isKafkaAuthenticationEnabled(instance).toString()).build());
         envVarDefaults.add(new EnvVarBuilder().withName("ESFF_SECURITY_AUTHZ").withValue(isKafkaAuthenticationEnabled(instance).toString()).build());
+        envVarDefaults.add(new EnvVarBuilder().withName("ICP4I_PLATFORM_SERVICES_URL").withValue(cloudPakHeaderURL).build());
 
         List<EnvVar> envVars = combineEnvVarListsNoDuplicateKeys(envVarDefaults);
-
         return new ContainerBuilder()
             .withName(COMPONENT_NAME)
             .withImage(getImage())

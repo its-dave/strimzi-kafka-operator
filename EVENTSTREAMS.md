@@ -63,53 +63,7 @@ This will generate a docker image for EventStreams.
 
 This will also regenerate the EventStreams CustomResourceDefinition into `install/ibm-eventstreams-operator`
 
-## Deploy
-If deploying for the first time from scratch, be aware that the following needs to be in a project called 'myproject'.
-[Common services](#install-common-services) also need to be installed if not done so already.
-
-To deploy the EventStreams operator into your Kubernetes Environment with a `common-services` installed
-```
-oc apply -f install/ibm-eventstreams-operator/
-```
-
-Finally you can create an instance of the EventStreams Custom resource.
-
-```
-oc apply -f examples/eventstreams/01-quickstart.yaml
-```
-
-### Watching multiple namespaces
-To watch multiple namespaces, make sure you create the appropriate role bindings for resource watching permissions for
-the Cluster Operator and create a Security Context Constraint for EventStreams in each namespace.
-To create the role bindings for Cluster Operator, apply the following to each watched namespace:
-```
-kubectl apply -f install/cluster-operator/020-RoleBinding-strimzi-cluster-operator.yaml -n <WATCHED_NAMESPACE>
-kubectl apply -f install/cluster-operator/031-RoleBinding-strimzi-cluster-operator-entity-operator-delegation.yaml -n <WATCHED_NAMESPACE>
-kubectl apply -f install/cluster-operator/032-RoleBinding-strimzi-cluster-operator-topic-operator-delegation.yaml -n <WATCHED_NAMESPACE>
-```
-
-For more details, follow the [Strimzi instructions](https://strimzi.io/docs/quickstart/latest/#proc-install-product-str)
-
-Apply EventStreams SCC by replacing the namespace to the custom namespace.
-```
-oc apply -f examples/eventstreams-extras/eventstreams-scc.yaml
-```
-
-In the operator deployment `install/cluster-operator/150-Deployment-eventstreams-cluster-operator.yaml` set the
-`eventstreams-operator` container env-var:
-```
-env:
-## TODO we should merge these envars
-- name: EVENTSTREAMS_NAMESPACE
-  value: "<namespace1>,<namespace2>"
-- name: STRIMZI_NAMESPACE
-  value: "<namespace1>,<namespace2>"
-```
-
-Logs for the operator should show that it is watching the custom resources on the supplied namespaces.
-
-
-## Deploying OLM bundle to your openshift environment
+## Deploying OLM bundle to your OpenShift environment
 
 ### Log into your OpenShift cluster
 1. Click your username in the top right corner, and click **Copy Login Command** to access the API token.
@@ -157,44 +111,6 @@ where `base64creds` is a base64-encoded version of your Artifactory `username:ap
 
 [More background here](https://github.ibm.com/mhub/strimzi-kafka-operator/pull/375#issuecomment-20208595)
 
-### Install Common Services
-Follow the [instructions](https://github.ibm.com/ICP-DevOps/tf_openshift_4_tools/tree/master/fyre/ceph_and_inception_install) to install Common Services in your OpenShift Cluster.
-
-PreReqs:
-* Access to https://fyre.ibm.com
-* A running OpenShift cluster (with 3 or more workers)
-
-Summary of the instructions:
-1. Clone this repository:
-```
-git clone git@github.ibm.com:ICP-DevOps/tf_openshift_4_tools.git
-```
-2. Go into `ceph_and_inception_install` directory in the Cloned repository
-```
-cd tf_openshift_4_tools/fyre/ceph_and_inception_install
-```
-3. Copy and rename `terraform.tfvars.example` to `terraform.tfvars`:
-```
-cp terraform.tfvars.example terraform.tfvars
-```
-4. Edit `terraform.tfvars` using the appropriate values. You will need:
-    * `fyre_root_password` - you must set this root password.
-        * Go to https://fyre.ibm.com
-        * Go to *Stacks*
-        * Click on the cluster you want the Common Services to be installed on
-        * Click on *Change Stack Password* - one of the small icons once you click on your cluster - an icon of a lock; right below the cluster's name;
-        * Enter the new password for your cluster - this is the `fyre_root_password`
-    * `fyre_inf_vm_nine_dot_ip` - the IP address of your cluster that starts with 9 (IP 1 Column). Click on your cluster to see it.
-    * `repo_token` - your Artifactory API token
-    * `repo_user` - your Artifactory username (your w3 email)
-5. ```terraform init```
-    * If you do not have terraform installed:
-        * https://www.terraform.io/downloads.html
-6. ```terraform apply```
-    * When asked "Do you want to perform these actions?", enter `yes`.
-
-_Note_: If you're going to re-run to a different cluster without doing a new clone be sure to run `rm -rf terraform.tfstate*` when in `tf_openshift_4_tools/fyre/ceph_and_inception_install` before running your next `terraform apply`
-
 ### (PreReq) Expose docker registry
 Expose your OpenShift Docker registry by running:
 ```
@@ -212,12 +128,38 @@ Note: If you have a newer version of docker installed, this will need to be adde
 ### Build operator registry with our operator bundle, push to OpenShift registry
 Run `make -C deploy deploy` this will build and verify the OLM bundle, build a catalog source and push it to your OpenShift
 
-To verify that local-operator has been correctly deployed:
+To verify that the local-operator and the opencloud-operators catalogsources have been correctly deployed:
 ```
 oc get pods -n openshift-marketplace
 oc get catalogsource -n openshift-marketplace
 ```
 
+## Installing an Event Streams operator
+Once the Event Streams and Common Services are present in the OperatorHub of your OpenShift you can install the EventStreams operator.
+
+1. Click the Event Streams tile in OperatorHub
+2. Choose either all namespaces or a single namespace
+3. Wait for the Event Streams operator to be ready
+
+### Waiting for the Event Streams operator
+While the Event Streams operator is installing you can check the following:
+1. A Common Services operator and ODLM operator have been installed
+2. An OperandRequest has been created in the same namespace as the Event Streams operator
+3. The status of the OperandRequest, you should see:
+    ```yaml
+    - name: ibm-iam-operator
+      phase:
+        operandPhase: Running
+        operatorPhase: Running
+    ```
+4. The operators and pods coming up in the ibm-common-services namespace
+5. The secret called `management-ingress-ibmcloud-cluster-ca-cert` in the Event Streams operator namespace has been created
+6. The configmap called `management-ingress-ibmcloud-cluster-info` in the Event Streams operator namespace has been created
+7. The progress of the init container by running `oc logs <eventstreams-operator-pod-name> -c init`
+
+Note: The Event Streams operator might report it has timed out in the UI but if you check the pod status it will still be running the init 
+
+## Producing and Consuming to Event Streams
 ### Get your cluster CA certificate & import it into the Java KeyStore file
 Get the certificate by running the command:
 ```
@@ -285,6 +227,19 @@ go to `localhost:8080` in your browser to see it running
 When the above steps have been completed, you will find an entry for Event Streams under "Operator Hub" in the OpenShift Console.
 This can be used to deploy an instance of the operator and create new Event Streams instances.
 
+## Logging into the UI and CLI
+To determine the username and password for the UI run the following:
+```bash
+oc -n ibm-common-services get secret platform-auth-idp-credentials -ojsonpath=‘{.data.admin_username}’ | base64 -d
+oc -n ibm-common-services get secret platform-auth-idp-credentials -ojsonpath=‘{.data.admin_password}’ | base64 -d
+```
+
+To determine the endpoint to use for `cloudctl` run the command:
+```bash
+oc get routes -n ibm-common-services
+```
+Use the `cp-console` route with `https` as the protocol and `443` as the port. The console can also be used to get a new version of the CLI.
+Go to the console in a browser and click in the top right and select `Configure client`, then choose `Get CLI tools`.
 
 ## Deploying Event Streams Custom Resources
 For an OpenShift user *without* the administrator role, a cluster administrator will need to do the following steps:

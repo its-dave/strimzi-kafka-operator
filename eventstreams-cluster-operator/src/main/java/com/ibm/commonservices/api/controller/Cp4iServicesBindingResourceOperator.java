@@ -10,12 +10,12 @@
  * divested of its trade secrets, irrespective of what has been
  * deposited with the U.S. Copyright Office.
  */
-package com.ibm.iam.api.controller;
+package com.ibm.commonservices.api.controller;
 
-import com.ibm.iam.api.spec.Cp4iServicesBinding;
-import com.ibm.iam.api.spec.Cp4iServicesBindingDoneable;
-import com.ibm.iam.api.spec.Cp4iServicesBindingList;
-import com.ibm.iam.api.status.Cp4iServicesBindingStatus;
+import com.ibm.commonservices.api.spec.Cp4iServicesBinding;
+import com.ibm.commonservices.api.spec.Cp4iServicesBindingDoneable;
+import com.ibm.commonservices.api.spec.Cp4iServicesBindingList;
+import com.ibm.commonservices.api.status.Cp4iServicesBindingStatus;
 import com.ibm.eventstreams.api.Crds;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;

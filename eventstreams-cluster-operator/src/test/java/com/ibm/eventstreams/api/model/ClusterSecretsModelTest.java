@@ -119,7 +119,8 @@ public class ClusterSecretsModelTest {
         when(mockSecretOperator.getAsync(anyString(), anyString())).thenReturn(Future.succeededFuture(mockESSecret));
         ClusterSecretsModel clusterSecretsModel = createClusterSecretsModel();
         clusterSecretsModel.createIBMCloudCASecret(TEST_DUMMY_CERT)
-            .onSuccess(ar -> {
+            .onComplete(ar -> {
+                assertThat(ar.succeeded(), is(true));
                 AtomicBoolean createOrUpdateMethodInvoked = new AtomicBoolean(false);
                 Mockito.mockingDetails(mockSecretOperator).getInvocations().forEach(invocation -> {
                     if (invocation.getMethod().equals("createOrUpdate")) {
@@ -128,9 +129,6 @@ public class ClusterSecretsModelTest {
                 });
 
                 assertThat(createOrUpdateMethodInvoked.get(), is(false));
-            })
-            .onFailure(err -> {
-                assertThat(err.getMessage(), is("Failed to get ICP CA Cert: Could not get secret ibmcloud-cluster-ca-cert in namespace kube-public"));
             });
     }
 }

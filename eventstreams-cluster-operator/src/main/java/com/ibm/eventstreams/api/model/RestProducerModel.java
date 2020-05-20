@@ -12,6 +12,7 @@
  */
 package com.ibm.eventstreams.api.model;
 
+import com.ibm.commonservices.CommonServicesConfig;
 import com.ibm.eventstreams.api.DefaultResourceRequirements;
 import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.EndpointServiceType;
@@ -46,7 +47,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 public class RestProducerModel extends AbstractSecureEndpointsModel {
@@ -65,7 +65,7 @@ public class RestProducerModel extends AbstractSecureEndpointsModel {
     private static final String CLIENT_SECRET_KEY = "CLIENT_SECRET";
 
     private String traceString = "info";
-    private final String icpClusterName;
+    private final String iamClusterName;
     private final String iamServerURL;
     private final String ibmcloudCASecretName;
 
@@ -84,12 +84,12 @@ public class RestProducerModel extends AbstractSecureEndpointsModel {
     public RestProducerModel(EventStreams instance,
                              EventStreamsOperatorConfig.ImageLookup imageConfig,
                              List<ListenerStatus> kafkaListeners,
-                             Map<String, String> icpClusterData) {
+                             CommonServicesConfig commonServiceConfig) {
         super(instance, COMPONENT_NAME, APPLICATION_NAME);
         this.kafkaListeners = kafkaListeners != null ? new ArrayList<>(kafkaListeners) : new ArrayList<>();
 
-        this.icpClusterName = icpClusterData.getOrDefault("cluster_name", "null");
-        this.iamServerURL = icpClusterData.getOrDefault("cluster_endpoint", "null");
+        this.iamClusterName = commonServiceConfig.getClusterName();
+        this.iamServerURL = commonServiceConfig.getIngressEndpoint();
 
         ibmcloudCASecretName = ClusterSecretsModel.getIBMCloudSecretName(getInstanceName());
 
@@ -184,7 +184,7 @@ public class RestProducerModel extends AbstractSecureEndpointsModel {
             new EnvVarBuilder().withName("TRACE_SPEC").withValue(traceString).build(),
             // Add The IAM Specific Envars.  If we need to build without IAM Support we can put a variable check
             // here.
-            new EnvVarBuilder().withName("IAM_CLUSTER_NAME").withValue(icpClusterName).build(),
+            new EnvVarBuilder().withName("IAM_CLUSTER_NAME").withValue(iamClusterName).build(),
             new EnvVarBuilder().withName("IAM_SERVER_URL").withValue(iamServerURL).build(),
             new EnvVarBuilder().withName("IAM_SERVER_CA_CERT").withValue(IBMCLOUD_CA_CERTIFICATE_PATH + File.separator + CA_CERT).build(),
             new EnvVarBuilder()

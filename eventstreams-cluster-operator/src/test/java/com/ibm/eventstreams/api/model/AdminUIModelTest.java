@@ -12,6 +12,7 @@
  */
 package com.ibm.eventstreams.api.model;
 
+import com.ibm.commonservices.CommonServicesConfig;
 import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.model.utils.ModelUtils;
 import com.ibm.eventstreams.api.spec.EventStreams;
@@ -79,6 +80,7 @@ public class AdminUIModelTest {
     private final String namespace = "test-namespace";
     private final String restProducerHost = "rest-producer.route.os.com";
     private final String schemaRegistryHost = "schema-registry.route.os.com";
+    private final String headerURL = "";
 
     @Mock
     private EventStreamsOperatorConfig.ImageLookup imageConfig;
@@ -167,27 +169,27 @@ public class AdminUIModelTest {
 
     private AdminUIModel createDefaultAdminUIModel() {
         EventStreams instance = createDefaultEventStreams().build();
-        return new AdminUIModel(instance, imageConfig, false, null);
+        return new AdminUIModel(instance, imageConfig, false, null, headerURL);
     }
 
     private AdminUIModel createAdminUIModelWithoutStatus() {
         EventStreams instance = createEventStreamsWithoutStatus().build();
-        return new AdminUIModel(instance, imageConfig, false, null);
+        return new AdminUIModel(instance, imageConfig, false, null, headerURL);
     }
 
     private AdminUIModel createAdminUIModelWithAuth() {
         EventStreams instance = createEventStreamsWithAuthentication().build();
-        return new AdminUIModel(instance, imageConfig, false, null);
+        return new AdminUIModel(instance, imageConfig, false, null, headerURL);
     }
 
     private AdminUIModel createAdminUIModelWithExternalAuth() {
         EventStreams instance = createEventStreamsWithAuthenticatedExternalAccess().build();
-        return new AdminUIModel(instance, imageConfig, true, null);
+        return new AdminUIModel(instance, imageConfig, true, null, headerURL);
     }
 
-    private AdminUIModel createAdminUIModelWithICPCM(Map<String, String> configMap) {
+    private AdminUIModel createAdminUIModelWithICPCM(CommonServicesConfig commonServicesConfig) {
         EventStreams instance = createDefaultEventStreams().build();
-        return new AdminUIModel(instance, imageConfig, true, configMap);
+        return new AdminUIModel(instance, imageConfig, true, commonServicesConfig, headerURL);
     }
 
     @Test
@@ -230,7 +232,6 @@ public class AdminUIModelTest {
                 new EnvVarBuilder().withName("API_URL").withValue(adminApiService).build(),
                 new EnvVarBuilder().withName("ESFF_SECURITY_AUTH").withValue("false").build(),
                 new EnvVarBuilder().withName("ESFF_SECURITY_AUTHZ").withValue("false").build(),
-                new EnvVarBuilder().withName("ICP_USER_MGMT_IP").withValue("icp-management-ingress.kube-system").build(),
                 new EnvVarBuilder().withName("ICP_USER_MGMT_PORT").withValue("443").build(),
                 new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue("false").build(),
                 new EnvVarBuilder().withName("SCHEMA_REGISTRY_URL").withValue(schemaRegistryService).build(),
@@ -297,7 +298,6 @@ public class AdminUIModelTest {
                 new EnvVarBuilder().withName("API_URL").withValue(adminApiService).build(),
                 new EnvVarBuilder().withName("ESFF_SECURITY_AUTH").withValue("true").build(),
                 new EnvVarBuilder().withName("ESFF_SECURITY_AUTHZ").withValue("true").build(),
-                new EnvVarBuilder().withName("ICP_USER_MGMT_IP").withValue("icp-management-ingress.kube-system").build(),
                 new EnvVarBuilder().withName("ICP_USER_MGMT_PORT").withValue("443").build(),
                 new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue("false").build(),
                 new EnvVarBuilder().withName("SCHEMA_REGISTRY_URL").withValue(schemaRegistryService).build(),
@@ -352,8 +352,6 @@ public class AdminUIModelTest {
             new EnvVarBuilder().withName("API_URL").withValue(adminApiService).build(),
             new EnvVarBuilder().withName("ESFF_SECURITY_AUTH").withValue("true").build(),
             new EnvVarBuilder().withName("ESFF_SECURITY_AUTHZ").withValue("true").build(),
-            new EnvVarBuilder().withName("ICP_USER_MGMT_IP").withValue("icp-management-ingress.kube-system").build(),
-            new EnvVarBuilder().withName("ICP_USER_MGMT_PORT").withValue("443").build(),
             new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue("true").build(),
             new EnvVarBuilder().withName("SCHEMA_REGISTRY_URL").withValue(schemaRegistryService).build(),
             new EnvVarBuilder().withName(AbstractModel.TLS_VERSION_ENV_KEY).withValue("TLSv1.2").build(),
@@ -369,21 +367,20 @@ public class AdminUIModelTest {
 
     @Test
     public void testAdminUIModelWithICPCM() {
-        Map<String, String> icpCM = new HashMap<>();
         String clusterAddress = "mycluster.apps.ibm.com";
         String clusterPort = "443";
         String clusterName = "mycluster";
-        icpCM.put(AdminUIModel.ICP_CM_CLUSTER_ADDRESS_KEY, clusterAddress);
-        icpCM.put(AdminUIModel.ICP_CM_CLUSTER_ROUTER_PORT_KEY, clusterPort);
-        icpCM.put(AdminUIModel.ICP_CM_CLUSTER_NAME_KEY, clusterName);
-        AdminUIModel adminUIModel = createAdminUIModelWithICPCM(icpCM);
+        String ingressService = "https://ingress-service.ibm-common-services.svc:443";
+        CommonServicesConfig commonServicesConfig = new CommonServicesConfig(clusterName, ingressService, clusterAddress, clusterPort);
+        AdminUIModel adminUIModel = createAdminUIModelWithICPCM(commonServicesConfig);
         Deployment userInterfaceDeployment = adminUIModel.getDeployment();
         final PodSpec uiPodSpec = userInterfaceDeployment.getSpec().getTemplate().getSpec();
         final List<Container> uiContainers = uiPodSpec.getContainers();
         assertThat(uiContainers.get(0).getEnv(), hasItems(
             new EnvVarBuilder().withName("CLUSTER_EXTERNAL_IP").withValue(clusterAddress).build(),
             new EnvVarBuilder().withName("CLUSTER_EXTERNAL_PORT").withValue(clusterPort).build(),
-            new EnvVarBuilder().withName("IAM_CLUSTER_NAME").withValue(clusterName).build()));
+            new EnvVarBuilder().withName("IAM_CLUSTER_NAME").withValue(clusterName).build(),
+            new EnvVarBuilder().withName("ICP_USER_MGMT_IP").withValue("ingress-service.ibm-common-services").build()));
     }
 
     @Test
@@ -441,7 +438,7 @@ public class AdminUIModelTest {
                     .endAdminUI()
                 .endSpec()
                 .build();
-        AdminUIModel adminUIModel = new AdminUIModel(eventStreamsResource, imageConfig, false, null);
+        AdminUIModel adminUIModel = new AdminUIModel(eventStreamsResource, imageConfig, false, null, headerURL);
 
         List<Container> containerList = adminUIModel.getDeployment().getSpec().getTemplate().getSpec().getContainers();
 
@@ -482,7 +479,7 @@ public class AdminUIModelTest {
         expectedImages.put(AdminUIModel.COMPONENT_NAME, uiImage);
         expectedImages.put(AdminUIModel.REDIS_CONTAINER_NAME, redisImage);
 
-        List<Container> containers = new AdminUIModel(instance, imageConfig, false, null).getDeployment().getSpec().getTemplate()
+        List<Container> containers = new AdminUIModel(instance, imageConfig, false, null, headerURL).getDeployment().getSpec().getTemplate()
                 .getSpec().getContainers();
 
         ModelUtils.assertCorrectImageOverridesOnContainers(containers, expectedImages);
@@ -492,30 +489,30 @@ public class AdminUIModelTest {
     @Test
     public void testExternalAccessOverrideWithNodePort() {
         EventStreams instance = createDefaultEventStreamsWithExternalAccess(ExternalAccess.TYPE_NODEPORT).build();
-        AdminUIModel adminUIModelK8s = new AdminUIModel(instance, imageConfig, false, null);
+        AdminUIModel adminUIModelK8s = new AdminUIModel(instance, imageConfig, false, null, headerURL);
         assertThat(adminUIModelK8s.getService().getSpec().getType(), is("NodePort"));
 
-        AdminUIModel adminUIModelOpenShift = new AdminUIModel(instance, imageConfig, true, null);
+        AdminUIModel adminUIModelOpenShift = new AdminUIModel(instance, imageConfig, true, null, headerURL);
         assertThat(adminUIModelOpenShift.getService().getSpec().getType(), is("NodePort"));
     }
 
     @Test
     public void testExternalAccessOverrideWithRoutes() {
         EventStreams instance = createDefaultEventStreamsWithExternalAccess(ExternalAccess.TYPE_ROUTE).build();
-        AdminUIModel adminUIModelK8s = new AdminUIModel(instance, imageConfig, false, null);
+        AdminUIModel adminUIModelK8s = new AdminUIModel(instance, imageConfig, false, null, headerURL);
         assertThat(adminUIModelK8s.getService().getSpec().getType(), is("ClusterIP"));
 
-        AdminUIModel adminUIModelOpenShift = new AdminUIModel(instance, imageConfig, true, null);
+        AdminUIModel adminUIModelOpenShift = new AdminUIModel(instance, imageConfig, true, null, headerURL);
         assertThat(adminUIModelOpenShift.getService().getSpec().getType(), is("ClusterIP"));
     }
 
     @Test
     public void testDefaultServiceType() {
         EventStreams instance = createDefaultEventStreams().build();
-        AdminUIModel adminUIModelK8s = new AdminUIModel(instance, imageConfig, false, null);
+        AdminUIModel adminUIModelK8s = new AdminUIModel(instance, imageConfig, false, null, headerURL);
         assertThat(adminUIModelK8s.getService().getSpec().getType(), is("ClusterIP"));
 
-        AdminUIModel adminUIModelOpenShift = new AdminUIModel(instance, imageConfig, true, null);
+        AdminUIModel adminUIModelOpenShift = new AdminUIModel(instance, imageConfig, true, null, headerURL);
         assertThat(adminUIModelOpenShift.getService().getSpec().getType(), is("ClusterIP"));
     }
 
@@ -561,7 +558,7 @@ public class AdminUIModelTest {
                 .build();
 
 
-        AdminUIModel adminUIModel = new AdminUIModel(instance, imageConfig, false, null);
+        AdminUIModel adminUIModel = new AdminUIModel(instance, imageConfig, false, null, headerURL);
         assertThat(adminUIModel.getImage(), is(uiImage));
         assertTrue(adminUIModel.getCustomImage());
 
@@ -595,7 +592,7 @@ public class AdminUIModelTest {
             .endSpec()
             .build();
 
-        assertThat(new AdminUIModel(eventStreams, imageConfig, false, null).getServiceAccount()
+        assertThat(new AdminUIModel(eventStreams, imageConfig, false, null, headerURL).getServiceAccount()
                         .getImagePullSecrets(), contains(imagePullSecretOverride));
     }
 
@@ -615,7 +612,7 @@ public class AdminUIModelTest {
             .endSpec()
             .build();
 
-        assertThat(new AdminUIModel(eventStreams, imageConfig, false, null).getServiceAccount()
+        assertThat(new AdminUIModel(eventStreams, imageConfig, false, null, headerURL).getServiceAccount()
                         .getImagePullSecrets(), contains(imagePullSecretOverride));
     }
 
@@ -655,7 +652,7 @@ public class AdminUIModelTest {
             .endSpec()
             .build();
 
-        assertThat(new AdminUIModel(eventStreams, imageConfig, false, null).getServiceAccount()
+        assertThat(new AdminUIModel(eventStreams, imageConfig, false, null, headerURL).getServiceAccount()
                         .getImagePullSecrets(), containsInAnyOrder(globalPullSecretOverride, componentPullSecretOverride));
     }
 
@@ -664,7 +661,7 @@ public class AdminUIModelTest {
     public void testCreateAdminUIRouteWithDefaultTlsEncryption() {
         EventStreams eventStreams = createDefaultEventStreams().build();
 
-        AdminUIModel ui = new AdminUIModel(eventStreams, imageConfig, false, null);
+        AdminUIModel ui = new AdminUIModel(eventStreams, imageConfig, false, null, headerURL);
 
         String expectedServiceCertName = "test-instance-ibm-es-ui-service-cert";
 
@@ -696,7 +693,7 @@ public class AdminUIModelTest {
     public void testDefaultLogging() {
         EventStreams eventStreams = createDefaultEventStreams().build();
 
-        List<EnvVar> envVars = new AdminUIModel(eventStreams, imageConfig, false, null).getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getEnv();
+        List<EnvVar> envVars = new AdminUIModel(eventStreams, imageConfig, false, null, headerURL).getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getEnv();
         EnvVar traceEnvVar = envVars.stream().filter(var -> var.getName() == AdminUIModel.TRACE_STATE).findFirst().orElseGet(EnvVar::new);
         assertThat(traceEnvVar.getValue(), is("ExpressApp;INFO,Simulated;INFO,KubernetesClient;INFO"));
     }
@@ -717,7 +714,7 @@ public class AdminUIModelTest {
                 .endSpec()
                 .build();
 
-        List<EnvVar> envVars = new AdminUIModel(eventStreams, imageConfig, false, null).getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getEnv();
+        List<EnvVar> envVars = new AdminUIModel(eventStreams, imageConfig, false, null, headerURL).getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getEnv();
         EnvVar traceEnvVar = envVars.stream().filter(var -> var.getName() == AdminUIModel.TRACE_STATE).findFirst().orElseGet(EnvVar::new);
         assertThat(traceEnvVar.getValue(), is("logger.one;INFO,logger.two;DEBUG"));
     }
@@ -734,7 +731,7 @@ public class AdminUIModelTest {
                 .endSpec()
                 .build();
 
-        List<EnvVar> envVars = new AdminUIModel(eventStreams, imageConfig, false, null).getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getEnv();
+        List<EnvVar> envVars = new AdminUIModel(eventStreams, imageConfig, false, null, headerURL).getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getEnv();
         EnvVar traceEnvVar = envVars.stream().filter(var -> var.getName() == AdminUIModel.TRACE_STATE).findFirst().orElseGet(EnvVar::new);
         assertThat(traceEnvVar.getValue(), is("ExpressApp;INFO,Simulated;INFO,KubernetesClient;INFO"));
     }
@@ -756,7 +753,7 @@ public class AdminUIModelTest {
             .endSpec()
             .build();
 
-        List<EnvVar> envVars = new AdminUIModel(eventStreams, imageConfig, false, null).getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getEnv();
+        List<EnvVar> envVars = new AdminUIModel(eventStreams, imageConfig, false, null, headerURL).getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getEnv();
         EnvVar producerMetricsEnvVar = envVars.stream().filter(var -> var.getName() == "PRODUCER_METRICS_ENABLED").findFirst().orElseGet(EnvVar::new);
         EnvVar metricsEnvVar = envVars.stream().filter(var -> var.getName() == "METRICS_ENABLED").findFirst().orElseGet(EnvVar::new);
         assertThat(producerMetricsEnvVar.getValue(), is("true"));
@@ -770,7 +767,7 @@ public class AdminUIModelTest {
         EventStreams eventStreams = createDefaultEventStreams()
             .build();
 
-        List<EnvVar> envVars = new AdminUIModel(eventStreams, imageConfig, false, null).getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getEnv();
+        List<EnvVar> envVars = new AdminUIModel(eventStreams, imageConfig, false, null, headerURL).getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getEnv();
         EnvVar producerMetricsEnvVar = envVars.stream().filter(var -> var.getName() == "PRODUCER_METRICS_ENABLED").findFirst().orElseGet(EnvVar::new);
         EnvVar metricsEnvVar = envVars.stream().filter(var -> var.getName() == "METRICS_ENABLED").findFirst().orElseGet(EnvVar::new);
         assertThat(producerMetricsEnvVar.getValue(), is("false"));

@@ -408,7 +408,7 @@ metadata:
     categories: Streaming & Messaging
     certified: 'false'
     containerImage: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-operator-icp-linux:latest
-    createdAt: 2020-05-19T13:01:49Z
+    createdAt: 2020-05-20T15:02:18Z
     description: Kafka-based messaging platform for handling real-time data feeds.
     operators.operatorframework.io/internal-objects: '["kafkas.eventstreams.ibm.com","kafkamirrormaker2s.eventstreams.ibm.com"]'
     repository: https://github.ibm.com/mhub/qp-eventstreams-operator
@@ -651,6 +651,12 @@ spec:
         version: v1
       - kind: Secret
         version: v1
+    required:
+    - description: CommonService is the Schema for the commonservices API
+      displayName: CommonService
+      kind: CommonService
+      name: commonservices.operator.ibm.com
+      version: v3
   description: "Built on the open-source [Apache Kafka](https://kafka.apache.org),
     IBM Event Streams is a high-throughput, fault-tolerant, event streaming platform
     that helps you build intelligent, responsive, event-driven applications.\n \n###
@@ -1126,6 +1132,15 @@ spec:
           - patch
           - delete
         - apiGroups:
+          - operator.ibm.com
+          resources:
+          - operandrequests
+          verbs:
+          - get
+          - list
+          - create
+          - patch
+        - apiGroups:
           - apiextensions.k8s.io
           resources:
           - customresourcedefinitions
@@ -1221,6 +1236,10 @@ spec:
                   valueFrom:
                     fieldRef:
                       fieldPath: metadata.annotations['olm.targetNamespaces']
+                - name: EVENTSTREAMS_OPERATOR_NAMESPACE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.namespace
                 - name: EVENTSTREAMS_IMAGE_PULL_POLICY
                   value: Always
                 - name: EVENTSTREAMS_FULL_RECONCILIATION_INTERVAL_MS
@@ -1328,7 +1347,7 @@ spec:
                     fieldRef:
                       fieldPath: metadata.uid
                 image: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator-init:latest
-                name: install-validating-webhook
+                name: init
                 resources:
                   limits:
                     cpu: "1"
