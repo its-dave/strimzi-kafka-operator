@@ -2410,7 +2410,8 @@ public class EventStreamsOperatorTest {
             }));
     }
 
-    @Test
+//    @Test
+// skipping this test until the CP4I integration can be restored
     public void testCreateCp4iServicesBindingWithCrd(VertxTestContext context) {
         esOperator = createDefaultEventStreamsOperator(true);
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
@@ -2450,7 +2451,8 @@ public class EventStreamsOperatorTest {
         })));
     }
 
-    @Test
+//    @Test
+// skipping this test until the CP4I integration can be restored
     public void testWaitForCp4iServicesBindingStatusSetsHeaderURL(VertxTestContext context) {
         when(cp4iResourceOperator.getCp4iHeaderUrl(anyString(), anyString())).thenReturn(Optional.of(CP4I_TEST_HEADER_URL));
 
@@ -2475,7 +2477,8 @@ public class EventStreamsOperatorTest {
     }
 
 
-    @Test
+//    @Test
+// skipping this test until the CP4I integration can be restored
     public void testWaitForCp4iServicesBindingStatusWithEmptyHeaderUrl(VertxTestContext context) {
         when(cp4iResourceOperator.getCp4iHeaderUrl(anyString(), anyString())).thenReturn(Optional.of(""));
 
@@ -2499,7 +2502,8 @@ public class EventStreamsOperatorTest {
                 })));
     }
 
-    @Test
+//    @Test
+// skipping this test until the CP4I integration can be restored
     public void testWaitForCp4iServicesBindingStatusFailsSetsEmptyHeaderURL(VertxTestContext context) {
         when(cp4iResourceOperator.waitForCp4iServicesBindingStatusAndMaybeGetUrl(anyString(), anyString(), anyLong(), anyLong()))
                 .thenReturn(Future.failedFuture("Failed to get status"));
@@ -2524,7 +2528,8 @@ public class EventStreamsOperatorTest {
                 })));
     }
 
-    @Test
+//    @Test
+// skipping this test until the CP4I integration can be restored
     public void testWaitForCp4iServicesBindingStatusWithMissingHeaderUrl(VertxTestContext context) {
         when(cp4iResourceOperator.getCp4iHeaderUrl(anyString(), anyString())).thenReturn(Optional.ofNullable(null));
 
