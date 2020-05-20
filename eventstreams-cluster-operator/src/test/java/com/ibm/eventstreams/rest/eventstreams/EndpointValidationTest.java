@@ -19,6 +19,7 @@ import com.ibm.eventstreams.api.spec.EndpointSpec;
 import com.ibm.eventstreams.api.spec.EndpointSpecBuilder;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.controller.EventStreamsVerticle;
+import com.ibm.eventstreams.controller.models.StatusCondition;
 import com.ibm.eventstreams.rest.RestApiTest;
 import io.strimzi.api.kafka.model.KafkaClusterSpecBuilder;
 import io.strimzi.api.kafka.model.KafkaSpecBuilder;
@@ -31,10 +32,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 
 @ExtendWith(VertxExtension.class)
 public class EndpointValidationTest extends RestApiTest {
@@ -240,10 +243,10 @@ public class EndpointValidationTest extends RestApiTest {
 
     @Test
     public void testAdminApiEndpointsWithValidWithName(VertxTestContext context) {
-
         EndpointSpec endpoint = new EndpointSpecBuilder()
             .withName("good-endpoint-1")
             .withContainerPort(8888)
+            .withAuthenticationMechanisms("IAM-BEARER")
             .build();
 
         EventStreams test = ModelUtils.createDefaultEventStreams("test-es")
@@ -304,6 +307,62 @@ public class EndpointValidationTest extends RestApiTest {
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getInteger("code"), is(400));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("message"),
                         is("spec.strimziOverrides.kafka.listener.external.type is an invalid listener type. Edit spec.strimziOverrides.kafka.listener.external.type to set 'route' as the value."));
+            async.flag();
+        })));
+    }
+
+    @Test
+    public void testAdminApiWithoutIamBearerWarns() {
+        EndpointSpec endpoint = new EndpointSpecBuilder()
+            .withName("test-endpoint")
+            .withContainerPort(8888)
+            .addToAuthenticationMechanisms("SCRAM-SHA-512")
+            .build();
+
+        EventStreams test = ModelUtils.createDefaultEventStreams("test-es")
+            .editOrNewSpec()
+            .withNewAdminApi()
+            .withEndpoints(endpoint)
+            .endAdminApi()
+            .endSpec()
+            .build();
+
+        List<StatusCondition> conditions = new EndpointValidation().validateCr(test);
+
+        assertThat(conditions, hasSize(1));
+
+        assertThat(conditions.get(0).getReason(), is(EndpointValidation.ADMIN_API_MISSING_IAM_BEARER_REASON));
+        assertThat(conditions.get(0).getMessage(), is(EndpointValidation.ADMIN_API_MISSING_IAM_BEARER_MESSAGE));
+    }
+
+    @Test
+    public void testAdminApiWithoutIamBearerDoesNotReject(VertxTestContext context) {
+        EndpointSpec endpoint = new EndpointSpecBuilder()
+            .withName("test-endpoint")
+            .withContainerPort(8888)
+            .addToAuthenticationMechanisms("SCRAM-SHA-512")
+            .build();
+
+        EventStreams test = ModelUtils.createDefaultEventStreams("test-es")
+            .editOrNewSpec()
+            .withNewAdminApi()
+            .withEndpoints(endpoint)
+            .endAdminApi()
+            .endSpec()
+            .build();
+
+        Map<String, Object> request = new HashMap<String, Object>();
+        request.put("object", test);
+
+        Map<String, Object> payload = new HashMap<String, Object>();
+        payload.put("request", request);
+
+        Checkpoint async = context.checkpoint();
+        WebClient.wrap(httpClient).post(EventStreamsVerticle.API_SERVER_PORT, "localhost", "/admissionwebhook/rejectinvalidendpoints").sendJson(payload, context.succeeding(resp -> context.verify(() -> {
+
+            JsonObject responseObj = resp.bodyAsJsonObject();
+
+            assertThat(responseObj.getJsonObject("response").getBoolean("allowed"), is(true));
             async.flag();
         })));
     }

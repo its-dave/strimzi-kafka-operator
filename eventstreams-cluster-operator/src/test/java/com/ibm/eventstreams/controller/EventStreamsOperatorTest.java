@@ -25,10 +25,10 @@ import com.ibm.eventstreams.api.model.AdminUIModel;
 import com.ibm.eventstreams.api.model.CertificateSecretModel;
 import com.ibm.eventstreams.api.model.ClusterSecretsModel;
 import com.ibm.eventstreams.api.model.CollectorModel;
-import com.ibm.eventstreams.api.model.InternalKafkaUserModel;
-import com.ibm.eventstreams.api.model.MessageAuthenticationModel;
 import com.ibm.eventstreams.api.model.GeoReplicatorSecretModel;
 import com.ibm.eventstreams.api.model.GeoReplicatorSourceUsersModel;
+import com.ibm.eventstreams.api.model.InternalKafkaUserModel;
+import com.ibm.eventstreams.api.model.MessageAuthenticationModel;
 import com.ibm.eventstreams.api.model.RestProducerModel;
 import com.ibm.eventstreams.api.model.SchemaRegistryModel;
 import com.ibm.eventstreams.api.model.utils.MockEventStreamsKube;
@@ -55,6 +55,7 @@ import com.ibm.eventstreams.controller.utils.ControllerUtils;
 import com.ibm.eventstreams.controller.utils.MetricsUtils;
 import com.ibm.eventstreams.rest.eventstreams.AuthenticationValidation;
 import com.ibm.eventstreams.rest.eventstreams.EndpointValidation;
+import com.ibm.eventstreams.rest.eventstreams.GeneralSecurityValidation;
 import com.ibm.eventstreams.rest.eventstreams.NameValidation;
 import com.ibm.eventstreams.rest.eventstreams.VersionValidation;
 import com.ibm.commonservices.api.controller.Cp4iServicesBindingResourceOperator;
@@ -887,6 +888,54 @@ public class EventStreamsOperatorTest {
 
                 assertThat(conditions.get().stream().filter(condition -> condition.getReason().equals(EndpointValidation.INVALID_ENDPOINT_NAME_REASON)).findFirst().get().getMessage(),
                     is("adminApi has an endpoint with an invalid name. Acceptable names are lowercase alphanumeric with dashes (^[a-z][-a-z0-9]*$). Edit spec.adminApi.endpoints to provide a valid endpoint names."));
+                async.flag();
+            })));
+    }
+
+    @Test
+    public void testEventStreamsHasMultipleSecurityWarnings(VertxTestContext context) {
+        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
+        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, OPERATOR_NAMESPACE, kafkaStatusReadyTimeoutMs);
+
+        EndpointSpec endpoint = new EndpointSpecBuilder()
+            .withName("ok-name")
+            .withContainerPort(9999)
+            .withAuthenticationMechanisms(Collections.emptyList())
+            .build();
+
+        KafkaSpec kafka = new KafkaSpecBuilder()
+            .editOrNewKafka()
+                .withReplicas(3)
+                .withNewListeners()
+                    .withNewTls()
+                    .endTls()
+                .endListeners()
+            .endKafka()
+            .editOrNewZookeeper()
+                .withReplicas(3)
+            .endZookeeper()
+            .build();
+
+        EventStreams eventStreams = createEventStreamsWithStrimziOverrides(NAMESPACE, CLUSTER_NAME, kafka);
+
+        eventStreams.getSpec().getAdminApi().setEndpoints(Collections.singletonList(endpoint));
+        eventStreams.getSpec().setSecurity(new SecuritySpecBuilder().withInternalTls(TlsVersion.NONE).build());
+
+        Checkpoint async = context.checkpoint();
+        esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), eventStreams)
+            .onComplete(context.succeeding(e -> context.verify(() -> {
+                // check status
+                ArgumentCaptor<EventStreams> updatedEventStreams = ArgumentCaptor.forClass(EventStreams.class);
+                verify(esResourceOperator, times(2)).updateEventStreamsStatus(updatedEventStreams.capture());
+                Optional<List<Condition>> conditions = Optional.ofNullable(updatedEventStreams.getValue()).map(EventStreams::getStatus).map(EventStreamsAbstractStatus::getConditions);
+                assertThat(conditions.get().stream().filter(condition -> condition.getReason().equals(GeneralSecurityValidation.EVENTSTREAMS_NO_TLS_REASON)).findFirst().get().getMessage(),
+                    is(GeneralSecurityValidation.EVENTSTREAMS_NO_TLS_MESSAGE));
+
+                assertThat(conditions.get().stream().filter(condition -> condition.getReason().equals(GeneralSecurityValidation.KAFKA_UNAUTHENTICATED_REASON)).findFirst().get().getMessage(),
+                    is(GeneralSecurityValidation.KAFKA_UNAUTHENTICATED_MESSAGE));
+
+                assertThat(conditions.get().stream().filter(condition -> condition.getReason().equals(GeneralSecurityValidation.KAFKA_UNAUTHORIZED_REASON)).findFirst().get().getMessage(),
+                    is(GeneralSecurityValidation.KAFKA_UNAUTHORIZED_MESSAGE));
                 async.flag();
             })));
     }

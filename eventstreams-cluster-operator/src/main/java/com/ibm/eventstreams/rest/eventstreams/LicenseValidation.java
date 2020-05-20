@@ -41,6 +41,6 @@ public class LicenseValidation implements Validation {
             .map(accepted -> !accepted)
             .orElse(true);
 
-        return log.traceExit(licenseNotAccepted ? Collections.singletonList(StatusCondition.createWarningCondition(LICENSE_NOT_ACCEPTED_REASON, LICENSE_NOT_ACCEPTED_MESSAGE)) : Collections.emptyList());
+        return log.traceExit(licenseNotAccepted ? Collections.singletonList(StatusCondition.createErrorCondition(LICENSE_NOT_ACCEPTED_REASON, LICENSE_NOT_ACCEPTED_MESSAGE)) : Collections.emptyList());
     }
 }

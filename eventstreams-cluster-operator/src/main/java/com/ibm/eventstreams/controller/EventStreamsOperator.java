@@ -13,6 +13,13 @@
 package com.ibm.eventstreams.controller;
 
 import com.ibm.commonservices.CommonServicesConfig;
+import com.ibm.commonservices.api.controller.Cp4iServicesBindingResourceOperator;
+import com.ibm.commonservices.api.model.ClientModel;
+import com.ibm.commonservices.api.model.Cp4iServicesBindingModel;
+import com.ibm.commonservices.api.spec.Client;
+import com.ibm.commonservices.api.spec.ClientDoneable;
+import com.ibm.commonservices.api.spec.ClientList;
+import com.ibm.commonservices.api.spec.Cp4iServicesBinding;
 import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.EndpointServiceType;
 import com.ibm.eventstreams.api.model.AbstractModel;
@@ -22,12 +29,12 @@ import com.ibm.eventstreams.api.model.AdminUIModel;
 import com.ibm.eventstreams.api.model.ClusterSecretsModel;
 import com.ibm.eventstreams.api.model.CollectorModel;
 import com.ibm.eventstreams.api.model.EventStreamsKafkaModel;
-import com.ibm.eventstreams.api.model.InternalKafkaUserModel;
-import com.ibm.eventstreams.api.model.KafkaNetworkPolicyExtensionModel;
-import com.ibm.eventstreams.api.model.MessageAuthenticationModel;
 import com.ibm.eventstreams.api.model.GeoReplicatorModel;
 import com.ibm.eventstreams.api.model.GeoReplicatorSecretModel;
 import com.ibm.eventstreams.api.model.GeoReplicatorSourceUsersModel;
+import com.ibm.eventstreams.api.model.InternalKafkaUserModel;
+import com.ibm.eventstreams.api.model.KafkaNetworkPolicyExtensionModel;
+import com.ibm.eventstreams.api.model.MessageAuthenticationModel;
 import com.ibm.eventstreams.api.model.RestProducerModel;
 import com.ibm.eventstreams.api.model.SchemaRegistryModel;
 import com.ibm.eventstreams.api.spec.EventStreams;
@@ -37,21 +44,16 @@ import com.ibm.eventstreams.api.status.EventStreamsStatus;
 import com.ibm.eventstreams.api.status.EventStreamsStatusBuilder;
 import com.ibm.eventstreams.controller.certificates.EventStreamsCertificateException;
 import com.ibm.eventstreams.controller.certificates.EventStreamsCertificateManager;
+import com.ibm.eventstreams.controller.models.ConditionType;
 import com.ibm.eventstreams.controller.models.PhaseState;
 import com.ibm.eventstreams.controller.models.StatusCondition;
+import com.ibm.eventstreams.rest.eventstreams.GeneralSecurityValidation;
 import com.ibm.eventstreams.rest.eventstreams.AuthenticationValidation;
 import com.ibm.eventstreams.rest.eventstreams.EndpointValidation;
-import com.ibm.eventstreams.rest.eventstreams.EventStreamsGeneralValidation;
+import com.ibm.eventstreams.rest.eventstreams.GeneralValidation;
 import com.ibm.eventstreams.rest.eventstreams.LicenseValidation;
 import com.ibm.eventstreams.rest.eventstreams.NameValidation;
 import com.ibm.eventstreams.rest.eventstreams.VersionValidation;
-import com.ibm.commonservices.api.controller.Cp4iServicesBindingResourceOperator;
-import com.ibm.commonservices.api.model.ClientModel;
-import com.ibm.commonservices.api.model.Cp4iServicesBindingModel;
-import com.ibm.commonservices.api.spec.Client;
-import com.ibm.commonservices.api.spec.ClientDoneable;
-import com.ibm.commonservices.api.spec.ClientList;
-import com.ibm.commonservices.api.spec.Cp4iServicesBinding;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.Secret;
@@ -101,6 +103,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -266,26 +269,25 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             log.traceEntry();
             PhaseState phase = Optional.ofNullable(status.getPhase()).orElse(PhaseState.PENDING);
 
-            boolean isValidCR = true;
-            List<StatusCondition> errorConditions = new ArrayList<>();
-            errorConditions.addAll(new LicenseValidation().validateCr(instance));
-            errorConditions.addAll(new NameValidation().validateCr(instance));
-            errorConditions.addAll(new VersionValidation().validateCr(instance));
-            errorConditions.addAll(new EndpointValidation().validateCr(instance));
-            errorConditions.addAll(GeoReplicatorSourceUsersModel.validateCr(instance));
+            AtomicBoolean isValidCR = new AtomicBoolean(true);
+            List<StatusCondition> conditions = new ArrayList<>();
+            conditions.addAll(new LicenseValidation().validateCr(instance));
+            conditions.addAll(new NameValidation().validateCr(instance));
+            conditions.addAll(new VersionValidation().validateCr(instance));
+            conditions.addAll(new EndpointValidation().validateCr(instance));
+            conditions.addAll(GeoReplicatorSourceUsersModel.validateCr(instance));
+            conditions.addAll(new AuthenticationValidation().validateCr(instance));
+            conditions.addAll(new GeneralValidation().validateCr(instance));
+            conditions.addAll(new GeneralSecurityValidation().validateCr(instance));
 
-            if (!errorConditions.isEmpty()) {
-                errorConditions.forEach(condition -> addToConditions(condition.toCondition()));
-                isValidCR = false;
-            }
+            conditions.forEach(condition -> {
+                addToConditions(condition.toCondition());
+                if (condition.getType().equals(ConditionType.ERROR)) {
+                    isValidCR.set(false);
+                }
+            });
 
-            // Warnings
-            List<StatusCondition> warnings = new ArrayList<>();
-            warnings.addAll(new AuthenticationValidation().validateCr(instance));
-            warnings.addAll(new EventStreamsGeneralValidation().validateCr(instance));
-            warnings.forEach(warning -> addToConditions(warning.toCondition()));
-
-            if (isValidCR) {
+            if (isValidCR.get()) {
                 addCondition(previousConditions
                         .stream()
                         // restore any previous readiness condition if this was set, so
@@ -304,11 +306,11 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             // Update if we need to notify the user of an error, otherwise
             //  on the first run only, otherwise the user will see status
             //  warning conditions flicker in and out of the list
-            if (!isValidCR || previousConditions.isEmpty()) {
+            if (!isValidCR.get() || previousConditions.isEmpty()) {
                 updateStatus(statusSubresource);
             }
 
-            if (isValidCR) {
+            if (isValidCR.get()) {
                 return log.traceExit(Future.succeededFuture(this));
             } else {
                 // we don't want the reconcile loop to continue any further if the CR is not valid
@@ -796,7 +798,11 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 String clientName = oidcclient.getMetadata().getName();
 
                 // Create an operation that can be invoked to retrieve or create the required Custom Resource
-                MixedOperation<Client, ClientList, ClientDoneable, Resource<Client, ClientDoneable>> clientcr = client.customResources(com.ibm.eventstreams.api.Crds.getCrd(Client.class), Client.class, ClientList.class, ClientDoneable.class);
+                MixedOperation<Client, ClientList, ClientDoneable, Resource<Client, ClientDoneable>> clientcr = client.customResources(
+                        com.ibm.eventstreams.api.Crds.getCrd(Client.class),
+                        Client.class,
+                        ClientList.class,
+                        ClientDoneable.class);
 
                 // The OIDC registration requires that we supply an empty client id in the Client when its first created. A watcher
                 // process will spot the empty string, generate a clientId and create the associated secret. If we don't check

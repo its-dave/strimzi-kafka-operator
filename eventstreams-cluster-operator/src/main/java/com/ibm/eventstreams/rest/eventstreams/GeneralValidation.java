@@ -18,7 +18,6 @@ import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.spec.SchemaRegistrySpec;
 import com.ibm.eventstreams.controller.models.StatusCondition;
-import com.ibm.eventstreams.rest.Validation;
 import io.strimzi.api.kafka.model.CruiseControlSpec;
 import io.strimzi.api.kafka.model.KafkaSpec;
 import io.strimzi.api.kafka.model.storage.EphemeralStorage;
@@ -35,13 +34,27 @@ import java.util.Optional;
  * configurations that aren't necessarily illegal or invalid, but that could potentially
  * lead to problems.
  */
-public class EventStreamsGeneralValidation implements Validation {
+public class GeneralValidation {
+    public static final String INSTALLING_IN_LONG_NAMESPACE_REASON = "RouteInLongNameSpace";
+    public static final String INSTALLING_IN_LONG_NAMESPACE_MESSAGE = "Creating routes in namespace '%s' may cause problems. "
+        + "Automatically generated route hosts will be created appropriately because valid Openshift Route hosts less than 64 characters. "
+        + "To fix this issue, provide a valid hostname override to endpoints with type 'Route' in spec.adminApi.endpoints, spec.schemaRegistry.endpoints, spec.restProducer.endpoints and spec.adminUi.host.";
 
-    @Override
+    public static final String CRUISE_CONTROL_REASON = "CruiseControlEnabled";
+    public static final String CRUISE_CONTROL_MESSAGE = "Technology Preview features are available to evaluate potential upcoming features. " +
+        "These features are intended for testing purposes only and not for production use, and are not supported by IBM.";
+
+    public static final String EPHEMERAL_SCHEMA_REGISTRY_REASON = "SchemaRegistryStorage";
+    public static final String EPHEMERAL_SCHEMA_REGISTRY_MESSAGE = "A Schema Registry with ephemeral storage will lose schemas after any restart or rolling update. "
+        + "To avoid losing data, edit spec.schemaRegistry.storage to provide a persistent storage class.";
+
+    private static final int LONG_NAMESPACE_CHARACTER_LIMIT = 60;
+
     public List<StatusCondition> validateCr(EventStreams spec) {
         List<StatusCondition> conditions = new ArrayList<>();
         checkSchemaRegistryStorage(spec, conditions);
         checkCruiseControl(spec, conditions);
+        checkLongNamespace(spec.getMetadata().getNamespace(), conditions);
         return conditions;
     }
 
@@ -54,9 +67,8 @@ public class EventStreamsGeneralValidation implements Validation {
 
             if (replicas > 0 && StorageUtils.usesEphemeral(storage)) {
                 conditions.add(StatusCondition.createWarningCondition(
-                    "SchemaRegistryStorage",
-                    "A Schema Registry with ephemeral storage will lose schemas after any restart or rolling update."
-                        + "To avoid losing data, edit spec.schemaRegistry.storage to provide a persistent storage class."));
+                    EPHEMERAL_SCHEMA_REGISTRY_REASON,
+                    EPHEMERAL_SCHEMA_REGISTRY_MESSAGE));
             }
         }
         return conditions;
@@ -69,10 +81,14 @@ public class EventStreamsGeneralValidation implements Validation {
                                                             .map(KafkaSpec::getCruiseControl);
         if (cruiseControlSpec.isPresent()) {
             conditions.add(StatusCondition.createWarningCondition(
-                    "CruiseControlEnabled",
-                    "Technology Preview features are available to evaluate potential upcoming features. " +
-                            "These features are intended for testing purposes only and not for production use, and " +
-                            "are not supported by IBM."));
+                CRUISE_CONTROL_REASON,
+                CRUISE_CONTROL_MESSAGE));
+        }
+    }
+
+    private void checkLongNamespace(String namespace, List<StatusCondition> conditions) {
+        if (namespace.length() >= LONG_NAMESPACE_CHARACTER_LIMIT) {
+            conditions.add(StatusCondition.createWarningCondition(INSTALLING_IN_LONG_NAMESPACE_REASON, INSTALLING_IN_LONG_NAMESPACE_MESSAGE));
         }
     }
 }

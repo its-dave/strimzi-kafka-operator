@@ -34,7 +34,7 @@ public class StatusCondition {
         return new ConditionBuilder()
             .withLastTransitionTime(ModelUtils.formatTimestamp(new Date()))
             .withType(type.toValue())
-            .withStatus("true")
+            .withStatus("True")
             .withReason(reason)
             .withMessage(message)
             .build();

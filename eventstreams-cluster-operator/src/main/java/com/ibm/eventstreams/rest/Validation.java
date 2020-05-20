@@ -13,6 +13,7 @@
 package com.ibm.eventstreams.rest;
 
 import com.ibm.eventstreams.api.spec.EventStreams;
+import com.ibm.eventstreams.controller.models.ConditionType;
 import com.ibm.eventstreams.controller.models.StatusCondition;
 import io.fabric8.kubernetes.client.CustomResource;
 import io.vertx.core.json.Json;
@@ -20,6 +21,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 public interface Validation {
 
@@ -40,10 +42,11 @@ public interface Validation {
     }
 
     default void sendResponse(RoutingContext routingContext, List<StatusCondition> conditions) {
+        List<StatusCondition> errorConditions = conditions.stream().filter(condition -> condition.getType().equals(ConditionType.ERROR)).collect(Collectors.toList());
         routingContext
             .response()
             .setStatusCode(200)
             .putHeader("content-type", "application/json; charset=utf-8")
-            .end(Json.encodePrettily(conditions.isEmpty() ? ValidationResponsePayload.createSuccessResponsePayload() : conditions.get(0).toPayload()));
+            .end(Json.encodePrettily(errorConditions.isEmpty() ? ValidationResponsePayload.createSuccessResponsePayload() : errorConditions.get(0).toPayload()));
     }
 }

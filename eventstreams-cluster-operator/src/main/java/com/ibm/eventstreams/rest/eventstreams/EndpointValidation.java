@@ -56,8 +56,13 @@ public class EndpointValidation implements Validation {
     public static final String INVALID_ENDPOINT_TYPE_REASON = "InvalidEndpointType";
     public static final String INVALID_EXTERNAL_KAFKA_LISTENER_TYPE = "InvalidExternalKafkaListenerType";
     public static final String UNSUPPORTED_ENDPOINT_AUTHENTICATION_MECHANISM_REASON = "UnsupportedEndpointAuthenticationMechanism";
+    public static final String ADMIN_API_MISSING_IAM_BEARER_REASON = "AdminApiMissingIamBearerAuthenticationMechanism";
     public static final String INVALID_HOSTNAME_REASON = "InvalidHostNames";
     public static final String DUPLICATE_HOST_NAMES_REASON = "DuplicateHostNames";
+
+    public static final String ADMIN_API_MISSING_IAM_BEARER_MESSAGE = "Admin Api does not have a route with IAM-BEARER authentication. "
+        + "IAM-BEARER authentication is required to use the Event Streams CLI and to create KafkaUsers through Admin API."
+        + "To enable these functionalities, add 'IAM-BEARER' to an endpoint in spec.adminApi.endpoints";
 
     public static final int ENDPOINT_NAME_MAX_LENGTH = 16;
     public static final int ROUTE_HOST_NAME_MAX_LENGTH = 64;
@@ -80,6 +85,7 @@ public class EndpointValidation implements Validation {
             checkUniqueNames(conditions, ADMIN_API_SPEC_NAME, adminApiEndpoints.get());
             checkUniquePorts(conditions, ADMIN_API_SPEC_NAME, adminApiEndpoints.get());
             checkValidTypes(conditions, ADMIN_API_SPEC_NAME, adminApiEndpoints.get());
+            checkAdminApiHasIAMBearer(conditions, adminApiEndpoints.get());
         }
         if (restProdEndpoints.isPresent()) {
             checkNoEndpointsOnReservedPorts(conditions, REST_PRODUCER_SPEC_NAME, restProdEndpoints.get());
@@ -285,6 +291,12 @@ public class EndpointValidation implements Validation {
     private static void checkNoIAMBearer(List<StatusCondition> conditions, List<EndpointSpec> endpoints) {
         if (hasIAMBearerAuth(endpoints)) {
             conditions.add(invalidIAMBearerEndpointResponse());
+        }
+    }
+
+    private static void checkAdminApiHasIAMBearer(List<StatusCondition> conditions, List<EndpointSpec> endpoints) {
+        if (!hasIAMBearerAuth(endpoints)) {
+            conditions.add(StatusCondition.createWarningCondition(ADMIN_API_MISSING_IAM_BEARER_REASON, ADMIN_API_MISSING_IAM_BEARER_MESSAGE));
         }
     }
 

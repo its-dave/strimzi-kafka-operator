@@ -305,13 +305,13 @@ public abstract class AbstractModel {
         }
     }
 
-    protected Boolean isKafkaAuthenticationEnabled(EventStreams instance) {
+    public static Boolean isKafkaAuthenticationEnabled(EventStreams instance) {
         return isListenerAuthenticated(instance, ListenerType.PLAIN) ||
             isListenerAuthenticated(instance, ListenerType.EXTERNAL) ||
             isListenerAuthenticated(instance, ListenerType.TLS);
     }
 
-    protected boolean isKafkaAuthorizationEnabled(EventStreams instance) {
+    public static boolean isKafkaAuthorizationEnabled(EventStreams instance) {
         return Optional.of(instance)
             .map(EventStreams::getSpec)
             .map(EventStreamsSpec::getStrimziOverrides)
@@ -320,7 +320,7 @@ public abstract class AbstractModel {
             .isPresent();
     }
 
-    private Boolean isListenerAuthenticated(EventStreams instance, ListenerType type) {
+    private static Boolean isListenerAuthenticated(EventStreams instance, ListenerType type) {
         return ListenerAuthentication.getAuthentication(instance, type) != ListenerAuthentication.NONE && ListenerAuthentication.getAuthentication(instance, type) != null;
     }
 
