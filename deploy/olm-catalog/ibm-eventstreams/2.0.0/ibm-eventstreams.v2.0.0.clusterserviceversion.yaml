@@ -346,6 +346,154 @@ metadata:
             "replicas": 1,
             "version": "2020.2.1"
           }
+        },
+        {
+          "apiVersion": "eventstreams.ibm.com/v1beta1",
+          "kind": "KafkaUser",
+          "metadata": {
+            "labels": {
+              "eventstreams.ibm.com/cluster": "placeholdercluster"
+            },
+            "name": "consumer"
+          },
+          "spec": {
+            "authentication": {
+              "type": "scram-sha-512"
+            },
+            "authorization": {
+              "acls": [
+                {
+                  "operation": "Read",
+                  "resource": {
+                    "name": "your.topic.name",
+                    "patternType": "literal",
+                    "type": "topic"
+                  }
+                },
+                {
+                  "operation": "Read",
+                  "resource": {
+                    "name": "*",
+                    "patternType": "literal",
+                    "type": "group"
+                  }
+                },
+                {
+                  "operation": "Read",
+                  "resource": {
+                    "name": "__schema_",
+                    "patternType": "prefix",
+                    "type": "topic"
+                  }
+                }
+              ],
+              "type": "simple"
+            }
+          }
+        },
+        {
+          "apiVersion": "eventstreams.ibm.com/v1beta1",
+          "kind": "KafkaUser",
+          "metadata": {
+            "labels": {
+              "eventstreams.ibm.com/cluster": "placeholdercluster"
+            },
+            "name": "producer"
+          },
+          "spec": {
+            "authentication": {
+              "type": "scram-sha-512"
+            },
+            "authorization": {
+              "acls": [
+                {
+                  "operation": "Write",
+                  "resource": {
+                    "name": "your.topic.name",
+                    "patternType": "literal",
+                    "type": "topic"
+                  }
+                },
+                {
+                  "operation": "Read",
+                  "resource": {
+                    "name": "__schema_",
+                    "patternType": "prefix",
+                    "type": "topic"
+                  }
+                }
+              ],
+              "type": "simple"
+            }
+          }
+        },
+        {
+          "apiVersion": "eventstreams.ibm.com/v1beta1",
+          "kind": "KafkaUser",
+          "metadata": {
+            "labels": {
+              "eventstreams.ibm.com/cluster": "placeholdercluster"
+            },
+            "name": "everything"
+          },
+          "spec": {
+            "authentication": {
+              "type": "scram-sha-512"
+            },
+            "authorization": {
+              "acls": [
+                {
+                  "operation": "Write",
+                  "resource": {
+                    "name": "*",
+                    "patternType": "literal",
+                    "type": "topic"
+                  }
+                },
+                {
+                  "operation": "Read",
+                  "resource": {
+                    "name": "*",
+                    "patternType": "literal",
+                    "type": "topic"
+                  }
+                },
+                {
+                  "operation": "Create",
+                  "resource": {
+                    "name": "*",
+                    "patternType": "literal",
+                    "type": "topic"
+                  }
+                },
+                {
+                  "operation": "Read",
+                  "resource": {
+                    "name": "*",
+                    "patternType": "literal",
+                    "type": "group"
+                  }
+                },
+                {
+                  "operation": "Read",
+                  "resource": {
+                    "name": "__schema_",
+                    "patternType": "prefix",
+                    "type": "topic"
+                  }
+                },
+                {
+                  "operation": "Alter",
+                  "resource": {
+                    "name": "__schema_",
+                    "patternType": "prefix",
+                    "type": "topic"
+                  }
+                }
+              ],
+              "type": "simple"
+            }
+          }
         }
       ]
     alm-examples-metadata: |-

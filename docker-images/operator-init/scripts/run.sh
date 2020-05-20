@@ -312,7 +312,7 @@ echo "---------------------------------------------------------------"
 
 echo "Creating ConsoleYAMLSample samples"
 
-all_samples=("quickstart" "sample-1-broker" "sample-3-broker" "sample-6-broker" "sample-9-broker")
+all_samples=("es-0-quickstart.eventstreams.ibm.com" "es-1-broker.eventstreams.ibm.com" "es-3-broker.eventstreams.ibm.com" "es-6-broker.eventstreams.ibm.com" "es-9-broker.eventstreams.ibm.com" "user-0-consumer.eventstreams.ibm.com" "user-1-producer.eventstreams.ibm.com" "user-2-everything.eventstreams.ibm.com")
 samples_to_create=()
 
 for consolesamplename in "${all_samples[@]}"
@@ -333,13 +333,13 @@ echo "Creating missing ConsoleYAMLSamples"
 for consolesamplecreatename in "${samples_to_create[@]}"
 do
   case $consolesamplecreatename in
-    "quickstart")
+    "es-0-quickstart.eventstreams.ibm.com")
       echo "Creating the quickstart sample"
       ! cat <<EOF | kubectl apply -f -
 apiVersion: console.openshift.io/v1
 kind: ConsoleYAMLSample
 metadata:
-  name: quickstart
+  name: $consolesamplecreatename
   ownerReferences:
   - apiVersion: $OWNER_APIVERSION
     kind: $OWNER_KIND
@@ -395,13 +395,13 @@ spec:
                 metrics: {}
 EOF
       ;;
-    "sample-1-broker")
+    "es-1-broker.eventstreams.ibm.com")
       echo "Creating the one-broker sample"
       ! cat <<EOF | kubectl apply -f -
 apiVersion: console.openshift.io/v1
 kind: ConsoleYAMLSample
 metadata:
-  name: sample-1-broker
+  name: $consolesamplecreatename
   ownerReferences:
   - apiVersion: $OWNER_APIVERSION
     kind: $OWNER_KIND
@@ -459,13 +459,13 @@ spec:
                 metrics: {}
 EOF
       ;;
-    "sample-3-broker")
+    "es-3-broker.eventstreams.ibm.com")
       echo "Creating the three-brokers sample"
       ! cat <<EOF | kubectl apply -f -
 apiVersion: console.openshift.io/v1
 kind: ConsoleYAMLSample
 metadata:
-  name: sample-3-broker
+  name: $consolesamplecreatename
   ownerReferences:
   - apiVersion: $OWNER_APIVERSION
     kind: $OWNER_KIND
@@ -533,13 +533,13 @@ spec:
                 metrics: {}
 EOF
       ;;
-    "sample-6-broker")
+    "es-6-broker.eventstreams.ibm.com")
       echo "Creating the six-brokers sample"
       ! cat <<EOF | kubectl apply -f -
 apiVersion: console.openshift.io/v1
 kind: ConsoleYAMLSample
 metadata:
-  name: sample-6-broker
+  name: $consolesamplecreatename
   ownerReferences:
   - apiVersion: $OWNER_APIVERSION
     kind: $OWNER_KIND
@@ -607,13 +607,13 @@ spec:
                 metrics: {}
 EOF
       ;;
-    "sample-9-broker")
+    "es-9-broker.eventstreams.ibm.com")
       echo "Creating the nine-brokers sample"
       ! cat <<EOF | kubectl apply -f -
 apiVersion: console.openshift.io/v1
 kind: ConsoleYAMLSample
 metadata:
-  name: sample-9-broker
+  name: $consolesamplecreatename
   ownerReferences:
   - apiVersion: $OWNER_APIVERSION
     kind: $OWNER_KIND
@@ -681,16 +681,174 @@ spec:
                 metrics: {}
 EOF
       ;;
+    "user-0-consumer.eventstreams.ibm.com")
+      echo "Creating the consumer user sample"
+      ! cat <<EOF | kubectl apply -f -
+apiVersion: console.openshift.io/v1
+kind: ConsoleYAMLSample
+metadata:
+  name: $consolesamplecreatename
+  ownerReferences:
+  - apiVersion: $OWNER_APIVERSION
+    kind: $OWNER_KIND
+    name: $OWNER_NAME
+    uid: $OWNER_UID
+spec:
+  description: Client credentials for a Kafka consumer
+  snippet: false
+  targetResource:
+    apiVersion: eventstreams.ibm.com/v1beta1
+    kind: KafkaUser
+  title: Consumer
+  yaml: |
+    apiVersion: eventstreams.ibm.com/v1beta1
+    kind: KafkaUser
+    metadata:
+      name: consumer
+      namespace: placeholder
+      labels:
+        eventstreams.ibm.com/cluster: placeholdercluster
+    spec:
+      authentication:
+        type: scram-sha-512
+      authorization:
+        type: simple
+        acls:
+          - resource:
+              type: topic
+              name: your.topic.name
+              patternType: literal
+            operation: Read
+          - resource:
+              type: group
+              name: '*'
+              patternType: literal
+            operation: Read
+          - resource:
+              type: topic
+              name: __schema_
+              patternType: prefix
+            operation: Read
+EOF
+      ;;
+    "user-1-producer.eventstreams.ibm.com")
+      echo "Creating the producer user sample"
+      ! cat <<EOF | kubectl apply -f -
+apiVersion: console.openshift.io/v1
+kind: ConsoleYAMLSample
+metadata:
+  name: $consolesamplecreatename
+  ownerReferences:
+  - apiVersion: $OWNER_APIVERSION
+    kind: $OWNER_KIND
+    name: $OWNER_NAME
+    uid: $OWNER_UID
+spec:
+  description: Client credentials for a Kafka producer
+  snippet: false
+  targetResource:
+    apiVersion: eventstreams.ibm.com/v1beta1
+    kind: KafkaUser
+  title: Producer
+  yaml: |
+    apiVersion: eventstreams.ibm.com/v1beta1
+    kind: KafkaUser
+    metadata:
+      name: producer
+      namespace: placeholder
+      labels:
+        eventstreams.ibm.com/cluster: placeholdercluster
+    spec:
+      authentication:
+        type: scram-sha-512
+      authorization:
+        type: simple
+        acls:
+          - resource:
+              type: topic
+              name: your.topic.name
+              patternType: literal
+            operation: Write
+          - resource:
+              type: topic
+              name: __schema_
+              patternType: prefix
+            operation: Read
+EOF
+      ;;
+    "user-2-everything.eventstreams.ibm.com")
+      echo "Creating the all-permissions user sample"
+      ! cat <<EOF | kubectl apply -f -
+apiVersion: console.openshift.io/v1
+kind: ConsoleYAMLSample
+metadata:
+  name: $consolesamplecreatename
+  ownerReferences:
+  - apiVersion: $OWNER_APIVERSION
+    kind: $OWNER_KIND
+    name: $OWNER_NAME
+    uid: $OWNER_UID
+spec:
+  description: Client credentials granting all permissions
+  snippet: false
+  targetResource:
+    apiVersion: eventstreams.ibm.com/v1beta1
+    kind: KafkaUser
+  title: Everything
+  yaml: |
+    apiVersion: eventstreams.ibm.com/v1beta1
+    kind: KafkaUser
+    metadata:
+      name: everything
+      namespace: placeholder
+      labels:
+        eventstreams.ibm.com/cluster: placeholdercluster
+    spec:
+      authentication:
+        type: scram-sha-512
+      authorization:
+        type: simple
+        acls:
+          - resource:
+              type: topic
+              name: '*'
+              patternType: literal
+            operation: Write
+          - resource:
+              type: topic
+              name: '*'
+              patternType: literal
+            operation: Read
+          - resource:
+              type: topic
+              name: '*'
+              patternType: literal
+            operation: Create
+          - resource:
+              type: group
+              name: '*'
+              patternType: literal
+            operation: Read
+          - resource:
+              type: topic
+              name: __schema_
+              patternType: prefix
+            operation: Read
+          - resource:
+              type: topic
+              name: __schema_
+              patternType: prefix
+            operation: Alter
+EOF
+      ;;
   esac
 done
 
 echo "Verifying Console YAML samples:"
-! kubectl get ConsoleYAMLSample quickstart -o yaml
-! kubectl get ConsoleYAMLSample sample-1-broker -o yaml
-! kubectl get ConsoleYAMLSample sample-3-broker -o yaml
-! kubectl get ConsoleYAMLSample sample-6-broker -o yaml
-! kubectl get ConsoleYAMLSample sample-9-broker -o yaml
-
+for sample_to_check in "${all_samples[@]}"
+do
+  ! kubectl get ConsoleYAMLSample "$sample_to_check" -o yaml
+done
 
 echo "---------------------------------------------------------------"
 

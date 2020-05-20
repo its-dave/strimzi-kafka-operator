@@ -1,0 +1,31 @@
+apiVersion: eventstreams.ibm.com/v1beta1
+kind: KafkaUser
+# This kafka user generates SCRAM-SHA-512 credentials for a consumer application.
+# It grants permissions to consume from topic testtopic1 only, and from any consumer group.
+# It also grants permission to read any schema.
+metadata:
+  name: consumer-scram-testtopic1
+  namespace: placeholder
+  labels:
+    eventstreams.ibm.com/cluster: <cluster name>
+spec:
+  authentication:
+    type: scram-sha-512
+  authorization:
+    type: simple
+    acls:
+      - resource:
+          type: topic
+          name: testtopic1
+          patternType: literal
+        operation: Read
+      - resource:
+          type: group
+          name: '*'
+          patternType: literal
+        operation: Read
+      - resource:
+          type: topic
+          name: __schema_
+          patternType: prefix
+        operation: Read

@@ -1,0 +1,22 @@
+apiVersion: eventstreams.ibm.com/v1beta1
+kind: KafkaUser
+metadata:
+  name: producer
+  labels:
+    eventstreams.ibm.com/cluster: placeholdercluster
+spec:
+  authentication:
+    type: scram-sha-512
+  authorization:
+    type: simple
+    acls:
+      - resource:
+          type: topic
+          name: your.topic.name
+          patternType: literal
+        operation: Write
+      - resource:
+          type: topic
+          name: __schema_
+          patternType: prefix
+        operation: Read

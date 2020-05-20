@@ -1,0 +1,31 @@
+apiVersion: eventstreams.ibm.com/v1beta1
+kind: KafkaUser
+# This kafka user generates Mutual TLS credentials for a consumer application.
+# It grants permissions to consume from any topic, and from any consumer group.
+# It also grants permission to read any schema.
+metadata:
+  name: consumer-tls-all-topics-all-groups
+  namespace: placeholder
+  labels:
+    eventstreams.ibm.com/cluster: <cluster name>
+spec:
+  authentication:
+    type: tls
+  authorization:
+    type: simple
+    acls:
+      - resource:
+          type: topic
+          name: '*'
+          patternType: literal
+        operation: Read
+      - resource:
+          type: group
+          name: '*'
+          patternType: literal
+        operation: Read
+      - resource:
+          type: topic
+          name: __schema_
+          patternType: prefix
+        operation: Read
