@@ -49,6 +49,10 @@ ${SED} -i "s/owned: \[\]/owned:/" "${GENERATED_CSV}"
 yq m -ix "${GENERATED_CSV}" csv_manual_fields.yaml
 yq w -i "${GENERATED_CSV}" metadata.annotations.createdAt ${DATE}
 
+yq r "${GENERATED_CSV}" metadata.annotations['alm-examples'] | jq 'map(.)' | jq -c -f reordering.jq > .ordered-examples
+yq w -i "${GENERATED_CSV}" metadata.annotations['alm-examples'] --tag '!!str' `cat .ordered-examples`
+rm .ordered-examples
+
 images_config="$(yq r ../eventstreams-helm-charts/ibm-eventstreams-operator/values.yaml --collect *.image)"
 printf "Found images:\n${images_config}\n"
 number_of_images="$(echo '${images_config}' | yq r - --length)"
