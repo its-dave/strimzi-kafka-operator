@@ -46,7 +46,7 @@
 
 - apiGroups:
     - console.openshift.io
-  # The Event Streams Operator requires the "get", "create" and "patch" permissions for consoleyamlsamples
+  # The Event Streams Operator requires the "get", "create", "delete" and "patch" permissions for consoleyamlsamples
   # This is to allow the operator to create and manage Event Streams sample yamls for use by OLM
   resources:
     - consoleyamlsamples
@@ -54,6 +54,7 @@
     - get
     - create
     - patch
+    - delete
 
 - apiGroups:
     - monitoring.coreos.com
