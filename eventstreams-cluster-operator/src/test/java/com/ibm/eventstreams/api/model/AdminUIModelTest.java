@@ -695,7 +695,7 @@ public class AdminUIModelTest {
 
         List<EnvVar> envVars = new AdminUIModel(eventStreams, imageConfig, false, null, headerURL).getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getEnv();
         EnvVar traceEnvVar = envVars.stream().filter(var -> var.getName() == AdminUIModel.TRACE_STATE).findFirst().orElseGet(EnvVar::new);
-        assertThat(traceEnvVar.getValue(), is("ExpressApp;INFO,Simulated;INFO,KubernetesClient;INFO"));
+        assertThat(traceEnvVar.getValue(), is("ExpressApp:INFO,Simulated:INFO,KubernetesClient:INFO"));
     }
 
     @Test
@@ -716,7 +716,7 @@ public class AdminUIModelTest {
 
         List<EnvVar> envVars = new AdminUIModel(eventStreams, imageConfig, false, null, headerURL).getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getEnv();
         EnvVar traceEnvVar = envVars.stream().filter(var -> var.getName() == AdminUIModel.TRACE_STATE).findFirst().orElseGet(EnvVar::new);
-        assertThat(traceEnvVar.getValue(), is("logger.one;INFO,logger.two;DEBUG"));
+        assertThat(traceEnvVar.getValue(), is("logger.one:INFO,logger.two:DEBUG"));
     }
 
     @Test
@@ -733,7 +733,7 @@ public class AdminUIModelTest {
 
         List<EnvVar> envVars = new AdminUIModel(eventStreams, imageConfig, false, null, headerURL).getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getEnv();
         EnvVar traceEnvVar = envVars.stream().filter(var -> var.getName() == AdminUIModel.TRACE_STATE).findFirst().orElseGet(EnvVar::new);
-        assertThat(traceEnvVar.getValue(), is("ExpressApp;INFO,Simulated;INFO,KubernetesClient;INFO"));
+        assertThat(traceEnvVar.getValue(), is("ExpressApp:INFO,Simulated:INFO,KubernetesClient:INFO"));
     }
 
     @Test

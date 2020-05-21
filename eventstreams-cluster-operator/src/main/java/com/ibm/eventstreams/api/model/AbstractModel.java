@@ -68,6 +68,7 @@ import io.fabric8.openshift.api.model.TLSConfig;
 import io.fabric8.openshift.api.model.TLSConfigBuilder;
 import io.strimzi.api.kafka.model.AclRule;
 import io.strimzi.api.kafka.model.ContainerEnvVar;
+import io.strimzi.api.kafka.model.InlineLogging;
 import io.strimzi.api.kafka.model.KafkaClusterSpec;
 import io.strimzi.api.kafka.model.KafkaResources;
 import io.strimzi.api.kafka.model.KafkaSpec;
@@ -75,7 +76,9 @@ import io.strimzi.api.kafka.model.KafkaUser;
 import io.strimzi.api.kafka.model.KafkaUserBuilder;
 import io.strimzi.api.kafka.model.KafkaUserScramSha512ClientAuthentication;
 import io.strimzi.api.kafka.model.KafkaUserSpec;
+import io.strimzi.api.kafka.model.KafkaUserSpecBuilder;
 import io.strimzi.api.kafka.model.KafkaUserTlsClientAuthentication;
+import io.strimzi.api.kafka.model.Logging;
 import io.strimzi.api.kafka.model.listener.KafkaListenerAuthentication;
 import io.strimzi.api.kafka.model.listener.KafkaListenerAuthenticationScramSha512;
 import io.strimzi.api.kafka.model.listener.KafkaListenerAuthenticationTls;
@@ -87,10 +90,8 @@ import io.strimzi.api.kafka.model.status.ListenerStatus;
 import io.strimzi.api.kafka.model.template.PodTemplate;
 import io.strimzi.operator.cluster.model.ModelUtils;
 import io.strimzi.operator.common.model.Labels;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import io.strimzi.api.kafka.model.KafkaUserSpecBuilder;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -1102,4 +1103,36 @@ public abstract class AbstractModel {
 
         return createKafkaUser(kafkaUserName, kafkaUserSpec.build());
     }
+
+    /**
+     * This method is used by the components to get the current logging level from the CR.
+     * @param logging The logging object from the spec.
+     * @param defaultString The default String to use if no loggers are configured.
+     * @param singleLoggingLevel A boolean indicating whether a single logging level should be returned, rather than
+     *                           a string of loggers and associated logging levels.
+     * @param defaultString The delimiter String that is used to separate the logger and the logging level.
+     * @return A string containing the trace string to apply
+     */
+    protected String getTraceString(Logging logging, String defaultString, boolean singleLoggingLevel) {
+        String loggingString = defaultString;
+        if (logging != null && InlineLogging.TYPE_INLINE.equals(logging.getType())) {
+            Map<String, String> loggers = ((InlineLogging) logging).getLoggers();
+            if (loggers != null) {
+                if (singleLoggingLevel) {
+                    String firstKey = loggers.keySet().stream().findFirst().orElse(null);
+                    if (firstKey != null) {
+                        loggingString = loggers.get(firstKey);
+                    }
+                } else {
+                    List<String> loggersArray = new ArrayList<>();
+                    loggers.forEach((k, v) -> {
+                        loggersArray.add(k + ":" + v);
+                    });
+                    loggingString = String.join(",", loggersArray);
+                }
+            }
+        }
+        return loggingString;
+    }
 }
+

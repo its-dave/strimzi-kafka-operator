@@ -13,6 +13,7 @@
 package com.ibm.eventstreams.api.model;
 
 import com.ibm.commonservices.CommonServicesConfig;
+import com.ibm.commonservices.api.model.ClientModel;
 import com.ibm.eventstreams.api.DefaultResourceRequirements;
 import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.EndpointServiceType;
@@ -24,7 +25,6 @@ import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.spec.ImagesSpec;
 import com.ibm.eventstreams.api.spec.SecurityComponentSpec;
 import com.ibm.eventstreams.controller.EventStreamsOperatorConfig;
-import com.ibm.commonservices.api.model.ClientModel;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.ContainerBuilder;
 import io.fabric8.kubernetes.api.model.EnvVar;
@@ -43,10 +43,8 @@ import io.fabric8.kubernetes.api.model.networking.NetworkPolicyIngressRule;
 import io.fabric8.kubernetes.api.model.rbac.RoleBinding;
 import io.fabric8.kubernetes.api.model.rbac.RoleRefBuilder;
 import io.fabric8.kubernetes.api.model.rbac.SubjectBuilder;
-import io.strimzi.api.kafka.model.InlineLogging;
 import io.strimzi.api.kafka.model.KafkaMirrorMaker2Resources;
 import io.strimzi.api.kafka.model.KafkaResources;
-import io.strimzi.api.kafka.model.Logging;
 import io.strimzi.api.kafka.model.status.ListenerStatus;
 import io.strimzi.api.kafka.model.template.PodTemplate;
 import io.strimzi.operator.cluster.model.ModelUtils;
@@ -58,7 +56,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 public class AdminApiModel extends AbstractSecureEndpointsModel {
@@ -80,7 +77,9 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
     public static final String CLUSTER_CERTIFICATE_PATH = CERTIFICATE_PATH + File.separator + "cluster";
     public static final String CLIENT_CA_CERTIFICATE_PATH = CERTIFICATE_PATH + File.separator + "client";
 
-    private String traceString = "info";
+    private static final String DEFAULT_TRACE_STRING = "info";
+    private String traceString;
+
     private final String prometheusHost;
     private final String prometheusPort;
     private final String iamClusterName;
@@ -148,7 +147,7 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
                 .orElseGet(io.strimzi.api.kafka.model.Probe::new));
         setReadinessProbe(adminApiSpec.map(ComponentSpec::getReadinessProbe)
                 .orElseGet(io.strimzi.api.kafka.model.Probe::new));
-        setTraceString(adminApiSpec.map(ComponentSpec::getLogging).orElse(null));
+        traceString = getTraceString(adminApiSpec.map(ComponentSpec::getLogging).orElse(null), DEFAULT_TRACE_STRING, false);
 
         endpoints = createEndpoints(instance, adminApiSpec.orElse(null));
         deployment = createDeployment(getContainers(instance), getVolumes(instance));
@@ -493,17 +492,4 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
 
         return createNetworkPolicy(createLabelSelector(APPLICATION_NAME), ingressRules, null);
     }
-
-    private void setTraceString(Logging logging) {
-        if (logging != null && InlineLogging.TYPE_INLINE.equals(logging.getType())) {
-            Map<String, String> loggers = ((InlineLogging) logging).getLoggers();
-            List<String> loggersArray = new ArrayList<>();
-            loggers.forEach((k, v) -> {
-                loggersArray.add(k + ":" + v);
-            });
-            traceString = String.join(",", loggersArray);
-        }
-    }
-
-
 }

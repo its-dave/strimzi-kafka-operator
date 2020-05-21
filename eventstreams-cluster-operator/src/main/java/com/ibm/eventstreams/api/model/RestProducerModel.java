@@ -64,7 +64,8 @@ public class RestProducerModel extends AbstractSecureEndpointsModel {
     private static final String CLIENT_ID_KEY = "CLIENT_ID";
     private static final String CLIENT_SECRET_KEY = "CLIENT_SECRET";
 
-    private String traceString = "info";
+    private static final String DEFAULT_TRACE_STRING = "info";
+    private String traceString;
     private final String iamClusterName;
     private final String iamServerURL;
     private final String ibmcloudCASecretName;
@@ -117,6 +118,7 @@ public class RestProducerModel extends AbstractSecureEndpointsModel {
                     .orElseGet(io.strimzi.api.kafka.model.Probe::new));
             setReadinessProbe(restProducerSpec.map(ComponentSpec::getReadinessProbe)
                     .orElseGet(io.strimzi.api.kafka.model.Probe::new));
+            traceString = getTraceString(restProducerSpec.map(ComponentSpec::getLogging).orElse(null), DEFAULT_TRACE_STRING, false);
 
             endpoints = createEndpoints(instance, restProducerSpec.orElse(null));
             deployment = createDeployment(getContainers(), getVolumes());

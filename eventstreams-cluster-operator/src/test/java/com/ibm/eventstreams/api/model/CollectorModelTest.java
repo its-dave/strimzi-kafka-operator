@@ -301,8 +301,7 @@ public class CollectorModelTest {
     @Test
     public void testOverrideLoggingInLine() {
         Map<String, String> loggers = new HashMap<>();
-        loggers.put("logger.one", "2");
-        loggers.put("logger.two", "0");
+        loggers.put("logger.one", "trace");
         InlineLogging logging = new InlineLogging();
         logging.setLoggers(loggers);
 
@@ -319,6 +318,81 @@ public class CollectorModelTest {
                 .withName("TRACE_LEVEL")
                 .withValue("2")
                 .build();
+
+        List<EnvVar> envVars = collectorModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getEnv();
+        assertThat(envVars, hasItem(expectedEnvVar));
+    }
+
+    @Test
+    public void testUsesDefaultLoggingIfInvalidLoggerValue() {
+        InlineLogging logging = new InlineLogging();
+        Map<String, String> loggers = new HashMap<>();
+        loggers.put("logger.one", "abcd");
+        logging.setLoggers(loggers);
+
+        EventStreams defaultEs = createDefaultEventStreams()
+            .editSpec()
+            .editCollector()
+            .withLogging(logging)
+            .endCollector()
+            .endSpec()
+            .build();
+        CollectorModel collectorModel = new CollectorModel(defaultEs, imageConfig);
+
+        EnvVar expectedEnvVar = new EnvVarBuilder()
+            .withName("TRACE_LEVEL")
+            .withValue("0")
+            .build();
+
+        List<EnvVar> envVars = collectorModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getEnv();
+        assertThat(envVars, hasItem(expectedEnvVar));
+    }
+
+    @Test
+    public void testUsesDefaultLoggingIfLoggerValueIsError() {
+        InlineLogging logging = new InlineLogging();
+        Map<String, String> loggers = new HashMap<>();
+        loggers.put("logger.one", "error");
+        logging.setLoggers(loggers);
+
+        EventStreams defaultEs = createDefaultEventStreams()
+            .editSpec()
+            .editCollector()
+            .withLogging(logging)
+            .endCollector()
+            .endSpec()
+            .build();
+        CollectorModel collectorModel = new CollectorModel(defaultEs, imageConfig);
+
+        EnvVar expectedEnvVar = new EnvVarBuilder()
+            .withName("TRACE_LEVEL")
+            .withValue("0")
+            .build();
+
+        List<EnvVar> envVars = collectorModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getEnv();
+        assertThat(envVars, hasItem(expectedEnvVar));
+    }
+
+    @Test
+    public void testUsesDefaultLoggingIfLoggerValueIsWarn() {
+        InlineLogging logging = new InlineLogging();
+        Map<String, String> loggers = new HashMap<>();
+        loggers.put("logger.one", "warn");
+        logging.setLoggers(loggers);
+
+        EventStreams defaultEs = createDefaultEventStreams()
+            .editSpec()
+            .editCollector()
+            .withLogging(logging)
+            .endCollector()
+            .endSpec()
+            .build();
+        CollectorModel collectorModel = new CollectorModel(defaultEs, imageConfig);
+
+        EnvVar expectedEnvVar = new EnvVarBuilder()
+            .withName("TRACE_LEVEL")
+            .withValue("0")
+            .build();
 
         List<EnvVar> envVars = collectorModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getEnv();
         assertThat(envVars, hasItem(expectedEnvVar));

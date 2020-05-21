@@ -44,8 +44,6 @@ import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicy;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicyIngressRule;
 import io.strimzi.api.kafka.model.ContainerEnvVar;
-import io.strimzi.api.kafka.model.InlineLogging;
-import io.strimzi.api.kafka.model.Logging;
 import io.strimzi.api.kafka.model.status.ListenerStatus;
 import io.strimzi.api.kafka.model.storage.EphemeralStorage;
 import io.strimzi.api.kafka.model.storage.PersistentClaimStorage;
@@ -76,8 +74,10 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
     public static final String SHARED_VOLUME_MOUNT_NAME = "shared";
     protected static final String LOG_LEVEL_ENV_NAME = "TRACE_LEVEL";
     protected static final String AVRO_LOG_LEVEL_ENV_NAME = "LOG_LEVEL";
+    protected static final String PROXY_LOG_LEVEL_ENV_NAME = "TRACE_SPEC";
     private static final String DEFAULT_LOG_STRING = "INFO";
     private static final String DEFAULT_AVRO_LOG_STRING = "info";
+    private static final String DEFAULT_PROXY_LOG_STRING = "info";
     private static final String DEFAULT_IBMCOM_SCHEMA_REGISTRY_IMAGE = "ibmcom/schema-registry:latest";
     private static final String DEFAULT_IBMCOM_AVRO_IMAGE = "ibmcom/avro:latest";
     private static final String DEFAULT_IBMCOM_SCHEMA_REGISTRY_PROXY_IMAGE = "ibmcom/schema-proxy:latest";
@@ -86,6 +86,7 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
 
     private String logString;
     private String avroLogString;
+    private String proxyTraceString;
 
     // deployable objects
     private Deployment deployment;
@@ -100,7 +101,6 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
     private String schemaRegistryProxyImage;
     private List<ContainerEnvVar> schemaRegistryProxyEnvVars;
     private ResourceRequirements schemaRegistryProxyResourceRequirements;
-    private String defaultProxyTraceString = "info";
     private final String iamClusterName;
     private final String iamServerURL;
     private final String ibmcloudCASecretName;
@@ -163,11 +163,11 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
                     .orElseGet(io.strimzi.api.kafka.model.Probe::new));
             setReadinessProbe(schemaRegistrySpec.map(ComponentSpec::getReadinessProbe)
                     .orElseGet(io.strimzi.api.kafka.model.Probe::new));
-            logString = getLoggingString(schemaRegistrySpec.map(ComponentSpec::getLogging).orElse(null), DEFAULT_LOG_STRING);
+            logString = getTraceString(schemaRegistrySpec.map(ComponentSpec::getLogging).orElse(null), DEFAULT_LOG_STRING, true);
 
             Optional<ContainerSpec> avroSpec = schemaRegistrySpec.map(SchemaRegistrySpec::getAvro);
 
-            avroLogString = getLoggingString(avroSpec.map(ContainerSpec::getLogging).orElse(null), DEFAULT_AVRO_LOG_STRING);
+            avroLogString = getTraceString(avroSpec.map(ContainerSpec::getLogging).orElse(null), DEFAULT_AVRO_LOG_STRING, true);
 
             avroEnvVars = avroSpec.map(ContainerSpec::getEnvVars).orElseGet(ArrayList::new);
             avroImage = firstDefinedImage(
@@ -181,6 +181,7 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
                     .orElseGet(io.strimzi.api.kafka.model.Probe::new);
 
             Optional<ContainerSpec> schemaRegistryProxySpec = schemaRegistrySpec.map(SchemaRegistrySpec::getProxy);
+            proxyTraceString = getTraceString(schemaRegistryProxySpec.map(ContainerSpec::getLogging).orElse(null), DEFAULT_PROXY_LOG_STRING, false);
             schemaRegistryProxyEnvVars = schemaRegistryProxySpec.map(ContainerSpec::getEnvVars).orElseGet(ArrayList::new);
             schemaRegistryProxyImage = firstDefinedImage(
                 DEFAULT_IBMCOM_SCHEMA_REGISTRY_PROXY_IMAGE,
@@ -520,7 +521,7 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
             new EnvVarBuilder().withName("LICENSE").withValue("accept").build(),
             new EnvVarBuilder().withName("NAMESPACE").withValue(getNamespace()).build(),
             new EnvVarBuilder().withName("AUTHORIZATION_ENABLED").withValue(Boolean.toString(kafkaAuthorizationEnabled)).build(),
-            new EnvVarBuilder().withName("TRACE_SPEC").withValue(defaultProxyTraceString).build(),
+            new EnvVarBuilder().withName("TRACE_SPEC").withValue(proxyTraceString).build(),
             new EnvVarBuilder().withName("KAFKA_PRINCIPAL").withValue(internalKafkaUsername).build(),
             new EnvVarBuilder()
                 .withName("HMAC_SECRET")
@@ -727,19 +728,5 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
      */
     public PersistentVolumeClaim getPersistentVolumeClaim() {
         return this.pvc;
-    }
-
-    private String getLoggingString(Logging logging, String defaultString) {
-        String loggingString = defaultString;
-        if (logging != null && InlineLogging.TYPE_INLINE.equals(logging.getType())) {
-            Map<String, String> loggers = ((InlineLogging) logging).getLoggers();
-            if (loggers != null) {
-                String firstKey = loggers.keySet().stream().findFirst().orElse(null);
-                if (firstKey != null) {
-                    loggingString = loggers.get(firstKey);
-                }
-            }
-        }
-        return loggingString;
     }
 }

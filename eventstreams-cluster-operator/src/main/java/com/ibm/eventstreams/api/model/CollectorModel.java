@@ -37,17 +37,18 @@ import io.fabric8.kubernetes.api.model.Volume;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicy;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicyIngressRule;
-import io.strimzi.api.kafka.model.InlineLogging;
 import io.strimzi.api.kafka.model.KafkaClusterSpec;
 import io.strimzi.api.kafka.model.KafkaSpec;
-import io.strimzi.api.kafka.model.Logging;
 import io.strimzi.api.kafka.model.template.PodTemplate;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
@@ -58,9 +59,29 @@ public class CollectorModel extends AbstractSecureEndpointsModel {
     public static final int METRICS_PORT = 7888; // no tls for prometheus
     public static final int DEFAULT_REPLICAS = 1;
     private static final String DEFAULT_IBMCOM_IMAGE = "ibmcom/collector:latest";
-    private String traceLevel = "0";
+    private static final String DEFAULT_TRACE_LEVEL = "info";
+    private TraceLevel traceLevel;
+
+    private enum TraceLevel {
+        error("0"),
+        warn("0"),
+        info("0"),
+        debug("1"),
+        trace("2");
+
+        private String mappedLogLevel;
+
+        TraceLevel(final String mappedLogLevel) {
+            this.mappedLogLevel = mappedLogLevel;
+        }
+
+        public String getTraceLevel() {
+            return this.mappedLogLevel;
+        }
+    }
 
     public static final String DEFAULT_CIPHER_SUITES_NODE = "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_RSA_WITH_AES_128_GCM_SHA256";
+    private static final Logger log = LogManager.getLogger(CollectorModel.class.getName());
 
     private ServiceAccount serviceAccount;
     private Deployment deployment;
@@ -101,7 +122,15 @@ public class CollectorModel extends AbstractSecureEndpointsModel {
                     .orElseGet(io.strimzi.api.kafka.model.Probe::new));
             setReadinessProbe(collectorSpec.map(ComponentSpec::getReadinessProbe)
                     .orElseGet(io.strimzi.api.kafka.model.Probe::new));
-            setTraceLevel(collectorSpec.map(ComponentSpec::getLogging).orElse(null));
+            String traceLevelString = getTraceString(collectorSpec.map(ComponentSpec::getLogging).orElse(null), DEFAULT_TRACE_LEVEL, true);
+
+            try {
+                traceLevel = TraceLevel.valueOf(traceLevelString.toLowerCase(Locale.ROOT));
+                log.debug("Setting trace level to be {}. Mapped level is {}", traceLevelString.toLowerCase(Locale.ROOT), traceLevel.getTraceLevel());
+            } catch (IllegalArgumentException iae) {
+                log.warn("Invalid trace string supplied: {}. Ignoring and setting to info(0)", traceLevelString);
+                traceLevel = TraceLevel.info;
+            }
 
             enableProducerMetrics = Optional.ofNullable(instance.getSpec())
                 .map(EventStreamsSpec::getStrimziOverrides)
@@ -141,7 +170,7 @@ public class CollectorModel extends AbstractSecureEndpointsModel {
      */
     private Container getCollectorContainer(EventStreams instance) {
         List<EnvVar> envVarDefaults = Arrays.asList(
-            new EnvVarBuilder().withName("TRACE_LEVEL").withValue(traceLevel).build(),
+            new EnvVarBuilder().withName("TRACE_LEVEL").withValue(traceLevel.getTraceLevel()).build(),
             new EnvVarBuilder().withName("API_PORT").withValue(Integer.toString(Endpoint.getPodToPodPort(tlsEnabled()))).build(),
             new EnvVarBuilder().withName("METRICS_PORT").withValue(Integer.toString(METRICS_PORT)).build(),
             new EnvVarBuilder().withName("TLS_ENABLED").withValue(String.valueOf(tlsEnabled())).build(),
@@ -291,19 +320,7 @@ public class CollectorModel extends AbstractSecureEndpointsModel {
                 .map(ComponentSpec::getReplicas)
                 .orElse(DEFAULT_REPLICAS) > 0;
     }
-
-    private void setTraceLevel(Logging logging) {
-        if (logging != null && InlineLogging.TYPE_INLINE.equals(logging.getType())) {
-            Map<String, String> loggers = ((InlineLogging) logging).getLoggers();
-            if (loggers != null) {
-                String firstKey = loggers.keySet().stream().findFirst().orElse(null);
-                if (firstKey != null) {
-                    traceLevel = loggers.get(firstKey);
-                }
-            }
-        }
-    }
-
+    
     @Override
     protected List<Endpoint> createP2PEndpoints(EventStreams instance) {
         List<Endpoint> endpoints = new ArrayList<>();

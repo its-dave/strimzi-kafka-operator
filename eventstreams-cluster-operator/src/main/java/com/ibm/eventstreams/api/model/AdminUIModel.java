@@ -52,10 +52,8 @@ import io.fabric8.openshift.api.model.Route;
 import io.fabric8.openshift.api.model.TLSConfig;
 import io.fabric8.openshift.api.model.TLSConfigBuilder;
 import io.strimzi.api.kafka.model.ContainerEnvVar;
-import io.strimzi.api.kafka.model.InlineLogging;
 import io.strimzi.api.kafka.model.KafkaClusterSpec;
 import io.strimzi.api.kafka.model.KafkaSpec;
-import io.strimzi.api.kafka.model.Logging;
 import io.strimzi.api.kafka.model.template.PodTemplate;
 import io.strimzi.operator.cluster.model.ModelUtils;
 
@@ -78,6 +76,7 @@ public class AdminUIModel extends AbstractModel {
     public static final String REDIS_CONTAINER_NAME = "redis";
     private static final int DEFAULT_REPLICAS = 1;
     protected static final String TRACE_STATE = "TRACE_STATE";
+    private static final String DEFAULT_TRACE_STRING = "ExpressApp:INFO,Simulated:INFO,KubernetesClient:INFO";
     private static final String DEFAULT_IBMCOM_UI_IMAGE = "ibmcom/admin-ui:latest";
     private static final String DEFAULT_IBMCOM_REDIS_IMAGE = "ibmcom/redis:latest";
 
@@ -95,7 +94,7 @@ public class AdminUIModel extends AbstractModel {
     private ResourceRequirements redisResourceRequirements;
     private io.strimzi.api.kafka.model.Probe redisLivenessProbe;
     private io.strimzi.api.kafka.model.Probe redisReadinessProbe;
-    private String traceString = "ExpressApp;INFO,Simulated;INFO,KubernetesClient;INFO";
+    private String traceString;
     private CommonServicesConfig commonServicesConfig;
     private String cloudPakHeaderURL;
     private String oidcSecretName;
@@ -153,7 +152,7 @@ public class AdminUIModel extends AbstractModel {
                     .orElseGet(io.strimzi.api.kafka.model.Probe::new));
             setReadinessProbe(userInterfaceSpec.map(ComponentSpec::getReadinessProbe)
                     .orElseGet(io.strimzi.api.kafka.model.Probe::new));
-            setTraceString(userInterfaceSpec.map(ComponentSpec::getLogging).orElse(null));
+            traceString = getTraceString(userInterfaceSpec.map(ComponentSpec::getLogging).orElse(null), DEFAULT_TRACE_STRING, false);
             
             enableProducerMetricsPanels = Optional.ofNullable(instance.getSpec())
                 .map(EventStreamsSpec::getStrimziOverrides)
@@ -636,17 +635,5 @@ public class AdminUIModel extends AbstractModel {
     public RoleBinding getRoleBinding() {
         return this.roleBinding;
     }
-
-    private void setTraceString(Logging logging) {
-        if (logging != null && InlineLogging.TYPE_INLINE.equals(logging.getType())) {
-            Map<String, String> loggers = ((InlineLogging) logging).getLoggers();
-            List<String> loggersArray = new ArrayList();
-            loggers.forEach((k, v) -> {
-                loggersArray.add(k + ";" + v);
-            });
-            traceString = String.join(",", loggersArray);
-        }
-    }
-
 }
 

@@ -954,7 +954,7 @@ spec:
                 - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_PROXY_IMAGE
                   value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-schema-proxy-icp-linux:2020-05-11-17.52.48-d1887e4
                 - name: EVENTSTREAMS_DEFAULT_ADMIN_UI_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-admin-ui-icp-linux:2020-05-18-10.54.10-acae45d-dev
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-admin-ui-icp-linux:2020-05-19-12.18.03-9a78d55-dev
                 - name: EVENTSTREAMS_DEFAULT_ADMIN_UI_REDIS_IMAGE
                   value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-session-store-icp-linux:2020-04-09-15.40.36-f32e234
                 - name: EVENTSTREAMS_DEFAULT_COLLECTOR_IMAGE
@@ -1081,8 +1081,8 @@ spec:
     image: cp.icr.io/cp/icp4i/es/eventstreams-schema-registry-avro-icp-linux-2020-04-09-16.03.17-cd87238@sha256:300004da677dfd029b5429366c1a0251bd64c178922b3e5a857b02dbda231d26
   - name: eventstreams-schema-proxy-icp-linux-2020-05-11-17.52.48-d1887e4
     image: cp.icr.io/cp/icp4i/es/eventstreams-schema-proxy-icp-linux-2020-05-11-17.52.48-d1887e4@sha256:150d88728581f6a8001c2810f146d409ef76253091048f884a08accb54b238a2
-  - name: eventstreams-admin-ui-icp-linux-2020-05-18-10.54.10-acae45d-dev
-    image: cp.icr.io/cp/icp4i/es/eventstreams-admin-ui-icp-linux-2020-05-18-10.54.10-acae45d-dev@sha256:5f90b826bda2ffa0f573cee70412769cc636e1a0bc232a703f48ee0c5b94d7c9
+  - name: eventstreams-admin-ui-icp-linux-2020-05-19-12.18.03-9a78d55-dev
+    image: cp.icr.io/cp/icp4i/es/eventstreams-admin-ui-icp-linux-2020-05-19-12.18.03-9a78d55-dev@sha256:2afbb58a557639b7a2e5a50d5fe06c36f872cff5ed41a0ac5c7610a9d127f381
   - name: eventstreams-session-store-icp-linux-2020-04-09-15.40.36-f32e234
     image: cp.icr.io/cp/icp4i/es/eventstreams-session-store-icp-linux-2020-04-09-15.40.36-f32e234@sha256:63bbdfe2e4ffc6442346fb59212b436191338fdace7de0bb909cdfd95c823518
   - name: eventstreams-metrics-collector-icp-linux-2020-04-08-11.08.41-3cb71d9
