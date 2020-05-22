@@ -200,7 +200,8 @@ public class AdminApiModelTest {
         EnvVar endpoints = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7443:p2ptls").build();
         EnvVar tlsVersion = new EnvVarBuilder().withName("TLS_VERSION").withValue("9443:TLSv1.2,7443:TLSv1.2").build();
         EnvVar kafkaConnectRestApiEnv = new EnvVarBuilder().withName("KAFKA_CONNECT_REST_API_ADDRESS").withValue(kafkaConnectRestEndpoint).build();
-        EnvVar apiVersionEnv = new EnvVarBuilder().withName("EVENTSTREAMS_API_GROUP").withValue(apiVersion).build();
+        EnvVar apiVersionEnv = new EnvVarBuilder().withName("EVENTSTREAMS_API_VERSION").withValue(apiVersion).build();
+        EnvVar apiGroupEnv = new EnvVarBuilder().withName("EVENTSTREAMS_API_GROUP").withValue(EventStreams.RESOURCE_GROUP).build();
         EnvVar geoRepEnabledEnv = new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue("false").build();
         EnvVar geoRepSecretNameEnv = new EnvVarBuilder().withName("GEOREPLICATION_SECRET_NAME").withValue(instanceName  + "-" + AbstractModel.APP_NAME + "-" + GeoReplicatorSecretModel.REPLICATOR_SECRET_NAME).build();
         EnvVar geoRepInternalClientAuthEnv = new EnvVarBuilder().withName("GEOREPLICATION_INTERNAL_CLIENT_AUTH_ENABLED").withValue("false").build();
@@ -219,6 +220,7 @@ public class AdminApiModelTest {
         assertThat(defaultEnvVars, hasItem(endpoints));
         assertThat(defaultEnvVars, hasItem(tlsVersion));
         assertThat(defaultEnvVars, hasItem(kafkaConnectRestApiEnv));
+        assertThat(defaultEnvVars, hasItem(apiGroupEnv));
         assertThat(defaultEnvVars, hasItem(apiVersionEnv));
         assertThat(defaultEnvVars, hasItem(geoRepEnabledEnv));
         assertThat(defaultEnvVars, hasItem(geoRepSecretNameEnv));
@@ -246,7 +248,8 @@ public class AdminApiModelTest {
         EnvVar tlsVersion = new EnvVarBuilder().withName("TLS_VERSION").withValue("9443:TLSv1.2,7443:TLSv1.2").build();
         EnvVar kafkaPrincipalEnv = new EnvVarBuilder().withName("KAFKA_PRINCIPAL").withValue(kafkaPrincipal).build();
         EnvVar kafkaConnectRestApiEnv = new EnvVarBuilder().withName("KAFKA_CONNECT_REST_API_ADDRESS").withValue(kafkaConnectRestEndpoint).build();
-        EnvVar apiVersionEnv = new EnvVarBuilder().withName("EVENTSTREAMS_API_GROUP").withValue(apiVersion).build();
+        EnvVar apiVersionEnv = new EnvVarBuilder().withName("EVENTSTREAMS_API_VERSION").withValue(apiVersion).build();
+        EnvVar apiGroupEnv = new EnvVarBuilder().withName("EVENTSTREAMS_API_GROUP").withValue(EventStreams.RESOURCE_GROUP).build();
         EnvVar geoRepEnabledEnv = new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue("false").build();
         EnvVar geoRepSecretNameEnv = new EnvVarBuilder().withName("GEOREPLICATION_SECRET_NAME").withValue(instanceName  + "-" + AbstractModel.APP_NAME + "-" + GeoReplicatorSecretModel.REPLICATOR_SECRET_NAME).build();
         EnvVar geoRepInternalClientAuthEnv = new EnvVarBuilder().withName("GEOREPLICATION_INTERNAL_CLIENT_AUTH_ENABLED").withValue("false").build();
@@ -270,6 +273,7 @@ public class AdminApiModelTest {
         assertThat(defaultEnvVars, hasItem(tlsVersion));
         assertThat(defaultEnvVars, hasItem(kafkaPrincipalEnv));
         assertThat(defaultEnvVars, hasItem(kafkaConnectRestApiEnv));
+        assertThat(defaultEnvVars, hasItem(apiGroupEnv));
         assertThat(defaultEnvVars, hasItem(apiVersionEnv));
         assertThat(defaultEnvVars, hasItem(geoRepEnabledEnv));
         assertThat(defaultEnvVars, hasItem(geoRepSecretNameEnv));

@@ -63,7 +63,7 @@ metadata:
     categories: Streaming & Messaging
     certified: 'false'
     containerImage: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-operator-icp-linux:latest
-    createdAt: 2020-05-22T13:49:10Z
+    createdAt: 2020-05-22T14:08:55Z
     description: Kafka-based messaging platform for handling real-time data feeds.
     operators.operatorframework.io/internal-objects: '["kafkas.eventstreams.ibm.com","kafkamirrormaker2s.eventstreams.ibm.com"]'
     repository: https://github.ibm.com/mhub/qp-eventstreams-operator
@@ -946,7 +946,7 @@ spec:
                 - name: EVENTSTREAMS_DEFAULT_REST_PRODUCER_IMAGE
                   value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-rest-producer-v2-icp-linux:2020-05-19-15.34.50-b7c951c
                 - name: EVENTSTREAMS_DEFAULT_ADMIN_API_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-admin-icp-linux:2020-05-19-15.35.22-b7c951c
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-admin-icp-linux:2020-05-21-16.15.10-7ce14cf
                 - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_IMAGE
                   value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-schema-registry-icp-linux:2020-05-21-15.38.36-21cd0a7-dev
                 - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_AVRO_IMAGE
@@ -954,7 +954,7 @@ spec:
                 - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_PROXY_IMAGE
                   value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-schema-proxy-icp-linux:2020-05-19-15.35.21-b7c951c
                 - name: EVENTSTREAMS_DEFAULT_ADMIN_UI_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-admin-ui-icp-linux:2020-05-19-12.18.03-9a78d55-dev
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-admin-ui-icp-linux:2020-05-22-09.31.46-ffb0b03-dev
                 - name: EVENTSTREAMS_DEFAULT_ADMIN_UI_REDIS_IMAGE
                   value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-session-store-icp-linux:2020-04-09-15.40.36-f32e234
                 - name: EVENTSTREAMS_DEFAULT_COLLECTOR_IMAGE
@@ -1073,16 +1073,16 @@ spec:
     image: cp.icr.io/cp/icp4i/es/strimzi-operator-init-latest@sha256:4097889236A2AF26C293033FEB964C4CF118C0224E0D063FEC0A89E9D0569EF2
   - name: eventstreams-rest-producer-v2-icp-linux-2020-05-19-15.34.50-b7c951c
     image: cp.icr.io/cp/icp4i/es/eventstreams-rest-producer-v2-icp-linux-2020-05-19-15.34.50-b7c951c@sha256:677388f419d3f47c0a42a0692b94dc5901e651810bcf70208d6c5c8124d7440e
-  - name: eventstreams-admin-icp-linux-2020-05-19-15.35.22-b7c951c
-    image: cp.icr.io/cp/icp4i/es/eventstreams-admin-icp-linux-2020-05-19-15.35.22-b7c951c@sha256:09641285ee0279b3f7a45b2fd24c808c97ea0ba7a2e6c196b0970b64d4c356c6
+  - name: eventstreams-admin-icp-linux-2020-05-21-16.15.10-7ce14cf
+    image: cp.icr.io/cp/icp4i/es/eventstreams-admin-icp-linux-2020-05-21-16.15.10-7ce14cf@sha256:80dca3ba92cb25212248149c30eca28cfefd67d0c827444fb8c0a66d3a278bd3
   - name: eventstreams-schema-registry-icp-linux-2020-05-21-15.38.36-21cd0a7-dev
     image: cp.icr.io/cp/icp4i/es/eventstreams-schema-registry-icp-linux-2020-05-21-15.38.36-21cd0a7-dev@sha256:c5723111dd19ae4624593ff8f4b79fe85ca10dcea1a43bad9b5505e19ca397e9
   - name: eventstreams-schema-registry-avro-icp-linux-2020-05-21-15.36.30-3e46cc0-dev
     image: cp.icr.io/cp/icp4i/es/eventstreams-schema-registry-avro-icp-linux-2020-05-21-15.36.30-3e46cc0-dev@sha256:5f0cb0af84c2a15a3accac1b7c2ce9feb2334ef6c7104f54e8dd68696f53ad79
   - name: eventstreams-schema-proxy-icp-linux-2020-05-19-15.35.21-b7c951c
     image: cp.icr.io/cp/icp4i/es/eventstreams-schema-proxy-icp-linux-2020-05-19-15.35.21-b7c951c@sha256:02671670ccdbbddaf567edb9ac13e14052f2213aead1bfec44f9bcd986f2bc73
-  - name: eventstreams-admin-ui-icp-linux-2020-05-19-12.18.03-9a78d55-dev
-    image: cp.icr.io/cp/icp4i/es/eventstreams-admin-ui-icp-linux-2020-05-19-12.18.03-9a78d55-dev@sha256:2afbb58a557639b7a2e5a50d5fe06c36f872cff5ed41a0ac5c7610a9d127f381
+  - name: eventstreams-admin-ui-icp-linux-2020-05-22-09.31.46-ffb0b03-dev
+    image: cp.icr.io/cp/icp4i/es/eventstreams-admin-ui-icp-linux-2020-05-22-09.31.46-ffb0b03-dev@sha256:130436c1c9f1e18862079973305aa59af54b9a43220249ccd3a30a9ed68e61c0
   - name: eventstreams-session-store-icp-linux-2020-04-09-15.40.36-f32e234
     image: cp.icr.io/cp/icp4i/es/eventstreams-session-store-icp-linux-2020-04-09-15.40.36-f32e234@sha256:63bbdfe2e4ffc6442346fb59212b436191338fdace7de0bb909cdfd95c823518
   - name: eventstreams-metrics-collector-icp-linux-2020-04-08-11.08.41-3cb71d9
