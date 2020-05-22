@@ -961,18 +961,24 @@ spec:
                   value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-metrics-collector-icp-linux:2020-04-08-11.08.41-3cb71d9
                 image: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator:latest
                 livenessProbe:
+                  failureThreshold: 3
                   httpGet:
                     path: /healthy
                     port: 8080
                   initialDelaySeconds: 10
-                  periodSeconds: 30
+                  periodSeconds: 10
+                  successThreshold: 1
+                  timeoutSeconds: 5
                 name: eventstreams-cluster-operator
                 readinessProbe:
+                  failureThreshold: 3
                   httpGet:
                     path: /ready
                     port: 8080
                   initialDelaySeconds: 10
-                  periodSeconds: 30
+                  periodSeconds: 10
+                  successThreshold: 1
+                  timeoutSeconds: 5
                 resources:
                   limits:
                     cpu: "1"

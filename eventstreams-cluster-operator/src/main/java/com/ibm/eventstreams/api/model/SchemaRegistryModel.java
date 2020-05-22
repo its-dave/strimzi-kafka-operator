@@ -365,9 +365,7 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
                         .withValue("*/*")
                         .build())
                 .endHttpGet()
-                .withInitialDelaySeconds(10)
-                .withPeriodSeconds(30)
-                .withTimeoutSeconds(10)
+                .withPeriodSeconds(10)
                 .withSuccessThreshold(1)
                 .withFailureThreshold(3)
                 .build();
@@ -389,11 +387,9 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
                         .withValue("*/*")
                         .build())
                 .endHttpGet()
-                .withInitialDelaySeconds(10)
-                .withPeriodSeconds(60)
-                .withTimeoutSeconds(10)
+                .withPeriodSeconds(10)
                 .withSuccessThreshold(1)
-                .withFailureThreshold(2)
+                .withFailureThreshold(3)
                 .build();
         return combineProbeDefinitions(defaultReadinessProbe, super.getReadinessProbe());
     }
@@ -447,11 +443,9 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
                 .withNewTcpSocket()
                 .withNewPort(AVRO_SERVICE_PORT)
                 .endTcpSocket()
-                .withInitialDelaySeconds(10)
-                .withPeriodSeconds(30)
-                .withTimeoutSeconds(10)
+                .withPeriodSeconds(10)
                 .withSuccessThreshold(1)
-                .withFailureThreshold(2)
+                .withFailureThreshold(3)
                 .build();
         return combineProbeDefinitions(defaultLivenessProbe, avroLivenessProbe);
     }
@@ -465,11 +459,9 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
                 .withNewTcpSocket()
                 .withNewPort(AVRO_SERVICE_PORT)
                 .endTcpSocket()
-                .withInitialDelaySeconds(30)
-                .withPeriodSeconds(60)
-                .withTimeoutSeconds(10)
+                .withPeriodSeconds(10)
                 .withSuccessThreshold(1)
-                .withFailureThreshold(2)
+                .withFailureThreshold(3)
                 .build();
         return combineProbeDefinitions(defaultReadinessProbe, avroReadinessProbe);
     }
@@ -550,9 +542,7 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
                 .withValue("*/*")
                 .build())
             .endHttpGet()
-            .withInitialDelaySeconds(10)
-            .withPeriodSeconds(30)
-            .withTimeoutSeconds(10)
+            .withPeriodSeconds(10)
             .withSuccessThreshold(1)
             .withFailureThreshold(3)
             .build();
@@ -574,11 +564,9 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
                 .withValue("*/*")
                 .build())
             .endHttpGet()
-            .withInitialDelaySeconds(10)
-            .withPeriodSeconds(60)
-            .withTimeoutSeconds(10)
+            .withPeriodSeconds(10)
             .withSuccessThreshold(1)
-            .withFailureThreshold(2)
+            .withFailureThreshold(3)
             .build();
         return combineProbeDefinitions(defaultReadinessProbe, super.getReadinessProbe());
     }

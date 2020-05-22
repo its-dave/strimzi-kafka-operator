@@ -223,11 +223,9 @@ public class RestProducerModel extends AbstractSecureEndpointsModel {
                 .withValue("*/*")
                 .build())
             .endHttpGet()
-            .withInitialDelaySeconds(240)
-            .withPeriodSeconds(30)
-            .withTimeoutSeconds(10)
+            .withPeriodSeconds(10)
             .withSuccessThreshold(1)
-            .withFailureThreshold(10)
+            .withFailureThreshold(3)
             .build();
         return combineProbeDefinitions(defaultLivenessProbe, super.getLivenessProbe());
     }
@@ -247,9 +245,7 @@ public class RestProducerModel extends AbstractSecureEndpointsModel {
                 .withValue("*/*")
                 .build())
             .endHttpGet()
-            .withInitialDelaySeconds(60)
             .withPeriodSeconds(10)
-            .withTimeoutSeconds(10)
             .withSuccessThreshold(1)
             .withFailureThreshold(3)
             .build();

@@ -223,9 +223,9 @@ public class CollectorModel extends AbstractSecureEndpointsModel {
                         .withValue("*/*")
                         .build())
                 .endHttpGet()
-                .withInitialDelaySeconds(20)
-                .withPeriodSeconds(20)
-                .withTimeoutSeconds(10)
+                .withPeriodSeconds(10)
+                .withSuccessThreshold(1)
+                .withFailureThreshold(3)
                 .build();
         return combineProbeDefinitions(defaultLivenessProbe, super.getLivenessProbe());
     }
@@ -245,11 +245,9 @@ public class CollectorModel extends AbstractSecureEndpointsModel {
                         .withValue("*/*")
                         .build())
                 .endHttpGet()
-                .withInitialDelaySeconds(20)
-                .withPeriodSeconds(20)
-                .withTimeoutSeconds(10)
-                .withFailureThreshold(2)
+                .withPeriodSeconds(10)
                 .withSuccessThreshold(1)
+                .withFailureThreshold(3)
                 .build();
         return combineProbeDefinitions(defaultReadinessProbe, super.getReadinessProbe());
     }

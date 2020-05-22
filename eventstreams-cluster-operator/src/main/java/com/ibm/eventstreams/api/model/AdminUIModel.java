@@ -450,11 +450,9 @@ public class AdminUIModel extends AbstractModel {
                         .withValue("*/*")
                         .build())
                 .endHttpGet()
-                .withInitialDelaySeconds(15)
                 .withPeriodSeconds(10)
-                .withTimeoutSeconds(10)
                 .withSuccessThreshold(1)
-                .withFailureThreshold(6)
+                .withFailureThreshold(3)
                 .build();
         return combineProbeDefinitions(defaultLivenessProbe, super.getLivenessProbe());
     }
@@ -474,9 +472,8 @@ public class AdminUIModel extends AbstractModel {
                         .withValue("*/*")
                         .build())
                 .endHttpGet()
-                .withInitialDelaySeconds(15)
                 .withPeriodSeconds(10)
-                .withTimeoutSeconds(10)
+                .withSuccessThreshold(1)
                 .withFailureThreshold(3)
                 .build();
         return combineProbeDefinitions(defaultReadinessProbe, super.getReadinessProbe());
@@ -522,11 +519,9 @@ public class AdminUIModel extends AbstractModel {
                 .withNewExec()
                     .withCommand("sh", "-c", "/usr/local/bin/redis-cli -h $(hostname) ping")
                 .endExec()
-                .withFailureThreshold(2)
-                .withInitialDelaySeconds(30)
                 .withPeriodSeconds(10)
-                .withTimeoutSeconds(10)
                 .withSuccessThreshold(1)
+                .withFailureThreshold(3)
                 .build();
         return combineProbeDefinitions(defaultLivenessProbe, redisLivenessProbe);
     }
@@ -540,11 +535,9 @@ public class AdminUIModel extends AbstractModel {
                 .withNewExec()
                 .withCommand("sh", "-c", "/usr/local/bin/redis-cli -h $(hostname) ping")
                 .endExec()
-                .withFailureThreshold(2)
-                .withInitialDelaySeconds(10)
                 .withPeriodSeconds(10)
                 .withSuccessThreshold(1)
-                .withTimeoutSeconds(10)
+                .withFailureThreshold(3)
                 .build();
         return combineProbeDefinitions(defaultReadinessProbe, redisReadinessProbe);
     }
