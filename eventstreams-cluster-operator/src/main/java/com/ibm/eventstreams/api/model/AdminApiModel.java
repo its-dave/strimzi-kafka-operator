@@ -12,8 +12,7 @@
  */
 package com.ibm.eventstreams.api.model;
 
-import com.ibm.commonservices.CommonServicesConfig;
-import com.ibm.commonservices.api.model.ClientModel;
+import com.ibm.commonservices.CommonServices;
 import com.ibm.eventstreams.api.DefaultResourceRequirements;
 import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.EndpointServiceType;
@@ -51,7 +50,6 @@ import io.strimzi.operator.cluster.model.ModelUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -65,26 +63,15 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
     public static final String ADMIN_API_CONTAINER_NAME = "admin-api";
     public static final int DEFAULT_REPLICAS = 1;
     public static final String DEFAULT_IBMCOM_IMAGE = "ibmcom/admin-api:latest";
-
-    public static final String CLUSTER_CA_VOLUME_MOUNT_NAME = "cluster-ca";
-    public static final String CERTS_VOLUME_MOUNT_NAME = "certs";
     public static final String KAFKA_CONFIGMAP_MOUNT_NAME = "kafka-cm";
-    public static final String CLIENT_CA_VOLUME_MOUNT_NAME = "client-ca";
-
     public static final String ADMIN_CLUSTERROLE_NAME = "eventstreams-admin-clusterrole";
-
-    public static final String CERTIFICATE_PATH = "/certs";
-    public static final String CLUSTER_CERTIFICATE_PATH = CERTIFICATE_PATH + File.separator + "cluster";
-    public static final String CLIENT_CA_CERTIFICATE_PATH = CERTIFICATE_PATH + File.separator + "client";
 
     private static final String DEFAULT_TRACE_STRING = "info";
     private String traceString;
 
     private final String prometheusHost;
     private final String prometheusPort;
-    private final String iamClusterName;
-    private final String iamServerURL;
-    private final String ibmcloudCASecretName;
+    private final CommonServices commonServices;
 
     private final Deployment deployment;
     private final ServiceAccount serviceAccount;
@@ -101,26 +88,23 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
      * @param instance
      * @param imageConfig
      * @param kafkaListeners
-     * @param commonServicesConfig
+     * @param commonServices
      */
     public AdminApiModel(EventStreams instance,
                          EventStreamsOperatorConfig.ImageLookup imageConfig,
                          List<ListenerStatus> kafkaListeners,
-                         CommonServicesConfig commonServicesConfig,
+                         CommonServices commonServices,
                          boolean isGeoReplicationEnabled,
                          String internalKafkaUsername) {
         super(instance, COMPONENT_NAME, APPLICATION_NAME);
         this.kafkaListeners = kafkaListeners != null ? new ArrayList<>(kafkaListeners) : new ArrayList<>();
 
-        this.prometheusHost = commonServicesConfig.getConsoleHost();
-        this.prometheusPort = commonServicesConfig.getConsolePort();
-        this.iamClusterName = commonServicesConfig.getClusterName();
-        this.iamServerURL = commonServicesConfig.getIngressEndpoint();
+        this.prometheusHost = commonServices.getConsoleHost();
+        this.prometheusPort = commonServices.getConsolePort();
+        this.commonServices = commonServices;
 
         this.isGeoReplicationEnabled = isGeoReplicationEnabled;
         this.internalKafkaUsername = internalKafkaUsername;
-
-        ibmcloudCASecretName = ClusterSecretsModel.getIBMCloudSecretName(getInstanceName());
 
         Optional<SecurityComponentSpec> adminApiSpec = Optional.ofNullable(instance.getSpec())
                 .map(EventStreamsSpec::getAdminApi);
@@ -180,7 +164,7 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
             .endSecret()
             .build());
 
-        volumes.addAll(getSecurityVolumes());
+        volumes.addAll(securityVolumes());
 
         volumes.add(new VolumeBuilder()
             .withNewName(KAFKA_CONFIGMAP_MOUNT_NAME)
@@ -189,15 +173,9 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
             .endConfigMap()
             .build());
 
-        // Add The IAM Specific Volumes.  If we need to build without IAM Support we can put a variable check
-        // here.
-        volumes.add(new VolumeBuilder()
-            .withNewName(IBMCLOUD_CA_VOLUME_MOUNT_NAME)
-            .withNewSecret()
-            .withNewSecretName(ibmcloudCASecretName)
-                .addNewItem().withNewKey(CA_CERT).withNewPath(CA_CERT).endItem()
-            .endSecret()
-            .build());
+        if (commonServices.isPresent()) {
+            volumes.addAll(commonServices.volumes());
+        }
 
         return volumes;
     }
@@ -236,18 +214,13 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
                 .withMountPath("/etc/kafka-cm")
                 .withNewReadOnly(true)
             .endVolumeMount()
-
             .withResources(getResourceRequirements(DefaultResourceRequirements.ADMIN_API))
             .withLivenessProbe(createLivenessProbe())
             .withReadinessProbe(createReadinessProbe());
 
-        // Add The IAM Specific Volume mount. If we need to build without IAM Support we can put a variable check
-        // here.
-        containerBuilder.addNewVolumeMount()
-            .withNewName(IBMCLOUD_CA_VOLUME_MOUNT_NAME)
-            .withMountPath(IBMCLOUD_CA_CERTIFICATE_PATH)
-            .withNewReadOnly(true)
-            .endVolumeMount();
+        if (commonServices.isPresent()) {
+            containerBuilder.addAllToVolumeMounts(commonServices.volumeMounts());
+        }
 
         configureSecurityVolumeMounts(containerBuilder);
 
@@ -274,8 +247,6 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
                         KafkaMirrorMaker2Resources.serviceName(getInstanceName())),
                 GeoReplicatorModel.REPLICATOR_PORT);
 
-        String oidcSecretName = ClientModel.getSecretName(getInstanceName());
-
         ArrayList<EnvVar> envVars = new ArrayList<>(Arrays.asList(
             new EnvVarBuilder().withName("RELEASE").withValue(getInstanceName()).build(),
             new EnvVarBuilder().withName("LICENSE").withValue("accept").build(),
@@ -296,30 +267,6 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
             new EnvVarBuilder().withName("GEOREPLICATION_INTERNAL_SERVER_AUTH_ENABLED").withValue(Boolean.toString(isReplicatorInternalServerAuthForConnectEnabled(instance))).build(),
             new EnvVarBuilder().withName("GEOREPLICATION_EXTERNAL_SERVER_AUTH_ENABLED").withValue(Boolean.toString(isReplicatorExternalServerAuthForConnectEnabled(instance))).build(),
             new EnvVarBuilder().withName("GEOREPLICATION_INTERNAL_CLIENT_AUTH_TYPE").withValue(isReplicatorInternalClientAuthForConnectEnabled(instance) ? GeoReplicatorModel.getInternalTlsKafkaListenerAuthentication(instance).getType() : "NONE").build(),
-
-        // Add The IAM Specific Envars.  If we need to build without IAM Support we can put a variable check
-        // here.
-            new EnvVarBuilder().withName("IAM_CLUSTER_NAME").withValue(iamClusterName).build(),
-            new EnvVarBuilder().withName("IAM_SERVER_URL").withValue(iamServerURL).build(),
-            new EnvVarBuilder().withName("IAM_SERVER_CA_CERT").withValue(IBMCLOUD_CA_CERTIFICATE_PATH + File.separator + CA_CERT).build(),
-            new EnvVarBuilder()
-                .withName("CLIENT_ID")
-                .withNewValueFrom()
-                .withNewSecretKeyRef()
-                .withName(oidcSecretName)
-                .withKey(CLIENT_ID_KEY)
-                .endSecretKeyRef()
-                .endValueFrom()
-                .build(),
-            new EnvVarBuilder()
-                .withName("CLIENT_SECRET")
-                .withNewValueFrom()
-                .withNewSecretKeyRef()
-                .withName(oidcSecretName)
-                .withKey(CLIENT_SECRET_KEY)
-                .endSecretKeyRef()
-                .endValueFrom()
-                .build(),
             new EnvVarBuilder()
                 .withName("ES_CACERT")
                 .withNewValueFrom()
@@ -331,6 +278,11 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
                 .endValueFrom()
                 .build()
             ));
+
+
+        if (commonServices.isPresent()) {
+            envVars.addAll(commonServices.envVars());
+        }
 
         // Optionally add the kafka bootstrap URLs if present
         getInternalKafkaBootstrap(kafkaListeners).ifPresent(internalBootstrap ->

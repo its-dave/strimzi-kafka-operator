@@ -12,7 +12,7 @@
  */
 package com.ibm.eventstreams.api.model;
 
-import com.ibm.commonservices.CommonServicesConfig;
+import com.ibm.commonservices.CommonServices;
 import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.model.utils.ModelUtils;
 import com.ibm.eventstreams.api.spec.EventStreams;
@@ -187,9 +187,9 @@ public class AdminUIModelTest {
         return new AdminUIModel(instance, imageConfig, true, null, headerURL);
     }
 
-    private AdminUIModel createAdminUIModelWithICPCM(CommonServicesConfig commonServicesConfig) {
+    private AdminUIModel createAdminUIModelWithICPCM(CommonServices commonServices) {
         EventStreams instance = createDefaultEventStreams().build();
-        return new AdminUIModel(instance, imageConfig, true, commonServicesConfig, headerURL);
+        return new AdminUIModel(instance, imageConfig, true, commonServices, headerURL);
     }
 
     @Test
@@ -371,8 +371,14 @@ public class AdminUIModelTest {
         String clusterPort = "443";
         String clusterName = "mycluster";
         String ingressService = "https://ingress-service.ibm-common-services.svc:443";
-        CommonServicesConfig commonServicesConfig = new CommonServicesConfig(clusterName, ingressService, clusterAddress, clusterPort);
-        AdminUIModel adminUIModel = createAdminUIModelWithICPCM(commonServicesConfig);
+        Map<String, String> data = new HashMap<>();
+        data.put("cluster_name", clusterName);
+        data.put("cluster_endpoint", ingressService);
+        data.put("cluster_address", clusterAddress);
+        data.put("cluster_router_https_port", clusterPort);
+
+        CommonServices commonServices = new CommonServices(instanceName, data);
+        AdminUIModel adminUIModel = createAdminUIModelWithICPCM(commonServices);
         Deployment userInterfaceDeployment = adminUIModel.getDeployment();
         final PodSpec uiPodSpec = userInterfaceDeployment.getSpec().getTemplate().getSpec();
         final List<Container> uiContainers = uiPodSpec.getContainers();

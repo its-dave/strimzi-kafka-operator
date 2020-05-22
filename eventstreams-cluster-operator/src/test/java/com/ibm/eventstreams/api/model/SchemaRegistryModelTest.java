@@ -12,7 +12,7 @@
  */
 package com.ibm.eventstreams.api.model;
 
-import com.ibm.commonservices.CommonServicesConfig;
+import com.ibm.commonservices.CommonServices;
 import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.EndpointServiceType;
 import com.ibm.eventstreams.api.model.utils.CustomMatchers;
@@ -81,7 +81,7 @@ public class SchemaRegistryModelTest {
     private final String instanceName = "test-instance";
     private final String componentPrefix = instanceName + "-" + AbstractModel.APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME;
     private final int defaultReplicas = 1;
-    private final CommonServicesConfig mockCommonServicesConfig = new CommonServicesConfig("mycluster", "ingress", "consoleHost", "443");
+    private final CommonServices mockCommonServices = new CommonServices(instanceName, ModelUtils.mockCommonServicesClusterData());
     private final String kafkaPrincipal = InternalKafkaUserModel.getInternalKafkaUserName(instanceName);
 
     @Mock
@@ -117,7 +117,7 @@ public class SchemaRegistryModelTest {
 
     private SchemaRegistryModel createDefaultSchemaRegistryModel() {
         EventStreams eventStreamsResource = createDefaultEventStreams().build();
-        return new SchemaRegistryModel(eventStreamsResource, imageConfig, null, mockCommonServicesConfig, kafkaPrincipal);
+        return new SchemaRegistryModel(eventStreamsResource, imageConfig, null, mockCommonServices, kafkaPrincipal);
     }
 
     @Test
@@ -184,7 +184,7 @@ public class SchemaRegistryModelTest {
         containerList.forEach(container -> {
             assertThat(container.getResources().getRequests().get("cpu").getAmount(), is("500m"));
             assertThat(container.getResources().getLimits().get("cpu").getAmount(), is("500m"));
-            if (container.getName() == SchemaRegistryModel.COMPONENT_NAME) {
+            if (container.getName().equals(SchemaRegistryModel.COMPONENT_NAME)) {
                 assertThat(container.getResources().getRequests().get("memory").getAmount(), is("256Mi"));
                 assertThat(container.getResources().getLimits().get("memory").getAmount(), is("256Mi"));
             } else {
@@ -223,7 +223,7 @@ public class SchemaRegistryModelTest {
                 .endSpec()
                 .build();
         SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(eventStreamsResource, Mockito.mock(
-            EventStreamsOperatorConfig.ImageLookup.class), null, mockCommonServicesConfig, kafkaPrincipal);
+            EventStreamsOperatorConfig.ImageLookup.class), null, mockCommonServices, kafkaPrincipal);
 
         List<Container> containerList = schemaRegistryModel.getDeployment().getSpec().getTemplate().getSpec().getContainers();
 
@@ -275,7 +275,7 @@ public class SchemaRegistryModelTest {
         expectedImages.put(SchemaRegistryModel.AVRO_SERVICE_CONTAINER_NAME, avroImage);
         expectedImages.put(SchemaRegistryModel.SCHEMA_REGISTRY_PROXY_CONTAINER_NAME, schemaRegistryProxyImage);
 
-        List<Container> containers = new SchemaRegistryModel(instance, imageConfig, null, mockCommonServicesConfig, kafkaPrincipal).getDeployment().getSpec().getTemplate()
+        List<Container> containers = new SchemaRegistryModel(instance, imageConfig, null, mockCommonServices, kafkaPrincipal).getDeployment().getSpec().getTemplate()
                 .getSpec().getContainers();
 
         ModelUtils.assertCorrectImageOverridesOnContainers(containers, expectedImages);
@@ -330,7 +330,7 @@ public class SchemaRegistryModelTest {
                 .endSpec()
                 .build();
 
-        List<Container> containers = new SchemaRegistryModel(instance, imageConfig, null, mockCommonServicesConfig, kafkaPrincipal).getDeployment().getSpec().getTemplate()
+        List<Container> containers = new SchemaRegistryModel(instance, imageConfig, null, mockCommonServices, kafkaPrincipal).getDeployment().getSpec().getTemplate()
                 .getSpec().getContainers();
 
         Map<String, String> expectedImages = new HashMap<>();
@@ -362,7 +362,7 @@ public class SchemaRegistryModelTest {
             .endSpec()
             .build();
 
-        assertThat(new SchemaRegistryModel(eventStreams, imageConfig, null, mockCommonServicesConfig, kafkaPrincipal).getServiceAccount()
+        assertThat(new SchemaRegistryModel(eventStreams, imageConfig, null, mockCommonServices, kafkaPrincipal).getServiceAccount()
                         .getImagePullSecrets(), contains(imagePullSecretOverride));
     }
 
@@ -382,7 +382,7 @@ public class SchemaRegistryModelTest {
             .endSpec()
             .build();
 
-        assertThat(new SchemaRegistryModel(eventStreams, imageConfig, null, mockCommonServicesConfig, kafkaPrincipal).getServiceAccount()
+        assertThat(new SchemaRegistryModel(eventStreams, imageConfig, null, mockCommonServices, kafkaPrincipal).getServiceAccount()
                         .getImagePullSecrets(), contains(imagePullSecretOverride));
     }
 
@@ -422,14 +422,14 @@ public class SchemaRegistryModelTest {
             .endSpec()
             .build();
 
-        assertThat(new SchemaRegistryModel(eventStreams, imageConfig, null, mockCommonServicesConfig, kafkaPrincipal).getServiceAccount()
+        assertThat(new SchemaRegistryModel(eventStreams, imageConfig, null, mockCommonServices, kafkaPrincipal).getServiceAccount()
                         .getImagePullSecrets(), containsInAnyOrder(globalPullSecretOverride, componentPullSecretOverride));
     }
 
     @Test
     public void testSchemaRegistryProxyAuthenticationEnvVarsSetWithNoAuth() {
         EventStreams defaultEs = createDefaultEventStreams().build();
-        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockCommonServicesConfig, kafkaPrincipal);
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockCommonServices, kafkaPrincipal);
 
         EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:RUNAS-ANONYMOUS,7443:RUNAS-ANONYMOUS").build();
         EnvVar endpoints = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7443:p2ptls").build();
@@ -444,7 +444,7 @@ public class SchemaRegistryModelTest {
     @Test
     public void testSchemaRegistryProxyAuthenticationEnvVarsWithAuth() {
         EventStreams defaultEs = createEventStreamsWithAuthorization().build();
-        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockCommonServicesConfig, kafkaPrincipal);
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockCommonServices, kafkaPrincipal);
 
         EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:IAM-BEARER;TLS;SCRAM-SHA-512,7443:IAM-BEARER;MAC").build();
         EnvVar endpoints = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7443:p2ptls").build();
@@ -459,7 +459,7 @@ public class SchemaRegistryModelTest {
     @Test
     public void testDefaultLogging() {
         EventStreams defaultEs = createDefaultEventStreams().build();
-        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockCommonServicesConfig, kafkaPrincipal);
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockCommonServices, kafkaPrincipal);
 
         EnvVar expectedEnvVar = new EnvVarBuilder()
                 .withName(SchemaRegistryModel.LOG_LEVEL_ENV_NAME)
@@ -485,7 +485,7 @@ public class SchemaRegistryModelTest {
                     .endSchemaRegistry()
                 .endSpec()
                 .build();
-        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockCommonServicesConfig, kafkaPrincipal);
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockCommonServices, kafkaPrincipal);
 
         EnvVar expectedEnvVar = new EnvVarBuilder()
                 .withName(SchemaRegistryModel.LOG_LEVEL_ENV_NAME)
@@ -507,7 +507,7 @@ public class SchemaRegistryModelTest {
                     .endSchemaRegistry()
                 .endSpec()
                 .build();
-        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockCommonServicesConfig, kafkaPrincipal);
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockCommonServices, kafkaPrincipal);
 
         EnvVar expectedEnvVar = new EnvVarBuilder()
                 .withName(SchemaRegistryModel.LOG_LEVEL_ENV_NAME)
@@ -529,7 +529,7 @@ public class SchemaRegistryModelTest {
                     .endSchemaRegistry()
                 .endSpec()
                 .build();
-        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockCommonServicesConfig, kafkaPrincipal);
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockCommonServices, kafkaPrincipal);
 
         EnvVar expectedEnvVar = new EnvVarBuilder()
                 .withName(SchemaRegistryModel.LOG_LEVEL_ENV_NAME)
@@ -543,7 +543,7 @@ public class SchemaRegistryModelTest {
     @Test
     public void testAvroDefaultLogging() {
         EventStreams defaultEs = createDefaultEventStreams().build();
-        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockCommonServicesConfig, kafkaPrincipal);
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockCommonServices, kafkaPrincipal);
 
         EnvVar expectedEnvVar = new EnvVarBuilder()
                 .withName(SchemaRegistryModel.AVRO_LOG_LEVEL_ENV_NAME)
@@ -571,7 +571,7 @@ public class SchemaRegistryModelTest {
                     .endSchemaRegistry()
                 .endSpec()
                 .build();
-        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockCommonServicesConfig, kafkaPrincipal);
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockCommonServices, kafkaPrincipal);
 
         EnvVar expectedEnvVar = new EnvVarBuilder()
                 .withName(SchemaRegistryModel.AVRO_LOG_LEVEL_ENV_NAME)
@@ -595,7 +595,7 @@ public class SchemaRegistryModelTest {
                     .endSchemaRegistry()
                 .endSpec()
                 .build();
-        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockCommonServicesConfig, kafkaPrincipal);
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockCommonServices, kafkaPrincipal);
 
         EnvVar expectedEnvVar = new EnvVarBuilder()
                 .withName(SchemaRegistryModel.AVRO_LOG_LEVEL_ENV_NAME)
@@ -619,7 +619,7 @@ public class SchemaRegistryModelTest {
                     .endSchemaRegistry()
                 .endSpec()
                 .build();
-        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockCommonServicesConfig, kafkaPrincipal);
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockCommonServices, kafkaPrincipal);
 
         EnvVar expectedEnvVar = new EnvVarBuilder()
                 .withName(SchemaRegistryModel.AVRO_LOG_LEVEL_ENV_NAME)
@@ -633,7 +633,7 @@ public class SchemaRegistryModelTest {
     @Test
     public void testCreateSchemaRegistryRouteWithTlsEncryption() {
         EventStreams eventStreams = createDefaultEventStreams().build();
-        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(eventStreams, imageConfig, null, mockCommonServicesConfig, kafkaPrincipal);
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(eventStreams, imageConfig, null, mockCommonServices, kafkaPrincipal);
         String expectedRouteName = instanceName + "-" + AbstractModel.APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME + "-" + Endpoint.DEFAULT_EXTERNAL_NAME;
         assertThat(schemaRegistryModel.getRoutes(), IsMapContaining.hasKey(expectedRouteName));
         assertThat(schemaRegistryModel.getRoutes().get(expectedRouteName).getSpec().getTls().getTermination(),  is("passthrough"));
@@ -642,7 +642,7 @@ public class SchemaRegistryModelTest {
     @Test
     public void testGenerationIdLabelOnDeployment() {
         EventStreams eventStreams = createDefaultEventStreams().build();
-        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(eventStreams, imageConfig, null, mockCommonServicesConfig, kafkaPrincipal);
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(eventStreams, imageConfig, null, mockCommonServices, kafkaPrincipal);
 
         assertThat(schemaRegistryModel.getDeployment("newID").getMetadata().getLabels().containsKey(AbstractSecureEndpointsModel.CERT_GENERATION_KEY), is(true));
         assertThat(schemaRegistryModel.getDeployment("newID").getMetadata().getLabels().get(AbstractSecureEndpointsModel.CERT_GENERATION_KEY), is("newID"));
@@ -656,7 +656,7 @@ public class SchemaRegistryModelTest {
 
         List<VolumeMount> volumeMounts = schemaRegistryModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getVolumeMounts();
 
-        assertThat(volumeMounts.size(), is(6));
+        assertThat(volumeMounts.size(), is(2));
 
         assertThat(volumeMounts.get(0).getName(), is(SchemaRegistryModel.TEMP_DIR_NAME));
         assertThat(volumeMounts.get(0).getMountPath(), is("/var/lib/tmp"));
@@ -664,29 +664,14 @@ public class SchemaRegistryModelTest {
         assertThat(volumeMounts.get(1).getName(), is(SchemaRegistryModel.SHARED_VOLUME_MOUNT_NAME));
         assertThat(volumeMounts.get(1).getMountPath(), is("/var/lib/schemas"));
 
-        assertThat(volumeMounts.get(2).getName(), is(AbstractSecureEndpointsModel.CERTS_VOLUME_MOUNT_NAME));
-        assertThat(volumeMounts.get(2).getReadOnly(), is(true));
-        assertThat(volumeMounts.get(2).getMountPath(), is(AbstractSecureEndpointsModel.CERTIFICATE_PATH));
-
-        assertThat(volumeMounts.get(3).getName(), is(AbstractSecureEndpointsModel.CLUSTER_CA_VOLUME_MOUNT_NAME));
-        assertThat(volumeMounts.get(3).getReadOnly(), is(true));
-        assertThat(volumeMounts.get(3).getMountPath(), is(AbstractSecureEndpointsModel.CLUSTER_CERTIFICATE_PATH));
-
-        assertThat(volumeMounts.get(4).getName(), is(AbstractSecureEndpointsModel.CLIENT_CA_VOLUME_MOUNT_NAME));
-        assertThat(volumeMounts.get(4).getReadOnly(), is(true));
-        assertThat(volumeMounts.get(4).getMountPath(), is(AbstractSecureEndpointsModel.CLIENT_CA_CERTIFICATE_PATH));
-
-        assertThat(volumeMounts.get(5).getName(), is(AbstractSecureEndpointsModel.KAFKA_USER_SECRET_VOLUME_NAME));
-        assertThat(volumeMounts.get(5).getReadOnly(), is(true));
-        assertThat(volumeMounts.get(5).getMountPath(), is(AbstractSecureEndpointsModel.KAFKA_USER_CERTIFICATE_PATH));
-
         // Test mounts for proxy
         List<VolumeMount> volumeMountsProxy = schemaRegistryModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(2).getVolumeMounts();
 
-        assertThat(volumeMountsProxy.size(), is(5));
-        assertThat(volumeMountsProxy.get(0).getName(), is(AbstractSecureEndpointsModel.IBMCLOUD_CA_VOLUME_MOUNT_NAME));
+        assertThat(volumeMountsProxy.size(), is(7));
+
+        assertThat(volumeMountsProxy.get(0).getName(), is("hmac-secret"));
         assertThat(volumeMountsProxy.get(0).getReadOnly(), is(true));
-        assertThat(volumeMountsProxy.get(0).getMountPath(), is(AbstractSecureEndpointsModel.IBMCLOUD_CA_CERTIFICATE_PATH));
+        assertThat(volumeMountsProxy.get(0).getMountPath(), is("/env/hmac"));
 
         assertThat(volumeMountsProxy.get(1).getName(), is(AbstractSecureEndpointsModel.CERTS_VOLUME_MOUNT_NAME));
         assertThat(volumeMountsProxy.get(1).getReadOnly(), is(true));
@@ -703,6 +688,14 @@ public class SchemaRegistryModelTest {
         assertThat(volumeMountsProxy.get(4).getName(), is(AbstractSecureEndpointsModel.KAFKA_USER_SECRET_VOLUME_NAME));
         assertThat(volumeMountsProxy.get(4).getReadOnly(), is(true));
         assertThat(volumeMountsProxy.get(4).getMountPath(), is(AbstractSecureEndpointsModel.KAFKA_USER_CERTIFICATE_PATH));
+
+        assertThat(volumeMountsProxy.get(5).getName(), is(CommonServices.IBMCLOUD_CA_VOLUME_MOUNT_NAME));
+        assertThat(volumeMountsProxy.get(5).getReadOnly(), is(true));
+        assertThat(volumeMountsProxy.get(5).getMountPath(), is(CommonServices.IBMCLOUD_CA_CERTIFICATE_PATH));
+
+        assertThat(volumeMountsProxy.get(6).getName(), is("oidc-secret"));
+        assertThat(volumeMountsProxy.get(6).getReadOnly(), is(true));
+        assertThat(volumeMountsProxy.get(6).getMountPath(), is("/env/commonServices"));
     }
 
     @Test
@@ -711,15 +704,18 @@ public class SchemaRegistryModelTest {
 
         List<Volume> volumes = schemaRegistryModel.getDeployment().getSpec().getTemplate().getSpec().getVolumes();
 
-        assertThat(volumes.size(), is(7));
+        assertThat(volumes.size(), is(9));
 
         assertThat(volumes.get(0).getName(), is(SchemaRegistryModel.TEMP_DIR_NAME));
-        assertThat(volumes.get(1).getName(), is(AbstractSecureEndpointsModel.IBMCLOUD_CA_VOLUME_MOUNT_NAME));
-        assertThat(volumes.get(2).getName(), is(SchemaRegistryModel.SHARED_VOLUME_MOUNT_NAME));
-        assertThat(volumes.get(3).getName(), is(AbstractSecureEndpointsModel.CERTS_VOLUME_MOUNT_NAME));
-        assertThat(volumes.get(4).getName(), is(AbstractSecureEndpointsModel.CLUSTER_CA_VOLUME_MOUNT_NAME));
-        assertThat(volumes.get(5).getName(), is(AbstractSecureEndpointsModel.CLIENT_CA_VOLUME_MOUNT_NAME));
-        assertThat(volumes.get(6).getName(), is(AbstractSecureEndpointsModel.KAFKA_USER_SECRET_VOLUME_NAME));
+        assertThat(volumes.get(1).getName(), is(CommonServices.IBMCLOUD_CA_VOLUME_MOUNT_NAME));
+        assertThat(volumes.get(2).getName(), is("oidc-secret"));
+        assertThat(volumes.get(3).getName(), is(SchemaRegistryModel.SHARED_VOLUME_MOUNT_NAME));
+        assertThat(volumes.get(4).getName(), is(AbstractSecureEndpointsModel.CERTS_VOLUME_MOUNT_NAME));
+        assertThat(volumes.get(5).getName(), is(AbstractSecureEndpointsModel.CLUSTER_CA_VOLUME_MOUNT_NAME));
+        assertThat(volumes.get(6).getName(), is(AbstractSecureEndpointsModel.CLIENT_CA_VOLUME_MOUNT_NAME));
+        assertThat(volumes.get(7).getName(), is(AbstractSecureEndpointsModel.KAFKA_USER_SECRET_VOLUME_NAME));
+        assertThat(volumes.get(8).getName(), is("hmac-secret"));
+
     }
 
     @Test
@@ -736,7 +732,7 @@ public class SchemaRegistryModelTest {
                 .endSchemaRegistry()
             .endSpec()
             .build();
-        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(eventStreams, imageConfig, null, mockCommonServicesConfig, kafkaPrincipal);
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(eventStreams, imageConfig, null, mockCommonServices, kafkaPrincipal);
 
         PersistentVolumeClaim pvc = schemaRegistryModel.getPersistentVolumeClaim();
         assertThat("Owner Reference should be empty by default so that pvcs are not deleted",
@@ -768,7 +764,7 @@ public class SchemaRegistryModelTest {
                 .endSchemaRegistry()
             .endSpec()
             .build();
-        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(eventStreams, imageConfig, null, mockCommonServicesConfig, kafkaPrincipal);
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(eventStreams, imageConfig, null, mockCommonServices, kafkaPrincipal);
 
         PersistentVolumeClaim pvc = schemaRegistryModel.getPersistentVolumeClaim();
 
@@ -783,10 +779,16 @@ public class SchemaRegistryModelTest {
     public void testWhenICPClusterDataEnvironmentVariablesSet() {
         String ingressEndpoint = "https://ingress-endpoint.cs-ns.svc:443";
         String clusterName = "test-cluster";
-        CommonServicesConfig commonServicesConfig = new CommonServicesConfig(clusterName, ingressEndpoint, "consoleHost", "443");
+        Map<String, String> data = new HashMap<>();
+        data.put("cluster_name", clusterName);
+        data.put("cluster_endpoint", ingressEndpoint);
+        data.put("cluster_address", "consoleHost");
+        data.put("cluster_router_https_port", "443");
+
+        CommonServices commonServices = new CommonServices(instanceName, data);
 
         EventStreams eventStreams = createDefaultEventStreams().build();
-        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(eventStreams, imageConfig, null, commonServicesConfig, kafkaPrincipal);
+        SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(eventStreams, imageConfig, null, commonServices, kafkaPrincipal);
 
         EnvVar expectedEnvVarIAMClusterName = new EnvVarBuilder().withName("IAM_CLUSTER_NAME").withValue(clusterName).build();
         EnvVar expectedEnvVarIAMClusterEndpoint = new EnvVarBuilder().withName("IAM_SERVER_URL").withValue(ingressEndpoint).build();

@@ -39,6 +39,7 @@ import io.strimzi.operator.common.model.Labels;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -123,6 +124,15 @@ public class ModelUtils {
             String expectedImage = imageOverrides.get(name);
             assertThat("Container " + name, image, is(expectedImage));
         });
+    }
+
+    public static Map<String, String> mockCommonServicesClusterData() {
+        Map<String, String> data = new HashMap<>();
+        data.put("cluster_name", "mycluster");
+        data.put("cluster_endpoint", "ingress");
+        data.put("cluster_address", "consoleHost");
+        data.put("cluster_router_https_port", "443");
+        return data;
     }
 
     public enum Certificates {

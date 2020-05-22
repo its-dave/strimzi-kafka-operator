@@ -25,6 +25,8 @@ import io.fabric8.kubernetes.api.model.ServicePort;
 import io.fabric8.kubernetes.api.model.ServicePortBuilder;
 import io.fabric8.kubernetes.api.model.Volume;
 import io.fabric8.kubernetes.api.model.VolumeBuilder;
+import io.fabric8.kubernetes.api.model.VolumeMount;
+import io.fabric8.kubernetes.api.model.VolumeMountBuilder;
 import io.fabric8.openshift.api.model.Route;
 import io.fabric8.openshift.api.model.TLSConfig;
 import io.strimzi.certs.CertAndKey;
@@ -58,18 +60,14 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
     private static final String ENDPOINTS_ENV_VAR_KEY = "ENDPOINTS";
     private static final String TLS_VERSION_ENV_VAR_KEY = "TLS_VERSION";
 
-
     public static final String CERTS_VOLUME_MOUNT_NAME = "certs";
     public static final String CLIENT_CA_VOLUME_MOUNT_NAME = "client-ca";
     public static final String CLUSTER_CA_VOLUME_MOUNT_NAME = "cluster-ca";
-    public static final String CERTIFICATE_PATH = "/certs";
+    public static final String HMAC_VOLUME_MOUNT_NAME = "hmac-secret";
+    public static final String HMAC_ENVIRONMENT_PATH = ENVIRONMENT_PATH + "/hmac";
     public static final String KAFKA_USER_CERTIFICATE_PATH = CERTIFICATE_PATH + "/user";
     public static final String CLUSTER_CERTIFICATE_PATH = CERTIFICATE_PATH + "/cluster";
     public static final String CLIENT_CA_CERTIFICATE_PATH = CERTIFICATE_PATH + "/client";
-    public static final String IBMCLOUD_CA_CERTIFICATE_PATH = CERTIFICATE_PATH + File.separator + "ibmcloud";
-    public static final String IBMCLOUD_CA_VOLUME_MOUNT_NAME = "ibmcloud";
-    public static final String CLIENT_ID_KEY = "CLIENT_ID";
-    public static final String CLIENT_SECRET_KEY = "CLIENT_SECRET";
 
     public static final String SSL_TRUSTSTORE_P12_PATH_ENV_KEY = "SSL_TRUSTSTORE_P12_PATH";
     public static final String SSL_TRUSTSTORE_P12_PASSWORD_ENV_KEY = "SSL_TRUSTSTORE_P12_PASSWORD";
@@ -240,26 +238,27 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
      * for an external endpoint to be configured with a client's certificate.
      * @return the necessary volumes to mount
      */
-    protected List<Volume> getSecurityVolumes() {
+    protected List<Volume> securityVolumes() {
         List<Volume> volumes = new ArrayList<>();
 
-        volumes.add(getCertsVolume());
+        volumes.add(certsVolume());
 
         volumes.add(new VolumeBuilder()
             .withNewName(CLUSTER_CA_VOLUME_MOUNT_NAME)
             .withNewSecret()
-            .withNewSecretName(EventStreamsKafkaModel.getKafkaClusterCaCertName(getInstanceName()))
-            .addNewItem().withNewKey(CA_CERT).withNewPath("ca.crt").endItem()
-            .addNewItem().withNewKey(CA_P12).withNewPath("ca.p12").endItem()
+                .withNewSecretName(EventStreamsKafkaModel.getKafkaClusterCaCertName(getInstanceName()))
+                .addNewItem().withNewKey(CA_CERT).withNewPath(CA_CERT).endItem()
+                .addNewItem().withNewKey(CA_P12).withNewPath(CA_P12).endItem()
+                .addNewItem().withNewKey(CA_P12_PASS).withNewPath(CA_P12_PASS).endItem()
             .endSecret()
             .build());
 
         volumes.add(new VolumeBuilder()
             .withNewName(CLIENT_CA_VOLUME_MOUNT_NAME)
             .withNewSecret()
-            .withNewSecretName(EventStreamsKafkaModel.getKafkaClientCaCertName(getInstanceName()))
-            .addNewItem().withNewKey(CA_P12).withNewPath("ca.p12").endItem()
-            .addNewItem().withNewKey(CA_CERT).withNewPath("ca.crt").endItem()
+                .withNewSecretName(EventStreamsKafkaModel.getKafkaClientCaCertName(getInstanceName()))
+                .addNewItem().withNewKey(CA_P12).withNewPath(CA_P12).endItem()
+                .addNewItem().withNewKey(CA_CERT).withNewPath(CA_CERT).endItem()
             .endSecret()
             .build());
 
@@ -268,12 +267,30 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
         return volumes;
     }
 
-    protected Volume getCertsVolume() {
+    protected Volume certsVolume() {
         return new VolumeBuilder()
                 .withNewName(CERTS_VOLUME_MOUNT_NAME)
                 .withNewSecret()
-                .withNewSecretName(getCertificateSecretName()) //mount everything in the secret into this volume
+                    .withNewSecretName(getCertificateSecretName()) //mount everything in the secret into this volume
                 .endSecret()
+                .build();
+    }
+
+    protected Volume hmacVolume() {
+        return new VolumeBuilder()
+                .withNewName(HMAC_VOLUME_MOUNT_NAME)
+                .withNewSecret()
+                    .withNewSecretName(MessageAuthenticationModel.getSecretName(getInstanceName()))
+                    .addNewItem().withNewKey(MessageAuthenticationModel.HMAC_SECRET).withNewPath(MessageAuthenticationModel.HMAC_SECRET).endItem()
+                .endSecret()
+                .build();
+    }
+
+    protected VolumeMount hmacVolumeMount() {
+        return new VolumeMountBuilder()
+                .withNewName(HMAC_VOLUME_MOUNT_NAME)
+                .withMountPath(HMAC_ENVIRONMENT_PATH)
+                .withNewReadOnly(true)
                 .build();
     }
 
@@ -305,6 +322,13 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
             .endVolumeMount();
     }
 
+    protected EnvVar hmacSecretEnvVar() {
+        return new EnvVarBuilder()
+                .withName("HMAC_SECRET")
+                .withValue("file://" + HMAC_ENVIRONMENT_PATH + File.separator + MessageAuthenticationModel.HMAC_SECRET)
+                .build();
+    }
+
     /**
      * Method to create appropriate AUTHENTICATION and ENDPOINTS env vars based on the configuration of the endpoints.
      */
@@ -333,26 +357,10 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
         envVars.addAll(Arrays.asList(
             new EnvVarBuilder().withName(SSL_TRUSTSTORE_P12_PATH_ENV_KEY).withValue(CLUSTER_CERTIFICATE_PATH + File.separator + CA_P12).build(),
             new EnvVarBuilder().withName(SSL_TRUSTSTORE_CRT_PATH_ENV_KEY).withValue(CLUSTER_CERTIFICATE_PATH + File.separator + CA_CERT).build(),
+            new EnvVarBuilder().withName(SSL_TRUSTSTORE_P12_PASSWORD_ENV_KEY).withValue("file://" + CLUSTER_CERTIFICATE_PATH + File.separator +  CA_P12_PASS).build(),
             new EnvVarBuilder().withName(CLIENT_CA_PATH_ENV_KEY).withValue(CLIENT_CA_CERTIFICATE_PATH + File.separator + CA_CERT).build(),
-            new EnvVarBuilder()
-                .withName(SSL_TRUSTSTORE_P12_PASSWORD_ENV_KEY)
-                .withNewValueFrom()
-                .withNewSecretKeyRef()
-                .withName(EventStreamsKafkaModel.getKafkaClusterCaCertName(getInstanceName()))
-                .withKey(CA_P12_PASS)
-                .endSecretKeyRef()
-                .endValueFrom()
-                .build(),
             new EnvVarBuilder().withName(SSL_KEYSTORE_PATH_ENV_KEY).withValue(KAFKA_USER_CERTIFICATE_PATH + File.separator + USER_P12).build(),
-            new EnvVarBuilder()
-                .withName(SSL_KEYSTORE_PASSWORD_PATH_ENV_KEY)
-                .withNewValueFrom()
-                .withNewSecretKeyRef()
-                .withName(InternalKafkaUserModel.getInternalKafkaUserSecretName(getInstanceName()))
-                .withKey(USER_P12_PASS)
-                .endSecretKeyRef()
-                .endValueFrom()
-                .build(),
+            new EnvVarBuilder().withName(SSL_KEYSTORE_PASSWORD_PATH_ENV_KEY).withValue("file://" + KAFKA_USER_CERTIFICATE_PATH + File.separator +  USER_P12_PASS).build(),
             new EnvVarBuilder().withName(SSL_ENABLED_ENV_KEY).withValue(tlsEnabled().toString()).build()
             ));
     }

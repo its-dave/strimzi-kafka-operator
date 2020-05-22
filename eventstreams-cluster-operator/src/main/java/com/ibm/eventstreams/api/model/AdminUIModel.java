@@ -12,7 +12,7 @@
  */
 package com.ibm.eventstreams.api.model;
 
-import com.ibm.commonservices.CommonServicesConfig;
+import com.ibm.commonservices.CommonServices;
 import com.ibm.eventstreams.api.DefaultResourceRequirements;
 import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.TlsVersion;
@@ -95,7 +95,7 @@ public class AdminUIModel extends AbstractModel {
     private io.strimzi.api.kafka.model.Probe redisLivenessProbe;
     private io.strimzi.api.kafka.model.Probe redisReadinessProbe;
     private String traceString;
-    private CommonServicesConfig commonServicesConfig;
+    private CommonServices commonServices;
     private String cloudPakHeaderURL;
     private String oidcSecretName;
     private TlsVersion crTlsVersionValue;
@@ -107,17 +107,17 @@ public class AdminUIModel extends AbstractModel {
      * @param instance
      * @param imageConfig
      * @param hasRoutes
-     * @param commonServicesConfig
+     * @param commonServices
      */
     public AdminUIModel(EventStreams instance,
                         EventStreamsOperatorConfig.ImageLookup imageConfig,
                         Boolean hasRoutes,
-                        CommonServicesConfig commonServicesConfig,
+                        CommonServices commonServices,
                         String cloudPakHeaderURL) {
 
         super(instance, COMPONENT_NAME, APPLICATION_NAME);
 
-        this.commonServicesConfig = commonServicesConfig;
+        this.commonServices = commonServices;
         this.cloudPakHeaderURL = cloudPakHeaderURL;
         this.oidcSecretName = ClientModel.getSecretName(getInstanceName());
 
@@ -377,11 +377,11 @@ public class AdminUIModel extends AbstractModel {
         envVarDefaults.add(new EnvVarBuilder().withName("ICP_USER_MGMT_PORT").withValue("443").build());
         envVarDefaults.add(new EnvVarBuilder().withName("ICP_USER_MGMT_HIGHEST_ROLE_FOR_CRN").withValue("idmgmt/identity/api/v1/teams/highestRole").build());
 
-        if (commonServicesConfig != null) {
-            String clusterIp = commonServicesConfig.getConsoleHost();
-            String secureClusterPort = commonServicesConfig.getConsolePort();
-            String iamClusterName = commonServicesConfig.getClusterName();
-            String iamIp = commonServicesConfig.getIngressServiceNameAndNamespace();
+        if (commonServices != null) {
+            String clusterIp = commonServices.getConsoleHost();
+            String secureClusterPort = commonServices.getConsolePort();
+            String iamClusterName = commonServices.getClusterName();
+            String iamIp = commonServices.getIngressServiceNameAndNamespace();
             envVarDefaults.add(new EnvVarBuilder().withName("CLUSTER_EXTERNAL_IP").withValue(clusterIp).build());
             envVarDefaults.add(new EnvVarBuilder().withName("CLUSTER_EXTERNAL_PORT").withValue(secureClusterPort).build());
             envVarDefaults.add(new EnvVarBuilder().withName("IAM_CLUSTER_NAME").withValue(iamClusterName).build());

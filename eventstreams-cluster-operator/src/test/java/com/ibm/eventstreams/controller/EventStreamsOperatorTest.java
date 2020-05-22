@@ -13,7 +13,7 @@
 
 package com.ibm.eventstreams.controller;
 
-import com.ibm.commonservices.CommonServicesConfig;
+import com.ibm.commonservices.CommonServices;
 import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.EndpointServiceType;
 import com.ibm.eventstreams.api.ProductUse;
@@ -665,7 +665,7 @@ public class EventStreamsOperatorTest {
         mockRoutes();
 
         // mock an exception when attempting to get Management Ingress Config Map
-        when(mockClient.configMaps().inNamespace(OPERATOR_NAMESPACE)).thenThrow(new KubernetesClientException("Exception"));
+        when(mockClient.configMaps().inNamespace(OPERATOR_NAMESPACE)).thenThrow(new KubernetesClientException("Unable to connect to kubernetes"));
 
         esOperator = createDefaultEventStreamsOperator(true);
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
@@ -673,7 +673,7 @@ public class EventStreamsOperatorTest {
         Checkpoint async = context.checkpoint();
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster)
             .onComplete(context.failing(e -> context.verify(() -> {
-                assertThat(e.getMessage(), is("Exit Reconcile as IAM not present"));
+                assertThat(e.getMessage(), is("Unable to connect to kubernetes"));
 
                 ArgumentCaptor<EventStreams> argument = ArgumentCaptor.forClass(EventStreams.class);
                 verify(esResourceOperator, times(3)).updateEventStreamsStatus(argument.capture());
@@ -692,8 +692,8 @@ public class EventStreamsOperatorTest {
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
 
-        reconciliationState.getCommonServicesConfig().onComplete(context.succeeding(state -> context.verify(() -> {
-            CommonServicesConfig config = state.commonServicesConfig;
+        reconciliationState.getCommonServices().onComplete(context.succeeding(state -> context.verify(() -> {
+            CommonServices config = state.commonServices;
             assertThat(config.getClusterName(), is(IAM_CLUSTER_NAME));
             assertThat(config.getIngressServiceNameAndNamespace(), is(INGRESS_SERVICE));
             assertThat(config.getIngressEndpoint(), is(CLUSTER_ENDPOINT));
@@ -1121,7 +1121,7 @@ public class EventStreamsOperatorTest {
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
-        reconciliationState.commonServicesConfig = new CommonServicesConfig("mycluster", "ingress", "consoleHost", "443");
+        reconciliationState.commonServices = new CommonServices(CLUSTER_NAME, ModelUtils.mockCommonServicesClusterData());
 
         ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, new SecurityComponentSpec(), componentName, "endpoint-component-label");
         List<Endpoint> endpoints = endpointModel.createEndpoints(esCluster, new SecurityComponentSpec());
@@ -1153,7 +1153,7 @@ public class EventStreamsOperatorTest {
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
-        reconciliationState.commonServicesConfig = new CommonServicesConfig("mycluster", "ingress", "consoleHost", "443");
+        reconciliationState.commonServices = new CommonServices(CLUSTER_NAME, ModelUtils.mockCommonServicesClusterData());
 
         EndpointSpec internal = new EndpointSpecBuilder()
             .withName("internal")
@@ -1192,7 +1192,7 @@ public class EventStreamsOperatorTest {
 
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
-        reconciliationState.commonServicesConfig = new CommonServicesConfig("mycluster", "ingress", "consoleHost", "443");
+        reconciliationState.commonServices = new CommonServices(CLUSTER_NAME, ModelUtils.mockCommonServicesClusterData());
 
         EndpointSpec internal = new EndpointSpecBuilder()
             .withName("internal")
@@ -1229,7 +1229,7 @@ public class EventStreamsOperatorTest {
         esCluster.getSpec().setSecurity(new SecuritySpecBuilder().withInternalTls(TlsVersion.TLS_V1_2).build());
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
-        reconciliationState.commonServicesConfig = new CommonServicesConfig("mycluster", "ingress", "consoleHost", "443");
+        reconciliationState.commonServices = new CommonServices(CLUSTER_NAME, ModelUtils.mockCommonServicesClusterData());
 
         EndpointSpec plainInternal = new EndpointSpecBuilder()
             .withName("route")
@@ -1272,7 +1272,7 @@ public class EventStreamsOperatorTest {
         esCluster.getSpec().setSecurity(new SecuritySpecBuilder().withInternalTls(TlsVersion.TLS_V1_2).build());
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
-        reconciliationState.commonServicesConfig = new CommonServicesConfig("mycluster", "ingress", "consoleHost", "443");
+        reconciliationState.commonServices = new CommonServices(CLUSTER_NAME, ModelUtils.mockCommonServicesClusterData());
 
         EndpointSpec route = new EndpointSpecBuilder()
             .withName("route")
@@ -1324,7 +1324,7 @@ public class EventStreamsOperatorTest {
         esCluster.getSpec().setSecurity(new SecuritySpecBuilder().withInternalTls(TlsVersion.TLS_V1_2).build());
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
-        reconciliationState.commonServicesConfig = new CommonServicesConfig("mycluster", "ingress", "consoleHost", "443");
+        reconciliationState.commonServices = new CommonServices(CLUSTER_NAME, ModelUtils.mockCommonServicesClusterData());
 
         EndpointSpec tlsInternal = new EndpointSpecBuilder()
             .withName("internal")
@@ -1361,7 +1361,7 @@ public class EventStreamsOperatorTest {
         esCluster.getSpec().setSecurity(new SecuritySpecBuilder().withInternalTls(TlsVersion.TLS_V1_2).build());
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
-        reconciliationState.commonServicesConfig = new CommonServicesConfig("mycluster", "ingress", "consoleHost", "443");
+        reconciliationState.commonServices = new CommonServices(CLUSTER_NAME, ModelUtils.mockCommonServicesClusterData());
 
         EndpointSpec tlsInternal = new EndpointSpecBuilder()
             .withName("internal")
@@ -1398,7 +1398,7 @@ public class EventStreamsOperatorTest {
         esCluster.getSpec().setSecurity(new SecuritySpecBuilder().withInternalTls(TlsVersion.TLS_V1_2).build());
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
-        reconciliationState.commonServicesConfig = new CommonServicesConfig("mycluster", "ingress", "consoleHost", "443");
+        reconciliationState.commonServices = new CommonServices(CLUSTER_NAME, ModelUtils.mockCommonServicesClusterData());
 
         EndpointSpec tlsInternal = new EndpointSpecBuilder()
             .withName("internal")
@@ -1438,7 +1438,7 @@ public class EventStreamsOperatorTest {
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         esCluster.getSpec().setSecurity(new SecuritySpecBuilder().withInternalTls(TlsVersion.TLS_V1_2).build());
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
-        reconciliationState.commonServicesConfig = new CommonServicesConfig("mycluster", "ingress", "consoleHost", "443");
+        reconciliationState.commonServices = new CommonServices(CLUSTER_NAME, ModelUtils.mockCommonServicesClusterData());
 
         EndpointSpec tlsRoute = new EndpointSpecBuilder()
             .withName("route")
@@ -1502,7 +1502,7 @@ public class EventStreamsOperatorTest {
         Checkpoint async = context.checkpoint(1);
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
-        reconciliationState.commonServicesConfig = new CommonServicesConfig("mycluster", "ingress", "consoleHost", "443");
+        reconciliationState.commonServices = new CommonServices(CLUSTER_NAME, ModelUtils.mockCommonServicesClusterData());
 
         CertAndKeySecretSource certOverrides = new CertAndKeySecretSourceBuilder()
             .withSecretName(secretName)
@@ -1566,7 +1566,7 @@ public class EventStreamsOperatorTest {
         Checkpoint async = context.checkpoint();
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
-        reconciliationState.commonServicesConfig = new CommonServicesConfig("mycluster", "ingress", "consoleHost", "443");
+        reconciliationState.commonServices = new CommonServices(CLUSTER_NAME, ModelUtils.mockCommonServicesClusterData());
 
         CertAndKeySecretSource certOverrides = new CertAndKeySecretSourceBuilder()
             .withSecretName(secretName)
@@ -1618,7 +1618,7 @@ public class EventStreamsOperatorTest {
         Checkpoint async = context.checkpoint(2);
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState state = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
-        state.commonServicesConfig = new CommonServicesConfig("mycluster", "ingress", "consoleHost", "443");
+        state.commonServices = new CommonServices(CLUSTER_NAME, ModelUtils.mockCommonServicesClusterData());
 
         CompositeFuture.join(state.createRestProducer(Date::new),
             state.createSchemaRegistry(Date::new),
@@ -1962,7 +1962,7 @@ public class EventStreamsOperatorTest {
         Checkpoint async = context.checkpoint(3);
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
-        reconciliationState.commonServicesConfig = new CommonServicesConfig("mycluster", "ingress", "consoleHost", "443");
+        reconciliationState.commonServices = new CommonServices(CLUSTER_NAME, ModelUtils.mockCommonServicesClusterData());
 
         reconciliationState.createRestProducer(Date::new)
             .compose(v -> reconciliationState.createSchemaRegistry(Date::new))
@@ -2358,7 +2358,7 @@ public class EventStreamsOperatorTest {
             .build());
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
-        reconciliationState.commonServicesConfig = new CommonServicesConfig("mycluster", "ingress", "consoleHost", "443");
+        reconciliationState.commonServices = new CommonServices(CLUSTER_NAME, ModelUtils.mockCommonServicesClusterData());
 
         Checkpoint async = context.checkpoint();
 
@@ -2395,7 +2395,7 @@ public class EventStreamsOperatorTest {
             .build());
         Reconciliation reconciliation = new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME);
         EventStreamsOperator.ReconciliationState reconciliationState = esOperator.new ReconciliationState(reconciliation, esCluster, new EventStreamsOperatorConfig.ImageLookup(Collections.emptyMap(), "Always", Collections.emptyList()));
-        reconciliationState.commonServicesConfig = new CommonServicesConfig("mycluster", "ingress", "consoleHost", "443");
+        reconciliationState.commonServices = new CommonServices(CLUSTER_NAME, ModelUtils.mockCommonServicesClusterData());
 
         Checkpoint async = context.checkpoint();
 

@@ -12,7 +12,7 @@
  */
 package com.ibm.eventstreams.api.model;
 
-import com.ibm.commonservices.CommonServicesConfig;
+import com.ibm.commonservices.CommonServices;
 import com.ibm.eventstreams.api.DefaultResourceRequirements;
 import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.EndpointServiceType;
@@ -24,7 +24,6 @@ import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.spec.ImagesSpec;
 import com.ibm.eventstreams.api.spec.SchemaRegistrySpec;
 import com.ibm.eventstreams.controller.EventStreamsOperatorConfig;
-import com.ibm.commonservices.api.model.ClientModel;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.ContainerBuilder;
 import io.fabric8.kubernetes.api.model.EnvVar;
@@ -51,7 +50,6 @@ import io.strimzi.api.kafka.model.storage.Storage;
 import io.strimzi.api.kafka.model.template.PodTemplate;
 import io.strimzi.operator.cluster.model.ModelUtils;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -82,11 +80,10 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
     private static final String DEFAULT_IBMCOM_AVRO_IMAGE = "ibmcom/avro:latest";
     private static final String DEFAULT_IBMCOM_SCHEMA_REGISTRY_PROXY_IMAGE = "ibmcom/schema-proxy:latest";
 
-    private static final String CERTS_VOLUME_MOUNT_NAME = "certs";
-
     private String logString;
     private String avroLogString;
     private String proxyTraceString;
+    private CommonServices commonServices;
 
     // deployable objects
     private Deployment deployment;
@@ -101,9 +98,6 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
     private String schemaRegistryProxyImage;
     private List<ContainerEnvVar> schemaRegistryProxyEnvVars;
     private ResourceRequirements schemaRegistryProxyResourceRequirements;
-    private final String iamClusterName;
-    private final String iamServerURL;
-    private final String ibmcloudCASecretName;
     private final String internalKafkaUsername;
     private final boolean kafkaAuthorizationEnabled;
 
@@ -116,23 +110,20 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
      * @param instance
      * @param imageConfig
      * @param kafkaListeners
-     * @param commonServicesConfig
+     * @param commonServices
      * @param internalKafkaUsername
      */
     public SchemaRegistryModel(EventStreams instance,
                                EventStreamsOperatorConfig.ImageLookup imageConfig,
                                List<ListenerStatus> kafkaListeners,
-                               CommonServicesConfig commonServicesConfig,
+                               CommonServices commonServices,
                                String internalKafkaUsername) {
 
         super(instance, COMPONENT_NAME, APPLICATION_NAME);
         this.kafkaListeners = kafkaListeners != null ? new ArrayList<>(kafkaListeners) : new ArrayList<>();
-        this.iamClusterName = commonServicesConfig.getClusterName();
-        this.iamServerURL = commonServicesConfig.getIngressEndpoint();
         this.internalKafkaUsername = internalKafkaUsername;
         this.kafkaAuthorizationEnabled = isKafkaAuthorizationEnabled(instance);
-
-        ibmcloudCASecretName = ClusterSecretsModel.getIBMCloudSecretName(getInstanceName());
+        this.commonServices = commonServices;
 
         Optional<SchemaRegistrySpec> schemaRegistrySpec = Optional.ofNullable(instance.getSpec()).map(EventStreamsSpec::getSchemaRegistry);
 
@@ -258,15 +249,9 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
             .build();
         volumes.add(temp);
 
-        // Add The IAM Specific Volumes.  If we need to build without IAM Support we can put a variable check
-        // here.
-        volumes.add(new VolumeBuilder()
-            .withNewName(IBMCLOUD_CA_VOLUME_MOUNT_NAME)
-            .withNewSecret()
-            .withNewSecretName(ibmcloudCASecretName)
-            .addNewItem().withNewKey(CA_CERT).withNewPath(CA_CERT).endItem()
-            .endSecret()
-            .build());
+        if (commonServices.isPresent()) {
+            volumes.addAll(commonServices.volumes());
+        }
 
         if (storage instanceof PersistentClaimStorage) {
             Volume sharedPersistentVolume = new VolumeBuilder()
@@ -285,7 +270,8 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
             volumes.add(sharedEphemeralVolume);
         }
 
-        volumes.addAll(getSecurityVolumes());
+        volumes.addAll(securityVolumes());
+        volumes.add(hmacVolume());
 
         return volumes;
     }
@@ -314,16 +300,7 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
             new EnvVarBuilder().withName("SCHEMA_DATA_DIRECTORY").withValue("/var/lib/schemas").build(),
             new EnvVarBuilder().withName("SCHEMA_TEMP_DIRECTORY").withValue("/var/lib/tmp").build(),
             new EnvVarBuilder().withName("ESFF_SECURITY_AUTHZ").withValue("false").build(),
-            new EnvVarBuilder().withName("ENDPOINTS").withValue(SCHEMA_REGISTRY_PORT + ":").build(),
-            new EnvVarBuilder()
-                .withName("HMAC_SECRET")
-                .withNewValueFrom()
-                .withNewSecretKeyRef()
-                .withName(MessageAuthenticationModel.getSecretName(getInstanceName()))
-                .withKey(MessageAuthenticationModel.HMAC_SECRET)
-                .endSecretKeyRef()
-                .endValueFrom()
-                .build()
+            new EnvVarBuilder().withName("ENDPOINTS").withValue(SCHEMA_REGISTRY_PORT + ":").build()
         ));
 
         List<EnvVar> envVars = combineEnvVarListsNoDuplicateKeys(envVarDefaults);
@@ -345,7 +322,6 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
             .withLivenessProbe(createLivenessProbe())
             .withReadinessProbe(createReadinessProbe());
 
-        configureSecurityVolumeMounts(builder);
         return builder.build();
     }
 
@@ -416,7 +392,6 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
             new EnvVarBuilder().withName("NAMESPACE").withValue(getNamespace()).build(),
             new EnvVarBuilder().withName("EXTERNAL_IP").withValue("123.456.789").build(),
             new EnvVarBuilder().withName("LOG_LEVEL").withValue(avroLogString).build()
-            // new EnvVarBuilder().withName("EXTERNAL_IP").withNewValueFrom().withNewSecretKeyRef("proxy", "externalHostOrIp", false).endValueFrom().build()
         );
 
         List<EnvVar> envVars = combineEnvVarListsNoDuplicateKeys(envVarDefaults, avroEnvVars);
@@ -491,18 +466,15 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
             .withEnv(envVars)
             .withSecurityContext(getSecurityContext(false))
             .withResources(getResourceRequirements(schemaRegistryProxyResourceRequirements, DefaultResourceRequirements.SCHEMA_PROXY))
+            .withVolumeMounts(hmacVolumeMount())
             .withLivenessProbe(createProxyLivenessProbe())
             .withReadinessProbe(createProxyReadinessProbe());
 
-        // Add The IAM Specific Volume mount. If we need to build without IAM Support we can put a variable check
-        // here.
-        containerBuilder.addNewVolumeMount()
-            .withNewName(IBMCLOUD_CA_VOLUME_MOUNT_NAME)
-            .withMountPath(IBMCLOUD_CA_CERTIFICATE_PATH)
-            .withNewReadOnly(true)
-            .endVolumeMount();
-
         configureSecurityVolumeMounts(containerBuilder);
+
+        if (commonServices.isPresent()) {
+            containerBuilder.addAllToVolumeMounts(commonServices.volumeMounts());
+        }
 
         return containerBuilder.build();
     }
@@ -513,8 +485,6 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
      */
     private List<EnvVar> getSchemaRegistryProxyEnvVars() {
 
-        String oidcSecretName = ClientModel.getSecretName(getInstanceName());
-
         List<EnvVar> envVars = new ArrayList<>();
         envVars.addAll(Arrays.asList(
             new EnvVarBuilder().withName("RELEASE").withValue(getInstanceName()).build(),
@@ -523,39 +493,12 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
             new EnvVarBuilder().withName("AUTHORIZATION_ENABLED").withValue(Boolean.toString(kafkaAuthorizationEnabled)).build(),
             new EnvVarBuilder().withName("TRACE_SPEC").withValue(proxyTraceString).build(),
             new EnvVarBuilder().withName("KAFKA_PRINCIPAL").withValue(internalKafkaUsername).build(),
-            new EnvVarBuilder()
-                .withName("HMAC_SECRET")
-                .withNewValueFrom()
-                .withNewSecretKeyRef()
-                .withName(MessageAuthenticationModel.getSecretName(getInstanceName()))
-                .withKey(MessageAuthenticationModel.HMAC_SECRET)
-                .endSecretKeyRef()
-                .endValueFrom()
-                .build(),
-            // Add The IAM Specific Envars.  If we need to build without IAM Support we can put a variable check
-            // here.
-            new EnvVarBuilder().withName("IAM_CLUSTER_NAME").withValue(iamClusterName).build(),
-            new EnvVarBuilder().withName("IAM_SERVER_URL").withValue(iamServerURL).build(),
-            new EnvVarBuilder().withName("IAM_SERVER_CA_CERT").withValue(IBMCLOUD_CA_CERTIFICATE_PATH + File.separator + CA_CERT).build(),
-            new EnvVarBuilder()
-                .withName("CLIENT_ID")
-                .withNewValueFrom()
-                .withNewSecretKeyRef()
-                .withName(oidcSecretName)
-                .withKey(CLIENT_ID_KEY)
-                .endSecretKeyRef()
-                .endValueFrom()
-                .build(),
-            new EnvVarBuilder()
-                .withName("CLIENT_SECRET")
-                .withNewValueFrom()
-                .withNewSecretKeyRef()
-                .withName(oidcSecretName)
-                .withKey(CLIENT_SECRET_KEY)
-                .endSecretKeyRef()
-                .endValueFrom()
-                .build()
+            hmacSecretEnvVar()
         ));
+
+        if (commonServices.isPresent()) {
+            envVars.addAll(commonServices.envVars());
+        }
 
         // Optionally add the kafka bootstrap URLs if present
         getInternalKafkaBootstrap(kafkaListeners).ifPresent(internalBootstrap ->

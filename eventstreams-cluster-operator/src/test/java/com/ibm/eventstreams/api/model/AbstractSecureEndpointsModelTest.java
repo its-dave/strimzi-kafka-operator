@@ -28,6 +28,7 @@ import com.ibm.eventstreams.api.spec.SecuritySpecBuilder;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.ContainerBuilder;
 import io.fabric8.kubernetes.api.model.EnvVar;
+import io.fabric8.kubernetes.api.model.EnvVarBuilder;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.Volume;
 import io.fabric8.openshift.api.model.Route;
@@ -56,6 +57,7 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.aMapWithSize;
 import static org.hamcrest.Matchers.hasEntry;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 
 public class AbstractSecureEndpointsModelTest {
@@ -349,7 +351,7 @@ public class AbstractSecureEndpointsModelTest {
 
         ComponentModel model = new ComponentModel(instance, securityComponentSpec);
 
-        List<Volume> volumes = model.getSecurityVolumes();
+        List<Volume> volumes = model.securityVolumes();
 
         assertThat(volumes, hasSize(4));
 
@@ -358,11 +360,13 @@ public class AbstractSecureEndpointsModelTest {
 
         assertThat(volumes.get(1).getName(), is("cluster-ca"));
         assertThat(volumes.get(1).getSecret().getSecretName(), is(EventStreamsKafkaModel.getKafkaClusterCaCertName(instanceName)));
-        assertThat(volumes.get(1).getSecret().getItems(), hasSize(2));
+        assertThat(volumes.get(1).getSecret().getItems(), hasSize(3));
         assertThat(volumes.get(1).getSecret().getItems().get(0).getKey(), is("ca.crt"));
         assertThat(volumes.get(1).getSecret().getItems().get(0).getPath(), is("ca.crt"));
         assertThat(volumes.get(1).getSecret().getItems().get(1).getKey(), is("ca.p12"));
         assertThat(volumes.get(1).getSecret().getItems().get(1).getPath(), is("ca.p12"));
+        assertThat(volumes.get(1).getSecret().getItems().get(2).getKey(), is("ca.password"));
+        assertThat(volumes.get(1).getSecret().getItems().get(2).getPath(), is("ca.password"));
 
         assertThat(volumes.get(2).getName(), is("client-ca"));
         assertThat(volumes.get(2).getSecret().getSecretName(), is(EventStreamsKafkaModel.getKafkaClientCaCertName(instanceName)));
@@ -374,13 +378,15 @@ public class AbstractSecureEndpointsModelTest {
 
         assertThat(volumes.get(3).getName(), is(KAFKA_USER_SECRET_VOLUME_NAME));
         assertThat(volumes.get(3).getSecret().getSecretName(), is(String.format("%s-ibm-es-kafka-user", instanceName)));
-        assertThat(volumes.get(3).getSecret().getItems(), hasSize(3));
+        assertThat(volumes.get(3).getSecret().getItems(), hasSize(4));
         assertThat(volumes.get(3).getSecret().getItems().get(0).getKey(), is("user.crt"));
         assertThat(volumes.get(3).getSecret().getItems().get(0).getPath(), is("user.crt"));
         assertThat(volumes.get(3).getSecret().getItems().get(1).getKey(), is("user.key"));
         assertThat(volumes.get(3).getSecret().getItems().get(1).getPath(), is("user.key"));
         assertThat(volumes.get(3).getSecret().getItems().get(2).getKey(), is("user.p12"));
         assertThat(volumes.get(3).getSecret().getItems().get(2).getPath(), is("user.p12"));
+        assertThat(volumes.get(3).getSecret().getItems().get(3).getKey(), is("user.password"));
+        assertThat(volumes.get(3).getSecret().getItems().get(3).getPath(), is("user.password"));
     }
 
     @Test
@@ -400,7 +406,7 @@ public class AbstractSecureEndpointsModelTest {
             .build();
 
         ComponentModel model = new ComponentModel(instance, securityComponentSpec);
-        List<Volume> volumes = model.getSecurityVolumes();
+        List<Volume> volumes = model.securityVolumes();
 
         assertThat(volumes, hasSize(4));
 
@@ -409,11 +415,13 @@ public class AbstractSecureEndpointsModelTest {
 
         assertThat(volumes.get(1).getName(), is("cluster-ca"));
         assertThat(volumes.get(1).getSecret().getSecretName(), is(EventStreamsKafkaModel.getKafkaClusterCaCertName(instanceName)));
-        assertThat(volumes.get(1).getSecret().getItems(), hasSize(2));
+        assertThat(volumes.get(1).getSecret().getItems(), hasSize(3));
         assertThat(volumes.get(1).getSecret().getItems().get(0).getKey(), is("ca.crt"));
         assertThat(volumes.get(1).getSecret().getItems().get(0).getPath(), is("ca.crt"));
         assertThat(volumes.get(1).getSecret().getItems().get(1).getKey(), is("ca.p12"));
         assertThat(volumes.get(1).getSecret().getItems().get(1).getPath(), is("ca.p12"));
+        assertThat(volumes.get(1).getSecret().getItems().get(2).getKey(), is("ca.password"));
+        assertThat(volumes.get(1).getSecret().getItems().get(2).getPath(), is("ca.password"));
 
         assertThat(volumes.get(2).getName(), is("client-ca"));
         assertThat(volumes.get(2).getSecret().getSecretName(), is(EventStreamsKafkaModel.getKafkaClientCaCertName(instanceName)));
@@ -423,13 +431,15 @@ public class AbstractSecureEndpointsModelTest {
 
         assertThat(volumes.get(3).getName(), is(KAFKA_USER_SECRET_VOLUME_NAME));
         assertThat(volumes.get(3).getSecret().getSecretName(), is(String.format("%s-ibm-es-kafka-user", instanceName)));
-        assertThat(volumes.get(3).getSecret().getItems(), hasSize(3));
+        assertThat(volumes.get(3).getSecret().getItems(), hasSize(4));
         assertThat(volumes.get(3).getSecret().getItems().get(0).getKey(), is("user.crt"));
         assertThat(volumes.get(3).getSecret().getItems().get(0).getPath(), is("user.crt"));
         assertThat(volumes.get(3).getSecret().getItems().get(1).getKey(), is("user.key"));
         assertThat(volumes.get(3).getSecret().getItems().get(1).getPath(), is("user.key"));
         assertThat(volumes.get(3).getSecret().getItems().get(2).getKey(), is("user.p12"));
         assertThat(volumes.get(3).getSecret().getItems().get(2).getPath(), is("user.p12"));
+        assertThat(volumes.get(3).getSecret().getItems().get(3).getKey(), is("user.password"));
+        assertThat(volumes.get(3).getSecret().getItems().get(3).getPath(), is("user.password"));
     }
 
     @Test
@@ -484,26 +494,27 @@ public class AbstractSecureEndpointsModelTest {
 
         assertThat(envVars, hasSize(10));
 
-        assertThat(envVars.get(0).getName(), is("AUTHENTICATION"));
-        assertThat(envVars.get(0).getValue(), is("9443:RUNAS-ANONYMOUS,7443:RUNAS-ANONYMOUS"));
-        assertThat(envVars.get(1).getName(), is("ENDPOINTS"));
-        assertThat(envVars.get(1).getValue(), is("9443:external,7443:p2ptls"));
-        assertThat(envVars.get(2).getName(), is("TLS_VERSION"));
-        assertThat(envVars.get(2).getValue(), is("9443:TLSv1.2,7443:TLSv1.2"));
-        assertThat(envVars.get(3).getName(), is(SSL_TRUSTSTORE_P12_PATH_ENV_KEY));
-        assertThat(envVars.get(3).getValue(), is("/certs/cluster/ca.p12"));
-        assertThat(envVars.get(4).getName(), is(SSL_TRUSTSTORE_CRT_PATH_ENV_KEY));
-        assertThat(envVars.get(4).getValue(), is("/certs/cluster/ca.crt"));
-        assertThat(envVars.get(5).getName(), is(CLIENT_CA_PATH_ENV_KEY));
-        assertThat(envVars.get(5).getValue(), is("/certs/client/ca.crt"));
-        assertThat(envVars.get(6).getName(), is(SSL_TRUSTSTORE_P12_PASSWORD_ENV_KEY));
-        assertThat(envVars.get(6).getValueFrom().getSecretKeyRef().getName(), is(EventStreamsKafkaModel.getKafkaClusterCaCertName(instanceName)));
-        assertThat(envVars.get(7).getName(), is(SSL_KEYSTORE_PATH_ENV_KEY));
-        assertThat(envVars.get(7).getValue(), is("/certs/user/user.p12"));
-        assertThat(envVars.get(8).getName(), is(SSL_KEYSTORE_PASSWORD_PATH_ENV_KEY));
-        assertThat(envVars.get(8).getValueFrom().getSecretKeyRef().getName(), is(InternalKafkaUserModel.getInternalKafkaUserSecretName(instanceName)));
-        assertThat(envVars.get(9).getName(), is(SSL_ENABLED_ENV_KEY));
-        assertThat(envVars.get(9).getValue(), is("true"));
+        EnvVar authenticationEnvVar = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:RUNAS-ANONYMOUS,7443:RUNAS-ANONYMOUS").build();
+        EnvVar endpointsEnvVar = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7443:p2ptls").build();
+        EnvVar tlsEnvVar = new EnvVarBuilder().withName("TLS_VERSION").withValue("9443:TLSv1.2,7443:TLSv1.2").build();
+        EnvVar truststoreP12EnvVar = new EnvVarBuilder().withName(SSL_TRUSTSTORE_P12_PATH_ENV_KEY).withValue("/certs/cluster/ca.p12").build();
+        EnvVar truststoreCertEnvVar = new EnvVarBuilder().withName(SSL_TRUSTSTORE_CRT_PATH_ENV_KEY).withValue("/certs/cluster/ca.crt").build();
+        EnvVar clientCaEnvVar = new EnvVarBuilder().withName(CLIENT_CA_PATH_ENV_KEY).withValue("/certs/client/ca.crt").build();
+        EnvVar truststorePassEnvVar = new EnvVarBuilder().withName(SSL_TRUSTSTORE_P12_PASSWORD_ENV_KEY).withValue("file:///certs/cluster/ca.password").build();
+        EnvVar keystoreEnvVar = new EnvVarBuilder().withName(SSL_KEYSTORE_PATH_ENV_KEY).withValue("/certs/user/user.p12").build();
+        EnvVar keystorePassEnvVar = new EnvVarBuilder().withName(SSL_KEYSTORE_PASSWORD_PATH_ENV_KEY).withValue("file:///certs/user/user.password").build();
+        EnvVar sslEnabledEnvVar = new EnvVarBuilder().withName(SSL_ENABLED_ENV_KEY).withValue("true").build();
+
+        assertThat(envVars, hasItem(authenticationEnvVar));
+        assertThat(envVars, hasItem(endpointsEnvVar));
+        assertThat(envVars, hasItem(tlsEnvVar));
+        assertThat(envVars, hasItem(truststoreP12EnvVar));
+        assertThat(envVars, hasItem(truststoreCertEnvVar));
+        assertThat(envVars, hasItem(clientCaEnvVar));
+        assertThat(envVars, hasItem(truststorePassEnvVar));
+        assertThat(envVars, hasItem(keystoreEnvVar));
+        assertThat(envVars, hasItem(keystorePassEnvVar));
+        assertThat(envVars, hasItem(sslEnabledEnvVar));
     }
 
     @Test
@@ -517,26 +528,27 @@ public class AbstractSecureEndpointsModelTest {
 
         assertThat(envVars, hasSize(10));
 
-        assertThat(envVars.get(0).getName(), is("AUTHENTICATION"));
-        assertThat(envVars.get(0).getValue(), is("9443:IAM-BEARER;TLS;SCRAM-SHA-512,7443:RUNAS-ANONYMOUS"));
-        assertThat(envVars.get(1).getName(), is("ENDPOINTS"));
-        assertThat(envVars.get(1).getValue(), is("9443:external,7443:p2ptls"));
-        assertThat(envVars.get(2).getName(), is("TLS_VERSION"));
-        assertThat(envVars.get(2).getValue(), is("9443:TLSv1.2,7443:TLSv1.2"));
-        assertThat(envVars.get(3).getName(), is(SSL_TRUSTSTORE_P12_PATH_ENV_KEY));
-        assertThat(envVars.get(3).getValue(), is("/certs/cluster/ca.p12"));
-        assertThat(envVars.get(4).getName(), is(SSL_TRUSTSTORE_CRT_PATH_ENV_KEY));
-        assertThat(envVars.get(4).getValue(), is("/certs/cluster/ca.crt"));
-        assertThat(envVars.get(5).getName(), is(CLIENT_CA_PATH_ENV_KEY));
-        assertThat(envVars.get(5).getValue(), is("/certs/client/ca.crt"));
-        assertThat(envVars.get(6).getName(), is(SSL_TRUSTSTORE_P12_PASSWORD_ENV_KEY));
-        assertThat(envVars.get(6).getValueFrom().getSecretKeyRef().getName(), is(EventStreamsKafkaModel.getKafkaClusterCaCertName(instanceName)));
-        assertThat(envVars.get(7).getName(), is(SSL_KEYSTORE_PATH_ENV_KEY));
-        assertThat(envVars.get(7).getValue(), is("/certs/user/user.p12"));
-        assertThat(envVars.get(8).getName(), is(SSL_KEYSTORE_PASSWORD_PATH_ENV_KEY));
-        assertThat(envVars.get(8).getValueFrom().getSecretKeyRef().getName(), is(InternalKafkaUserModel.getInternalKafkaUserSecretName(instanceName)));
-        assertThat(envVars.get(9).getName(), is(SSL_ENABLED_ENV_KEY));
-        assertThat(envVars.get(9).getValue(), is("true"));
+        EnvVar authenticationEnvVar = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:IAM-BEARER;TLS;SCRAM-SHA-512,7443:RUNAS-ANONYMOUS").build();
+        EnvVar endpointsEnvVar = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7443:p2ptls").build();
+        EnvVar tlsEnvVar = new EnvVarBuilder().withName("TLS_VERSION").withValue("9443:TLSv1.2,7443:TLSv1.2").build();
+        EnvVar truststoreP12EnvVar = new EnvVarBuilder().withName(SSL_TRUSTSTORE_P12_PATH_ENV_KEY).withValue("/certs/cluster/ca.p12").build();
+        EnvVar truststoreCertEnvVar = new EnvVarBuilder().withName(SSL_TRUSTSTORE_CRT_PATH_ENV_KEY).withValue("/certs/cluster/ca.crt").build();
+        EnvVar clientCaEnvVar = new EnvVarBuilder().withName(CLIENT_CA_PATH_ENV_KEY).withValue("/certs/client/ca.crt").build();
+        EnvVar truststorePassEnvVar = new EnvVarBuilder().withName(SSL_TRUSTSTORE_P12_PASSWORD_ENV_KEY).withValue("file:///certs/cluster/ca.password").build();
+        EnvVar keystoreEnvVar = new EnvVarBuilder().withName(SSL_KEYSTORE_PATH_ENV_KEY).withValue("/certs/user/user.p12").build();
+        EnvVar keystorePassEnvVar = new EnvVarBuilder().withName(SSL_KEYSTORE_PASSWORD_PATH_ENV_KEY).withValue("file:///certs/user/user.password").build();
+        EnvVar sslEnabledEnvVar = new EnvVarBuilder().withName(SSL_ENABLED_ENV_KEY).withValue("true").build();
+
+        assertThat(envVars, hasItem(authenticationEnvVar));
+        assertThat(envVars, hasItem(endpointsEnvVar));
+        assertThat(envVars, hasItem(tlsEnvVar));
+        assertThat(envVars, hasItem(truststoreP12EnvVar));
+        assertThat(envVars, hasItem(truststoreCertEnvVar));
+        assertThat(envVars, hasItem(clientCaEnvVar));
+        assertThat(envVars, hasItem(truststorePassEnvVar));
+        assertThat(envVars, hasItem(keystoreEnvVar));
+        assertThat(envVars, hasItem(keystorePassEnvVar));
+        assertThat(envVars, hasItem(sslEnabledEnvVar));
     }
 
     @Test
@@ -554,26 +566,27 @@ public class AbstractSecureEndpointsModelTest {
 
         assertThat(envVars, hasSize(10));
 
-        assertThat(envVars.get(0).getName(), is("AUTHENTICATION"));
-        assertThat(envVars.get(0).getValue(), is("9443:IAM-BEARER;TLS;SCRAM-SHA-512,9444:RUNAS-ANONYMOUS,7443:RUNAS-ANONYMOUS"));
-        assertThat(envVars.get(1).getName(), is("ENDPOINTS"));
-        assertThat(envVars.get(1).getValue(), is("9443:required-field,9444:no-auth,7443:p2ptls"));
-        assertThat(envVars.get(2).getName(), is("TLS_VERSION"));
-        assertThat(envVars.get(2).getValue(), is("9443:TLSv1.2,9444:TLSv1.2,7443:TLSv1.2"));
-        assertThat(envVars.get(3).getName(), is(SSL_TRUSTSTORE_P12_PATH_ENV_KEY));
-        assertThat(envVars.get(3).getValue(), is("/certs/cluster/ca.p12"));
-        assertThat(envVars.get(4).getName(), is(SSL_TRUSTSTORE_CRT_PATH_ENV_KEY));
-        assertThat(envVars.get(4).getValue(), is("/certs/cluster/ca.crt"));
-        assertThat(envVars.get(5).getName(), is(CLIENT_CA_PATH_ENV_KEY));
-        assertThat(envVars.get(5).getValue(), is("/certs/client/ca.crt"));
-        assertThat(envVars.get(6).getName(), is(SSL_TRUSTSTORE_P12_PASSWORD_ENV_KEY));
-        assertThat(envVars.get(6).getValueFrom().getSecretKeyRef().getName(), is(EventStreamsKafkaModel.getKafkaClusterCaCertName(instanceName)));
-        assertThat(envVars.get(7).getName(), is(SSL_KEYSTORE_PATH_ENV_KEY));
-        assertThat(envVars.get(7).getValue(), is("/certs/user/user.p12"));
-        assertThat(envVars.get(8).getName(), is(SSL_KEYSTORE_PASSWORD_PATH_ENV_KEY));
-        assertThat(envVars.get(8).getValueFrom().getSecretKeyRef().getName(), is(InternalKafkaUserModel.getInternalKafkaUserSecretName(instanceName)));
-        assertThat(envVars.get(9).getName(), is(SSL_ENABLED_ENV_KEY));
-        assertThat(envVars.get(9).getValue(), is("true"));
+        EnvVar authenticationEnvVar = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:IAM-BEARER;TLS;SCRAM-SHA-512,9444:RUNAS-ANONYMOUS,7443:RUNAS-ANONYMOUS").build();
+        EnvVar endpointsEnvVar = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:required-field,9444:no-auth,7443:p2ptls").build();
+        EnvVar tlsEnvVar = new EnvVarBuilder().withName("TLS_VERSION").withValue("9443:TLSv1.2,9444:TLSv1.2,7443:TLSv1.2").build();
+        EnvVar truststoreP12EnvVar = new EnvVarBuilder().withName(SSL_TRUSTSTORE_P12_PATH_ENV_KEY).withValue("/certs/cluster/ca.p12").build();
+        EnvVar truststoreCertEnvVar = new EnvVarBuilder().withName(SSL_TRUSTSTORE_CRT_PATH_ENV_KEY).withValue("/certs/cluster/ca.crt").build();
+        EnvVar clientCaEnvVar = new EnvVarBuilder().withName(CLIENT_CA_PATH_ENV_KEY).withValue("/certs/client/ca.crt").build();
+        EnvVar truststorePassEnvVar = new EnvVarBuilder().withName(SSL_TRUSTSTORE_P12_PASSWORD_ENV_KEY).withValue("file:///certs/cluster/ca.password").build();
+        EnvVar keystoreEnvVar = new EnvVarBuilder().withName(SSL_KEYSTORE_PATH_ENV_KEY).withValue("/certs/user/user.p12").build();
+        EnvVar keystorePassEnvVar = new EnvVarBuilder().withName(SSL_KEYSTORE_PASSWORD_PATH_ENV_KEY).withValue("file:///certs/user/user.password").build();
+        EnvVar sslEnabledEnvVar = new EnvVarBuilder().withName(SSL_ENABLED_ENV_KEY).withValue("true").build();
+
+        assertThat(envVars, hasItem(authenticationEnvVar));
+        assertThat(envVars, hasItem(endpointsEnvVar));
+        assertThat(envVars, hasItem(tlsEnvVar));
+        assertThat(envVars, hasItem(truststoreP12EnvVar));
+        assertThat(envVars, hasItem(truststoreCertEnvVar));
+        assertThat(envVars, hasItem(clientCaEnvVar));
+        assertThat(envVars, hasItem(truststorePassEnvVar));
+        assertThat(envVars, hasItem(keystoreEnvVar));
+        assertThat(envVars, hasItem(keystorePassEnvVar));
+        assertThat(envVars, hasItem(sslEnabledEnvVar));
     }
 
     @Test
@@ -591,26 +604,27 @@ public class AbstractSecureEndpointsModelTest {
 
         assertThat(envVars, hasSize(10));
 
-        assertThat(envVars.get(0).getName(), is("AUTHENTICATION"));
-        assertThat(envVars.get(0).getValue(), is("9080:IAM-BEARER;TLS;SCRAM-SHA-512,8080:TLS,7443:RUNAS-ANONYMOUS"));
-        assertThat(envVars.get(1).getName(), is("ENDPOINTS"));
-        assertThat(envVars.get(1).getValue(), is("9080,8080:fully-configured,7443:p2ptls"));
-        assertThat(envVars.get(2).getName(), is("TLS_VERSION"));
-        assertThat(envVars.get(2).getValue(), is("9080,8080:TLSv1.2,7443:TLSv1.2"));
-        assertThat(envVars.get(3).getName(), is(SSL_TRUSTSTORE_P12_PATH_ENV_KEY));
-        assertThat(envVars.get(3).getValue(), is("/certs/cluster/ca.p12"));
-        assertThat(envVars.get(4).getName(), is(SSL_TRUSTSTORE_CRT_PATH_ENV_KEY));
-        assertThat(envVars.get(4).getValue(), is("/certs/cluster/ca.crt"));
-        assertThat(envVars.get(5).getName(), is(CLIENT_CA_PATH_ENV_KEY));
-        assertThat(envVars.get(5).getValue(), is("/certs/client/ca.crt"));
-        assertThat(envVars.get(6).getName(), is(SSL_TRUSTSTORE_P12_PASSWORD_ENV_KEY));
-        assertThat(envVars.get(6).getValueFrom().getSecretKeyRef().getName(), is(EventStreamsKafkaModel.getKafkaClusterCaCertName(instanceName)));
-        assertThat(envVars.get(7).getName(), is(SSL_KEYSTORE_PATH_ENV_KEY));
-        assertThat(envVars.get(7).getValue(), is("/certs/user/user.p12"));
-        assertThat(envVars.get(8).getName(), is(SSL_KEYSTORE_PASSWORD_PATH_ENV_KEY));
-        assertThat(envVars.get(8).getValueFrom().getSecretKeyRef().getName(), is(InternalKafkaUserModel.getInternalKafkaUserSecretName(instanceName)));
-        assertThat(envVars.get(9).getName(), is(SSL_ENABLED_ENV_KEY));
-        assertThat(envVars.get(9).getValue(), is("true"));
+        EnvVar authenticationEnvVar = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9080:IAM-BEARER;TLS;SCRAM-SHA-512,8080:TLS,7443:RUNAS-ANONYMOUS").build();
+        EnvVar endpointsEnvVar = new EnvVarBuilder().withName("ENDPOINTS").withValue("9080,8080:fully-configured,7443:p2ptls").build();
+        EnvVar tlsEnvVar = new EnvVarBuilder().withName("TLS_VERSION").withValue("9080,8080:TLSv1.2,7443:TLSv1.2").build();
+        EnvVar truststoreP12EnvVar = new EnvVarBuilder().withName(SSL_TRUSTSTORE_P12_PATH_ENV_KEY).withValue("/certs/cluster/ca.p12").build();
+        EnvVar truststoreCertEnvVar = new EnvVarBuilder().withName(SSL_TRUSTSTORE_CRT_PATH_ENV_KEY).withValue("/certs/cluster/ca.crt").build();
+        EnvVar clientCaEnvVar = new EnvVarBuilder().withName(CLIENT_CA_PATH_ENV_KEY).withValue("/certs/client/ca.crt").build();
+        EnvVar truststorePassEnvVar = new EnvVarBuilder().withName(SSL_TRUSTSTORE_P12_PASSWORD_ENV_KEY).withValue("file:///certs/cluster/ca.password").build();
+        EnvVar keystoreEnvVar = new EnvVarBuilder().withName(SSL_KEYSTORE_PATH_ENV_KEY).withValue("/certs/user/user.p12").build();
+        EnvVar keystorePassEnvVar = new EnvVarBuilder().withName(SSL_KEYSTORE_PASSWORD_PATH_ENV_KEY).withValue("file:///certs/user/user.password").build();
+        EnvVar sslEnabledEnvVar = new EnvVarBuilder().withName(SSL_ENABLED_ENV_KEY).withValue("true").build();
+
+        assertThat(envVars, hasItem(authenticationEnvVar));
+        assertThat(envVars, hasItem(endpointsEnvVar));
+        assertThat(envVars, hasItem(tlsEnvVar));
+        assertThat(envVars, hasItem(truststoreP12EnvVar));
+        assertThat(envVars, hasItem(truststoreCertEnvVar));
+        assertThat(envVars, hasItem(clientCaEnvVar));
+        assertThat(envVars, hasItem(truststorePassEnvVar));
+        assertThat(envVars, hasItem(keystoreEnvVar));
+        assertThat(envVars, hasItem(keystorePassEnvVar));
+        assertThat(envVars, hasItem(sslEnabledEnvVar));
     }
 
     @Test

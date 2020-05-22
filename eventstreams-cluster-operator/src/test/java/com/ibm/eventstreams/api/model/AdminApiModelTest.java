@@ -12,7 +12,7 @@
  */
 package com.ibm.eventstreams.api.model;
 
-import com.ibm.commonservices.CommonServicesConfig;
+import com.ibm.commonservices.CommonServices;
 import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.EndpointServiceType;
 import com.ibm.eventstreams.api.TlsVersion;
@@ -90,8 +90,8 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 public class AdminApiModelTest {
 
-    private final CommonServicesConfig mockCommonServicesConfig = new CommonServicesConfig("mycluster", "ingress", "consoleHost", "443");
     private final String instanceName = "test-instance";
+    private final CommonServices mockCommonServices = new CommonServices(instanceName, ModelUtils.mockCommonServicesClusterData());
     private final String componentPrefix = instanceName + "-" + AbstractModel.APP_NAME + "-" + AdminApiModel.COMPONENT_NAME;
     private final String apiVersion = "apiVersion";
     private final int defaultReplicas = 1;
@@ -154,12 +154,12 @@ public class AdminApiModelTest {
 
     private AdminApiModel createDefaultAdminApiModel() {
         EventStreams eventStreamsResource = createDefaultEventStreams().build();
-        return new AdminApiModel(eventStreamsResource, imageConfig, listeners, mockCommonServicesConfig, false, kafkaPrincipal);
+        return new AdminApiModel(eventStreamsResource, imageConfig, listeners, mockCommonServices, false, kafkaPrincipal);
     }
 
     private AdminApiModel createAdminApiModelWithAuthentication() {
         EventStreams eventStreamsResource = createEventStreamsWithAuthentication().build();
-        return new AdminApiModel(eventStreamsResource, imageConfig, listeners, mockCommonServicesConfig, false, kafkaPrincipal);
+        return new AdminApiModel(eventStreamsResource, imageConfig, listeners, mockCommonServices, false, kafkaPrincipal);
     }
 
     @Test
@@ -283,7 +283,7 @@ public class AdminApiModelTest {
     @Test
     public void testAdminApiEnvVarsWithEventStreamsGeoReplicator() {
         EventStreams eventStreams = createDefaultEventStreams().build();
-        AdminApiModel adminApiModel = new AdminApiModel(eventStreams, imageConfig, null, mockCommonServicesConfig, true, kafkaPrincipal);
+        AdminApiModel adminApiModel = new AdminApiModel(eventStreams, imageConfig, null, mockCommonServices, true, kafkaPrincipal);
 
         EnvVar geoRepEnabledEnv = new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue("true").build();
 
@@ -316,7 +316,7 @@ public class AdminApiModelTest {
                     .endAdminApi()
                 .endSpec()
                 .build();
-        AdminApiModel adminApiModel = new AdminApiModel(eventStreamsResource, imageConfig, listeners, mockCommonServicesConfig, false, kafkaPrincipal);
+        AdminApiModel adminApiModel = new AdminApiModel(eventStreamsResource, imageConfig, listeners, mockCommonServices, false, kafkaPrincipal);
 
         ResourceRequirements resourceRequirements = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getResources();
         assertThat(resourceRequirements.getRequests().get("cpu").getAmount(), is("200m"));
@@ -374,7 +374,7 @@ public class AdminApiModelTest {
                     .build())
                 .endSpec()
                 .build();
-        AdminApiModel adminApiModel = new AdminApiModel(eventStreams, imageConfig, listeners, mockCommonServicesConfig, false, kafkaPrincipal);
+        AdminApiModel adminApiModel = new AdminApiModel(eventStreams, imageConfig, listeners, mockCommonServices, false, kafkaPrincipal);
 
         NetworkPolicy networkPolicy = adminApiModel.getNetworkPolicy();
         assertThat(networkPolicy.getMetadata().getName(), is(componentPrefix));
@@ -424,7 +424,7 @@ public class AdminApiModelTest {
         Map<String, String> expectedImages = new HashMap<>();
         expectedImages.put(AdminApiModel.ADMIN_API_CONTAINER_NAME, adminApiImage);
 
-        List<Container> containers = new AdminApiModel(instance, imageConfig, listeners, mockCommonServicesConfig, false, kafkaPrincipal).getDeployment().getSpec().getTemplate()
+        List<Container> containers = new AdminApiModel(instance, imageConfig, listeners, mockCommonServices, false, kafkaPrincipal).getDeployment().getSpec().getTemplate()
                 .getSpec().getContainers();
 
         ModelUtils.assertCorrectImageOverridesOnContainers(containers, expectedImages);
@@ -460,7 +460,7 @@ public class AdminApiModelTest {
                 .endSpec()
                 .build();
 
-        AdminApiModel adminApiModel = new AdminApiModel(instance, imageConfig, listeners, mockCommonServicesConfig, false, kafkaPrincipal);
+        AdminApiModel adminApiModel = new AdminApiModel(instance, imageConfig, listeners, mockCommonServices, false, kafkaPrincipal);
         assertThat(adminApiModel.getImage(), is(adminApiImage));
         assertTrue(adminApiModel.getCustomImage());
 
@@ -493,7 +493,7 @@ public class AdminApiModelTest {
             .endSpec()
             .build();
 
-        assertThat(new AdminApiModel(eventStreams, imageConfig, listeners, mockCommonServicesConfig, false, kafkaPrincipal).getServiceAccount()
+        assertThat(new AdminApiModel(eventStreams, imageConfig, listeners, mockCommonServices, false, kafkaPrincipal).getServiceAccount()
                         .getImagePullSecrets(), contains(imagePullSecretOverride));
     }
 
@@ -513,7 +513,7 @@ public class AdminApiModelTest {
             .endSpec()
             .build();
 
-        assertThat(new AdminApiModel(eventStreams, imageConfig, listeners, mockCommonServicesConfig, false, kafkaPrincipal).getServiceAccount()
+        assertThat(new AdminApiModel(eventStreams, imageConfig, listeners, mockCommonServices, false, kafkaPrincipal).getServiceAccount()
                         .getImagePullSecrets(), contains(imagePullSecretOverride));
     }
 
@@ -541,7 +541,7 @@ public class AdminApiModelTest {
                 .endSpec()
                 .build();
 
-        AdminApiModel adminApiModel = new AdminApiModel(eventStreams, imageConfig, listeners, mockCommonServicesConfig, false, kafkaPrincipal);
+        AdminApiModel adminApiModel = new AdminApiModel(eventStreams, imageConfig, listeners, mockCommonServices, false, kafkaPrincipal);
         assertThat(adminApiModel.getImage(), is(customImageName));
         assertFalse(adminApiModel.getCustomImage());
     }
@@ -571,14 +571,14 @@ public class AdminApiModelTest {
             .endSpec()
             .build();
 
-        assertThat(new AdminApiModel(eventStreams, imageConfig, listeners, mockCommonServicesConfig, false, kafkaPrincipal).getServiceAccount()
+        assertThat(new AdminApiModel(eventStreams, imageConfig, listeners, mockCommonServices, false, kafkaPrincipal).getServiceAccount()
                         .getImagePullSecrets(), containsInAnyOrder(globalPullSecretOverride, componentPullSecretOverride));
     }
 
     @Test
     public void testAdminApiContainerHasRoleBinding() {
         EventStreams defaultEs = createDefaultEventStreams().build();
-        AdminApiModel adminApiModel = new AdminApiModel(defaultEs, imageConfig, listeners, mockCommonServicesConfig, false, kafkaPrincipal);
+        AdminApiModel adminApiModel = new AdminApiModel(defaultEs, imageConfig, listeners, mockCommonServices, false, kafkaPrincipal);
 
         List<Subject> subjects = adminApiModel.getRoleBinding().getSubjects();
         RoleRef roleReference = adminApiModel.getRoleBinding().getRoleRef();
@@ -627,7 +627,7 @@ public class AdminApiModelTest {
         listeners.add(internalPlainListener);
         listeners.add(externalListener);
 
-        AdminApiModel adminApiModel = new AdminApiModel(defaultEs, imageConfig, listeners, mockCommonServicesConfig, false, kafkaPrincipal);
+        AdminApiModel adminApiModel = new AdminApiModel(defaultEs, imageConfig, listeners, mockCommonServices, false, kafkaPrincipal);
 
         EnvVar kafkaBootstrapServersEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_SERVERS").withValue(kafkaPlainHost + ":" + kafkaPlainPort).build();
         EnvVar kafkaBootstrapInternalPlainUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_INTERNAL_PLAIN_URL").withValue(kafkaPlainHost + ":" + kafkaPlainPort).build();
@@ -681,7 +681,7 @@ public class AdminApiModelTest {
         listeners.add(internalTlsListener);
         listeners.add(externalListener);
 
-        AdminApiModel adminApiModel = new AdminApiModel(defaultEs, imageConfig, listeners, mockCommonServicesConfig, false, kafkaPrincipal);
+        AdminApiModel adminApiModel = new AdminApiModel(defaultEs, imageConfig, listeners, mockCommonServices, false, kafkaPrincipal);
 
         EnvVar kafkaBootstrapServersEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_SERVERS").withValue(kafkaTlsHost + ":" + kafkaTlsPort).build();
         EnvVar kafkaBootstrapInternalPlainUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_INTERNAL_PLAIN_URL").withValue(kafkaPlainHost + ":" + kafkaPlainPort).build();
@@ -744,7 +744,7 @@ public class AdminApiModelTest {
         listeners.add(internalTlsListener);
         listeners.add(externalListener);
 
-        AdminApiModel adminApiModel = new AdminApiModel(defaultEs, imageConfig, listeners, mockCommonServicesConfig, false, kafkaPrincipal);
+        AdminApiModel adminApiModel = new AdminApiModel(defaultEs, imageConfig, listeners, mockCommonServices, false, kafkaPrincipal);
 
         EnvVar kafkaBootstrapServersEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_SERVERS").withValue(kafkaTlsHost + ":" + kafkaTlsPort).build();
         EnvVar kafkaBootstrapInternalPlainUrlEnv = new EnvVarBuilder().withName("KAFKA_BOOTSTRAP_INTERNAL_PLAIN_URL").withValue(kafkaPlainHost + ":" + kafkaPlainPort).build();
@@ -796,7 +796,7 @@ public class AdminApiModelTest {
         listeners.add(kafkaListener);
         listeners.add(externalListener);
 
-        AdminApiModel adminApiModel = new AdminApiModel(defaultEs, imageConfig, listeners, mockCommonServicesConfig, false, kafkaPrincipal);
+        AdminApiModel adminApiModel = new AdminApiModel(defaultEs, imageConfig, listeners, mockCommonServices, false, kafkaPrincipal);
         String expectedRunAsKafkaBootstrap = adminApiModel.getInstanceName() + "-kafka-bootstrap." + adminApiModel.getNamespace() + ".svc:" + runasPort;
 
         EnvVar kafkaBootstrapUrlEnv = new EnvVarBuilder().withName("RUNAS_KAFKA_BOOTSTRAP_SERVERS").withValue(expectedRunAsKafkaBootstrap).build();
@@ -809,7 +809,7 @@ public class AdminApiModelTest {
     @Test
     public void testDefaultLogging() {
         EventStreams defaultEs = createDefaultEventStreams().build();
-        AdminApiModel adminApiModel = new AdminApiModel(defaultEs, imageConfig, null, mockCommonServicesConfig, false, kafkaPrincipal);
+        AdminApiModel adminApiModel = new AdminApiModel(defaultEs, imageConfig, null, mockCommonServices, false, kafkaPrincipal);
 
         EnvVar expectedTraceSpecEnvVar = new EnvVarBuilder().withName("TRACE_SPEC").withValue("info").build();
         List<EnvVar> actualEnvVars = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getEnv();
@@ -832,7 +832,7 @@ public class AdminApiModelTest {
                     .endAdminApi()
                 .endSpec()
                 .build();
-        AdminApiModel adminApiModel = new AdminApiModel(eventStreams, imageConfig, null, mockCommonServicesConfig, false, kafkaPrincipal);
+        AdminApiModel adminApiModel = new AdminApiModel(eventStreams, imageConfig, null, mockCommonServices, false, kafkaPrincipal);
 
         EnvVar expectedTraceSpecEnvVar = new EnvVarBuilder().withName("TRACE_SPEC").withValue("logger.one:info,logger.two:debug").build();
         List<EnvVar> actualEnvVars = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getEnv();
@@ -851,7 +851,7 @@ public class AdminApiModelTest {
                 .endAdminApi()
                 .endSpec()
                 .build();
-        AdminApiModel adminApiModel = new AdminApiModel(eventStreams, imageConfig, null, mockCommonServicesConfig, false, kafkaPrincipal);
+        AdminApiModel adminApiModel = new AdminApiModel(eventStreams, imageConfig, null, mockCommonServices, false, kafkaPrincipal);
 
         EnvVar expectedTraceSpecEnvVar = new EnvVarBuilder().withName("TRACE_SPEC").withValue("info").build();
         List<EnvVar> actualEnvVars = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getEnv();
@@ -866,7 +866,7 @@ public class AdminApiModelTest {
         final String clusterCertPath = "/certs/cluster";
 
         EventStreams eventStreams = createDefaultEventStreams().build();
-        AdminApiModel adminApiModel = new AdminApiModel(eventStreams, imageConfig, null, mockCommonServicesConfig, false, kafkaPrincipal);
+        AdminApiModel adminApiModel = new AdminApiModel(eventStreams, imageConfig, null, mockCommonServices, false, kafkaPrincipal);
 
         EnvVar expectedTruststoreP12Path = new EnvVarBuilder().withName("SSL_TRUSTSTORE_P12_PATH").withValue(clusterCertPath + File.separator + "ca.p12").build();
         EnvVar expectedTruststoreCrtPath = new EnvVarBuilder().withName("SSL_TRUSTSTORE_CRT_PATH").withValue(clusterCertPath + File.separator + "ca.crt").build();
@@ -883,11 +883,17 @@ public class AdminApiModelTest {
         String clusterPort = "9080";
         String caCert = "abcdef";
         String clusterName = "test-cluster";
-        CommonServicesConfig commonServicesConfig = new CommonServicesConfig(clusterName, "ingress", clusterAddress, clusterPort);
-        commonServicesConfig.setCaCerts("", caCert);
+        Map<String, String> data = new HashMap<>();
+        data.put("cluster_name", clusterName);
+        data.put("cluster_endpoint", "ingress");
+        data.put("cluster_address", clusterAddress);
+        data.put("cluster_router_https_port", clusterPort);
+
+        CommonServices commonServices = new CommonServices(instanceName, data);
+        commonServices.setCaCerts("", caCert);
 
         EventStreams eventStreams = createDefaultEventStreams().build();
-        AdminApiModel adminApiModel = new AdminApiModel(eventStreams, imageConfig, null, commonServicesConfig, false, kafkaPrincipal);
+        AdminApiModel adminApiModel = new AdminApiModel(eventStreams, imageConfig, null, commonServices, false, kafkaPrincipal);
 
         EnvVar expectedEnvVarPrometheusHost = new EnvVarBuilder().withName("PROMETHEUS_HOST").withValue(clusterAddress).build();
         EnvVar expectedEnvVarPrometheusPort = new EnvVarBuilder().withName("PROMETHEUS_PORT").withValue(clusterPort).build();
@@ -910,7 +916,7 @@ public class AdminApiModelTest {
                 .endSpec()
                 .build();
 
-        AdminApiModel adminApiModel = new AdminApiModel(eventStreams, imageConfig, null, mockCommonServicesConfig, false, kafkaPrincipal);
+        AdminApiModel adminApiModel = new AdminApiModel(eventStreams, imageConfig, null, mockCommonServices, false, kafkaPrincipal);
         assertThat(adminApiModel.getRoutes().get(adminApiModel.getRouteName("external")).getSpec().getTls().getTermination(), is("passthrough"));
     }
 
@@ -918,7 +924,7 @@ public class AdminApiModelTest {
     public void testCreateAdminApiRouteWithoutTlsEncryptionHasRoutesWithoutTls() {
         EventStreams eventStreams = createDefaultEventStreams().build();
 
-        AdminApiModel adminApiModel = new AdminApiModel(eventStreams, imageConfig, null, mockCommonServicesConfig, false, kafkaPrincipal);
+        AdminApiModel adminApiModel = new AdminApiModel(eventStreams, imageConfig, null, mockCommonServices, false, kafkaPrincipal);
         assertThat(adminApiModel.getRoutes().size(), is(1));
         assertThat(adminApiModel.getRoutes().get(adminApiModel.getRouteName(Endpoint.DEFAULT_EXTERNAL_NAME)).getSpec().getTls(), is(notNullValue()));
     }
@@ -936,7 +942,7 @@ public class AdminApiModelTest {
 
         eventStreams.getSpec().getAdminApi().setEndpoints(Collections.singletonList(endpointSpec));
 
-        AdminApiModel adminApiModel = new AdminApiModel(eventStreams, imageConfig, null, mockCommonServicesConfig, false, kafkaPrincipal);
+        AdminApiModel adminApiModel = new AdminApiModel(eventStreams, imageConfig, null, mockCommonServices, false, kafkaPrincipal);
         assertThat(adminApiModel.getRoutes().size(), is(1));
         assertThat(adminApiModel.getRoutes().get(adminApiModel.getRouteName(routeName)).getSpec().getTls(), is(nullValue()));
     }
@@ -944,7 +950,7 @@ public class AdminApiModelTest {
     @Test
     public void testGenerationIdLabelOnDeployment() {
         EventStreams eventStreams = createDefaultEventStreams().build();
-        AdminApiModel adminApiModel = new AdminApiModel(eventStreams, imageConfig, null, mockCommonServicesConfig, false, kafkaPrincipal);
+        AdminApiModel adminApiModel = new AdminApiModel(eventStreams, imageConfig, null, mockCommonServices, false, kafkaPrincipal);
 
         assertThat(adminApiModel.getDeployment("newID").getMetadata().getLabels(), hasKey(AbstractSecureEndpointsModel.CERT_GENERATION_KEY));
         assertThat(adminApiModel.getDeployment("newID").getMetadata().getLabels(), hasEntry(AbstractSecureEndpointsModel.CERT_GENERATION_KEY, "newID"));
@@ -955,11 +961,11 @@ public class AdminApiModelTest {
     @Test
     public void testVolumeMounts() {
         EventStreams eventStreams = createDefaultEventStreams().build();
-        AdminApiModel adminApiModel = new AdminApiModel(eventStreams, imageConfig, null, mockCommonServicesConfig, false, kafkaPrincipal);
+        AdminApiModel adminApiModel = new AdminApiModel(eventStreams, imageConfig, null, mockCommonServices, false, kafkaPrincipal);
 
         List<VolumeMount> volumeMounts = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getVolumeMounts();
 
-        assertThat(volumeMounts.size(), is(7));
+        assertThat(volumeMounts.size(), is(8));
 
         assertThat(volumeMounts.get(0).getName(), is(GeoReplicatorSecretModel.REPLICATOR_SECRET_NAME));
         assertThat(volumeMounts.get(0).getReadOnly(), is(true));
@@ -969,25 +975,29 @@ public class AdminApiModelTest {
         assertThat(volumeMounts.get(1).getReadOnly(), is(true));
         assertThat(volumeMounts.get(1).getMountPath(), is("/etc/kafka-cm"));
 
-        assertThat(volumeMounts.get(2).getName(), is(AdminApiModel.IBMCLOUD_CA_VOLUME_MOUNT_NAME));
+        assertThat(volumeMounts.get(2).getName(), is(CommonServices.IBMCLOUD_CA_VOLUME_MOUNT_NAME));
         assertThat(volumeMounts.get(2).getReadOnly(), is(true));
-        assertThat(volumeMounts.get(2).getMountPath(), is(AdminApiModel.IBMCLOUD_CA_CERTIFICATE_PATH));
+        assertThat(volumeMounts.get(2).getMountPath(), is(CommonServices.IBMCLOUD_CA_CERTIFICATE_PATH));
 
-        assertThat(volumeMounts.get(3).getName(), is(AdminApiModel.CERTS_VOLUME_MOUNT_NAME));
+        assertThat(volumeMounts.get(3).getName(), is("oidc-secret"));
         assertThat(volumeMounts.get(3).getReadOnly(), is(true));
-        assertThat(volumeMounts.get(3).getMountPath(), is(AdminApiModel.CERTIFICATE_PATH));
+        assertThat(volumeMounts.get(3).getMountPath(), is("/env/commonServices"));
 
-        assertThat(volumeMounts.get(4).getName(), is(AdminApiModel.CLUSTER_CA_VOLUME_MOUNT_NAME));
+        assertThat(volumeMounts.get(4).getName(), is(AdminApiModel.CERTS_VOLUME_MOUNT_NAME));
         assertThat(volumeMounts.get(4).getReadOnly(), is(true));
-        assertThat(volumeMounts.get(4).getMountPath(), is(AdminApiModel.CLUSTER_CERTIFICATE_PATH));
+        assertThat(volumeMounts.get(4).getMountPath(), is(AdminApiModel.CERTIFICATE_PATH));
 
-        assertThat(volumeMounts.get(5).getName(), is(AdminApiModel.CLIENT_CA_VOLUME_MOUNT_NAME));
+        assertThat(volumeMounts.get(5).getName(), is(AdminApiModel.CLUSTER_CA_VOLUME_MOUNT_NAME));
         assertThat(volumeMounts.get(5).getReadOnly(), is(true));
-        assertThat(volumeMounts.get(5).getMountPath(), is(AdminApiModel.CLIENT_CA_CERTIFICATE_PATH));
+        assertThat(volumeMounts.get(5).getMountPath(), is(AdminApiModel.CLUSTER_CERTIFICATE_PATH));
 
-        assertThat(volumeMounts.get(6).getName(), is(AdminApiModel.KAFKA_USER_SECRET_VOLUME_NAME));
+        assertThat(volumeMounts.get(6).getName(), is(AdminApiModel.CLIENT_CA_VOLUME_MOUNT_NAME));
         assertThat(volumeMounts.get(6).getReadOnly(), is(true));
-        assertThat(volumeMounts.get(6).getMountPath(), is(AdminApiModel.KAFKA_USER_CERTIFICATE_PATH));
+        assertThat(volumeMounts.get(6).getMountPath(), is(AdminApiModel.CLIENT_CA_CERTIFICATE_PATH));
+
+        assertThat(volumeMounts.get(7).getName(), is(AdminApiModel.KAFKA_USER_SECRET_VOLUME_NAME));
+        assertThat(volumeMounts.get(7).getReadOnly(), is(true));
+        assertThat(volumeMounts.get(7).getMountPath(), is(AdminApiModel.KAFKA_USER_CERTIFICATE_PATH));
     }
 
 
@@ -1000,7 +1010,7 @@ public class AdminApiModelTest {
                 .withUid("test-uid")
                 .build())
             .build();
-        AdminApiModel adminApiModel = new AdminApiModel(eventStreams, imageConfig, null, mockCommonServicesConfig, false, kafkaPrincipal);
+        AdminApiModel adminApiModel = new AdminApiModel(eventStreams, imageConfig, null, mockCommonServices, false, kafkaPrincipal);
 
         OwnerReference ownerReference = adminApiModel.getRoutes().get(adminApiModel.getRouteName(Endpoint.DEFAULT_EXTERNAL_NAME)).getMetadata().getOwnerReferences().get(0);
         assertThat(ownerReference.getUid(), is("test-uid"));

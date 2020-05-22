@@ -12,7 +12,7 @@
  */
 package com.ibm.eventstreams.controller;
 
-import com.ibm.commonservices.CommonServicesConfig;
+import com.ibm.commonservices.CommonServices;
 import com.ibm.commonservices.api.controller.Cp4iServicesBindingResourceOperator;
 import com.ibm.commonservices.api.model.ClientModel;
 import com.ibm.commonservices.api.model.Cp4iServicesBindingModel;
@@ -54,7 +54,6 @@ import com.ibm.eventstreams.rest.eventstreams.GeneralValidation;
 import com.ibm.eventstreams.rest.eventstreams.LicenseValidation;
 import com.ibm.eventstreams.rest.eventstreams.NameValidation;
 import com.ibm.eventstreams.rest.eventstreams.VersionValidation;
-import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.Service;
@@ -91,7 +90,7 @@ import io.vertx.core.Vertx;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
@@ -198,7 +197,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         customImageCount =  0;
 
         return log.traceExit(reconcileState.validateCustomResource()
-                .compose(state -> state.getCommonServicesConfig())
+                .compose(state -> state.getCommonServices())
                 .compose(state -> state.getCommonServicesClusterCert())
                 .compose(state -> state.createCloudPakClusterCertSecret())
                 .compose(state -> state.createCp4iServicesBinding())
@@ -238,7 +237,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         final List<Condition> previousConditions;
         final EventStreamsOperatorConfig.ImageLookup imageConfig;
         final EventStreamsCertificateManager certificateManager;
-        CommonServicesConfig commonServicesConfig = null;
+        CommonServices commonServices = null;
         String cloudPakHeaderURL = null;
         boolean isGeoReplicationEnabled = false;
         String kafkaPrincipal;
@@ -319,57 +318,52 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             }
         }
 
-        Future<ReconciliationState> getCommonServicesConfig() {
+        Future<ReconciliationState> getCommonServices() {
             log.traceEntry();
-            Promise<Void> getCommonServicesConfig = Promise.promise();
-            configMapOperator.getAsync(operatorNamespace, CommonServicesConfig.INGRESS_CM_NAME)
-                    .onComplete(res -> {
-                        if (res.failed()) {
-                            log.error("Failed to get Common Services Managment Ingress configmap: {}", res.cause());
-                            updateStatusWithCommonServicesMissing(getCommonServicesConfig);
-                            return;
-                        }
-                        ConfigMap ingressCM = res.result();
-                        if (ingressCM == null) {
-                            log.error("Configmap for Common Services Managment Ingress missing.");
-                            updateStatusWithCommonServicesMissing(getCommonServicesConfig);
-                            return;
-                        }
-                        Map<String, String> ingressConfigMapData = ingressCM.getData();
-                        String clusterName = ingressConfigMapData.get(CommonServicesConfig.CLUSTER_NAME_KEY);
-                        String ingressEndpoint = ingressConfigMapData.get(CommonServicesConfig.INGRESS_ENDPOINT_KEY);
-                        String consoleHost = ingressConfigMapData.get(CommonServicesConfig.CONSOLE_HOST_KEY);
-                        String consolePort = ingressConfigMapData.get(CommonServicesConfig.CONSOLE_PORT_KEY);
-                        commonServicesConfig = new CommonServicesConfig(clusterName, ingressEndpoint, consoleHost, consolePort);
-                        getCommonServicesConfig.complete();
-                    });
-            return log.traceExit(getCommonServicesConfig.future().map(v -> this));
+            return log.traceExit(
+                configMapOperator.getAsync(operatorNamespace, CommonServices.INGRESS_CM_NAME)
+                .compose(ingressCM -> ingressCM == null ?
+                    Future.failedFuture("ConfigMap for Common Services Management Ingress missing.") :
+                    Future.succeededFuture(ingressCM))
+                .onSuccess(ingressCM -> {
+                    Map<String, String> ingressConfigMapData = ingressCM.getData();
+                    commonServices = new CommonServices(instance.getMetadata().getName(), ingressConfigMapData);
+                })
+                .onFailure(cause -> {
+                    log.atError().withThrowable(cause).log("Failed to get Common Services Management Ingress ConfigMap");
+                    updateStatusWithCommonServicesMissing();
+                })
+                .map(v -> this)
+            );
         }
 
         Future<ReconciliationState> getCommonServicesClusterCert() {
             log.traceEntry();
-            Promise<Void> getCommonServicesClusterCert = Promise.promise();
             // get common services info for prometheus metrics
-            secretOperator.getAsync(operatorNamespace, CommonServicesConfig.CA_CERT_SECRET_NAME).setHandler(getRes -> {
-                if (getRes.result() != null)  {
+            return log.traceExit(secretOperator.getAsync(operatorNamespace, CommonServices.CA_CERT_SECRET_NAME)
+                .compose(clusterCert -> clusterCert == null ?
+                    Future.failedFuture("Secret for Common Services Management Ingress missing.") :
+                    Future.succeededFuture(clusterCert))
+                .compose(clusterCert -> {
                     try {
-                        String clusterCaCert = getRes.result().getData().get("ca.crt");
+                        String clusterCaCert = clusterCert.getData().get("ca.crt");
                         byte[] clusterCaCertArray = Base64.getDecoder().decode(clusterCaCert);
-                        commonServicesConfig.setCaCerts(clusterCaCert, new String(clusterCaCertArray, "US-ASCII"));
-                        getCommonServicesClusterCert.complete();
-                    } catch (UnsupportedEncodingException e) {
-                        log.error("unable to decode Common Services public cert: {}", e);
-                        getCommonServicesClusterCert.fail(e);
+                        commonServices.setCaCerts(clusterCaCert, new String(clusterCaCertArray, StandardCharsets.US_ASCII));
+                        return Future.succeededFuture();
+                    } catch (IllegalArgumentException exception) {
+                        log.atError().withThrowable(exception).log("Unable to decode CA certificate");
+                        return Future.failedFuture(exception);
                     }
-                } else {
-                    log.error("Secret with cluster cert for Common Services missing.");
-                    updateStatusWithCommonServicesMissing(getCommonServicesClusterCert);
-                }
-            });
-            return log.traceExit(getCommonServicesClusterCert.future().map(v -> this));
+                })
+                .onFailure(cause -> {
+                    log.atError().withThrowable(cause).log("Failed to get Common Services Management Ingress CA Secret");
+                    updateStatusWithCommonServicesMissing();
+                })
+                .map(v -> this)
+            );
         }
 
-        void updateStatusWithCommonServicesMissing(Promise reconcile) {
+        Future<ReconciliationState> updateStatusWithCommonServicesMissing() {
             log.traceEntry();
 
             String failureMessage = "Common Services is required by Event Streams, but the Event Streams Operator could not find the Common Services CA certificate. "
@@ -379,13 +373,10 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             EventStreamsStatus statusSubresource = status.withPhase(PhaseState.FAILED).build();
             instance.setStatus(statusSubresource);
 
-            updateStatus(statusSubresource).onComplete(f -> {
-                if (f.failed()) {
-                    log.error("Failed to update status with Common Services resources missing: {}", f.cause());
-                }
-                reconcile.fail("Exit Reconcile as IAM not present");
-            });
-            log.traceExit();
+            return log.traceExit(
+                updateStatus(statusSubresource)
+                    .onFailure(cause -> log.atError().withThrowable(cause).log("Failed to update status with Common Services resources missing"))
+            );
         }
 
         Future<ReconciliationState> createCloudPakClusterCertSecret() {
@@ -393,7 +384,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             Promise<Void> clusterCaSecretPromise = Promise.promise();
             ClusterSecretsModel clusterSecrets = new ClusterSecretsModel(instance, secretOperator);
             // get common services info for prometheus metrics
-            String clusterCert = commonServicesConfig.getEncodedCaCert();
+            String clusterCert = commonServices.getEncodedCaCert();
             if (clusterCert != null) {
                 clusterSecrets.createIBMCloudCASecret(clusterCert)
                     .onSuccess(ar -> clusterCaSecretPromise.complete())
@@ -602,7 +593,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         Future<ReconciliationState> createRestProducer(Supplier<Date> dateSupplier) {
             log.traceEntry(() -> dateSupplier);
             List<Future> restProducerFutures = new ArrayList<>();
-            RestProducerModel restProducer = new RestProducerModel(instance, imageConfig, status.getKafkaListeners(), commonServicesConfig);
+            RestProducerModel restProducer = new RestProducerModel(instance, imageConfig, status.getKafkaListeners(), commonServices);
             if (restProducer.getCustomImage()) {
                 customImageCount++;
             }
@@ -629,7 +620,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         Future<ReconciliationState> createAdminApi(Supplier<Date> dateSupplier) {
             log.traceEntry(() -> dateSupplier);
             List<Future> adminApiFutures = new ArrayList<>();
-            AdminApiModel adminApi = new AdminApiModel(instance, imageConfig, status.getKafkaListeners(), commonServicesConfig, isGeoReplicationEnabled, kafkaPrincipal);
+            AdminApiModel adminApi = new AdminApiModel(instance, imageConfig, status.getKafkaListeners(), commonServices, isGeoReplicationEnabled, kafkaPrincipal);
             if (adminApi.getCustomImage()) {
                 customImageCount++;
             }
@@ -666,7 +657,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         Future<ReconciliationState> createSchemaRegistry(Supplier<Date> dateSupplier) {
             log.traceEntry(() -> dateSupplier);
             List<Future> schemaRegistryFutures = new ArrayList<>();
-            SchemaRegistryModel schemaRegistry = new SchemaRegistryModel(instance, imageConfig, status.getKafkaListeners(), commonServicesConfig, kafkaPrincipal);
+            SchemaRegistryModel schemaRegistry = new SchemaRegistryModel(instance, imageConfig, status.getKafkaListeners(), commonServices, kafkaPrincipal);
             if (schemaRegistry.getCustomImage()) {
                 customImageCount++;
             }
@@ -729,7 +720,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         Future<ReconciliationState> createAdminUI() {
             log.traceEntry();
             List<Future> adminUIFutures = new ArrayList<>();
-            AdminUIModel ui = new AdminUIModel(instance, imageConfig, pfa.hasRoutes(), commonServicesConfig, cloudPakHeaderURL);
+            AdminUIModel ui = new AdminUIModel(instance, imageConfig, pfa.hasRoutes(), commonServices, cloudPakHeaderURL);
             if (ui.getCustomImage()) {
                 customImageCount++;
             }

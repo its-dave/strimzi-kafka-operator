@@ -12,7 +12,7 @@
  */
 package com.ibm.eventstreams.api.model;
 
-import com.ibm.commonservices.CommonServicesConfig;
+import com.ibm.commonservices.CommonServices;
 import com.ibm.eventstreams.api.DefaultResourceRequirements;
 import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.EndpointServiceType;
@@ -34,7 +34,6 @@ import io.fabric8.kubernetes.api.model.ProbeBuilder;
 import io.fabric8.kubernetes.api.model.ResourceRequirements;
 import io.fabric8.kubernetes.api.model.ServiceAccount;
 import io.fabric8.kubernetes.api.model.Volume;
-import io.fabric8.kubernetes.api.model.VolumeBuilder;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicy;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicyIngressRule;
@@ -42,7 +41,6 @@ import io.strimzi.api.kafka.model.status.ListenerStatus;
 import io.strimzi.api.kafka.model.template.PodTemplate;
 import io.strimzi.operator.cluster.model.ModelUtils;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -56,19 +54,9 @@ public class RestProducerModel extends AbstractSecureEndpointsModel {
     public static final int DEFAULT_REPLICAS = 1;
     private static final String DEFAULT_IBMCOM_IMAGE = "ibmcom/rest-producer:latest";
 
-    public static final String IBMCLOUD_CA_VOLUME_MOUNT_NAME = "ibmcloud";
-
-    public static final String CERTIFICATE_PATH = "/certs";
-    public static final String IBMCLOUD_CA_CERTIFICATE_PATH = CERTIFICATE_PATH + File.separator + "ibmcloud";
-
-    private static final String CLIENT_ID_KEY = "CLIENT_ID";
-    private static final String CLIENT_SECRET_KEY = "CLIENT_SECRET";
-
     private static final String DEFAULT_TRACE_STRING = "info";
     private String traceString;
-    private final String iamClusterName;
-    private final String iamServerURL;
-    private final String ibmcloudCASecretName;
+    private CommonServices commonServices;
 
     // Deployed resources
     private Deployment deployment;
@@ -85,14 +73,10 @@ public class RestProducerModel extends AbstractSecureEndpointsModel {
     public RestProducerModel(EventStreams instance,
                              EventStreamsOperatorConfig.ImageLookup imageConfig,
                              List<ListenerStatus> kafkaListeners,
-                             CommonServicesConfig commonServiceConfig) {
+                             CommonServices commonService) {
         super(instance, COMPONENT_NAME, APPLICATION_NAME);
         this.kafkaListeners = kafkaListeners != null ? new ArrayList<>(kafkaListeners) : new ArrayList<>();
-
-        this.iamClusterName = commonServiceConfig.getClusterName();
-        this.iamServerURL = commonServiceConfig.getIngressEndpoint();
-
-        ibmcloudCASecretName = ClusterSecretsModel.getIBMCloudSecretName(getInstanceName());
+        this.commonServices = commonService;
 
         Optional<SecurityComponentSpec> restProducerSpec = Optional.ofNullable(instance.getSpec()).map(EventStreamsSpec::getRestProducer);
 
@@ -137,17 +121,12 @@ public class RestProducerModel extends AbstractSecureEndpointsModel {
      * @return A list of volumes to put into the rest producer pod
      */
     private List<Volume> getVolumes() {
-        List<Volume> volumes =  getSecurityVolumes();
+        List<Volume> volumes =  securityVolumes();
+        volumes.add(hmacVolume());
 
-        // Add The IAM Specific Volumes.  If we need to build without IAM Support we can put a variable check
-        // here.
-        volumes.add(new VolumeBuilder()
-            .withNewName(IBMCLOUD_CA_VOLUME_MOUNT_NAME)
-            .withNewSecret()
-            .withNewSecretName(ibmcloudCASecretName)
-            .addNewItem().withNewKey(CA_CERT).withNewPath(CA_CERT).endItem()
-            .endSecret()
-            .build());
+        if (commonServices.isPresent()) {
+            volumes.addAll(commonServices.volumes());
+        }
 
         return volumes;
     }
@@ -184,39 +163,12 @@ public class RestProducerModel extends AbstractSecureEndpointsModel {
             new EnvVarBuilder().withName("REQUEST_TIMEOUT_MS").withValue("1000").build(),
             new EnvVarBuilder().withName("SKIP_SSL_VALIDATION_SCHEMA_REGISTRY").withValue("true").build(),
             new EnvVarBuilder().withName("TRACE_SPEC").withValue(traceString).build(),
-            // Add The IAM Specific Envars.  If we need to build without IAM Support we can put a variable check
-            // here.
-            new EnvVarBuilder().withName("IAM_CLUSTER_NAME").withValue(iamClusterName).build(),
-            new EnvVarBuilder().withName("IAM_SERVER_URL").withValue(iamServerURL).build(),
-            new EnvVarBuilder().withName("IAM_SERVER_CA_CERT").withValue(IBMCLOUD_CA_CERTIFICATE_PATH + File.separator + CA_CERT).build(),
-            new EnvVarBuilder()
-                .withName("CLIENT_ID")
-                .withNewValueFrom()
-                    .withNewSecretKeyRef()
-                        .withName(getResourcePrefix() + "-oidc-secret")
-                        .withKey(CLIENT_ID_KEY)
-                    .endSecretKeyRef()
-                .endValueFrom()
-                .build(),
-            new EnvVarBuilder()
-                .withName("CLIENT_SECRET")
-                .withNewValueFrom()
-                    .withNewSecretKeyRef()
-                        .withName(getResourcePrefix() + "-oidc-secret")
-                        .withKey(CLIENT_SECRET_KEY)
-                    .endSecretKeyRef()
-                .endValueFrom()
-                .build(),
-            new EnvVarBuilder()
-                .withName("HMAC_SECRET")
-                .withNewValueFrom()
-                    .withNewSecretKeyRef()
-                        .withName(MessageAuthenticationModel.getSecretName(getInstanceName()))
-                        .withKey(MessageAuthenticationModel.HMAC_SECRET)
-                    .endSecretKeyRef()
-                .endValueFrom()
-                .build()
+            hmacSecretEnvVar()
         ));
+
+        if (commonServices.isPresent()) {
+            envVars.addAll(commonServices.envVars());
+        }
 
         // Optionally add the kafka bootstrap URLs if present
         getInternalKafkaBootstrap(kafkaListeners).ifPresent(internalBootstrap ->
@@ -237,7 +189,7 @@ public class RestProducerModel extends AbstractSecureEndpointsModel {
     private Container getRestProducerContainer() {
         List<EnvVar> envVars = combineEnvVarListsNoDuplicateKeys(getDefaultEnvVars());
 
-        ContainerBuilder container =  new ContainerBuilder()
+        ContainerBuilder containerBuilder =  new ContainerBuilder()
             .withName(COMPONENT_NAME)
             .withImage(getImage())
             .withEnv(envVars)
@@ -245,16 +197,15 @@ public class RestProducerModel extends AbstractSecureEndpointsModel {
             .withResources(getResourceRequirements(DefaultResourceRequirements.REST_PRODUCER))
             .withLivenessProbe(createLivenessProbe())
             .withReadinessProbe(createReadinessProbe())
-            .addNewVolumeMount()
-                .withNewName(IBMCLOUD_CA_VOLUME_MOUNT_NAME)
-                .withMountPath(IBMCLOUD_CA_CERTIFICATE_PATH)
-                .withReadOnly(true)
-            .endVolumeMount();
+            .withVolumeMounts(hmacVolumeMount());
 
+        if (commonServices.isPresent()) {
+            containerBuilder.addAllToVolumeMounts(commonServices.volumeMounts());
+        }
 
-        configureSecurityVolumeMounts(container);
+        configureSecurityVolumeMounts(containerBuilder);
 
-        return container.build();
+        return containerBuilder.build();
     }
 
     /**

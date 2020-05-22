@@ -153,7 +153,7 @@ public class CollectorModel extends AbstractSecureEndpointsModel {
      * @return The list of volumes to put into the Collector pod
      */
     private List<Volume> getVolumes() {
-        return Arrays.asList(getCertsVolume());
+        return Arrays.asList(certsVolume());
     }
 
     /**

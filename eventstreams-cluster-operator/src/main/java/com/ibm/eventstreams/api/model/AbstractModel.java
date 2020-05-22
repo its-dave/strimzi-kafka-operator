@@ -151,6 +151,9 @@ public abstract class AbstractModel {
     private static final String PLAIN_LISTENER_TYPE = "plain";
     private static final String EXTERNAL_LISTENER_TYPE = "external";
 
+    public static final String ENVIRONMENT_PATH = "/env";
+    public static final String CERTIFICATE_PATH = "/certs";
+
     public static final String KAFKA_USER_SECRET_VOLUME_NAME = "kafka-user";
     public static final String CA_CERT = "ca.crt";
     public static final String CA_P12 = "ca.p12";
@@ -943,6 +946,7 @@ public abstract class AbstractModel {
                 .addNewItem().withNewKey(USER_CERT).withNewPath(USER_CERT).endItem()
                 .addNewItem().withNewKey(USER_KEY).withNewPath(USER_KEY).endItem()
                 .addNewItem().withNewKey(USER_P12).withNewPath(USER_P12).endItem()
+                .addNewItem().withNewKey(USER_P12_PASS).withNewPath(USER_P12_PASS).endItem()
             .endSecret()
             .build();
     }
