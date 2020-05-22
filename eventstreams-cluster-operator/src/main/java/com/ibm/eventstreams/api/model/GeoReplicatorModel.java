@@ -26,6 +26,7 @@ import io.strimzi.api.kafka.model.KafkaMirrorMaker2;
 import io.strimzi.api.kafka.model.KafkaMirrorMaker2Builder;
 import io.strimzi.api.kafka.model.KafkaMirrorMaker2ClusterSpec;
 import io.strimzi.api.kafka.model.KafkaMirrorMaker2ClusterSpecBuilder;
+import io.strimzi.api.kafka.model.KafkaMirrorMaker2Resources;
 import io.strimzi.api.kafka.model.KafkaMirrorMaker2Spec;
 import io.strimzi.api.kafka.model.KafkaMirrorMaker2Tls;
 import io.strimzi.api.kafka.model.KafkaSpec;
@@ -106,6 +107,9 @@ public class GeoReplicatorModel extends AbstractModel {
         String connectClusterName = GeoReplicatorModel.getDefaultReplicatorClusterName(getInstanceName());
         mm2Spec.setConnectCluster(connectClusterName);
 
+        // the Kafka Connect operator also uses the deployment name as the container name
+        String containerName = KafkaMirrorMaker2Resources.deploymentName(getInstanceName());
+
         String bootstrap = getDefaultBootstrap(internalTlsKafkaListener);
         int kafkaReplicas = instance.getSpec().getStrimziOverrides().getKafka().getReplicas();
 
@@ -142,7 +146,7 @@ public class GeoReplicatorModel extends AbstractModel {
                 .endConnectContainer()
                 .editOrNewPod()
                     .withNewMetadata()
-                        .addToAnnotations(getEventStreamsMeteringAnnotations(COMPONENT_NAME))
+                        .addToAnnotations(getEventStreamsMeteringAnnotations(containerName))
                         .addToAnnotations(getPrometheusAnnotations(DEFAULT_PROMETHEUS_PORT))
                         .addToLabels(labels.toMap())
                     .endMetadata()

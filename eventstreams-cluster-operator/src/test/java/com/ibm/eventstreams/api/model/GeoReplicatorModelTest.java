@@ -168,7 +168,7 @@ public class GeoReplicatorModelTest {
 
         assertThat(replicatorPodAnnotations.get(PRODUCT_ID_KEY),  is(PRODUCT_ID_PRODUCTION));
         assertThat(replicatorPodAnnotations.get(CLOUDPAK_ID_KEY),  is(CLOUDPAK_ID));
-        assertThat(replicatorPodAnnotations.get(PRODUCT_CHARGED_CONTAINERS_KEY),  is("georep"));
+        assertThat(replicatorPodAnnotations.get(PRODUCT_CHARGED_CONTAINERS_KEY),  is(instanceName + "-mirrormaker2"));
         assertThat(replicatorPodAnnotations.get("prometheus.io/port"),  is(AbstractModel.DEFAULT_PROMETHEUS_PORT));
 
     }
