@@ -68,12 +68,12 @@ schemaRegistry:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: eventstreams-schema-registry-icp-linux
-    tag: 2020-05-01-09.46.24-21cd0a7-dev
+    tag: 2020-05-21-15.38.36-21cd0a7-dev
 schemaRegistryAvro:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: eventstreams-schema-registry-avro-icp-linux
-    tag: 2020-05-20-15.53.50-134eff0-dev
+    tag: 2020-05-21-15.36.30-3e46cc0-dev
 schemaRegistryProxy:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
