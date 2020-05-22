@@ -141,7 +141,7 @@ spec:
         - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_IMAGE
           value: "hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-schema-registry-icp-linux:2020-05-01-09.46.24-21cd0a7-dev"
         - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_AVRO_IMAGE
-          value: "hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-schema-registry-avro-icp-linux:2020-04-09-16.03.17-cd87238"
+          value: "hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-schema-registry-avro-icp-linux:2020-05-20-15.53.50-134eff0-dev"
         - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_PROXY_IMAGE
           value: "hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-schema-proxy-icp-linux:2020-05-19-15.35.21-b7c951c"
         - name: EVENTSTREAMS_DEFAULT_ADMIN_UI_IMAGE

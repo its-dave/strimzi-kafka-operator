@@ -23,6 +23,8 @@ import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.spec.ImagesSpec;
 import com.ibm.eventstreams.api.spec.SchemaRegistrySpec;
+import com.ibm.eventstreams.api.status.EventStreamsEndpoint;
+import com.ibm.eventstreams.api.status.EventStreamsStatus;
 import com.ibm.eventstreams.controller.EventStreamsOperatorConfig;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.ContainerBuilder;
@@ -182,7 +184,7 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
             setCustomImages(imageConfig.getSchemaRegistryImage(), imageConfig.getSchemaRegistryAvroImage(), imageConfig.getSchemaRegistryProxyImage());
 
             endpoints = createEndpoints(instance, schemaRegistrySpec.orElse(null));
-            deployment = createDeployment(getContainers(), getVolumes());
+            deployment = generateDeployment(instance);
 
             createService(EndpointServiceType.INTERNAL, Collections.emptyMap());
             createService(EndpointServiceType.ROUTE, Collections.emptyMap());
@@ -198,6 +200,29 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
             }
         }
     }
+
+    public Deployment generateDeployment(EventStreams instance) {
+        return generateDeployment("", instance);
+    }
+
+    /**
+     * @return Deployment return the deployment with the specified generation id this is used
+     * to control rolling updates, for example when the cert secret changes, and passing instance
+     * to fetch the route from ES status which is used in avro container.
+     */
+    public Deployment generateDeployment(String certGenerationID, EventStreams instance) {
+        Optional<SchemaRegistrySpec> schemaRegistrySpec = Optional.ofNullable(instance.getSpec()).map(EventStreamsSpec::getSchemaRegistry);
+
+        if (schemaRegistrySpec.isPresent()) {
+            deployment = createDeployment(getContainers(instance), getVolumes());
+            if (certGenerationID != null && deployment != null) {
+                deployment.getMetadata().getLabels().put(CERT_GENERATION_KEY, certGenerationID);
+                deployment.getSpec().getTemplate().getMetadata().getLabels().put(CERT_GENERATION_KEY, certGenerationID);
+            }
+        }
+        return deployment;
+    }
+
 
     protected void setCustomImages(Optional<String> defaultEnvSchemaImage, Optional<String> defaultEnvAvroImage, Optional<String> defaultEnvSchemaProxyImage) {
         List<String> defaultSchemaImages = new ArrayList<>();
@@ -280,8 +305,8 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
      * 
      * @return A list of containers to put in the schema registry pod
      */
-    private List<Container> getContainers() {
-        return Arrays.asList(getSchemaRegistryContainer(), getAvroServiceContainer(), getSchemaRegistryProxyContainer());
+    private List<Container> getContainers(EventStreams instance) {
+        return Arrays.asList(getSchemaRegistryContainer(), getAvroServiceContainer(instance), getSchemaRegistryProxyContainer());
     }
 
     /**
@@ -377,7 +402,9 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
      * 
      * @return The avro service container
      */
-    private Container getAvroServiceContainer() {
+    private Container getAvroServiceContainer(EventStreams instance) {
+
+        String externalSchemaRegistryUri = getEndpointFromStatus(instance);
 
         List<EnvVar> envVarDefaults = Arrays.asList(
             new EnvVarBuilder().withName("LICENSE").withValue("accept").build(),
@@ -385,12 +412,8 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
             new EnvVarBuilder().withName("AVRO_CONTAINER_PORT").withValue(Integer.toString(AVRO_SERVICE_PORT)).build(),
             new EnvVarBuilder().withName("SCHEMA_DATA_DIRECTORY").withValue("/var/lib/schemas").build(),
             new EnvVarBuilder().withName("SCHEMA_TEMP_DIRECTORY").withValue("/var/lib/tmp").build(),
-            new EnvVarBuilder()
-                .withName("RELEASE_CM_MOUNT_LOCATION")
-                .withValue("/var/lib/config/restProxyExternalPort")
-                .build(),
             new EnvVarBuilder().withName("NAMESPACE").withValue(getNamespace()).build(),
-            new EnvVarBuilder().withName("EXTERNAL_IP").withValue("123.456.789").build(),
+            new EnvVarBuilder().withName("REPOSITORY_URL").withValue(externalSchemaRegistryUri + "/files/schemas").build(),
             new EnvVarBuilder().withName("LOG_LEVEL").withValue(avroLogString).build()
         );
 
@@ -607,18 +630,6 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
         return pvc.build();
     }
 
-    /**
-     * @return Deployment return the deployment with the specified generation id this is used
-     * to control rolling updates, for example when the cert secret changes.
-     */
-    public Deployment getDeployment(String certGenerationID) {
-        if (certGenerationID != null && deployment != null) {
-            deployment.getMetadata().getLabels().put(CERT_GENERATION_KEY, certGenerationID);
-            deployment.getSpec().getTemplate().getMetadata().getLabels().put(CERT_GENERATION_KEY, certGenerationID);
-        }
-        return deployment;
-    }
-
     @Override
     protected List<Endpoint> createDefaultEndpoints(boolean kafkaAuthenticationEnabled) {
         List<Endpoint> endpoints = new ArrayList<>();
@@ -641,7 +652,7 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
      * @return Deployment return the deployment with an empty generation id
      */
     public Deployment getDeployment() {
-        return getDeployment("");
+        return deployment;
     }
 
     /**
@@ -671,5 +682,15 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
      */
     public PersistentVolumeClaim getPersistentVolumeClaim() {
         return this.pvc;
+    }
+
+    private String getEndpointFromStatus(EventStreams instance) {
+        return Optional.of(instance)
+                .map(EventStreams::getStatus)
+                .map(EventStreamsStatus::getEndpoints)
+                .flatMap(endpoints -> endpoints.stream()
+                        .filter(endpoint -> endpoint.getName().equals(EventStreamsEndpoint.SCHEMA_REGISTRY_KEY))
+                        .findFirst())
+                .map(endpoint -> endpoint.getUri()).orElse("");
     }
 }

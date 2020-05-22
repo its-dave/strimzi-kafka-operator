@@ -950,7 +950,7 @@ spec:
                 - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_IMAGE
                   value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-schema-registry-icp-linux:2020-05-01-09.46.24-21cd0a7-dev
                 - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_AVRO_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-schema-registry-avro-icp-linux:2020-04-09-16.03.17-cd87238
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-schema-registry-avro-icp-linux:2020-05-20-15.53.50-134eff0-dev
                 - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_PROXY_IMAGE
                   value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-schema-proxy-icp-linux:2020-05-19-15.35.21-b7c951c
                 - name: EVENTSTREAMS_DEFAULT_ADMIN_UI_IMAGE
@@ -1077,8 +1077,8 @@ spec:
     image: cp.icr.io/cp/icp4i/es/eventstreams-admin-icp-linux-2020-05-19-15.35.22-b7c951c@sha256:09641285ee0279b3f7a45b2fd24c808c97ea0ba7a2e6c196b0970b64d4c356c6
   - name: eventstreams-schema-registry-icp-linux-2020-05-01-09.46.24-21cd0a7-dev
     image: cp.icr.io/cp/icp4i/es/eventstreams-schema-registry-icp-linux-2020-05-01-09.46.24-21cd0a7-dev@sha256:dffa70b4670140e4c9324ee11378586d74875480c36b59664476378278cbabba
-  - name: eventstreams-schema-registry-avro-icp-linux-2020-04-09-16.03.17-cd87238
-    image: cp.icr.io/cp/icp4i/es/eventstreams-schema-registry-avro-icp-linux-2020-04-09-16.03.17-cd87238@sha256:300004da677dfd029b5429366c1a0251bd64c178922b3e5a857b02dbda231d26
+  - name: eventstreams-schema-registry-avro-icp-linux-2020-05-20-15.53.50-134eff0-dev
+    image: cp.icr.io/cp/icp4i/es/eventstreams-schema-registry-avro-icp-linux-2020-05-20-15.53.50-134eff0-dev@sha256:2bc8c5e633dbac7b59f0175cdad17bff7e73d603d9850dafd3266aba47165a3b
   - name: eventstreams-schema-proxy-icp-linux-2020-05-19-15.35.21-b7c951c
     image: cp.icr.io/cp/icp4i/es/eventstreams-schema-proxy-icp-linux-2020-05-19-15.35.21-b7c951c@sha256:02671670ccdbbddaf567edb9ac13e14052f2213aead1bfec44f9bcd986f2bc73
   - name: eventstreams-admin-ui-icp-linux-2020-05-19-12.18.03-9a78d55-dev

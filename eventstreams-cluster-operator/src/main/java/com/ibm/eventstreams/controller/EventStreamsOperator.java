@@ -693,7 +693,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                         if (secretResult.resourceOpt().isPresent()) {
                             certGenerationID = secretResult.resource().getMetadata().getResourceVersion();
                         }
-                        return deploymentOperator.reconcile(namespace, schemaRegistry.getDefaultResourceName(), schemaRegistry.getDeployment(certGenerationID));
+                        return deploymentOperator.reconcile(namespace, schemaRegistry.getDefaultResourceName(), schemaRegistry.generateDeployment(certGenerationID, instance));
                     }).map(this));
         }
 

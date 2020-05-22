@@ -644,10 +644,10 @@ public class SchemaRegistryModelTest {
         EventStreams eventStreams = createDefaultEventStreams().build();
         SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(eventStreams, imageConfig, null, mockCommonServices, kafkaPrincipal);
 
-        assertThat(schemaRegistryModel.getDeployment("newID").getMetadata().getLabels().containsKey(AbstractSecureEndpointsModel.CERT_GENERATION_KEY), is(true));
-        assertThat(schemaRegistryModel.getDeployment("newID").getMetadata().getLabels().get(AbstractSecureEndpointsModel.CERT_GENERATION_KEY), is("newID"));
-        assertThat(schemaRegistryModel.getDeployment("newID").getSpec().getTemplate().getMetadata().getLabels().containsKey(AbstractSecureEndpointsModel.CERT_GENERATION_KEY), is(true));
-        assertThat(schemaRegistryModel.getDeployment("newID").getSpec().getTemplate().getMetadata().getLabels().get(AbstractSecureEndpointsModel.CERT_GENERATION_KEY), is("newID"));
+        assertThat(schemaRegistryModel.generateDeployment("newID", eventStreams).getMetadata().getLabels().containsKey(AbstractSecureEndpointsModel.CERT_GENERATION_KEY), is(true));
+        assertThat(schemaRegistryModel.generateDeployment("newID", eventStreams).getMetadata().getLabels().get(AbstractSecureEndpointsModel.CERT_GENERATION_KEY), is("newID"));
+        assertThat(schemaRegistryModel.generateDeployment("newID", eventStreams).getSpec().getTemplate().getMetadata().getLabels().containsKey(AbstractSecureEndpointsModel.CERT_GENERATION_KEY), is(true));
+        assertThat(schemaRegistryModel.generateDeployment("newID", eventStreams).getSpec().getTemplate().getMetadata().getLabels().get(AbstractSecureEndpointsModel.CERT_GENERATION_KEY), is("newID"));
     }
 
     @Test
