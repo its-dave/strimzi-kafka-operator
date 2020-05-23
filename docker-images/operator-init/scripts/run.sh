@@ -413,7 +413,7 @@ spec:
   targetResource:
     apiVersion: eventstreams.ibm.com/v1beta1
     kind: EventStreams
-  title: 1 Kafka Broker
+  title: 1 Kafka broker
   yaml: |
     apiVersion: eventstreams.ibm.com/v1beta1
     kind: EventStreams

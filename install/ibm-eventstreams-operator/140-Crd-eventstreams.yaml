@@ -20,12 +20,12 @@ spec:
     shortNames:
     - es
   additionalPrinterColumns:
-  - name: Ready
-    description: The status of the Event Streams cluster
-    JSONPath: .status.phase[?(@.type=="Ready")].status
+  - name: Status
+    description: Status of the Event Streams cluster
+    JSONPath: .status.phase
     type: string
-  - name: Desired Kafka replicas
-    description: The desired number of Kafka replicas in the cluster
+  - name: Desired Kafka brokers
+    description: Desired number of Kafka replicas in the cluster
     JSONPath: .spec.strimziOverrides.kafka.replicas
     type: integer
     priority: 1

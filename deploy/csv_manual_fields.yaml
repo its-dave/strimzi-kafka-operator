@@ -4,8 +4,7 @@ metadata:
     certified: 'false'
     description: Kafka-based messaging platform for handling real-time data feeds.
     support: IBM
-    containerImage: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-operator-icp-linux:latest
-    operators.operatorframework.io/internal-objects: '["kafkas.eventstreams.ibm.com","kafkamirrormaker2s.eventstreams.ibm.com"]'
+    operators.operatorframework.io/internal-objects: '["kafkas.eventstreams.ibm.com"]'
     alm-examples-metadata: |-
       {
         "quickstart": {
@@ -72,7 +71,7 @@ spec:
         name: commonservices.operator.ibm.com
         version: v3
     owned:
-    - description: Represents an instance of IBM Event Streams
+    - description: Creates a complete instance of Event Streams, including Kafka and ZooKeeper, and an administration user interface.
       version: v1beta1
       displayName: Event Streams
       kind: EventStreams
@@ -99,127 +98,65 @@ spec:
         version: v1
 
       specDescriptors:
-        # Top level keys - supplied for scorecard certification
-#        - displayName: Admin API
-#          description: The Admin API component
-#          path: adminApi
-#          x-descriptors:
-#            - 'urn:alm:descriptor:com.tectonic.ui:hidden'
-#        - displayName: Admin UI
-#          description: The Admin UI component
-#          path: adminUI
-#          x-descriptors:
-#            - 'urn:alm:descriptor:com.tectonic.ui:hidden'
-#        - displayName: Metrics Collector
-#          description: The Metrics Collector component
-#          path: collector
-#          x-descriptors:
-#            - 'urn:alm:descriptor:com.tectonic.ui:hidden'
-#        - displayName: Record API
-#          description: The Record API component
-#          path: restProducer
-#          x-descriptors:
-#            - 'urn:alm:descriptor:com.tectonic.ui:hidden'
-#        - displayName: Schema Registry
-#          description: The Schema Registry component
-#          path: schemaRegistry
-#          x-descriptors:
-#            - 'urn:alm:descriptor:com.tectonic.ui:hidden'
-#        - displayName: Security
-#          description: The Security configuration for EventStreams
-#          path: security
-#          x-descriptors:
-#            - 'urn:alm:descriptor:com.tectonic.ui:hidden'
-#        - displayName: License
-#          description: The license configuration for EventStreams
-#          path: license
-#          x-descriptors:
-#            - 'urn:alm:descriptor:com.tectonic.ui:hidden'
-#        - displayName: Core Kafka Settings
-#          description: The configuration for the EventStreams Kafka deployment
-#          path: strimziOverrides
-#          x-descriptors:
-#            - 'urn:alm:descriptor:com.tectonic.ui:hidden'
-#        - displayName: Version
-#          description: The version of the application
-#          path: version
-#          x-descriptors:
-#            - 'urn:alm:descriptor:com.tectonic.ui:hidden'
-
-
-        # Configurable values for the UI
-
         - displayName: License accept
           description: I accept the product license after reading it at <TBC>
           path: license.accept
           x-descriptors:
+            - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:license'
             - 'urn:alm:descriptor:com.tectonic.ui:booleanSwitch'
-        - displayName: Schema Registry storage
-          description: The type of storage used by the Schema Registry
-          path: schemaRegistry.storage.type
-          x-descriptors:
-            - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:schemaRegistryPersistence'
-            - 'urn:alm:descriptor:com.tectonic.ui:select:ephemeral'
-            - 'urn:alm:descriptor:com.tectonic.ui:select:persistent-claim'
-        - description: Storage class to use for Schema Registry
-          displayName: Schema Registry Storage Class
-          path: schemaRegistry.storage.overrides[0].class
-          x-descriptors:
-            - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:schemaRegistryPersistence'
-            - 'urn:alm:descriptor:io.kubernetes:StorageClass'
         - displayName: Product use
           description: Specify if you intend for this installation to be used in a production environment
           path: license.use
           x-descriptors:
-            - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:licenseUsage'
+            - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:license'
             - 'urn:alm:descriptor:com.tectonic.ui:select:CloudPakForIntegrationProduction'
             - 'urn:alm:descriptor:com.tectonic.ui:select:CloudPakForIntegrationNonProduction'
+        - description: Number of Kafka brokers
+          displayName: Kafka brokers
+          path: strimziOverrides.kafka.replicas
+          x-descriptors:
+            - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:kafka'
+            - 'urn:alm:descriptor:com.tectonic.ui:number'
         - displayName: Kafka storage
-          description: The type of storage used by Kafka brokers
+          description: Type of storage used by Kafka brokers
           path: strimziOverrides.kafka.storage.type
           x-descriptors:
-            - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:kafkaPersistence'
+            - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:kafka'
             - 'urn:alm:descriptor:com.tectonic.ui:select:ephemeral'
             - 'urn:alm:descriptor:com.tectonic.ui:select:persistent-claim'
             - 'urn:alm:descriptor:com.tectonic.ui:select:jbod'
         - description: Storage class to use for Kafka brokers
-          displayName: Kafka Storage Class
+          displayName: Kafka storage class
           path: strimziOverrides.kafka.storage.overrides[0].class
           x-descriptors:
-            - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:kafkaPersistence'
+            - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:kafka'
             - 'urn:alm:descriptor:io.kubernetes:StorageClass'
         - displayName: ZooKeeper storage
-          description: The type of storage used by Kafka brokers
+          description: Type of storage used by ZooKeeper nodes
           path: strimziOverrides.zookeeper.storage.type
           x-descriptors:
-            - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:zookeeperPersistence'
+            - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:zookeeper'
             - 'urn:alm:descriptor:com.tectonic.ui:select:ephemeral'
             - 'urn:alm:descriptor:com.tectonic.ui:select:persistent-claim'
         - description: Storage class to use for ZooKeeper nodes
-          displayName: ZooKeeper Storage Class
+          displayName: ZooKeeper storage class
           path: strimziOverrides.zookeeper.storage.overrides[0].class
           x-descriptors:
-            - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:zookeeperPersistence'
+            - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:zookeeper'
             - 'urn:alm:descriptor:io.kubernetes:StorageClass'
-        - description: The desired number of Kafka brokers.
-          displayName: Kafka Brokers
-          path: strimziOverrides.kafka.replicas
+        - displayName: Schema registry storage
+          description: Type of storage used by the schema registry
+          path: schemaRegistry.storage.type
           x-descriptors:
-            - 'urn:alm:descriptor:com.tectonic.ui:number'
-            - 'urn:alm:descriptor:com.tectonic.ui:advanced'
-        - description: The resource limits for Kafka brokers.
-          displayName: Kafka resource limits
-          path: strimziOverrides.kafka.resources
+            - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:schemaregistry'
+            - 'urn:alm:descriptor:com.tectonic.ui:select:ephemeral'
+            - 'urn:alm:descriptor:com.tectonic.ui:select:persistent-claim'
+        - description: Storage class to use for Schema Registry
+          displayName: Schema registry storage class
+          path: schemaRegistry.storage.overrides[0].class
           x-descriptors:
-            - 'urn:alm:descriptor:com.tectonic.ui:resourceRequirements'
-            - 'urn:alm:descriptor:com.tectonic.ui:advanced'
-        - description: The resource limits for ZooKeeper nodes.
-          displayName: ZooKeeper resource limits
-          path: strimziOverrides.zookeeper.resources
-          x-descriptors:
-            - 'urn:alm:descriptor:com.tectonic.ui:resourceRequirements'
-            - 'urn:alm:descriptor:com.tectonic.ui:advanced'
-
+            - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:schemaregistry'
+            - 'urn:alm:descriptor:io.kubernetes:StorageClass'
 
       statusDescriptors:
         - description: URL for the Event Streams UI
@@ -237,30 +174,13 @@ spec:
           path: customImages
           x-descriptors:
             - 'urn:alm:descriptor:text'
-
         - description: A list of recent conditions of the EventStreams instance
           displayName: Status Conditions
           path: conditions
           x-descriptors:
             - 'urn:alm:descriptor:io.kubernetes.conditions'
-#        - description: The Kafka Listeners
-#          displayName: Kafka Listeners
-#          path: kafkaListeners
-#          x-descriptors:
-#        - description: Event Streams Routes
-#          displayName: Routes
-#          path: routes
-#          x-descriptors:
-#        - description: Event Streams Endpoints
-#          displayName: Endpoints
-#          path: endpoints
-#          x-descriptors:
-#        - description: Supported versions of the operand supplied by the current operator
-#          displayName: Supported Versions
-#          path: versions
-#          x-descriptors:
 
-    - description: Represents a user who's permissions are defined via Access Control Lists (ACLs).
+    - description: Identifies an application with permissions for accessing Kafka and the schema registry.
       version: v1beta1
       displayName: Kafka User
       kind: KafkaUser
@@ -268,13 +188,13 @@ spec:
       resources:
       - kind: Secret
         version: v1
-    - description: Represents a topic which is a named stream of messages.
+    - description: Represents a Kafka topic.
       version: v1beta1
       displayName: Kafka Topic
       kind: KafkaTopic
       name: kafkatopics.eventstreams.ibm.com
       resources: []
-    - description: A framework provided by IBM Event Streams for connecting Kafka to external systems, providing a standard way of writing and running connectors.
+    - description: Creates an environment for using Kafka Connect to connect external systems to Event Streams.
       version: v1beta1
       displayName: Kafka Connect
       kind: KafkaConnect
@@ -288,13 +208,13 @@ spec:
         version: v1
       - kind: Pod
         version: v1
-    - description: Used by Kafka Connect, Source and Sink Connectors are used to retrieve data from and deliver data to secondary databases.
+    - description: Represents a Kafka Connect source or sink connector.
       version: v1alpha1
       displayName: Kafka Connector
       kind: KafkaConnector
       name: kafkaconnectors.eventstreams.ibm.com
       resources: []
-    - description: Represents a Kafka Connect cluster with Source 2 Image support
+    - description: Creates an environment with Source-to-Image support for using Kafka Connect to connect external systems to Event Streams.
       version: v1beta1
       displayName: Kafka Connect Source to Image
       kind: KafkaConnectS2I
@@ -312,7 +232,7 @@ spec:
         version: build.openshift.io/v1
       - kind: ImageStream
         version: image.openshift.io/v1
-    - description: Synchronizes data between clusters and aids in disaster recovery.
+    - description: Replicates data between Event Streams clusters and aids in disaster recovery.
       version: v1beta1
       displayName: Geo-Replicator
       kind: EventStreamsGeoReplicator
@@ -332,7 +252,7 @@ spec:
       kind: KafkaRebalance
       name: kafkarebalances.eventstreams.ibm.com
       resources: []
-    - description: Used to enable IBM Event Stream's Geo-replication feature to synchronize data between clusters and aid in disaster recovery.
+    - description: Enables geo-replication of data between Event Streams clusters, or with other Kafka clusters.
       version: v1alpha1
       displayName: Kafka Mirror Maker 2
       kind: KafkaMirrorMaker2
@@ -378,7 +298,7 @@ spec:
     \ automatic restart of brokers included.\n* Health check information and options\
     \ to resolve issues with your clusters and brokers.\n* Geo-replication of your\
     \ topics between clusters to enable disaster recovery and scalability.\n* UI for\
-    \ browsing data to help view and filter hundreds of thousands of messages,\
+    \ browsing data to help view hundreds of thousands of messages,\
     \ including options to drill in and see message details from a set time.\n* CLI\
     \ for managing your deployment and its operations, including Kafka\
     \ tasks.\n* Encrypted communication between internal components and encrypted\
@@ -389,7 +309,7 @@ spec:
     \ across multiple availability zones to add resilience to your \
     \ deployment.\n### What's new in 10.0.0:\n* Fully supported \
     \ operator-based deployment.\n* Support for OpenShift 4.3.\n* Apache Kafka\
-    \ version updated to 2.4.0.\n* New supported connectors added to the expanded\
+    \ version updated to 2.5.0.\n* New supported connectors added to the expanded\
     \ Connector catalog.\n### Documentation\nFor more information, see the\
     \ [IBM Event Streams documentation](https://ibm.github.io/event-streams).\n"
   displayName: IBM Event Streams Operator
@@ -402,13 +322,11 @@ spec:
     app: eventstreams
   links:
     - name: Website
-      url: https://www.ibm.com/uk-en/cloud/event-streams
+      url: https://www.ibm.com/cloud/event-streams
     - name: Documentation
       url: https://ibm.github.io/event-streams
-    - name: GitHub
-      url: https://github.com/IBM/event-streams
-    - name: Slack
-      url: https://slack-invite-ibm-cloud-tech.mybluemix.net
+    - name: Support
+      url: https://ibm.github.io/event-streams/support
   provider:
     name: IBM
   maintainers:

@@ -52,15 +52,15 @@ import static java.util.Collections.unmodifiableList;
         ),
         additionalPrinterColumns = {
             @Crd.Spec.AdditionalPrinterColumn(
-                    name = "Ready",
-                    description = "The status of the Event Streams cluster",
-                    jsonPath = ".status.phase[?(@.type==\"Ready\")].status",
+                    name = "Status",
+                    description = "Status of the Event Streams cluster",
+                    jsonPath = ".status.phase",
                     type = "string",
                     priority = 0
             ),
             @Crd.Spec.AdditionalPrinterColumn(
-                    name = "Desired Kafka replicas",
-                    description = "The desired number of Kafka replicas in the cluster",
+                    name = "Desired Kafka brokers",
+                    description = "Desired number of Kafka replicas in the cluster",
                     jsonPath = ".spec.strimziOverrides.kafka.replicas",
                     type = "integer",
                     priority = 1
