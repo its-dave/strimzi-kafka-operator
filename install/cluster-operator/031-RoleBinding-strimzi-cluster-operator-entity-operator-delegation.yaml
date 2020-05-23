@@ -5,7 +5,7 @@ metadata:
   labels:
 # The Entity Operator cluster role must be bound to the cluster operator service account so that it can delegate the cluster role to the Entity Operator.
 # This must be done to avoid escalating privileges which would be blocked by Kubernetes.
-    app: eventstreams
+    app: strimzi
 subjects:
 - kind: ServiceAccount
   name: strimzi-cluster-operator
