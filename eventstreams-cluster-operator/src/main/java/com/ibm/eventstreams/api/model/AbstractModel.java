@@ -139,13 +139,13 @@ public abstract class AbstractModel {
     protected static final String PRODUCT_ID_NON_PRODUCTION = "2a79e49111f44ec3acd89608e56138f5";
     protected static final String PRODUCT_NAME_PRODUCTION = "IBM Event Streams";
     protected static final String PRODUCT_NAME_NON_PRODUCTION = "IBM Event Streams for Non Production";
-    protected static final String PRODUCT_VERSION = "2020.2.1";
+    protected static final String PRODUCT_VERSION = "10.0.0";
     protected static final String PRODUCT_CLOUDPAK_RATIO_PRODUCTION = "1:1";
     protected static final String PRODUCT_CLOUDPAK_RATIO_NON_PRODUCTION = "2:1";
     protected static final String PRODUCT_METRIC = "VIRTUAL_PROCESSOR_CORE";
     protected static final String CLOUDPAK_ID = "c8b82d189e7545f0892db9ef2731b90d";
     protected static final String CLOUDPAK_NAME = "IBM Cloud Pak for Integration";
-    protected static final String CLOUDPAK_VERSION = "2020.2.1";
+    protected static final String CLOUDPAK_VERSION = "10.0.0";
     private static final String RUNAS_LISTENER_TYPE = "runas";
     private static final String TLS_LISTENER_TYPE = "tls";
     private static final String PLAIN_LISTENER_TYPE = "plain";
@@ -557,7 +557,7 @@ public abstract class AbstractModel {
     protected Map<String, String> getPrometheusAnnotations() {
 
         return getPrometheusAnnotations(DEFAULT_PROMETHEUS_PORT);
-        
+
     }
 
     /**
@@ -627,10 +627,10 @@ public abstract class AbstractModel {
     }
 
     /**
-     * 
+     *
      * @param supplied
      * @param defaults
-     * @return the default resource requirements overridden by any user supplied requirements 
+     * @return the default resource requirements overridden by any user supplied requirements
      */
     protected ResourceRequirements getResourceRequirements(ResourceRequirements supplied, ResourceRequirements defaults) {
         Map<String, Quantity> requests = Optional.ofNullable(supplied.getRequests()).orElseGet(HashMap::new);
@@ -645,7 +645,7 @@ public abstract class AbstractModel {
 
     /**
      * @param defaults
-     * @return the default resource requirements overridden by any user supplied requirements 
+     * @return the default resource requirements overridden by any user supplied requirements
      */
     protected ResourceRequirements getResourceRequirements(ResourceRequirements defaults) {
         return getResourceRequirements(resourceRequirements, defaults);
@@ -899,7 +899,7 @@ public abstract class AbstractModel {
             .withSpec(spec)
             .build();
     }
-    
+
     protected List<EnvVar> combineEnvVarListsNoDuplicateKeys(List<EnvVar> envVarDefaults) {
         return combineEnvVarListsNoDuplicateKeys(envVarDefaults, envVars);
     }
@@ -952,7 +952,7 @@ public abstract class AbstractModel {
     }
 
     protected NetworkPolicyIngressRule createIngressRule(int port, List<Labels> matchLabels) {
- 
+
         NetworkPolicyIngressRuleBuilder policyBuilder = new NetworkPolicyIngressRuleBuilder()
             .addNewPort().withNewPort(port).endPort();
 

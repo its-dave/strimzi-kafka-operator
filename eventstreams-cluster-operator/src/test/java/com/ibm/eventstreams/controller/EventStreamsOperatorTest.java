@@ -193,7 +193,7 @@ public class EventStreamsOperatorTest {
     private static final String ROUTE_HOST_POSTFIX = "apps.route.test";
     private static final int EXPECTED_DEFAULT_REPLICAS = 1;
     private static final String REPLICATOR_DATA = "[replicatorTestData]";
-    private static final String DEFAULT_VERSION = "2020.2.1";
+    private static final String DEFAULT_VERSION = "10.0.0";
     private static final int TWO_YEARS_PLUS_IN_SECONDS = 70000000;
     private static final String CP4I_TEST_HEADER_URL = "https://icp4i-services-demo.my-ns.svc.cluster.local:3000";
     private static final String CP4I_ADMIN_UI_ENVAR_NAME = "ICP4I_PLATFORM_SERVICES_URL";
@@ -368,7 +368,7 @@ public class EventStreamsOperatorTest {
     @Test
     public void testCreateDefaultEventStreamsInstanceOpenShift(VertxTestContext context) {
         esOperator = createDefaultEventStreamsOperator(true);
-        
+
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
         Map<String, Integer> expectedResourcesWithReplicas = getExpectedResourcesWithReplicas(CLUSTER_NAME);
         Set<String> expectedResources = expectedResourcesWithReplicas.keySet();
@@ -450,7 +450,7 @@ public class EventStreamsOperatorTest {
                 assertThat(argument.getValue().getStatus().getVersions().getAvailable().getVersions(),
                         hasItem(hasProperty("name", is(DEFAULT_VERSION))));
                 assertThat(argument.getValue().getStatus().getVersions().getAvailable().getChannels(),
-                        hasItem(hasProperty("name", is("2020.2"))));
+                        hasItem(hasProperty("name", is("10.0"))));
                 async.flag();
             })));
     }

@@ -30,7 +30,7 @@ spec:
       annotations:
         productID: "2cba508800504d0abfa48a0e2c4ecbe2"
         productName: "IBM Event Streams"
-        productVersion: "2020.2.1"
+        productVersion: "10.0.0"
         productMetric: "VIRTUAL_PROCESSOR_CORE"
         prometheus.io/port: "8080"
         prometheus.io/scheme: https

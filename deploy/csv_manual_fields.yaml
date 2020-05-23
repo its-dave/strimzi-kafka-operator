@@ -387,7 +387,7 @@ spec:
     \ users and connecting applications.\n* Schema registry and support for\
     \ schemas to define structure of data.\n* Support for setting up your clusters\
     \ across multiple availability zones to add resilience to your \
-    \ deployment.\n### What's new in 2020.2.1:\n* Fully supported \
+    \ deployment.\n### What's new in 10.0.0:\n* Fully supported \
     \ operator-based deployment.\n* Support for OpenShift 4.3.\n* Apache Kafka\
     \ version updated to 2.4.0.\n* New supported connectors added to the expanded\
     \ Connector catalog.\n### Documentation\nFor more information, see the\

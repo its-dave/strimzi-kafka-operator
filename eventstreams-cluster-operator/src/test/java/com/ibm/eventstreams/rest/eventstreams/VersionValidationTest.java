@@ -61,12 +61,12 @@ public class VersionValidationTest extends RestApiTest {
 
     @Test
     public void testExplicitVersion(VertxTestContext context) {
-        tryValidVersion("2020.2.1", context);
+        tryValidVersion("10.0.0", context);
     }
 
     @Test
     public void testUpgradableVersion(VertxTestContext context) {
-        tryValidVersion("2020.2", context);
+        tryValidVersion("10.0", context);
     }
 
     @Test

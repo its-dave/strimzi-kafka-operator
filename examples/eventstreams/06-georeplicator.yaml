@@ -7,5 +7,5 @@ metadata:
     # The value of this label needs to match the metadata.name of your EventStreams cluster
     eventstreams.ibm.com/cluster: sample-3-broker
 spec:
-  version: 2020.2.1
+  version: 10.0.0
   replicas: 1
