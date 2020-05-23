@@ -1328,6 +1328,49 @@ spec:
               type: array
               items:
                 type: object
+                properties:
+                  name:
+                    type: string
+                    description: The name of the connector.
+                  type:
+                    type: string
+                    description: The type of the connector. Can be either `source`
+                      or `sink`.
+                  connector:
+                    type: object
+                    properties:
+                      state:
+                        type: string
+                        description: The instance state. Can be `RUNNING`, `PAUSED`,
+                          `UNASSIGNED` or `FAILED`.
+                      worker_id:
+                        type: string
+                        description: The ID of the Kafka Connect worker.
+                      trace:
+                        type: string
+                        description: Trace information. Populated when the state is
+                          `FAILED`.
+                    description: The connector status for this connector.
+                  tasks:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          description: The ID of the connector task.
+                        state:
+                          type: string
+                          description: The instance state. Can be `RUNNING`, `PAUSED`,
+                            `UNASSIGNED` or `FAILED`.
+                        worker_id:
+                          type: string
+                          description: The ID of the Kafka Connect worker.
+                        trace:
+                          type: string
+                          description: Trace information. Populated when the state
+                            is `FAILED`.
+                    description: A list of the task statuses for this connector.
               description: List of MirrorMaker 2.0 connector statuses, as reported
                 by the Kafka Connect REST API.
           description: The status of the Kafka MirrorMaker 2.0 cluster.

@@ -4,24 +4,6 @@
  */
 package io.strimzi.operator.cluster.operator.assembly;
 
-import java.io.Serializable;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import io.strimzi.operator.common.Annotations;
-import io.strimzi.operator.common.operator.resource.NetworkPolicyOperator;
-
-import org.apache.kafka.clients.admin.AdminClientConfig;
-import org.apache.kafka.common.config.SaslConfigs;
-import org.apache.kafka.common.config.SslConfigs;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.ServiceAccount;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -41,6 +23,7 @@ import io.strimzi.api.kafka.model.authentication.KafkaClientAuthenticationOAuth;
 import io.strimzi.api.kafka.model.authentication.KafkaClientAuthenticationPlain;
 import io.strimzi.api.kafka.model.authentication.KafkaClientAuthenticationScramSha512;
 import io.strimzi.api.kafka.model.authentication.KafkaClientAuthenticationTls;
+import io.strimzi.api.kafka.model.status.KafkaMirrorMaker2ConnectorStatus;
 import io.strimzi.api.kafka.model.status.KafkaMirrorMaker2Status;
 import io.strimzi.operator.PlatformFeaturesAvailability;
 import io.strimzi.operator.cluster.ClusterOperatorConfig;
@@ -51,14 +34,30 @@ import io.strimzi.operator.cluster.model.KafkaMirrorMaker2Cluster;
 import io.strimzi.operator.cluster.model.KafkaVersion;
 import io.strimzi.operator.cluster.model.ModelUtils;
 import io.strimzi.operator.cluster.operator.resource.ResourceOperatorSupplier;
+import io.strimzi.operator.common.Annotations;
 import io.strimzi.operator.common.Reconciliation;
 import io.strimzi.operator.common.operator.resource.DeploymentOperator;
+import io.strimzi.operator.common.operator.resource.NetworkPolicyOperator;
 import io.strimzi.operator.common.operator.resource.ReconcileResult;
 import io.strimzi.operator.common.operator.resource.StatusUtils;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
+import org.apache.kafka.clients.admin.AdminClientConfig;
+import org.apache.kafka.common.config.SaslConfigs;
+import org.apache.kafka.common.config.SslConfigs;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import java.io.Serializable;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * <p>Assembly operator for a "Kafka MirrorMaker 2.0" assembly, which manages:</p>
@@ -377,7 +376,7 @@ public class KafkaMirrorMaker2AssemblyOperator extends AbstractConnectOperator<K
         return maybeCreateOrUpdateConnector(reconciliation, host, apiClient, connectorName, connectorSpec)
                 .setHandler(result -> {
                     if (result.succeeded()) {
-                        mirrorMaker2Status.getConnectors().add(result.result());
+                        mirrorMaker2Status.getConnectors().add(KafkaMirrorMaker2ConnectorStatus.fromMap(result.result()));
                         mirrorMaker2Status.getConnectors().sort(new ConnectorsComparatorByName());
                     } else {
                         maybeUpdateMirrorMaker2Status(reconciliation, mirrorMaker2, result.cause());
@@ -401,13 +400,13 @@ public class KafkaMirrorMaker2AssemblyOperator extends AbstractConnectOperator<K
      * This comparator compares two maps where connectors' configurations are stored.
      * The comparison is done by using only one property - 'name'
      */
-    static class ConnectorsComparatorByName implements Comparator<Map<String, Object>>, Serializable {
+    static class ConnectorsComparatorByName implements Comparator<KafkaMirrorMaker2ConnectorStatus>, Serializable {
         private static final long serialVersionUID = 1L;
 
         @Override
-        public int compare(Map<String, Object> m1, Map<String, Object> m2) {
-            String name1 = m1.get("name") == null ? "" : m1.get("name").toString();
-            String name2 = m2.get("name") == null ? "" : m2.get("name").toString();
+        public int compare(KafkaMirrorMaker2ConnectorStatus connector1, KafkaMirrorMaker2ConnectorStatus connector2) {
+            String name1 = connector1.getName() == null ? "" : connector1.getName();
+            String name2 = connector2.getName() == null ? "" : connector2.getName();
             return name1.compareTo(name2);
         }
     }

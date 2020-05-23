@@ -2792,7 +2792,62 @@ Used in: xref:type-KafkaMirrorMaker2-{context}[`KafkaMirrorMaker2`]
 |connectorPlugins    1.2+<.<|The list of connector plugins available in this Kafka Connect deployment.
 |xref:type-ConnectorPlugin-{context}[`ConnectorPlugin`] array
 |connectors          1.2+<.<|List of MirrorMaker 2.0 connector statuses, as reported by the Kafka Connect REST API.
-|map array
+|xref:type-KafkaMirrorMaker2ConnectorStatus-{context}[`KafkaMirrorMaker2ConnectorStatus`] array
+|====
+
+[id='type-KafkaMirrorMaker2ConnectorStatus-{context}']
+### `KafkaMirrorMaker2ConnectorStatus` schema reference
+
+Used in: xref:type-KafkaMirrorMaker2Status-{context}[`KafkaMirrorMaker2Status`]
+
+
+[options="header"]
+|====
+|Property          |Description
+|name       1.2+<.<|The name of the connector.
+|string
+|type       1.2+<.<|The type of the connector. Can be either `source` or `sink`.
+|string
+|connector  1.2+<.<|The connector status for this connector.
+|xref:type-KafkaMirrorMaker2ConnectorInstanceStatus-{context}[`KafkaMirrorMaker2ConnectorInstanceStatus`]
+|tasks      1.2+<.<|A list of the task statuses for this connector.
+|xref:type-KafkaMirrorMaker2ConnectorTaskInstanceStatus-{context}[`KafkaMirrorMaker2ConnectorTaskInstanceStatus`] array
+|====
+
+[id='type-KafkaMirrorMaker2ConnectorInstanceStatus-{context}']
+### `KafkaMirrorMaker2ConnectorInstanceStatus` schema reference
+
+Used in: xref:type-KafkaMirrorMaker2ConnectorStatus-{context}[`KafkaMirrorMaker2ConnectorStatus`]
+
+
+[options="header"]
+|====
+|Property          |Description
+|state      1.2+<.<|The instance state. Can be `RUNNING`, `PAUSED`, `UNASSIGNED` or `FAILED`.
+|string
+|worker_id  1.2+<.<|The ID of the Kafka Connect worker.
+|string
+|trace      1.2+<.<|Trace information. Populated when the state is `FAILED`.
+|string
+|====
+
+[id='type-KafkaMirrorMaker2ConnectorTaskInstanceStatus-{context}']
+### `KafkaMirrorMaker2ConnectorTaskInstanceStatus` schema reference
+
+Used in: xref:type-KafkaMirrorMaker2ConnectorStatus-{context}[`KafkaMirrorMaker2ConnectorStatus`]
+
+
+[options="header"]
+|====
+|Property          |Description
+|id         1.2+<.<|The ID of the connector task.
+|integer
+|state      1.2+<.<|The instance state. Can be `RUNNING`, `PAUSED`, `UNASSIGNED` or `FAILED`.
+|string
+|worker_id  1.2+<.<|The ID of the Kafka Connect worker.
+|string
+|trace      1.2+<.<|Trace information. Populated when the state is `FAILED`.
+|string
 |====
 
 [id='type-KafkaRebalance-{context}']

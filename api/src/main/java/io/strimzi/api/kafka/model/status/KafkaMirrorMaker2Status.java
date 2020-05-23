@@ -4,18 +4,16 @@
  */
 package io.strimzi.api.kafka.model.status;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-
 import io.strimzi.api.kafka.model.Constants;
 import io.strimzi.crdgenerator.annotations.Description;
 import io.sundr.builder.annotations.Buildable;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Represents a status of the Kafka MirrorMaker 2.0 resource
@@ -31,15 +29,16 @@ import lombok.ToString;
 public class KafkaMirrorMaker2Status extends KafkaConnectStatus {
     private static final long serialVersionUID = 1L;
 
-    private List<Map<String, Object>> connectors = new ArrayList<>(3);
+    private List<KafkaMirrorMaker2ConnectorStatus> connectors = new ArrayList<>(3);
 
     @Description("List of MirrorMaker 2.0 connector statuses, as reported by the Kafka Connect REST API.")
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
-    public List<Map<String, Object>> getConnectors() {
+    public List<KafkaMirrorMaker2ConnectorStatus> getConnectors() {
         return connectors;
     }
 
-    public void setConnectors(List<Map<String, Object>> connectors) {
+    public void setConnectors(List<KafkaMirrorMaker2ConnectorStatus> connectors) {
         this.connectors = connectors;
-    } 
+    }
+
 }
