@@ -33,3 +33,12 @@ I also cherry-picked the following commits, not included in the upstream 0.18.0 
 e80084547383f162cf47f52e2bdf9678af8732e3 Moved Dockerfile copies of Cruise Control in the right position (#3070)
 26bf33dab8cda98d998680e7b698808433078071 Added tini for running components where missing (#3079)
 ```
+
+
+### 24-May-2020
+
+I cherry-picked an additional commit, with a fix we need for geo-replication
+
+```
+c93ff4624e386e37f2dcbc08a08d56a622b2bef7 fix: Ensure multiple MM2 spec.clusters can use the same secret (#3082)
+```
