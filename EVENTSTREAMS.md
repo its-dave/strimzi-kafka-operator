@@ -230,8 +230,8 @@ This can be used to deploy an instance of the operator and create new Event Stre
 ## Logging into the UI and CLI
 To determine the username and password for the UI run the following:
 ```bash
-oc -n ibm-common-services get secret platform-auth-idp-credentials -ojsonpath=‘{.data.admin_username}’ | base64 -d
-oc -n ibm-common-services get secret platform-auth-idp-credentials -ojsonpath=‘{.data.admin_password}’ | base64 -d
+oc -n ibm-common-services get secret platform-auth-idp-credentials -ojsonpath='{.data.admin_username}' | base64 -d
+oc -n ibm-common-services get secret platform-auth-idp-credentials -ojsonpath='{.data.admin_password}' | base64 -d
 ```
 
 To determine the endpoint to use for `cloudctl` run the command:
