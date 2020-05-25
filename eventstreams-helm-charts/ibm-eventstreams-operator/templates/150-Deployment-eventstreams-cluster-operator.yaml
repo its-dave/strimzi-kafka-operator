@@ -100,7 +100,7 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
             - name: EVENTSTREAMS_IMAGE_PULL_POLICY
-              value: Always
+              value: IfNotPresent
             - name: EVENTSTREAMS_FULL_RECONCILIATION_INTERVAL_MS
               value: {{ .Values.fullReconciliationIntervalMs | quote }}
             - name: EVENTSTREAMS_OPERATION_TIMEOUT_MS

@@ -62,7 +62,7 @@ metadata:
     capabilities: Basic Install
     categories: Streaming & Messaging
     certified: 'false'
-    createdAt: 2020-05-23T21:03:32Z
+    createdAt: 2020-05-25T22:33:39Z
     description: Kafka-based messaging platform for handling real-time data feeds.
     operators.operatorframework.io/internal-objects: '["kafkas.eventstreams.ibm.com"]'
     support: IBM
@@ -788,7 +788,7 @@ spec:
                     fieldRef:
                       fieldPath: metadata.namespace
                 - name: EVENTSTREAMS_IMAGE_PULL_POLICY
-                  value: Always
+                  value: IfNotPresent
                 - name: EVENTSTREAMS_FULL_RECONCILIATION_INTERVAL_MS
                   value: "120000"
                 - name: EVENTSTREAMS_OPERATION_TIMEOUT_MS
@@ -850,7 +850,7 @@ spec:
                   value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-session-store-icp-linux:2020-04-09-15.40.36-f32e234
                 - name: EVENTSTREAMS_DEFAULT_COLLECTOR_IMAGE
                   value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-metrics-collector-icp-linux:2020-04-08-11.08.41-3cb71d9
-                image: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator:latest
+                image: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator:2020-05-25-22.15.00-64a3aa6
                 livenessProbe:
                   failureThreshold: 3
                   httpGet:
@@ -899,7 +899,7 @@ spec:
                   valueFrom:
                     fieldRef:
                       fieldPath: metadata.uid
-                image: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator-init:latest
+                image: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator-init:2020-05-25-22.15.00-64a3aa6
                 name: init
                 resources:
                   limits:
@@ -964,10 +964,10 @@ spec:
     image: cp.icr.io/cp/icp4i/es/operator-index-latest@sha256:4097889236A2AF26C293033FEB964C4CF118C0224E0D063FEC0A89E9D0569EF2
   - name: operator-bundle-latest
     image: cp.icr.io/cp/icp4i/es/operator-bundle-latest@sha256:4097889236A2AF26C293033FEB964C4CF118C0224E0D063FEC0A89E9D0569EF2
-  - name: strimzi-operator-latest
-    image: cp.icr.io/cp/icp4i/es/strimzi-operator-latest@sha256:4097889236A2AF26C293033FEB964C4CF118C0224E0D063FEC0A89E9D0569EF2
-  - name: strimzi-operator-init-latest
-    image: cp.icr.io/cp/icp4i/es/strimzi-operator-init-latest@sha256:4097889236A2AF26C293033FEB964C4CF118C0224E0D063FEC0A89E9D0569EF2
+  - name: strimzi-operator-2020-05-25-22.15.00-64a3aa6
+    image: cp.icr.io/cp/icp4i/es/strimzi-operator-2020-05-25-22.15.00-64a3aa6@sha256:null
+  - name: strimzi-operator-init-2020-05-25-22.15.00-64a3aa6
+    image: cp.icr.io/cp/icp4i/es/strimzi-operator-init-2020-05-25-22.15.00-64a3aa6@sha256:null
   - name: eventstreams-rest-producer-v2-icp-linux-2020-05-19-15.34.50-b7c951c
     image: cp.icr.io/cp/icp4i/es/eventstreams-rest-producer-v2-icp-linux-2020-05-19-15.34.50-b7c951c@sha256:677388f419d3f47c0a42a0692b94dc5901e651810bcf70208d6c5c8124d7440e
   - name: eventstreams-admin-icp-linux-2020-05-21-16.15.10-7ce14cf
