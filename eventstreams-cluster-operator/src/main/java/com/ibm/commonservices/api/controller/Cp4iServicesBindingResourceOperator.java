@@ -26,6 +26,7 @@ import io.vertx.core.Vertx;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.ArrayList;
 import java.util.Optional;
 
 public class Cp4iServicesBindingResourceOperator extends
@@ -84,7 +85,11 @@ public class Cp4iServicesBindingResourceOperator extends
         Optional<String> headerUrl = Optional.ofNullable(cp4iServicesBinding)
             .map(Cp4iServicesBinding::getStatus)
             .map(Cp4iServicesBindingStatus::getEndpoints)
-            .map(endpoints -> endpoints.get(Cp4iServicesBindingStatus.URL_KEY));
+            .orElse(new ArrayList<>())
+            .stream()
+            .filter(endpoint -> Cp4iServicesBindingStatus.NAVIGATOR_ENDPOINT_NAME.equals(endpoint.get(Cp4iServicesBindingStatus.NAME_KEY)))
+            .findFirst()
+            .map(navigatorEndpoint -> navigatorEndpoint.get(Cp4iServicesBindingStatus.URL_KEY));
         return headerUrl;
     }
 }

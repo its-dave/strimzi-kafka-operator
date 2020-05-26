@@ -30,7 +30,7 @@ public class Cp4iServicesBindingModel extends AbstractModel {
 
         setOwnerReference(instance);
 
-        ObjectMeta meta = new ObjectMetaBuilder().withName(getDefaultResourceName())
+        ObjectMeta meta = new ObjectMetaBuilder().withName(getCp4iInstanceName(instance.getMetadata().getName()))
                 .withOwnerReferences(getEventStreamsOwnerReference())
                 .withNamespace(getNamespace())
                 .withLabels(labels().toMap()).build();
@@ -51,7 +51,7 @@ public class Cp4iServicesBindingModel extends AbstractModel {
      * Do not use this method when not referencing Cp4i resources
      */
     public static String getCp4iInstanceName(String instanceName) {
-        return getResourcePrefix(instanceName);
+        return getDefaultResourceName(instanceName, COMPONENT_NAME);
     }
 
 }

@@ -171,6 +171,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.matches;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -190,6 +191,7 @@ public class EventStreamsOperatorTest {
     private static final String REST_PRODUCER_ROUTE_NAME = CLUSTER_NAME + "-ibm-es-" + RestProducerModel.COMPONENT_NAME;
     private static final String SCHEMA_REGISTRY_ROUTE_NAME = CLUSTER_NAME + "-ibm-es-" + SchemaRegistryModel.COMPONENT_NAME;
     private static final String ADMIN_API_ROUTE_NAME = CLUSTER_NAME + "-ibm-es-" + AdminApiModel.COMPONENT_NAME;
+    private static final String CP4I_BINDING_NAME = CLUSTER_NAME + "-ibm-es-eventstreams";
     private static final String ROUTE_HOST_POSTFIX = "apps.route.test";
     private static final int EXPECTED_DEFAULT_REPLICAS = 1;
     private static final String REPLICATOR_DATA = "[replicatorTestData]";
@@ -280,9 +282,9 @@ public class EventStreamsOperatorTest {
         when(esResourceOperator.updateEventStreamsStatus(any(EventStreams.class))).thenReturn(Future.succeededFuture(mockEventStreams));
 
         cp4iResourceOperator = mock(Cp4iServicesBindingResourceOperator.class);
-        when(cp4iResourceOperator.reconcile(anyString(), anyString(), any())).thenReturn(Future.succeededFuture());
-        when(cp4iResourceOperator.waitForCp4iServicesBindingStatusAndMaybeGetUrl(anyString(), anyString(), anyLong(), anyLong())).thenReturn(Future.succeededFuture());
-        when(cp4iResourceOperator.getCp4iHeaderUrl(anyString(), anyString())).thenReturn(Optional.of("header"));
+        when(cp4iResourceOperator.reconcile(matches(NAMESPACE), matches(CP4I_BINDING_NAME), any())).thenReturn(Future.succeededFuture());
+        when(cp4iResourceOperator.waitForCp4iServicesBindingStatusAndMaybeGetUrl(matches(NAMESPACE), matches(CP4I_BINDING_NAME), anyLong(), anyLong())).thenReturn(Future.succeededFuture());
+        when(cp4iResourceOperator.getCp4iHeaderUrl(matches(NAMESPACE), matches(CP4I_BINDING_NAME))).thenReturn(Optional.of("header"));
 
         EventStreamsGeoReplicator mockEventStreamsGeoReplicator = ModelUtils.createDefaultEventStreamsGeoReplicator(CLUSTER_NAME).build();
         esReplicatorResourceOperator = mock(EventStreamsGeoReplicatorResourceOperator.class);
@@ -2417,8 +2419,7 @@ public class EventStreamsOperatorTest {
             }));
     }
 
-//    @Test
-// skipping this test until the CP4I integration can be restored
+    @Test
     public void testCreateCp4iServicesBindingWithCrd(VertxTestContext context) {
         esOperator = createDefaultEventStreamsOperator(true);
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
@@ -2446,7 +2447,7 @@ public class EventStreamsOperatorTest {
 
     @Test
     public void testCreateCp4iServicesBindingFails(VertxTestContext context) {
-        when(cp4iResourceOperator.reconcile(anyString(), anyString(), any())).thenReturn(Future.failedFuture("Failed to reconcile binding"));
+        when(cp4iResourceOperator.reconcile(matches(NAMESPACE), matches(CP4I_BINDING_NAME), any())).thenReturn(Future.failedFuture("Failed to reconcile binding"));
 
         esOperator = createDefaultEventStreamsOperator(true);
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
@@ -2458,10 +2459,9 @@ public class EventStreamsOperatorTest {
         })));
     }
 
-//    @Test
-// skipping this test until the CP4I integration can be restored
+    @Test
     public void testWaitForCp4iServicesBindingStatusSetsHeaderURL(VertxTestContext context) {
-        when(cp4iResourceOperator.getCp4iHeaderUrl(anyString(), anyString())).thenReturn(Optional.of(CP4I_TEST_HEADER_URL));
+        when(cp4iResourceOperator.getCp4iHeaderUrl(matches(NAMESPACE), matches(CP4I_BINDING_NAME))).thenReturn(Optional.of(CP4I_TEST_HEADER_URL));
 
         esOperator = createDefaultEventStreamsOperator(true);
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
@@ -2484,10 +2484,9 @@ public class EventStreamsOperatorTest {
     }
 
 
-//    @Test
-// skipping this test until the CP4I integration can be restored
+    @Test
     public void testWaitForCp4iServicesBindingStatusWithEmptyHeaderUrl(VertxTestContext context) {
-        when(cp4iResourceOperator.getCp4iHeaderUrl(anyString(), anyString())).thenReturn(Optional.of(""));
+        when(cp4iResourceOperator.getCp4iHeaderUrl(matches(NAMESPACE), matches(CP4I_BINDING_NAME))).thenReturn(Optional.of(""));
 
         esOperator = createDefaultEventStreamsOperator(true);
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
@@ -2509,10 +2508,9 @@ public class EventStreamsOperatorTest {
                 })));
     }
 
-//    @Test
-// skipping this test until the CP4I integration can be restored
+    @Test
     public void testWaitForCp4iServicesBindingStatusFailsSetsEmptyHeaderURL(VertxTestContext context) {
-        when(cp4iResourceOperator.waitForCp4iServicesBindingStatusAndMaybeGetUrl(anyString(), anyString(), anyLong(), anyLong()))
+        when(cp4iResourceOperator.waitForCp4iServicesBindingStatusAndMaybeGetUrl(matches(NAMESPACE), matches(CP4I_BINDING_NAME), anyLong(), anyLong()))
                 .thenReturn(Future.failedFuture("Failed to get status"));
 
         esOperator = createDefaultEventStreamsOperator(true);
@@ -2535,10 +2533,9 @@ public class EventStreamsOperatorTest {
                 })));
     }
 
-//    @Test
-// skipping this test until the CP4I integration can be restored
+    @Test
     public void testWaitForCp4iServicesBindingStatusWithMissingHeaderUrl(VertxTestContext context) {
-        when(cp4iResourceOperator.getCp4iHeaderUrl(anyString(), anyString())).thenReturn(Optional.ofNullable(null));
+        when(cp4iResourceOperator.getCp4iHeaderUrl(matches(NAMESPACE), matches(CP4I_BINDING_NAME))).thenReturn(Optional.ofNullable(null));
 
         esOperator = createDefaultEventStreamsOperator(true);
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);

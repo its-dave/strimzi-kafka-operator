@@ -410,10 +410,8 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
 
         Future<ReconciliationState> createCp4iServicesBinding() {
             log.traceEntry();
-// TODO restore this once we've re-implemented the CP4I integration based on their latest API spec.
-//            Boolean cp4iBindingCrdPresent = Optional.ofNullable(client.customResourceDefinitions().withName(Cp4iServicesBinding.CRD_NAME).get())
-//                    .isPresent();
-            boolean cp4iBindingCrdPresent = false;
+            Boolean cp4iBindingCrdPresent = Optional.ofNullable(client.customResourceDefinitions().withName(Cp4iServicesBinding.CRD_NAME).get())
+                    .isPresent();
             if (!cp4iBindingCrdPresent) {
                 cp4iPresent = false;
                 log.info("CP4I Services Binding CRD is not present, binding will not be created");

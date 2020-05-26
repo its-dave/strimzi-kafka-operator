@@ -21,25 +21,55 @@ import io.sundr.builder.annotations.Buildable;
 import lombok.EqualsAndHashCode;
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.Map;
 
 @JsonDeserialize(using = JsonDeserializer.None.class)
 @Buildable(editableEnabled = false, generateBuilderPackage = false, builderPackage = "io.fabric8.kubernetes.api.builder")
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({ "endpoints" })
+@JsonPropertyOrder({ "conditions", "customImages", "endpoints", "versions" })
 @EqualsAndHashCode
 public class Cp4iServicesBindingStatus implements Serializable {
 
     private static final long serialVersionUID = 1L;
-    public static final String URL_KEY = "url";
+    public static final String URL_KEY = "uri";
+    public static final String NAME_KEY = "name";
+    public static final String NAVIGATOR_ENDPOINT_NAME = "navigator";
 
-    private Map<String, String> endpoints;
+    private Object conditions;
+    private boolean customImages;
+    private List<Map<String, String>> endpoints;
+    private Object versions;
 
-    public Map<String, String> getEndpoints() {
+    public Object getConditions() {
+        return conditions;
+    }
+
+    public void setConditions(Object conditions) {
+        this.conditions = conditions;
+    }
+
+    public List<Map<String, String>> getEndpoints() {
         return endpoints;
     }
 
-    public void setEndpoints(Map<String, String> endpoints) {
+    public void setEndpoints(List<Map<String, String>> endpoints) {
         this.endpoints = endpoints;
+    }
+
+    public boolean isCustomImages() {
+        return customImages;
+    }
+
+    public void setCustomImages(boolean customImages) {
+        this.customImages = customImages;
+    }
+
+    public Object getVersions() {
+        return versions;
+    }
+
+    public void setVersions(Object versions) {
+        this.versions = versions;
     }
 }
