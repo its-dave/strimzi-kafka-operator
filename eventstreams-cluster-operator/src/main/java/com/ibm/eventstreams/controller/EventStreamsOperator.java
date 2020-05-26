@@ -139,6 +139,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
 
     public static final String COMMON_SERVICES_NOT_FOUND_REASON = "CommonServicesNotFound";
     public static final String COMMON_SERVICES_CERTIFICATE_NOT_FOUND_REASON = "CommonServicesCertificateNotFound";
+    public static final String EVENTSTREAMS_CREATING_REASON = "Creating";
 
     public EventStreamsOperator(Vertx vertx, KubernetesClient client, String kind, PlatformFeaturesAvailability pfa,
                                 EventStreamsResourceOperator esResourceOperator,
@@ -294,7 +295,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                         .filter(c -> c.getType().equals(PhaseState.PENDING.toValue()))
                         .findFirst()
                         // otherwise set a new condition saying that the reconcile loop is running
-                        .orElse(StatusCondition.createPendingCondition("Creating", "Event Streams is being deployed.").toCondition()));
+                        .orElse(StatusCondition.createPendingCondition(EVENTSTREAMS_CREATING_REASON, "Event Streams is being deployed.").toCondition()));
             } else {
                 phase = PhaseState.FAILED;
             }
@@ -855,6 +856,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             log.traceEntry();
             status.withCustomImages(customImageCount > 0);
             status.withPhase(PhaseState.READY);
+            status.withConditions(status.getConditions().stream().filter(condition -> !EVENTSTREAMS_CREATING_REASON.equals(condition.getReason())).collect(Collectors.toList()));
 
             log.info("Updating status");
             EventStreamsStatus esStatus = status.build();

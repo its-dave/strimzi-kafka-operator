@@ -569,6 +569,7 @@ public class EventStreamsOperatorTest {
                 assertThat(val.getStatus().getPhase(), is(PhaseState.READY));
                 assertThat(val.getStatus().getConditions(), hasItem(hasProperty("reason", is("KafkaStorage"))));
                 assertThat(val.getStatus().getConditions(), hasItem(hasProperty("reason", is("ZooKeeperStorage"))));
+                assertThat(val.getStatus().getConditions().stream().filter(condition -> condition.getReason().equals(EventStreamsOperator.EVENTSTREAMS_CREATING_REASON)).collect(Collectors.toList()), hasSize(0));
 
                 async.flag();
             })));
