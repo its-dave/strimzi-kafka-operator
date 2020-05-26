@@ -128,7 +128,7 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "sum(strimzi_resources{kind=\"EventStreams\"})",
+          "expr": "sum(eventstreams_resources{kind=\"EventStreams\"})",
           "format": "time_series",
           "hide": false,
           "intervalFactor": 1,
@@ -138,7 +138,7 @@
       "thresholds": "",
       "timeFrom": null,
       "timeShift": null,
-      "title": "Eventstreams CRs",
+      "title": "Event Streams CRs",
       "type": "singlestat",
       "valueFontSize": "120%",
       "valueMaps": [
@@ -211,7 +211,7 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "sum(strimzi_resources{kind=\"Kafka\"})",
+          "expr": "sum(eventstreams_resources{kind=\"Kafka\"})",
           "format": "time_series",
           "intervalFactor": 1,
           "refId": "A"
@@ -293,7 +293,7 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "sum(strimzi_resources{kind=\"KafkaConnect\"})",
+          "expr": "sum(eventstreams_resources{kind=\"KafkaConnect\"})",
           "format": "time_series",
           "intervalFactor": 1,
           "refId": "A"
@@ -375,7 +375,7 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "sum(strimzi_resources{kind=\"KafkaMirrorMaker2\"})",
+          "expr": "sum(eventstreams_resources{kind=\"KafkaMirrorMaker2\"})",
           "format": "time_series",
           "intervalFactor": 1,
           "refId": "A"
@@ -457,7 +457,7 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "sum(strimzi_resources{kind=\"KafkaConnectS2I\"})",
+          "expr": "sum(eventstreams_resources{kind=\"KafkaConnectS2I\"})",
           "format": "time_series",
           "intervalFactor": 1,
           "refId": "A"
@@ -539,7 +539,7 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "sum(strimzi_resources{kind=\"KafkaConnector\"})",
+          "expr": "sum(eventstreams_resources{kind=\"KafkaConnector\"})",
           "format": "time_series",
           "intervalFactor": 1,
           "refId": "A"
@@ -555,170 +555,6 @@
         {
           "op": "=",
           "text": "N/A",
-          "value": "null"
-        }
-      ],
-      "valueName": "current"
-    },
-    {
-      "cacheTimeout": null,
-      "colorBackground": false,
-      "colorValue": false,
-      "colors": [
-        "#299c46",
-        "rgba(237, 129, 40, 0.89)",
-        "#d44a3a"
-      ],
-      "datasource": "${DS_PROMETHEUS}",
-      "format": "none",
-      "gauge": {
-        "maxValue": 100,
-        "minValue": 0,
-        "show": false,
-        "thresholdLabels": false,
-        "thresholdMarkers": true
-      },
-      "gridPos": {
-        "h": 6,
-        "w": 3,
-        "x": 18,
-        "y": 1
-      },
-      "id": 15,
-      "interval": null,
-      "links": [],
-      "mappingType": 1,
-      "mappingTypes": [
-        {
-          "name": "value to text",
-          "value": 1
-        },
-        {
-          "name": "range to text",
-          "value": 2
-        }
-      ],
-      "maxDataPoints": 100,
-      "nullPointMode": "connected",
-      "nullText": null,
-      "postfix": "",
-      "postfixFontSize": "50%",
-      "prefix": "",
-      "prefixFontSize": "50%",
-      "rangeMaps": [
-        {
-          "from": "null",
-          "text": "N/A",
-          "to": "null"
-        }
-      ],
-      "sparkline": {
-        "fillColor": "rgba(31, 118, 189, 0.18)",
-        "full": false,
-        "lineColor": "rgb(31, 120, 193)",
-        "show": false
-      },
-      "tableColumn": "",
-      "targets": [
-        {
-          "expr": "sum(strimzi_resources{kind=\"KafkaUser\"})",
-          "format": "time_series",
-          "intervalFactor": 1,
-          "refId": "A"
-        }
-      ],
-      "thresholds": "",
-      "timeFrom": null,
-      "timeShift": null,
-      "title": "User CRs",
-      "type": "singlestat",
-      "valueFontSize": "200%",
-      "valueMaps": [
-        {
-          "op": "=",
-          "text": "0",
-          "value": "null"
-        }
-      ],
-      "valueName": "current"
-    },
-    {
-      "cacheTimeout": null,
-      "colorBackground": false,
-      "colorValue": false,
-      "colors": [
-        "#299c46",
-        "rgba(237, 129, 40, 0.89)",
-        "#d44a3a"
-      ],
-      "datasource": "${DS_PROMETHEUS}",
-      "format": "none",
-      "gauge": {
-        "maxValue": 100,
-        "minValue": 0,
-        "show": false,
-        "thresholdLabels": false,
-        "thresholdMarkers": true
-      },
-      "gridPos": {
-        "h": 6,
-        "w": 3,
-        "x": 21,
-        "y": 1
-      },
-      "id": 50,
-      "interval": null,
-      "links": [],
-      "mappingType": 1,
-      "mappingTypes": [
-        {
-          "name": "value to text",
-          "value": 1
-        },
-        {
-          "name": "range to text",
-          "value": 2
-        }
-      ],
-      "maxDataPoints": 100,
-      "nullPointMode": "connected",
-      "nullText": null,
-      "postfix": "",
-      "postfixFontSize": "50%",
-      "prefix": "",
-      "prefixFontSize": "50%",
-      "rangeMaps": [
-        {
-          "from": "null",
-          "text": "N/A",
-          "to": "null"
-        }
-      ],
-      "sparkline": {
-        "fillColor": "rgba(31, 118, 189, 0.18)",
-        "full": false,
-        "lineColor": "rgb(31, 120, 193)",
-        "show": false
-      },
-      "tableColumn": "",
-      "targets": [
-        {
-          "expr": "sum(strimzi_resources{kind=\"KafkaTopic\"})",
-          "format": "time_series",
-          "intervalFactor": 1,
-          "refId": "A"
-        }
-      ],
-      "thresholds": "",
-      "timeFrom": null,
-      "timeShift": null,
-      "title": "Topics CRs",
-      "type": "singlestat",
-      "valueFontSize": "200%",
-      "valueMaps": [
-        {
-          "op": "=",
-          "text": "0",
           "value": "null"
         }
       ],
@@ -778,7 +614,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(increase(strimzi_reconciliations_successful_total[1h])) by (kind)",
+          "expr": "sum(increase(eventstreams_reconciliations_successful_total[1h])) by (kind)",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "{{kind}}",
@@ -867,7 +703,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(increase(strimzi_reconciliations_failed_total[1h])) by (kind)",
+          "expr": "sum(increase(eventstreams_reconciliations_failed_total[1h])) by (kind)",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "{{kind}}",
@@ -956,7 +792,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(increase(strimzi_reconciliations_locked_total[1h])) by (kind)",
+          "expr": "sum(increase(eventstreams_reconciliations_locked_total[1h])) by (kind)",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "{{kind}}",
@@ -1046,7 +882,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(increase(strimzi_reconciliations_total[1h])) by (kind)",
+          "expr": "sum(increase(eventstreams_reconciliations_total[1h])) by (kind)",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "{{kind}}",
@@ -1136,7 +972,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(increase(strimzi_reconciliations_periodical_total[1h])) by (kind)",
+          "expr": "sum(increase(eventstreams_reconciliations_periodical_total[1h])) by (kind)",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "{{kind}}",
@@ -1227,7 +1063,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(strimzi_reconciliations_duration_seconds_max) by (kind)",
+          "expr": "sum(eventstreams_reconciliations_duration_seconds_max) by (kind)",
           "format": "time_series",
           "interval": "5m",
           "intervalFactor": 1,
@@ -1319,7 +1155,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(strimzi_reconciliations_duration_seconds_sum / strimzi_reconciliations_duration_seconds_count) by (kind)",
+          "expr": "sum(eventstreams_reconciliations_duration_seconds_sum / eventstreams_reconciliations_duration_seconds_count) by (kind)",
           "format": "time_series",
           "interval": "5m",
           "intervalFactor": 1,

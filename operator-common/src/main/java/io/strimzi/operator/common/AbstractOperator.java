@@ -59,7 +59,7 @@ public abstract class AbstractOperator<
     private static final Logger log = LogManager.getLogger(AbstractOperator.class);
 
     protected static final int LOCK_TIMEOUT_MS = 10000;
-    public static final String METRICS_PREFIX = "strimzi.";
+    public static final String METRICS_PREFIX = "eventstreams.";
 
     protected final Vertx vertx;
     protected final S resourceOperator;

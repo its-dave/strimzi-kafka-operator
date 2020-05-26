@@ -51,7 +51,7 @@ class TopicOperator {
 
     private final static Logger LOGGER = LogManager.getLogger(TopicOperator.class);
     private final static Logger EVENT_LOGGER = LogManager.getLogger("Event");
-    public static final String METRICS_PREFIX = "strimzi.";
+    public static final String METRICS_PREFIX = "eventstreams.";
     private final Kafka kafka;
     private final K8s k8s;
     private final Vertx vertx;
