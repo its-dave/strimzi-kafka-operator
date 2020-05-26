@@ -145,7 +145,7 @@ public abstract class AbstractModel {
     protected static final String PRODUCT_METRIC = "VIRTUAL_PROCESSOR_CORE";
     protected static final String CLOUDPAK_ID = "c8b82d189e7545f0892db9ef2731b90d";
     protected static final String CLOUDPAK_NAME = "IBM Cloud Pak for Integration";
-    protected static final String CLOUDPAK_VERSION = "10.0.0";
+    protected static final String CLOUDPAK_VERSION = "2020.2.1";
     private static final String RUNAS_LISTENER_TYPE = "runas";
     private static final String TLS_LISTENER_TYPE = "tls";
     private static final String PLAIN_LISTENER_TYPE = "plain";
