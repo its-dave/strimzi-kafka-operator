@@ -73,7 +73,7 @@ spec:
             memory: 256Mi
       containers:
       - name: eventstreams-cluster-operator
-        image: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator:2020-05-25-22.15.00-64a3aa6
+        image: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator:2020-05-26-12.00.00-e290f4a
         args:
         - /opt/strimzi/bin/eventstreams_cluster_operator_run.sh
         env:
@@ -129,7 +129,7 @@ spec:
         - name: EVENTSTREAMS_DEFAULT_TOPIC_OPERATOR_IMAGE
           value: "hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator:latest"
         - name: EVENTSTREAMS_DEFAULT_USER_OPERATOR_IMAGE
-          value: "hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator:latest"
+          value: "hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator:2020-05-26-12.00.00-e290f4a"
         - name: EVENTSTREAMS_DEFAULT_KAFKA_INIT_IMAGE
           value: "hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator:latest"
         - name: EVENTSTREAMS_DEFAULT_JMXTRANS_IMAGE
@@ -137,7 +137,7 @@ spec:
         - name: EVENTSTREAMS_DEFAULT_REST_PRODUCER_IMAGE # Proprietary images
           value: "hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-rest-producer-v2-icp-linux:2020-05-19-15.34.50-b7c951c"
         - name: EVENTSTREAMS_DEFAULT_ADMIN_API_IMAGE
-          value: "hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-admin-icp-linux:2020-05-21-16.15.10-7ce14cf"
+          value: "hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-admin-icp-linux:2020-05-26-10.43.14-2e3743a"
         - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_IMAGE
           value: "hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-schema-registry-icp-linux:2020-05-21-15.38.36-21cd0a7-dev"
         - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_AVRO_IMAGE
