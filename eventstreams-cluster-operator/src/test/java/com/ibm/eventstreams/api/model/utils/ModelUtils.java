@@ -47,6 +47,7 @@ import java.util.Set;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.hasKey;
 
 public class ModelUtils {
 
@@ -320,5 +321,19 @@ public class ModelUtils {
     public static KafkaListeners getNoSecurityListenerSpec() {
         return new KafkaListenersBuilder()
                 .build();
+    }
+
+    public static void assertMeteringAnnotationsPresent(Map<String, String> annotations) {
+        assertThat(annotations, hasKey(com.ibm.eventstreams.api.model.AbstractModel.PRODUCT_ID_KEY));
+        assertThat(annotations, hasKey(com.ibm.eventstreams.api.model.AbstractModel.PRODUCT_NAME_KEY));
+        assertThat(annotations, hasKey(com.ibm.eventstreams.api.model.AbstractModel.PRODUCT_METRIC_KEY));
+        assertThat(annotations, hasKey(com.ibm.eventstreams.api.model.AbstractModel.PRODUCT_VERSION_KEY));
+        assertThat(annotations, hasKey(com.ibm.eventstreams.api.model.AbstractModel.PRODUCT_CHARGED_CONTAINERS_KEY));
+    }
+
+    public static void assertEventStreamsLabelsPresent(Map<String, String> labels) {
+        assertThat(labels, hasKey(Labels.STRIMZI_KIND_LABEL));
+        assertThat(labels, hasKey(Labels.STRIMZI_CLUSTER_LABEL));
+        assertThat(labels, hasKey(Labels.STRIMZI_NAME_LABEL));
     }
 }

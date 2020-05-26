@@ -617,6 +617,68 @@ public class CollectorModelTest {
     }
 
     @Test
+    public void testDefaultLabelsAndAnnotations() {
+        EventStreams es = createDefaultEventStreams().build();
+        CollectorModel collectorModel = new CollectorModel(es, imageConfig);
+
+        Map<String, String> computedAnnotations = collectorModel.getDeployment().getSpec().getTemplate().getMetadata().getAnnotations();
+        ModelUtils.assertMeteringAnnotationsPresent(computedAnnotations);
+
+        Map<String, String> computedLabels = collectorModel.getDeployment().getSpec().getTemplate().getMetadata().getLabels();
+        ModelUtils.assertEventStreamsLabelsPresent(computedLabels);
+    }
+
+    @Test
+    public void testCustomAnnotations() {
+        Map<String, String> customAnnotations = new HashMap<>();
+        customAnnotations.put("customannotation", "mine");
+
+        EventStreams eventStreamsResource = createDefaultEventStreams()
+                .editSpec()
+                .editCollector()
+                .withNewTemplate()
+                .withPod(new PodTemplateBuilder()
+                        .withNewMetadata()
+                        .withAnnotations(customAnnotations)
+                        .endMetadata()
+                        .build())
+                .endTemplate()
+                .endCollector()
+                .endSpec()
+                .build();
+        CollectorModel collectorModel = new CollectorModel(eventStreamsResource, imageConfig);
+
+        Map<String, String> computedAnnotations = collectorModel.getDeployment().getSpec().getTemplate().getMetadata().getAnnotations();
+        ModelUtils.assertMeteringAnnotationsPresent(computedAnnotations);
+        assertThat(computedAnnotations, hasEntry("customannotation", "mine"));
+    }
+
+    @Test
+    public void testCustomLabels() {
+        Map<String, String> customLabels = new HashMap<>();
+        customLabels.put("customlabel", "mine");
+
+        EventStreams eventStreamsResource = createDefaultEventStreams()
+                .editSpec()
+                .editCollector()
+                .withNewTemplate()
+                .withPod(new PodTemplateBuilder()
+                        .withNewMetadata()
+                        .withLabels(customLabels)
+                        .endMetadata()
+                        .build())
+                .endTemplate()
+                .endCollector()
+                .endSpec()
+                .build();
+        CollectorModel collectorModel = new CollectorModel(eventStreamsResource, imageConfig);
+
+        Map<String, String> computedLabels = collectorModel.getDeployment().getSpec().getTemplate().getMetadata().getLabels();
+        ModelUtils.assertEventStreamsLabelsPresent(computedLabels);
+        assertThat(computedLabels, hasEntry("customlabel", "mine"));
+    }
+
+    @Test
     public void testGenerationIdLabelOnDeployment() {
         EventStreams es = createDefaultEventStreams().build();
         CollectorModel collectorModel = new CollectorModel(es, imageConfig);

@@ -743,6 +743,67 @@ public class AdminUIModelTest {
     }
 
     @Test
+    public void testDefaultLabelsAndAnnotations() {
+        AdminUIModel adminUiModel = createDefaultAdminUIModel();
+
+        Map<String, String> computedAnnotations = adminUiModel.getDeployment().getSpec().getTemplate().getMetadata().getAnnotations();
+        ModelUtils.assertMeteringAnnotationsPresent(computedAnnotations);
+
+        Map<String, String> computedLabels = adminUiModel.getDeployment().getSpec().getTemplate().getMetadata().getLabels();
+        ModelUtils.assertEventStreamsLabelsPresent(computedLabels);
+    }
+
+    @Test
+    public void testCustomAnnotations() {
+        Map<String, String> customAnnotations = new HashMap<>();
+        customAnnotations.put("customuiann", "annotationvalue");
+
+        EventStreams eventStreamsResource = createDefaultEventStreams()
+                .editSpec()
+                .editAdminUI()
+                .withNewTemplate()
+                .withPod(new PodTemplateBuilder()
+                        .withNewMetadata()
+                        .withAnnotations(customAnnotations)
+                        .endMetadata()
+                        .build())
+                .endTemplate()
+                .endAdminUI()
+                .endSpec()
+                .build();
+        AdminUIModel adminUiModel = new AdminUIModel(eventStreamsResource, imageConfig, false, null, headerURL);
+
+        Map<String, String> computedAnnotations = adminUiModel.getDeployment().getSpec().getTemplate().getMetadata().getAnnotations();
+        ModelUtils.assertMeteringAnnotationsPresent(computedAnnotations);
+        assertThat(computedAnnotations, hasEntry("customuiann", "annotationvalue"));
+    }
+
+    @Test
+    public void testCustomLabels() {
+        Map<String, String> customLabels = new HashMap<>();
+        customLabels.put("customuilbl", "labelvalue");
+
+        EventStreams eventStreamsResource = createDefaultEventStreams()
+                .editSpec()
+                .editAdminUI()
+                .withNewTemplate()
+                .withPod(new PodTemplateBuilder()
+                        .withNewMetadata()
+                        .withLabels(customLabels)
+                        .endMetadata()
+                        .build())
+                .endTemplate()
+                .endAdminUI()
+                .endSpec()
+                .build();
+        AdminUIModel adminUiModel = new AdminUIModel(eventStreamsResource, imageConfig, false, null, headerURL);
+
+        Map<String, String> computedLabels = adminUiModel.getDeployment().getSpec().getTemplate().getMetadata().getLabels();
+        ModelUtils.assertEventStreamsLabelsPresent(computedLabels);
+        assertThat(computedLabels, hasEntry("customuilbl", "labelvalue"));
+    }
+
+    @Test
     public void testMetricsEnvVarTrueWhenUsingKafkaInterceptor() {
         Map<String, Object> config = new HashMap<>();
         config.put("interceptor.class.names", "com.ibm.eventstreams.interceptors.metrics.ProducerMetricsInterceptor");

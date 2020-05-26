@@ -963,6 +963,69 @@ public class AdminApiModelTest {
     }
 
     @Test
+    public void testDefaultLabelsAndAnnotations() {
+        AdminApiModel adminApiModel = new AdminApiModel(createDefaultEventStreams().build(), imageConfig, listeners, mockCommonServices, false, kafkaPrincipal);
+
+        Map<String, String> computedAnnotations = adminApiModel.getDeployment().getSpec().getTemplate().getMetadata().getAnnotations();
+        ModelUtils.assertMeteringAnnotationsPresent(computedAnnotations);
+
+        Map<String, String> computedLabels = adminApiModel.getDeployment().getSpec().getTemplate().getMetadata().getLabels();
+        ModelUtils.assertEventStreamsLabelsPresent(computedLabels);
+    }
+
+    @Test
+    public void testCustomAnnotations() {
+        Map<String, String> customAnnotations = new HashMap<>();
+        customAnnotations.put("hello", "world");
+        customAnnotations.put("unittesting", "value");
+
+        EventStreams eventStreamsResource = createDefaultEventStreams()
+                .editSpec()
+                .editAdminApi()
+                .withNewTemplate()
+                .withPod(new PodTemplateBuilder()
+                        .withNewMetadata()
+                        .withAnnotations(customAnnotations)
+                        .endMetadata()
+                        .build())
+                .endTemplate()
+                .endAdminApi()
+                .endSpec()
+                .build();
+        AdminApiModel adminApiModel = new AdminApiModel(eventStreamsResource, imageConfig, listeners, mockCommonServices, false, kafkaPrincipal);
+
+        Map<String, String> computedAnnotations = adminApiModel.getDeployment().getSpec().getTemplate().getMetadata().getAnnotations();
+        ModelUtils.assertMeteringAnnotationsPresent(computedAnnotations);
+        assertThat(computedAnnotations, hasEntry("hello", "world"));
+        assertThat(computedAnnotations, hasEntry("unittesting", "value"));
+    }
+
+    @Test
+    public void testCustomLabels() {
+        Map<String, String> customLabels = new HashMap<>();
+        customLabels.put("myextralabel", "myvalue");
+
+        EventStreams eventStreamsResource = createDefaultEventStreams()
+                .editSpec()
+                .editAdminApi()
+                .withNewTemplate()
+                .withPod(new PodTemplateBuilder()
+                        .withNewMetadata()
+                        .withLabels(customLabels)
+                        .endMetadata()
+                        .build())
+                .endTemplate()
+                .endAdminApi()
+                .endSpec()
+                .build();
+        AdminApiModel adminApiModel = new AdminApiModel(eventStreamsResource, imageConfig, listeners, mockCommonServices, false, kafkaPrincipal);
+
+        Map<String, String> computedLabels = adminApiModel.getDeployment().getSpec().getTemplate().getMetadata().getLabels();
+        ModelUtils.assertEventStreamsLabelsPresent(computedLabels);
+        assertThat(computedLabels, hasEntry("myextralabel", "myvalue"));
+    }
+
+    @Test
     public void testVolumeMounts() {
         EventStreams eventStreams = createDefaultEventStreams().build();
         AdminApiModel adminApiModel = new AdminApiModel(eventStreams, imageConfig, null, mockCommonServices, false, kafkaPrincipal);

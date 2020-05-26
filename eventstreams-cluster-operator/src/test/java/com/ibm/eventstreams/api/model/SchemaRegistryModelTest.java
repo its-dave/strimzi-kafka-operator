@@ -800,6 +800,75 @@ public class SchemaRegistryModelTest {
     }
 
     @Test
+    public void testDefaultLabelsAndAnnotations() {
+        SchemaRegistryModel schemaRegistry = createDefaultSchemaRegistryModel();
+
+        Map<String, String> computedAnnotations = schemaRegistry.getDeployment().getSpec().getTemplate().getMetadata().getAnnotations();
+        ModelUtils.assertMeteringAnnotationsPresent(computedAnnotations);
+
+        Map<String, String> computedLabels = schemaRegistry.getDeployment().getSpec().getTemplate().getMetadata().getLabels();
+        ModelUtils.assertEventStreamsLabelsPresent(computedLabels);
+    }
+
+    @Test
+    public void testCustomAnnotations() {
+        Map<String, String> customAnnotations = new HashMap<>();
+        customAnnotations.put("mycustomannotation", "alpha");
+        customAnnotations.put("multipleannotations", "beta");
+        customAnnotations.put("finalannotation", "delta");
+
+        EventStreams defaultEs = createDefaultEventStreams()
+                .editSpec()
+                .editSchemaRegistry()
+                .withNewTemplate()
+                .withPod(new PodTemplateBuilder()
+                        .withNewMetadata()
+                        .withAnnotations(customAnnotations)
+                        .endMetadata()
+                        .build())
+                .endTemplate()
+                .endSchemaRegistry()
+                .endSpec()
+                .build();
+        SchemaRegistryModel schemaRegistry = new SchemaRegistryModel(defaultEs, imageConfig, null, mockCommonServices, kafkaPrincipal);
+
+        Map<String, String> computedAnnotations = schemaRegistry.getDeployment().getSpec().getTemplate().getMetadata().getAnnotations();
+        ModelUtils.assertMeteringAnnotationsPresent(computedAnnotations);
+        assertThat(computedAnnotations, hasEntry("mycustomannotation", "alpha"));
+        assertThat(computedAnnotations, hasEntry("multipleannotations", "beta"));
+        assertThat(computedAnnotations, hasEntry("finalannotation", "delta"));
+    }
+
+    @Test
+    public void testCustomLabels() {
+        Map<String, String> customLabels = new HashMap<>();
+        customLabels.put("mycustomlabel", "alpha");
+        customLabels.put("multiplelabels", "beta");
+        customLabels.put("finallabel", "delta");
+
+        EventStreams defaultEs = createDefaultEventStreams()
+                .editSpec()
+                .editSchemaRegistry()
+                .withNewTemplate()
+                .withPod(new PodTemplateBuilder()
+                        .withNewMetadata()
+                        .withLabels(customLabels)
+                        .endMetadata()
+                        .build())
+                .endTemplate()
+                .endSchemaRegistry()
+                .endSpec()
+                .build();
+        SchemaRegistryModel schemaRegistry = new SchemaRegistryModel(defaultEs, imageConfig, null, mockCommonServices, kafkaPrincipal);
+
+        Map<String, String> computedLabels = schemaRegistry.getDeployment().getSpec().getTemplate().getMetadata().getLabels();
+        ModelUtils.assertEventStreamsLabelsPresent(computedLabels);
+        assertThat(computedLabels, hasEntry("mycustomlabel", "alpha"));
+        assertThat(computedLabels, hasEntry("multiplelabels", "beta"));
+        assertThat(computedLabels, hasEntry("finallabel", "delta"));
+    }
+
+    @Test
     public void testCheckIfEnabled() {
         EventStreams eventStreams = createDefaultEventStreams().build();
         assertThat(SchemaRegistryModel.isSchemaRegistryEnabled(eventStreams), is(true));

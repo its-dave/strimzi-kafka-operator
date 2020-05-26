@@ -382,6 +382,8 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
                     .editOrNewTemplate()
                         .editOrNewMetadata()
                             .addToLabels(CERT_GENERATION_KEY, certGenerationID)
+                            .addToLabels(getLabelOverrides())
+                            .addToAnnotations(getAnnotationOverrides())
                         .endMetadata()
                     .endTemplate()
                 .endSpec()

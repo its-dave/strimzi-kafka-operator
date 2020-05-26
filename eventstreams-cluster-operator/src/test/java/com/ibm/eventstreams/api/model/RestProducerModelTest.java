@@ -320,6 +320,71 @@ public class RestProducerModelTest {
     }
 
     @Test
+    public void testDefaultLabelsAndAnnotations() {
+        RestProducerModel restProducerModel = createDefaultRestProducerModel();
+
+        Map<String, String> computedAnnotations = restProducerModel.getDeployment().getSpec().getTemplate().getMetadata().getAnnotations();
+        ModelUtils.assertMeteringAnnotationsPresent(computedAnnotations);
+
+        Map<String, String> computedLabels = restProducerModel.getDeployment().getSpec().getTemplate().getMetadata().getLabels();
+        ModelUtils.assertEventStreamsLabelsPresent(computedLabels);
+    }
+
+    @Test
+    public void testCustomAnnotations() {
+        Map<String, String> customAnnotations = new HashMap<>();
+        customAnnotations.put("producerann", "value1");
+        customAnnotations.put("additionalann", "value2");
+
+        EventStreams instance = createDefaultEventStreams()
+                .editSpec()
+                .editRestProducer()
+                .withNewTemplate()
+                .withPod(new PodTemplateBuilder()
+                        .withNewMetadata()
+                        .withAnnotations(customAnnotations)
+                        .endMetadata()
+                        .build())
+                .endTemplate()
+                .endRestProducer()
+                .endSpec()
+                .build();
+
+        RestProducerModel restProducerModel = new RestProducerModel(instance, imageConfig, listeners, mockCommonServices);
+        Map<String, String> computedAnnotations = restProducerModel.getDeployment().getSpec().getTemplate().getMetadata().getAnnotations();
+        ModelUtils.assertMeteringAnnotationsPresent(computedAnnotations);
+        assertThat(computedAnnotations, hasEntry("producerann", "value1"));
+        assertThat(computedAnnotations, hasEntry("additionalann", "value2"));
+    }
+
+    @Test
+    public void testCustomLabels() {
+        Map<String, String> customLabels = new HashMap<>();
+        customLabels.put("producerlbl", "value1");
+        customLabels.put("additionallbl", "value2");
+
+        EventStreams instance = createDefaultEventStreams()
+                .editSpec()
+                .editRestProducer()
+                .withNewTemplate()
+                .withPod(new PodTemplateBuilder()
+                        .withNewMetadata()
+                        .withLabels(customLabels)
+                        .endMetadata()
+                        .build())
+                .endTemplate()
+                .endRestProducer()
+                .endSpec()
+                .build();
+
+        RestProducerModel restProducerModel = new RestProducerModel(instance, imageConfig, listeners, mockCommonServices);
+        Map<String, String> computedLabels = restProducerModel.getDeployment().getSpec().getTemplate().getMetadata().getLabels();
+        ModelUtils.assertEventStreamsLabelsPresent(computedLabels);
+        assertThat(computedLabels, hasEntry("producerlbl", "value1"));
+        assertThat(computedLabels, hasEntry("additionallbl", "value2"));
+    }
+
+    @Test
     public void testPodServiceAccountContainsUserSuppliedPullSecret() {
 
         EventStreamsBuilder defaultEs = createDefaultEventStreams();

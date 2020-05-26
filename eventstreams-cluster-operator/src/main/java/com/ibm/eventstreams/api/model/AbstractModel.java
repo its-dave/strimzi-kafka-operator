@@ -87,6 +87,7 @@ import io.strimzi.api.kafka.model.listener.KafkaListenerTls;
 import io.strimzi.api.kafka.model.listener.KafkaListeners;
 import io.strimzi.api.kafka.model.status.ListenerAddress;
 import io.strimzi.api.kafka.model.status.ListenerStatus;
+import io.strimzi.api.kafka.model.template.MetadataTemplate;
 import io.strimzi.api.kafka.model.template.PodTemplate;
 import io.strimzi.operator.cluster.model.ModelUtils;
 import io.strimzi.operator.common.model.Labels;
@@ -100,6 +101,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -125,11 +127,11 @@ public abstract class AbstractModel {
     public static final String AUTHENTICATION_LABEL_SEPARATOR = "-";
     public static final String AUTHENTICATION_LABEL_NO_AUTH = "NO-AUTHENTICATION";
 
-    protected static final String PRODUCT_ID_KEY = "productID";
-    protected static final String PRODUCT_NAME_KEY = "productName";
-    protected static final String PRODUCT_VERSION_KEY = "productVersion";
-    protected static final String PRODUCT_METRIC_KEY = "productMetric";
-    protected static final String PRODUCT_CHARGED_CONTAINERS_KEY = "productChargedContainers";
+    public static final String PRODUCT_ID_KEY = "productID";
+    public static final String PRODUCT_NAME_KEY = "productName";
+    public static final String PRODUCT_VERSION_KEY = "productVersion";
+    public static final String PRODUCT_METRIC_KEY = "productMetric";
+    public static final String PRODUCT_CHARGED_CONTAINERS_KEY = "productChargedContainers";
     protected static final String CLOUDPAK_ID_KEY = "cloudpakId";
     protected static final String CLOUDPAK_NAME_KEY = "cloudpakName";
     protected static final String CLOUDPAK_VERSION_KEY = "cloudpakVersion";
@@ -500,6 +502,20 @@ public abstract class AbstractModel {
         return getDefaultResourceNameWithSuffix(suffix);
     }
 
+    protected Map<String, String> getAnnotationOverrides() {
+        return Optional.ofNullable(podTemplate)
+            .map(PodTemplate::getMetadata)
+            .map(MetadataTemplate::getAnnotations)
+            .orElse(Collections.EMPTY_MAP);
+    }
+
+    protected Map<String, String> getLabelOverrides() {
+        return Optional.ofNullable(podTemplate)
+                .map(PodTemplate::getMetadata)
+                .map(MetadataTemplate::getLabels)
+                .orElse(Collections.EMPTY_MAP);
+    }
+
     protected Map<String, String> getEventStreamsMeteringAnnotations() {
         return getEventStreamsMeteringAnnotations("");
     }
@@ -701,7 +717,9 @@ public abstract class AbstractModel {
                 .withNewTemplate()
                     .withNewMetadata()
                         .addToAnnotations(getEventStreamsMeteringAnnotations())
+                        .addToAnnotations(getAnnotationOverrides())
                         .addToLabels(labels.toMap())
+                        .addToLabels(getLabelOverrides())
                     .endMetadata()
                     .withNewSpec()
                         .withContainers(containers)
