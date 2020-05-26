@@ -607,6 +607,12 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             }
             return log.traceExit(CompositeFuture.join(restProducerFutures)
                 .compose(v -> reconcileRoutes(restProducer, restProducer.getRoutes()))
+                .compose(routesMap -> {
+                    for (Route restProducerRoute : routesMap.values()) {
+                        addEndpointToStatus(EventStreamsEndpoint.REST_PRODUCER_KEY, restProducerRoute);
+                    }
+                    return Future.succeededFuture(routesMap);
+                })
                 .compose(routesMap -> reconcileCerts(restProducer, routesMap, dateSupplier))
                 .compose(secretResult -> {
                     String certGenerationID = null;
@@ -635,15 +641,13 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             adminApiFutures.add(checkPullSecrets(adminApi));
             return log.traceExit(CompositeFuture.join(adminApiFutures)
                     .compose(v -> reconcileRoutes(adminApi, adminApi.getRoutes()))
-                    .compose(routesHostMap -> {
-                        for (String adminRouteHost : routesHostMap.values()) {
-                            String adminRouteUri = "https://" + adminRouteHost;
-                            log.info("adminRouteHost: {} adminRouteUri: {}", adminRouteHost, adminRouteUri);
-                            updateEndpoints(new EventStreamsEndpoint(EventStreamsEndpoint.ADMIN_KEY, EventStreamsEndpoint.EndpointType.API, adminRouteUri));
+                    .compose(routesMap -> {
+                        for (Route adminRoute : routesMap.values()) {
+                            addEndpointToStatus(EventStreamsEndpoint.ADMIN_KEY, adminRoute);
                         }
-                        return Future.succeededFuture(routesHostMap);
+                        return Future.succeededFuture(routesMap);
                     })
-                    .compose(routesHostMap -> reconcileCerts(adminApi, routesHostMap, dateSupplier))
+                    .compose(routesMap -> reconcileCerts(adminApi, routesMap, dateSupplier))
                     .compose(secretResult -> {
                         String certGenerationID = secretResult.resourceOpt()
                             .map(Secret::getMetadata)
@@ -676,18 +680,13 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
 
             return log.traceExit(CompositeFuture.join(schemaRegistryFutures)
                     .compose(v -> reconcileRoutes(schemaRegistry, schemaRegistry.getRoutes()))
-                    .compose(routesHostMap -> {
-                        String schemaRouteHost = routesHostMap.get(schemaRegistry.getRouteName(Endpoint.DEFAULT_EXTERNAL_NAME));
-                        if (schemaRouteHost != null) {
-                            String schemaRouteUri = "https://" + schemaRouteHost;
-                            log.info("schemaRouteHost: {} schemaRouteUri: {}", schemaRouteHost, schemaRouteUri);
-                            updateEndpoints(new EventStreamsEndpoint(EventStreamsEndpoint.SCHEMA_REGISTRY_KEY,
-                                                                     EventStreamsEndpoint.EndpointType.API,
-                                                                     schemaRouteUri));
+                    .compose(routesMap -> {
+                        for (Route schemaRoute : routesMap.values()) {
+                            addEndpointToStatus(EventStreamsEndpoint.SCHEMA_REGISTRY_KEY, schemaRoute);
                         }
-                        return Future.succeededFuture(routesHostMap);
+                        return Future.succeededFuture(routesMap);
                     })
-                    .compose(res -> reconcileCerts(schemaRegistry, res, dateSupplier))
+                    .compose(routesMap -> reconcileCerts(schemaRegistry, routesMap, dateSupplier))
                     .compose(secretResult -> {
                         String certGenerationID = null;
                         if (secretResult.resourceOpt().isPresent()) {
@@ -903,7 +902,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
          * @param dateSupplier
          * @return
          */
-        Future<ReconcileResult<Secret>> reconcileCerts(AbstractSecureEndpointsModel model, Map<String, String> additionalHosts, Supplier<Date> dateSupplier) {
+        Future<ReconcileResult<Secret>> reconcileCerts(AbstractSecureEndpointsModel model, Map<String, Route> additionalHosts, Supplier<Date> dateSupplier) {
             log.traceEntry(() -> model, () -> additionalHosts, () -> dateSupplier);
             try {
                 boolean regenSecret = false;
@@ -986,9 +985,10 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
          * @return a boolean of whether or not we need to regenerate the secret
          * @throws EventStreamsCertificateException
          */
-        private boolean updateCertAndKeyInModel(Optional<Secret> certSecret, AbstractSecureEndpointsModel model, Endpoint endpoint, Map<String, String> additionalHosts, Supplier<Date> dateSupplier) throws EventStreamsCertificateException {
+        private boolean updateCertAndKeyInModel(Optional<Secret> certSecret, AbstractSecureEndpointsModel model, Endpoint endpoint, Map<String, Route> additionalHosts, Supplier<Date> dateSupplier) throws EventStreamsCertificateException {
             log.traceEntry(() -> certSecret, () -> model, () -> endpoint, () -> additionalHosts, () -> dateSupplier);
-            String host = endpoint.isRoute() ? additionalHosts.getOrDefault(model.getRouteName(endpoint.getName()), "") : "";
+            Route route = additionalHosts.get(model.getRouteName(endpoint.getName()));
+            String host = endpoint.isRoute() ? Optional.ofNullable(route).map(Route::getSpec).map(RouteSpec::getHost).orElse("") : "";
             List<String> hosts = host.isEmpty() ? Collections.emptyList() : Collections.singletonList(host);
             Service service = endpoint.isRoute() ? null : model.getSecurityService(endpoint.getType());
 
@@ -1020,13 +1020,13 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             return log.traceExit(false);
         }
 
-        protected Future<Map<String, String>> reconcileRoutes(AbstractSecureEndpointsModel model, Map<String, Route> routes) {
+        protected Future<Map<String, Route>> reconcileRoutes(AbstractSecureEndpointsModel model, Map<String, Route> routes) {
             log.traceEntry(() -> model, () -> routes);
             return log.traceExit(deleteUnspecifiedRoutes(model, routes)
                 .compose(res -> createRoutes(model, routes)));
         }
 
-        protected Future<Map<String, String>> createRoutes(AbstractSecureEndpointsModel model, Map<String, Route> routes) {
+        protected Future<Map<String, Route>> createRoutes(AbstractSecureEndpointsModel model, Map<String, Route> routes) {
             log.traceEntry(() -> model, () -> routes);
             if (!pfa.hasRoutes() || routeOperator == null) {
                 log.debug("Finished attempting to create Routes for {}, no Routes to create", model.getComponentName());
@@ -1037,30 +1037,28 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 .stream()
                 .map(entry -> routeOperator.reconcile(namespace, entry.getKey(), entry.getValue())
                     .compose(routeResult -> {
-                        Map<String, String> map = new HashMap<>(1);
-                        String routeHost = routeResult.resourceOpt()
+                        Route route = routeResult
+                            .resourceOpt()
+                            .orElse(null);
+                        String routeHost = Optional.ofNullable(route)
                             .map(Route::getSpec)
                             .map(RouteSpec::getHost)
                             .orElse("");
 
-                        if (!routeHost.isEmpty()) {
-                            status.addToRoutes(getRouteShortName(model, entry.getKey()), routeHost);
-                            map.put(entry.getKey(), routeHost);
-                        }
-                        return Future.succeededFuture(map);
+                        status.addToRoutes(getRouteShortName(model, entry.getKey()), routeHost);
+                        return Future.succeededFuture(Collections.singletonMap(entry.getKey(), route));
                     }))
                 .collect(Collectors.toList());
 
             return log.traceExit(CompositeFuture.join(routeFutures)
                 .compose(ar -> {
-                    List<Map<String, String>> allRoutesMaps = ar.list();
-                    Map<String, String> routesMap = allRoutesMaps
+                    List<Map<String, Route>> allRoutesMaps = ar.list();
+                    Map<String, Route> routesMap = allRoutesMaps
                         .stream()
-                        .reduce((map1, map2) -> {
+                        .reduce(new HashMap<>(), (map1, map2) -> {
                             map1.putAll(map2);
                             return map1;
-                        })
-                        .orElse(Collections.emptyMap());
+                        });
                     return Future.succeededFuture(routesMap);
                 }));
         }
@@ -1153,6 +1151,25 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             status.addToConditions(condition);
             status.getConditions().sort(Comparator.comparing(Condition::getLastTransitionTime)
                                             .thenComparing(Condition::getType, Comparator.reverseOrder()));
+            log.traceExit();
+        }
+
+        private void addEndpointToStatus(String key, Route route) {
+            log.traceEntry();
+            String routeHost = Optional.ofNullable(route)
+                .map(Route::getSpec)
+                .map(RouteSpec::getHost)
+                .orElse("");
+            boolean isTls = Optional.of(route)
+                .map(Route::getSpec)
+                .map(RouteSpec::getTls)
+                .isPresent();
+            String protocol = isTls ? "https://" : "http://";
+            String routeUri = protocol + routeHost;
+            log.info("{}: Host: {} Uri: {}", key, routeHost, routeUri);
+            updateEndpoints(new EventStreamsEndpoint(key,
+                EventStreamsEndpoint.EndpointType.API,
+                routeUri));
             log.traceExit();
         }
     }

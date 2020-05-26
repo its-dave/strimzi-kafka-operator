@@ -44,6 +44,7 @@ public class EventStreamsEndpoint implements Serializable {
     public static final String ADMIN_KEY = "admin";
     public static final String SCHEMA_REGISTRY_KEY = "schemaregistry";
     public static final String UI_KEY = "ui";
+    public static final String REST_PRODUCER_KEY = "restproducer";
 
     public EventStreamsEndpoint() {}
 

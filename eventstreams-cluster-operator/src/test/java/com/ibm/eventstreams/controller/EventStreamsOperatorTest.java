@@ -611,7 +611,7 @@ public class EventStreamsOperatorTest {
 
                 List<EventStreamsEndpoint> endpoints = argument.getValue().getStatus().getEndpoints();
                 // check that there aren't duplicates in the list
-                assertThat(endpoints, hasSize(3));
+                assertThat(endpoints, hasSize(4));
 
                 // check that each expected endpoint is present
                 assertThat(endpoints, Matchers.hasItems(
@@ -629,6 +629,11 @@ public class EventStreamsOperatorTest {
                         .withName("schemaregistry")
                         .withType(EventStreamsEndpoint.EndpointType.API)
                         .withNewUri("https://" + SCHEMA_REGISTRY_ROUTE_NAME + "-" +  Endpoint.DEFAULT_EXTERNAL_NAME + "." + ROUTE_HOST_POSTFIX)
+                        .build(),
+                    new EventStreamsEndpointBuilder()
+                        .withName("restproducer")
+                        .withType(EventStreamsEndpoint.EndpointType.API)
+                        .withNewUri("https://" + REST_PRODUCER_ROUTE_NAME + "-" + Endpoint.DEFAULT_EXTERNAL_NAME + "." + ROUTE_HOST_POSTFIX)
                         .build()));
                 async.flag();
             })));
@@ -1128,7 +1133,8 @@ public class EventStreamsOperatorTest {
 
         Endpoint endpoint = endpoints.get(0);
         String routeName = endpointModel.getRouteName(endpoint.getName());
-        Map<String, String> additionalHosts = Collections.singletonMap(routeName, "extra.host.name");
+        Route route = buildRouteHost("extra.host.name");
+        Map<String, Route> additionalHosts = Collections.singletonMap(routeName, route);
 
         reconciliationState.reconcileCerts(endpointModel, additionalHosts, Date::new)
             .onComplete(context.succeeding(ar -> context.verify(() -> {
@@ -1140,7 +1146,7 @@ public class EventStreamsOperatorTest {
                 CertAndKey certAndKey = reconciliationState.certificateManager.certificateAndKey(secret, endpointModel.getCertSecretCertID(endpoint.getName()), endpointModel.getCertSecretKeyID(endpoint.getName()));
 
                 X509Certificate certificate = ControllerUtils.checkCertificate(reconciliationState.certificateManager, certAndKey);
-                ControllerUtils.checkSans(context, reconciliationState.certificateManager, certificate, null, additionalHosts.get(routeName), componentName);
+                ControllerUtils.checkSans(context, reconciliationState.certificateManager, certificate, null, additionalHosts.get(routeName).getSpec().getHost(), componentName);
                 async.flag();
             })));
     }
@@ -1300,7 +1306,7 @@ public class EventStreamsOperatorTest {
 
         ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, spec, "endpoint-component", "endpoint-component-label");
 
-        reconciliationState.reconcileCerts(endpointModel, Collections.singletonMap(endpointModel.getRouteName(route.getName()), "additional.hosts"), Date::new).setHandler(ar -> {
+        reconciliationState.reconcileCerts(endpointModel, Collections.singletonMap(endpointModel.getRouteName(route.getName()), buildRouteHost("additional.hosts")), Date::new).setHandler(ar -> {
             assertThat("The number of secrets does not match", mockClient.secrets().list().getItems(), hasSize(4));
             Secret secret = mockClient.secrets().withName(endpointModel.getCertificateSecretName()).get();
             assertThat("The certificate secret should be created", secret, is(notNullValue()));
@@ -1338,7 +1344,7 @@ public class EventStreamsOperatorTest {
             .build();
 
         ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, spec, "endpoint-component", "endpoint-component-label");
-        Map<String, String> additionalHosts = Collections.singletonMap(tlsInternal.getName(), "extra.host.name");
+        Map<String, Route> additionalHosts = Collections.singletonMap(tlsInternal.getName(), buildRouteHost("extra.host.name"));
 
         reconciliationState.reconcileCerts(endpointModel, additionalHosts, Date::new).setHandler(ar -> {
             assertThat("The number of secrets does match", mockClient.secrets().list().getItems().size(), is(4));
@@ -1375,7 +1381,7 @@ public class EventStreamsOperatorTest {
             .build();
 
         ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, spec, "endpoint-component", "endpoint-component-label");
-        Map<String, String> additionalHosts = Collections.singletonMap(tlsInternal.getName(), "extra.host.name");
+        Map<String, Route> additionalHosts = Collections.singletonMap(tlsInternal.getName(), buildRouteHost("extra.host.name"));
 
         reconciliationState.reconcileCerts(endpointModel, additionalHosts, Date::new).setHandler(ar -> {
             assertThat("The number of secrets does not match", mockClient.secrets().list().getItems().size(), is(4));
@@ -1412,7 +1418,7 @@ public class EventStreamsOperatorTest {
             .build();
 
         ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, spec, "endpoint-component", "endpoint-component-label");
-        Map<String, String> additionalHosts = Collections.singletonMap(tlsInternal.getName(), "extra.host.name");
+        Map<String, Route> additionalHosts = Collections.singletonMap(tlsInternal.getName(), buildRouteHost("extra.host.name"));
 
         reconciliationState.reconcileCerts(endpointModel, additionalHosts, Date::new).setHandler(ar -> {
             assertThat("The number of secrets does not match", mockClient.secrets().list().getItems().size(), is(4));
@@ -1459,7 +1465,7 @@ public class EventStreamsOperatorTest {
             .build();
 
         ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, spec, "endpoint-component", "endpoint-component-label");
-        Map<String, String> additionalHosts = Collections.singletonMap(endpointModel.getRouteName(tlsRoute.getName()), "extra.host.name");
+        Map<String, Route> additionalHosts = Collections.singletonMap(endpointModel.getRouteName(tlsRoute.getName()), buildRouteHost("extra.host.name"));
 
         reconciliationState.reconcileCerts(endpointModel, additionalHosts, Date::new).setHandler(ar -> {
             assertThat("The number of secrets does not match", mockClient.secrets().list().getItems().size(), is(4));
@@ -1467,7 +1473,7 @@ public class EventStreamsOperatorTest {
             CertAndKey originalInternalTlsCertAndKey = reconciliationState.certificateManager.certificateAndKey(firstSecret, endpointModel.getCertSecretCertID(tlsInternal.getName()), endpointModel.getCertSecretKeyID(tlsInternal.getName()));
             CertAndKey originalTlsRouteCertAndKey = reconciliationState.certificateManager.certificateAndKey(firstSecret, endpointModel.getCertSecretCertID(tlsRoute.getName()), endpointModel.getCertSecretKeyID(tlsRoute.getName()));
 
-            Map<String, String> newHosts = Collections.singletonMap(endpointModel.getRouteName(tlsRoute.getName()), "extra.host.name.2");
+            Map<String, Route> newHosts = Collections.singletonMap(endpointModel.getRouteName(tlsRoute.getName()), buildRouteHost("extra.host.name.2"));
             reconciliationState.reconcileCerts(endpointModel, newHosts, Date::new).setHandler(ar2 -> {
                 assertThat("The number of secrets does match", mockClient.secrets().list().getItems().size(), is(4));
                 Secret secondSecret = mockClient.secrets().withName(endpointModel.getCertificateSecretName()).get();
@@ -1531,7 +1537,7 @@ public class EventStreamsOperatorTest {
             .build();
 
         ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, spec, "endpoint-component", "endpoint-component-label");
-        Map<String, String> additionalHosts = Collections.singletonMap(tlsInternal.getName(), "extra.host.name");
+        Map<String, Route> additionalHosts = Collections.singletonMap(tlsInternal.getName(), buildRouteHost("extra.host.name"));
 
         reconciliationState.reconcileCerts(endpointModel, additionalHosts, Date::new).setHandler(ar -> {
             assertThat("The number of secrets does not match", mockClient.secrets().list().getItems().size(), is(5));
@@ -1588,7 +1594,7 @@ public class EventStreamsOperatorTest {
 
         ModelUtils.EndpointsModel endpointModel = new ModelUtils.EndpointsModel(esCluster, spec, "endpoint-component", "endpoint-component-label");
 
-        Map<String, String> additionalHosts = Collections.singletonMap(tlsInternal.getName(), "extra.host.name");
+        Map<String, Route> additionalHosts = Collections.singletonMap(tlsInternal.getName(), buildRouteHost("extra.host.name"));
 
         reconciliationState.reconcileCerts(endpointModel, additionalHosts, Date::new).setHandler(ar -> {
             assertThat("The number of secrets does not match", mockClient.secrets().list().getItems().size(), is(5));
@@ -3421,5 +3427,86 @@ public class EventStreamsOperatorTest {
                 assertThat(schemaRegistryContainer.getEnv(), hasItem(expectedKafkaPrincipal));
                 async.flag();
             })));
+    }
+
+    @Test
+    public void testDefaultEventStreamsEndpointProtocol(VertxTestContext context) {
+        esOperator = createDefaultEventStreamsOperator(true);
+
+        EventStreams instance = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
+        Checkpoint async = context.checkpoint();
+
+        esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), instance)
+            .onComplete(context.succeeding(v -> context.verify(() -> {
+                ArgumentCaptor<EventStreams> updatedEventStreams = ArgumentCaptor.forClass(EventStreams.class);
+                verify(esResourceOperator, times(2)).updateEventStreamsStatus(updatedEventStreams.capture());
+                List<EventStreamsEndpoint> endpoints =  updatedEventStreams.getValue().getStatus().getEndpoints();
+                assertThat(endpoints, hasSize(4));
+                endpoints.forEach(endpoint -> {
+                    assertTrue(endpoint.getUri().startsWith("https://"), endpoint.getUri() + " should be https");
+                });
+                async.flag();
+            })));
+    }
+
+    @Test
+    public void testCustomEventStreamsEndpointProtocol(VertxTestContext context) {
+        esOperator = createDefaultEventStreamsOperator(true);
+
+        EndpointSpec adminRoute = new EndpointSpecBuilder()
+            .withName("admin-api")
+            .withContainerPort(9999)
+            .withType(EndpointServiceType.ROUTE)
+            .withTlsVersion(TlsVersion.NONE)
+            .build();
+
+        EndpointSpec schemaRegistryRoute = new EndpointSpecBuilder()
+            .withName("schema-registry")
+            .withContainerPort(8888)
+            .withType(EndpointServiceType.ROUTE)
+            .withTlsVersion(TlsVersion.NONE)
+            .build();
+
+        EndpointSpec restProducerRoute = new EndpointSpecBuilder()
+            .withName("rest-producer")
+            .withContainerPort(8881)
+            .withType(EndpointServiceType.ROUTE)
+            .withTlsVersion(TlsVersion.NONE)
+            .build();
+
+        EventStreams instance = new EventStreamsBuilder(createDefaultEventStreams(NAMESPACE, CLUSTER_NAME))
+            .editOrNewSpec()
+            .editAdminApi()
+            .withEndpoints(adminRoute)
+            .endAdminApi()
+            .editSchemaRegistry()
+            .withEndpoints(schemaRegistryRoute)
+            .endSchemaRegistry()
+            .editRestProducer()
+            .withEndpoints(restProducerRoute)
+            .endRestProducer()
+            .endSpec()
+            .build();
+        Checkpoint async = context.checkpoint();
+
+        esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), instance)
+            .onComplete(context.succeeding(v -> context.verify(() -> {
+                ArgumentCaptor<EventStreams> updatedEventStreams = ArgumentCaptor.forClass(EventStreams.class);
+                verify(esResourceOperator, times(2)).updateEventStreamsStatus(updatedEventStreams.capture());
+                List<EventStreamsEndpoint> endpoints =  updatedEventStreams.getValue().getStatus().getEndpoints().stream().filter(endpoint -> !endpoint.getName().contains(AdminUIModel.COMPONENT_NAME)).collect(Collectors.toList());
+                assertThat(endpoints, hasSize(3));
+                endpoints.forEach(endpoint -> {
+                    assertTrue(endpoint.getUri().startsWith("http://"), endpoint.getUri() + " should be http");
+                });
+                async.flag();
+            })));
+    }
+
+    private Route buildRouteHost(String host) {
+        return new RouteBuilder()
+            .editOrNewSpec()
+            .withHost(host)
+            .endSpec()
+            .build();
     }
 }
