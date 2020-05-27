@@ -205,12 +205,16 @@ public class EventStreamsCertificateManager {
     }
 
     public boolean shouldGenerateOrRenewCertificate(Secret certSecret, String certName, Supplier<Date> dateSupplier, Service service, List<String> additionalHosts, String componentName) {
-        byte[] certData = getBase64DecodedSecretData(certSecret, CertificateSecretModel.formatCertID(certName));
-        byte[] keyData = getBase64DecodedSecretData(certSecret, CertificateSecretModel.formatKeyID(certName));
 
-        if (certSecret.getData().get(CertificateSecretModel.formatCertID(certName)) == null) {
+        boolean isCertKeyPresent = Optional.ofNullable(certSecret.getData())
+            .map(data -> data.containsKey(CertificateSecretModel.formatCertID(certName)))
+            .orElse(false);
+        if (!isCertKeyPresent) {
             return true;
         }
+
+        byte[] certData = getBase64DecodedSecretData(certSecret, CertificateSecretModel.formatCertID(certName));
+        byte[] keyData = getBase64DecodedSecretData(certSecret, CertificateSecretModel.formatKeyID(certName));
 
         CertAndKey certAndKey = new CertAndKey(keyData, certData);
         try {

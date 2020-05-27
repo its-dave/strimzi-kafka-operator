@@ -62,7 +62,7 @@ metadata:
     capabilities: Basic Install
     categories: Streaming & Messaging
     certified: 'false'
-    createdAt: 2020-05-26T13:24:10Z
+    createdAt: 2020-05-26T20:07:58Z
     description: Kafka-based messaging platform for handling real-time data feeds.
     operators.operatorframework.io/internal-objects: '["kafkas.eventstreams.ibm.com"]'
     support: IBM
@@ -843,7 +843,7 @@ spec:
                 - name: EVENTSTREAMS_DEFAULT_REST_PRODUCER_IMAGE
                   value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-rest-producer-v2-icp-linux:2020-05-19-15.34.50-b7c951c
                 - name: EVENTSTREAMS_DEFAULT_ADMIN_API_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-admin-icp-linux:2020-05-26-10.43.14-2e3743a
+                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-admin-icp-linux:2020-05-26-16.43.05-1ca91a8
                 - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_IMAGE
                   value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-schema-registry-icp-linux:2020-05-21-15.38.36-21cd0a7-dev
                 - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_AVRO_IMAGE
@@ -975,8 +975,8 @@ spec:
     image: cp.icr.io/cp/icp4i/es/strimzi-operator-init-2020-05-25-22.15.00-64a3aa6@sha256:null
   - name: eventstreams-rest-producer-v2-icp-linux-2020-05-19-15.34.50-b7c951c
     image: cp.icr.io/cp/icp4i/es/eventstreams-rest-producer-v2-icp-linux-2020-05-19-15.34.50-b7c951c@sha256:677388f419d3f47c0a42a0692b94dc5901e651810bcf70208d6c5c8124d7440e
-  - name: eventstreams-admin-icp-linux-2020-05-26-10.43.14-2e3743a
-    image: cp.icr.io/cp/icp4i/es/eventstreams-admin-icp-linux-2020-05-26-10.43.14-2e3743a@sha256:7c9dcee26b81055245570f5dc760bb40b56b8889cb420e4afa1e16b34334b7fc
+  - name: eventstreams-admin-icp-linux-2020-05-26-16.43.05-1ca91a8
+    image: cp.icr.io/cp/icp4i/es/eventstreams-admin-icp-linux-2020-05-26-16.43.05-1ca91a8@sha256:85802380ea17d074f7d7d74a1d1ee8bed56354ee10f402db8b4da93fadd1b3bc
   - name: eventstreams-schema-registry-icp-linux-2020-05-21-15.38.36-21cd0a7-dev
     image: cp.icr.io/cp/icp4i/es/eventstreams-schema-registry-icp-linux-2020-05-21-15.38.36-21cd0a7-dev@sha256:c5723111dd19ae4624593ff8f4b79fe85ca10dcea1a43bad9b5505e19ca397e9
   - name: eventstreams-schema-registry-avro-icp-linux-2020-05-21-15.36.30-3e46cc0-dev
