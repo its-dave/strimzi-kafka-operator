@@ -21,6 +21,7 @@ import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.spec.ExternalAccess;
 import com.ibm.eventstreams.api.spec.LicenseSpec;
 import com.ibm.eventstreams.api.spec.SecuritySpec;
+import io.fabric8.kubernetes.api.model.Affinity;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
 import io.fabric8.kubernetes.api.model.Container;
@@ -516,6 +517,12 @@ public abstract class AbstractModel {
                 .orElse(Collections.EMPTY_MAP);
     }
 
+    protected Affinity getAffinity() {
+        return Optional.ofNullable(podTemplate)
+                .map(PodTemplate::getAffinity)
+                .orElse(null);
+    }
+
     protected Map<String, String> getEventStreamsMeteringAnnotations() {
         return getEventStreamsMeteringAnnotations("");
     }
@@ -722,6 +729,7 @@ public abstract class AbstractModel {
                         .addToLabels(getLabelOverrides())
                     .endMetadata()
                     .withNewSpec()
+                        .withAffinity(getAffinity())
                         .withContainers(containers)
                         .withVolumes(volumes)
                         .withSecurityContext(getPodSecurityContext())

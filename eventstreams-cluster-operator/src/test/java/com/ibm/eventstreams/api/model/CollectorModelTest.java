@@ -18,10 +18,13 @@ import com.ibm.eventstreams.api.model.utils.ModelUtils;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
 import com.ibm.eventstreams.controller.EventStreamsOperatorConfig;
+import io.fabric8.kubernetes.api.model.Affinity;
+import io.fabric8.kubernetes.api.model.AffinityBuilder;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.EnvVarBuilder;
 import io.fabric8.kubernetes.api.model.IntOrString;
+import io.fabric8.kubernetes.api.model.LabelSelectorRequirement;
 import io.fabric8.kubernetes.api.model.LocalObjectReference;
 import io.fabric8.kubernetes.api.model.LocalObjectReferenceBuilder;
 import io.fabric8.kubernetes.api.model.Quantity;
@@ -31,6 +34,8 @@ import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.ServicePort;
 import io.fabric8.kubernetes.api.model.Volume;
 import io.fabric8.kubernetes.api.model.VolumeMount;
+import io.fabric8.kubernetes.api.model.WeightedPodAffinityTerm;
+import io.fabric8.kubernetes.api.model.WeightedPodAffinityTermBuilder;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicy;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicyIngressRule;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicyIngressRuleBuilder;
@@ -61,6 +66,7 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasItem;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
@@ -687,6 +693,53 @@ public class CollectorModelTest {
         assertThat(collectorModel.getDeployment("newID").getMetadata().getLabels().get(AbstractSecureEndpointsModel.CERT_GENERATION_KEY), is("newID"));
         assertThat(collectorModel.getDeployment("newID").getSpec().getTemplate().getMetadata().getLabels().containsKey(AbstractSecureEndpointsModel.CERT_GENERATION_KEY), is(true));
         assertThat(collectorModel.getDeployment("newID").getSpec().getTemplate().getMetadata().getLabels().get(AbstractSecureEndpointsModel.CERT_GENERATION_KEY), is("newID"));
+    }
+
+    @Test
+    public void testDefaultAffinity() {
+        EventStreams es = createDefaultEventStreams().build();
+        CollectorModel collectorModel = new CollectorModel(es, imageConfig);
+        Affinity collectorAffinity = collectorModel.getDeployment().getSpec().getTemplate().getSpec().getAffinity();
+        assertNull(collectorAffinity);
+    }
+
+    @Test
+    public void testCustomAffinity() {
+        WeightedPodAffinityTerm customPodSelector = new WeightedPodAffinityTermBuilder()
+                .withNewPodAffinityTerm()
+                    .withNewLabelSelector()
+                        .addNewMatchExpression()
+                            .addNewValue("myannotation")
+                            .withNewKey("mykey")
+                            .withNewOperator("myoperator")
+                        .endMatchExpression()
+                    .endLabelSelector()
+                .endPodAffinityTerm()
+                .withWeight(70)
+            .build();
+
+        Affinity affinity = new AffinityBuilder()
+                .withNewPodAffinity()
+                    .addNewPreferredDuringSchedulingIgnoredDuringExecutionLike(customPodSelector)
+                    .endPreferredDuringSchedulingIgnoredDuringExecution()
+                .endPodAffinity()
+            .build();
+
+        EventStreams es = createDefaultEventStreams()
+                .editSpec()
+                    .editCollector()
+                        .withNewTemplate()
+                            .withPod(new PodTemplateBuilder().withAffinity(affinity).build())
+                        .endTemplate()
+                    .endCollector()
+                .endSpec()
+            .build();
+        CollectorModel collectorModel = new CollectorModel(es, imageConfig);
+
+        Affinity collectorAffinity = collectorModel.getDeployment().getSpec().getTemplate().getSpec().getAffinity();
+        WeightedPodAffinityTerm computedPodAffinity = collectorAffinity.getPodAffinity().getPreferredDuringSchedulingIgnoredDuringExecution().get(0);
+        LabelSelectorRequirement computedPodMatchExpression = computedPodAffinity.getPodAffinityTerm().getLabelSelector().getMatchExpressions().get(0);
+        assertThat(computedPodMatchExpression.getKey(), is("mykey"));
     }
 
     @Test

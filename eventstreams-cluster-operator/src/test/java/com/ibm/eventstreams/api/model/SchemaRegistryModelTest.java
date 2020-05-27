@@ -20,6 +20,8 @@ import com.ibm.eventstreams.api.model.utils.ModelUtils;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
 import com.ibm.eventstreams.controller.EventStreamsOperatorConfig;
+import io.fabric8.kubernetes.api.model.Affinity;
+import io.fabric8.kubernetes.api.model.AffinityBuilder;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.EnvVarBuilder;
@@ -27,7 +29,9 @@ import io.fabric8.kubernetes.api.model.IntOrString;
 import io.fabric8.kubernetes.api.model.LabelSelector;
 import io.fabric8.kubernetes.api.model.LocalObjectReference;
 import io.fabric8.kubernetes.api.model.LocalObjectReferenceBuilder;
+import io.fabric8.kubernetes.api.model.NodeSelectorRequirement;
 import io.fabric8.kubernetes.api.model.PersistentVolumeClaim;
+import io.fabric8.kubernetes.api.model.PreferredSchedulingTerm;
 import io.fabric8.kubernetes.api.model.Quantity;
 import io.fabric8.kubernetes.api.model.ResourceRequirements;
 import io.fabric8.kubernetes.api.model.ResourceRequirementsBuilder;
@@ -73,6 +77,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasItems;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -866,6 +871,46 @@ public class SchemaRegistryModelTest {
         assertThat(computedLabels, hasEntry("mycustomlabel", "alpha"));
         assertThat(computedLabels, hasEntry("multiplelabels", "beta"));
         assertThat(computedLabels, hasEntry("finallabel", "delta"));
+    }
+
+    @Test
+    public void testDefaultAffinity() {
+        SchemaRegistryModel schemaRegistry = createDefaultSchemaRegistryModel();
+        Affinity schemaRegistryAffinity = schemaRegistry.getDeployment().getSpec().getTemplate().getSpec().getAffinity();
+        assertNull(schemaRegistryAffinity);
+    }
+
+    @Test
+    public void testCustomAffinity() {
+        Affinity affinity = new AffinityBuilder()
+                .withNewNodeAffinity()
+                    .addNewPreferredDuringSchedulingIgnoredDuringExecution()
+                        .withNewPreference()
+                            .addNewMatchExpression()
+                                .withNewKey("custom-schema-key")
+                                .withNewOperator("custom-schema-operator")
+                                .addNewValue("custom-schema-value")
+                            .endMatchExpression()
+                        .endPreference()
+                    .endPreferredDuringSchedulingIgnoredDuringExecution()
+                .endNodeAffinity()
+            .build();
+
+        EventStreams defaultEs = createDefaultEventStreams()
+                .editSpec()
+                    .editSchemaRegistry()
+                        .withNewTemplate()
+                            .withPod(new PodTemplateBuilder().withAffinity(affinity).build())
+                        .endTemplate()
+                    .endSchemaRegistry()
+                .endSpec()
+            .build();
+        SchemaRegistryModel schemaRegistry = new SchemaRegistryModel(defaultEs, imageConfig, null, mockCommonServices, kafkaPrincipal);
+
+        Affinity schemaRegAffinity = schemaRegistry.getDeployment().getSpec().getTemplate().getSpec().getAffinity();
+        PreferredSchedulingTerm computedNodeSelector = schemaRegAffinity.getNodeAffinity().getPreferredDuringSchedulingIgnoredDuringExecution().get(0);
+        NodeSelectorRequirement computedMatchExpression = computedNodeSelector.getPreference().getMatchExpressions().get(0);
+        assertThat(computedMatchExpression.getKey(), is("custom-schema-key"));
     }
 
     @Test

@@ -385,6 +385,9 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
                             .addToLabels(getLabelOverrides())
                             .addToAnnotations(getAnnotationOverrides())
                         .endMetadata()
+                        .editOrNewSpec()
+                            .withAffinity(getAffinity())
+                        .endSpec()
                     .endTemplate()
                 .endSpec()
                 .build();

@@ -21,10 +21,13 @@ import com.ibm.eventstreams.api.model.utils.ModelUtils;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
 import com.ibm.eventstreams.controller.EventStreamsOperatorConfig;
+import io.fabric8.kubernetes.api.model.Affinity;
+import io.fabric8.kubernetes.api.model.AffinityBuilder;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.EnvVarBuilder;
 import io.fabric8.kubernetes.api.model.IntOrString;
+import io.fabric8.kubernetes.api.model.LabelSelectorRequirement;
 import io.fabric8.kubernetes.api.model.LocalObjectReference;
 import io.fabric8.kubernetes.api.model.LocalObjectReferenceBuilder;
 import io.fabric8.kubernetes.api.model.Quantity;
@@ -33,6 +36,8 @@ import io.fabric8.kubernetes.api.model.ResourceRequirementsBuilder;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.Volume;
 import io.fabric8.kubernetes.api.model.VolumeMount;
+import io.fabric8.kubernetes.api.model.WeightedPodAffinityTerm;
+import io.fabric8.kubernetes.api.model.WeightedPodAffinityTermBuilder;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicy;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicyIngressRule;
@@ -65,6 +70,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasItem;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -383,6 +389,55 @@ public class RestProducerModelTest {
         assertThat(computedLabels, hasEntry("producerlbl", "value1"));
         assertThat(computedLabels, hasEntry("additionallbl", "value2"));
     }
+
+    @Test
+    public void testDefaultAffinity() {
+        RestProducerModel restProducerModel = createDefaultRestProducerModel();
+
+        Affinity restProducerAffinity = restProducerModel.getDeployment().getSpec().getTemplate().getSpec().getAffinity();
+        assertNull(restProducerAffinity);
+    }
+
+    @Test
+    public void testCustomAffinity() {
+        WeightedPodAffinityTerm customPodSelector = new WeightedPodAffinityTermBuilder()
+                .withWeight(20)
+                .withNewPodAffinityTerm()
+                    .withNewLabelSelector()
+                        .addNewMatchExpression()
+                            .withNewKey("preferred-key")
+                            .withNewOperator("preferred-operator")
+                            .addNewValue("preferred-value")
+                        .endMatchExpression()
+                    .endLabelSelector()
+                .endPodAffinityTerm()
+            .build();
+
+        Affinity affinity = new AffinityBuilder()
+                .withNewPodAffinity()
+                    .addNewPreferredDuringSchedulingIgnoredDuringExecutionLike(customPodSelector)
+                    .endPreferredDuringSchedulingIgnoredDuringExecution()
+                .endPodAffinity()
+            .build();
+
+        EventStreams eventStreamsResource = createDefaultEventStreams()
+                .editSpec()
+                    .editRestProducer()
+                        .withNewTemplate()
+                            .withPod(new PodTemplateBuilder().withAffinity(affinity).build())
+                        .endTemplate()
+                    .endRestProducer()
+                .endSpec()
+            .build();
+
+        RestProducerModel restProducerModel = new RestProducerModel(eventStreamsResource, imageConfig, listeners, mockCommonServices);
+
+        Affinity restProducerAffinity = restProducerModel.getDeployment().getSpec().getTemplate().getSpec().getAffinity();
+        WeightedPodAffinityTerm computedPodAffinity = restProducerAffinity.getPodAffinity().getPreferredDuringSchedulingIgnoredDuringExecution().get(0);
+        LabelSelectorRequirement computedPodMatchExpression = computedPodAffinity.getPodAffinityTerm().getLabelSelector().getMatchExpressions().get(0);
+        assertThat(computedPodMatchExpression.getKey(), is("preferred-key"));
+    }
+
 
     @Test
     public void testPodServiceAccountContainsUserSuppliedPullSecret() {

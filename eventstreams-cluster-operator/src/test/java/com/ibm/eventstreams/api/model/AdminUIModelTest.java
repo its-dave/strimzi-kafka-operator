@@ -20,13 +20,18 @@ import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
 import com.ibm.eventstreams.api.spec.ExternalAccess;
 import com.ibm.eventstreams.api.spec.ExternalAccessBuilder;
 import com.ibm.eventstreams.controller.EventStreamsOperatorConfig;
+import io.fabric8.kubernetes.api.model.Affinity;
+import io.fabric8.kubernetes.api.model.AffinityBuilder;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.EnvVarBuilder;
+import io.fabric8.kubernetes.api.model.LabelSelectorRequirement;
 import io.fabric8.kubernetes.api.model.LocalObjectReference;
 import io.fabric8.kubernetes.api.model.LocalObjectReferenceBuilder;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
+import io.fabric8.kubernetes.api.model.PodAffinityTerm;
+import io.fabric8.kubernetes.api.model.PodAffinityTermBuilder;
 import io.fabric8.kubernetes.api.model.PodSpec;
 import io.fabric8.kubernetes.api.model.Quantity;
 import io.fabric8.kubernetes.api.model.ResourceRequirements;
@@ -68,6 +73,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.emptyIterableOf;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasSize;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
@@ -804,6 +810,50 @@ public class AdminUIModelTest {
     }
 
     @Test
+    public void testDefaultAffinity() {
+        AdminUIModel adminUiModel = createDefaultAdminUIModel();
+        Affinity adminUiAffinity = adminUiModel.getDeployment().getSpec().getTemplate().getSpec().getAffinity();
+        assertNull(adminUiAffinity);
+    }
+
+    @Test
+    public void testCustomAffinity() {
+        PodAffinityTerm customPodSelector = new PodAffinityTermBuilder()
+                .withNewLabelSelector()
+                    .addNewMatchExpression()
+                        .withNewKey("required-key")
+                        .withNewOperator("required-operator")
+                        .addNewValue("required-value")
+                    .endMatchExpression()
+                .endLabelSelector()
+            .build();
+
+        Affinity affinity = new AffinityBuilder()
+                .withNewPodAffinity()
+                    .addNewRequiredDuringSchedulingIgnoredDuringExecutionLike(customPodSelector)
+                    .endRequiredDuringSchedulingIgnoredDuringExecution()
+                .endPodAffinity()
+            .build();
+
+        EventStreams eventStreamsResource = createDefaultEventStreams()
+                .editSpec()
+                    .editAdminUI()
+                        .withNewTemplate()
+                            .withPod(new PodTemplateBuilder().withAffinity(affinity).build())
+                        .endTemplate()
+                    .endAdminUI()
+                .endSpec()
+            .build();
+
+        AdminUIModel adminUiModel = new AdminUIModel(eventStreamsResource, imageConfig, false, null, headerURL);
+
+        Affinity collectorAffinity = adminUiModel.getDeployment().getSpec().getTemplate().getSpec().getAffinity();
+        PodAffinityTerm computedPodAffinity = collectorAffinity.getPodAffinity().getRequiredDuringSchedulingIgnoredDuringExecution().get(0);
+        LabelSelectorRequirement computedPodMatchExpression = computedPodAffinity.getLabelSelector().getMatchExpressions().get(0);
+        assertThat(computedPodMatchExpression.getKey(), is("required-key"));
+    }
+
+    @Test
     public void testMetricsEnvVarTrueWhenUsingKafkaInterceptor() {
         Map<String, Object> config = new HashMap<>();
         config.put("interceptor.class.names", "com.ibm.eventstreams.interceptors.metrics.ProducerMetricsInterceptor");
@@ -825,10 +875,8 @@ public class AdminUIModelTest {
         EnvVar metricsEnvVar = envVars.stream().filter(var -> var.getName() == "METRICS_ENABLED").findFirst().orElseGet(EnvVar::new);
         assertThat(producerMetricsEnvVar.getValue(), is("true"));
         assertThat(metricsEnvVar.getValue(), is("true"));
-
-
-        
     }
+
     @Test
     public void testMetricsEnvVarFalseTrueWhenNoKafkaInterceptor() {
         EventStreams eventStreams = createDefaultEventStreams()

@@ -27,6 +27,8 @@ import com.ibm.eventstreams.api.spec.EventStreamsSpecBuilder;
 import com.ibm.eventstreams.api.spec.SecurityComponentSpecBuilder;
 import com.ibm.eventstreams.api.spec.SecuritySpecBuilder;
 import com.ibm.eventstreams.controller.EventStreamsOperatorConfig;
+import io.fabric8.kubernetes.api.model.Affinity;
+import io.fabric8.kubernetes.api.model.AffinityBuilder;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.EnvVarBuilder;
@@ -35,6 +37,9 @@ import io.fabric8.kubernetes.api.model.EnvVarSourceBuilder;
 import io.fabric8.kubernetes.api.model.IntOrString;
 import io.fabric8.kubernetes.api.model.LocalObjectReference;
 import io.fabric8.kubernetes.api.model.LocalObjectReferenceBuilder;
+import io.fabric8.kubernetes.api.model.NodeSelectorRequirement;
+import io.fabric8.kubernetes.api.model.NodeSelectorTerm;
+import io.fabric8.kubernetes.api.model.NodeSelectorTermBuilder;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.kubernetes.api.model.OwnerReference;
 import io.fabric8.kubernetes.api.model.Quantity;
@@ -85,9 +90,11 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
+@SuppressWarnings({"checkstyle:ClassFanOutComplexity", "checkstyle:ClassDataAbstractionCoupling"})
 public class AdminApiModelTest {
 
     private final String instanceName = "test-instance";
@@ -1023,6 +1030,48 @@ public class AdminApiModelTest {
         Map<String, String> computedLabels = adminApiModel.getDeployment().getSpec().getTemplate().getMetadata().getLabels();
         ModelUtils.assertEventStreamsLabelsPresent(computedLabels);
         assertThat(computedLabels, hasEntry("myextralabel", "myvalue"));
+    }
+
+    @Test
+    public void testDefaultAffinity() {
+        AdminApiModel adminApiModel = new AdminApiModel(createDefaultEventStreams().build(), imageConfig, listeners, mockCommonServices, false, kafkaPrincipal);
+        Affinity adminApiAffinity = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getAffinity();
+        assertNull(adminApiAffinity);
+    }
+
+    @Test
+    public void testCustomAffinity() {
+        NodeSelectorTerm customNodeSelector = new NodeSelectorTermBuilder()
+                .addNewMatchExpression()
+                    .withNewKey("custom-key")
+                    .withNewOperator("custom-operator")
+                    .addNewValue("custom-value")
+                .endMatchExpression()
+            .build();
+
+        Affinity affinity = new AffinityBuilder()
+                .withNewNodeAffinity()
+                    .withNewRequiredDuringSchedulingIgnoredDuringExecution()
+                        .addToNodeSelectorTerms(customNodeSelector)
+                    .endRequiredDuringSchedulingIgnoredDuringExecution()
+                .endNodeAffinity()
+            .build();
+
+        EventStreams eventStreamsResource = createDefaultEventStreams()
+                .editSpec()
+                    .editAdminApi()
+                        .withNewTemplate()
+                            .withPod(new PodTemplateBuilder().withAffinity(affinity).build())
+                        .endTemplate()
+                    .endAdminApi()
+                .endSpec()
+            .build();
+        AdminApiModel adminApiModel = new AdminApiModel(eventStreamsResource, imageConfig, listeners, mockCommonServices, false, kafkaPrincipal);
+
+        Affinity adminApiAffinity = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getAffinity();
+        NodeSelectorTerm computedNodeSelector = adminApiAffinity.getNodeAffinity().getRequiredDuringSchedulingIgnoredDuringExecution().getNodeSelectorTerms().get(0);
+        NodeSelectorRequirement computedMatchExpression = computedNodeSelector.getMatchExpressions().get(0);
+        assertThat(computedMatchExpression.getKey(), is("custom-key"));
     }
 
     @Test
