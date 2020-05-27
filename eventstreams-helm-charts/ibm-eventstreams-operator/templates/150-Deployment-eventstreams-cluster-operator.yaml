@@ -142,6 +142,8 @@ spec:
               value: "{{ default .Values.adminUiDatabase.image.repository .Values.imageRepositoryOverride }}/{{ .Values.adminUiDatabase.image.name }}:{{ .Values.adminUiDatabase.image.tag }}"
             - name: EVENTSTREAMS_DEFAULT_COLLECTOR_IMAGE
               value: "{{ default .Values.collector.image.repository .Values.imageRepositoryOverride }}/{{ .Values.collector.image.name }}:{{ .Values.collector.image.tag }}"
+            - name: JAVA_OPTS
+              value: "-XX:+UseContainerSupport -Xdump:what -Xdump:java+system+snap:events=user -Xdump:directory=/tmp/dumps -XX:+HeapDumpOnOutOfMemoryError"
           livenessProbe:
             httpGet:
               path: /healthy

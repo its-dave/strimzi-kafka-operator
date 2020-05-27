@@ -150,6 +150,9 @@ spec:
           value: "hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-session-store-icp-linux:2020-04-09-15.40.36-f32e234"
         - name: EVENTSTREAMS_DEFAULT_COLLECTOR_IMAGE
           value: "hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-metrics-collector-icp-linux:2020-04-08-11.08.41-3cb71d9"
+        - name: JAVA_OPTS
+          value: "-XX:+UseContainerSupport -Xdump:what -Xdump:java+system+snap:events=user
+            -Xdump:directory=/tmp/dumps -XX:+HeapDumpOnOutOfMemoryError"
         livenessProbe:
           httpGet:
             path: /healthy

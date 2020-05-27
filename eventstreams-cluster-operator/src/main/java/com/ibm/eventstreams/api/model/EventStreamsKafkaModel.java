@@ -127,18 +127,27 @@ public class EventStreamsKafkaModel extends AbstractModel {
                 AbstractSecureEndpointsModel.getInternalServiceName(getInstanceName(), CollectorModel.COMPONENT_NAME),
                 getNamespace());
 
-        List<EnvVar> kafkaEnvVars = Arrays.asList(
-            new EnvVarBuilder().withName("COLLECTOR_PORT").withValue(Integer.toString(Endpoint.getPodToPodPort(tlsEnabled()))).build(),
-            new EnvVarBuilder().withName("COLLECTOR_HOST").withValue(collectorEndpoint).build(),
-            new EnvVarBuilder().withName("COLLECTOR_TLS_ENABLED").withValue(String.valueOf(tlsEnabled())).build(),
-            new EnvVarBuilder().withName("COLLECTOR_CERT_PATH").withValue("/opt/kafka/cluster-ca-certs/ca.crt").build(),
-            new EnvVarBuilder().withName("COLLECTOR_HOSTNAME_VERIFICATION").withValue("true").build()
-        );
-
-        kafkaEnvVars = combineEnvVarListsNoDuplicateKeys(
-                kafkaEnvVars,
+        List<EnvVar> kafkaEnvVars = combineEnvVarListsNoDuplicateKeys(defaultKafkaContainerEnvVars(collectorEndpoint),
                 Optional.ofNullable(kafkaClusterSpec.getTemplate())
                         .map(KafkaClusterTemplate::getKafkaContainer)
+                        .map(ContainerTemplate::getEnv)
+                        .orElseGet(ArrayList::new));
+
+        List<EnvVar> zookeeperEnvVars = combineEnvVarListsNoDuplicateKeys(defaultZookeeperContainerEnvVars(),
+                Optional.ofNullable(zookeeperClusterSpec.getTemplate())
+                        .map(ZookeeperClusterTemplate::getZookeeperContainer)
+                        .map(ContainerTemplate::getEnv)
+                        .orElseGet(ArrayList::new));
+
+        List<EnvVar> userOperatorEnvVars = combineEnvVarListsNoDuplicateKeys(defaultOperatorEnvVars(),
+                Optional.ofNullable(entityOperatorSpec.getTemplate())
+                        .map(EntityOperatorTemplate::getUserOperatorContainer)
+                        .map(ContainerTemplate::getEnv)
+                        .orElseGet(ArrayList::new));
+
+        List<EnvVar> topicOperatorEnvVars = combineEnvVarListsNoDuplicateKeys(defaultOperatorEnvVars(),
+                Optional.ofNullable(entityOperatorSpec.getTemplate())
+                        .map(EntityOperatorTemplate::getTopicOperatorContainer)
                         .map(ContainerTemplate::getEnv)
                         .orElseGet(ArrayList::new));
 
@@ -200,6 +209,7 @@ public class EventStreamsKafkaModel extends AbstractModel {
                     .withResources(getZookeeperResources())
                     .editOrNewTemplate()
                         .editOrNewZookeeperContainer()
+                            .withEnv(createContainerEnvVarList(zookeeperEnvVars))
                             .withSecurityContext(writableFsSecurityContext)
                         .endZookeeperContainer()
                         .editOrNewPod()
@@ -228,6 +238,7 @@ public class EventStreamsKafkaModel extends AbstractModel {
                     .endTlsSidecar()
                     .editOrNewTemplate()
                         .editOrNewUserOperatorContainer()
+                            .withEnv(createContainerEnvVarList(userOperatorEnvVars))
                             .withSecurityContext(writableFsSecurityContext)
                         .endUserOperatorContainer()
                         .editOrNewTlsSidecarContainer()
@@ -262,6 +273,7 @@ public class EventStreamsKafkaModel extends AbstractModel {
                         .endTopicOperator()
                         .editOrNewTemplate()
                             .editOrNewTopicOperatorContainer()
+                                .withEnv(createContainerEnvVarList(topicOperatorEnvVars))
                                 .withSecurityContext(writableFsSecurityContext)
                             .endTopicOperatorContainer()
                         .endTemplate()
@@ -454,6 +466,63 @@ public class EventStreamsKafkaModel extends AbstractModel {
         }
         return containerEnvVarsList;
     }
+
+    private List<EnvVar> defaultKafkaContainerEnvVars(String collectorEndpoint) {
+        return Arrays.asList(
+                new EnvVarBuilder().withName("COLLECTOR_PORT").withValue(Integer.toString(Endpoint.getPodToPodPort(tlsEnabled()))).build(),
+                new EnvVarBuilder().withName("COLLECTOR_HOST").withValue(collectorEndpoint).build(),
+                new EnvVarBuilder().withName("COLLECTOR_TLS_ENABLED").withValue(String.valueOf(tlsEnabled())).build(),
+                new EnvVarBuilder().withName("COLLECTOR_CERT_PATH").withValue("/opt/kafka/cluster-ca-certs/ca.crt").build(),
+                new EnvVarBuilder().withName("COLLECTOR_HOSTNAME_VERIFICATION").withValue("true").build(),
+                new EnvVarBuilder().withName("KAFKA_HEAP_OPTS")
+                        // Use container defined heap size
+                        .withValue("-XX:+UseContainerSupport" +
+                                // Dump heap opts configuration on startup
+                                " -Xdump:what" +
+                                // Dump Javacores on user request
+                                " -Xdump:java+system+snap:events=user" +
+                                // Dump files into persistent volume path
+                                " -Xdump:directory=/var/lib/kafka/data/dumps" +
+                                // Heap Dump on OOM
+                                " -XX:+HeapDumpOnOutOfMemoryError")
+                        .build());
+    }
+
+    private List<EnvVar> defaultZookeeperContainerEnvVars() {
+        return Arrays.asList(
+                new EnvVarBuilder().withName("KAFKA_HEAP_OPTS")
+                        // Use container defined heap size
+                        .withValue("-XX:+UseContainerSupport" +
+                                // Dump heap opts configuration on startup
+                                " -Xdump:what" +
+                                // Dump Javacores on user request
+                                " -Xdump:java+system+snap:events=user" +
+                                // Dump files into persistent volume path
+                                " -Xdump:directory=/var/lib/zookeeper/dumps" +
+                                // Heap Dump on OOM
+                                " -XX:+HeapDumpOnOutOfMemoryError")
+                        .build());
+    }
+
+    private List<EnvVar> defaultOperatorEnvVars() {
+        return Arrays.asList(
+                new EnvVarBuilder().withName("JAVA_OPTS")
+                        // Use container defined heap size
+                        .withValue("-XX:+UseContainerSupport" +
+                                // Dump heap opts configuration on startup
+                                " -Xdump:what" +
+                                // Dump Javacores on user request
+                                " -Xdump:java+system+snap:events=user" +
+                                // Dump files into writable dir
+                                " -Xdump:directory=/tmp/dumps" +
+                                // Heap Dump on OOM
+                                " -XX:+HeapDumpOnOutOfMemoryError")
+                        .build());
+    }
+
+
+
+
 
     /**
      * 

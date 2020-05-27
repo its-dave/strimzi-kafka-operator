@@ -4,6 +4,7 @@ EVENTSTREAMS_PROJECT_NAME=eventstreams-cluster-operator
 KAFKA_VERSION ?= 2.12-2.5.0
 KAFKA_TAG ?= 2020-04-30-09.08.40-0c90825
 JAVA_IMAGE_TAG_UBI7_OPENJDK8_JRE ?= latest
+JAVA_IMAGE_TAG_UBI7_OPENJDK8_JDK ?= latest
 B_REGISTRY ?= hyc-qp-stable-docker-local.artifactory.swg-devops.com
 B_PLATFORM ?= icp
 B_OS ?= linux
@@ -15,6 +16,7 @@ BACKUP_VALUES_YAML_FILE="eventstreams-helm-charts/ibm-eventstreams-operator/valu
 
 export DOCKER_BUILD_ARGS := ${DOCKER_BUILD_ARGS}\
     --build-arg JAVA_IMAGE_TAG_UBI7_OPENJDK8_JRE=${JAVA_IMAGE_TAG_UBI7_OPENJDK8_JRE}\
+    --build-arg JAVA_IMAGE_TAG_UBI7_OPENJDK8_JDK=${JAVA_IMAGE_TAG_UBI7_OPENJDK8_JDK}\
     --build-arg B_REGISTRY=${B_REGISTRY} --build-arg B_PLATFORM=${B_PLATFORM}\
     --build-arg B_OS=${B_OS} --build-arg B_ARCH=${B_ARCH}
 export ALTERNATE_BASE ?= ubi
@@ -96,6 +98,7 @@ cleanup_eventstreams_unwanted_files:
 	git checkout -- helm-charts/strimzi-kafka-operator/templates/_kafka_image_map.tpl
 	git checkout -- kafka-versions.yaml
 
-
+docker_images:
+	$(MAKE) -C docker-images docker_build
 
 .PHONY: check_artifactory_prereq get_eventstreams_kafkas set_eventstreams_kafka_versions get_stunnel eventstreams_build eventstreams_operator_build eventstreams_java_build cleanup_eventstreams_unwanted_files
