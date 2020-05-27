@@ -346,7 +346,7 @@ echo "---------------------------------------------------------------"
 
 echo "Creating ConsoleYAMLSample samples"
 
-all_samples=("es-0-quickstart.eventstreams.ibm.com" "es-1-broker.eventstreams.ibm.com" "es-3-broker.eventstreams.ibm.com" "es-6-broker.eventstreams.ibm.com" "es-9-broker.eventstreams.ibm.com" "user-0-consumer.eventstreams.ibm.com" "user-1-producer.eventstreams.ibm.com" "user-2-everything.eventstreams.ibm.com")
+all_samples=("es-0-quickstart.eventstreams.ibm.com" "es-1-broker.eventstreams.ibm.com" "es-3-broker.eventstreams.ibm.com" "es-6-broker.eventstreams.ibm.com" "es-9-broker.eventstreams.ibm.com" "user-0-consumer.eventstreams.ibm.com" "user-1-producer.eventstreams.ibm.com" "user-2-everything.eventstreams.ibm.com" "kafka-connect-production.eventstreams.ibm.com" "kafka-connect-non-production.eventstreams.ibm.com" "kafka-connect-s2i-production.eventstreams.ibm.com" "kafka-connect-s2i-non-production.eventstreams.ibm.com" "mirror-maker-2-production.eventstreams.ibm.com" "mirror-maker-2-non-production.eventstreams.ibm.com")
 samples_to_create=()
 
 for consolesamplename in "${all_samples[@]}"
@@ -874,6 +874,353 @@ spec:
               patternType: prefix
             operation: Alter
 EOF
+      ;;
+    "kafka-connect-production.eventstreams.ibm.com")
+      echo "Creating the kafka connect production sample"
+      ! cat <<EOF | kubectl apply -f -
+apiVersion: console.openshift.io/v1
+kind: ConsoleYAMLSample
+metadata:
+  name: $consolesamplecreatename
+  ownerReferences:
+  - apiVersion: $OWNER_APIVERSION
+    kind: $OWNER_KIND
+    name: $OWNER_NAME
+    uid: $OWNER_UID
+spec:
+  description: Apply this configuration to create a Kafka Connect framework for production environments. Each Kafka Connect replica is a separate chargeable unit.
+  snippet: false
+  targetResource:
+    apiVersion: eventstreams.ibm.com/v1beta1
+    kind: KafkaConnect
+  title: Production Kafka Connect
+  yaml: |
+    apiVersion: eventstreams.ibm.com/v1beta1
+    kind: KafkaConnect
+    metadata:
+      name: prod
+    spec:
+      template:
+        pod:
+          metadata:
+            annotations:
+              eventstreams.production.type: CloudPakForIntegrationProduction
+              productID: 2cba508800504d0abfa48a0e2c4ecbe2
+              productName: IBM Event Streams
+              productVersion: 10.0.0
+              productMetric: VIRTUAL_PROCESSOR_CORE
+              productChargedContainers: <ADD-NAME-OF-KAFKA-CONNECT-CR>-connect
+              cloudpakId: c8b82d189e7545f0892db9ef2731b90d
+              cloudpakName: IBM Cloud Pak for Integration
+              cloudpakVersion: 2020.2.1
+              productCloudpakRatio: "1:1"
+      replicas: 1
+      bootstrapServers: my-cluster-kafka-bootstrap:9093
+      tls:
+        trustedCertificates:
+          - secretName: my-cluster-cluster-ca-cert
+            certificate: ca.crt
+      config:
+        group.id: connect-cluster
+        offset.storage.topic: connect-cluster-offsets
+        config.storage.topic: connect-cluster-configs
+        status.storage.topic: connect-cluster-status
+EOF
+      ;;
+    "kafka-connect-non-production.eventstreams.ibm.com")
+      echo "Creating the kafka connect non-production sample"
+      ! cat <<EOF | kubectl apply -f -
+apiVersion: console.openshift.io/v1
+kind: ConsoleYAMLSample
+metadata:
+  name: $consolesamplecreatename
+  ownerReferences:
+  - apiVersion: $OWNER_APIVERSION
+    kind: $OWNER_KIND
+    name: $OWNER_NAME
+    uid: $OWNER_UID
+spec:
+  description: Apply this configuration to create a Kafka Connect framework for development and testing purposes. Each Kafka Connect replica is a separate chargeable unit.
+  snippet: false
+  targetResource:
+    apiVersion: eventstreams.ibm.com/v1beta1
+    kind: KafkaConnect
+  title: Non-Production Kafka Connect
+  yaml: |
+    apiVersion: eventstreams.ibm.com/v1beta1
+    kind: KafkaConnect
+    metadata:
+      name: prod
+    spec:
+      template:
+        pod:
+          metadata:
+            annotations:
+              eventstreams.production.type: CloudPakForIntegrationNonProduction
+              productID: 2a79e49111f44ec3acd89608e56138f5
+              productName: IBM Event Streams for Non Production
+              productVersion: 10.0.0
+              productMetric: VIRTUAL_PROCESSOR_CORE
+              productChargedContainers: <ADD-NAME-OF-KAFKA-CONNECT-CR>-connect
+              cloudpakId: c8b82d189e7545f0892db9ef2731b90d
+              cloudpakName: IBM Cloud Pak for Integration
+              cloudpakVersion: 2020.2.1
+              productCloudpakRatio: "2:1"
+      replicas: 1
+      bootstrapServers: my-cluster-kafka-bootstrap:9093
+      tls:
+        trustedCertificates:
+          - secretName: my-cluster-cluster-ca-cert
+            certificate: ca.crt
+      config:
+        group.id: connect-cluster
+        offset.storage.topic: connect-cluster-offsets
+        config.storage.topic: connect-cluster-configs
+        status.storage.topic: connect-cluster-status
+EOF
+      ;;
+    "kafka-connect-s2i-production.eventstreams.ibm.com")
+      echo "Creating the kafka connect Source To Image production sample"
+      ! cat <<EOF | kubectl apply -f -
+apiVersion: console.openshift.io/v1
+kind: ConsoleYAMLSample
+metadata:
+  name: $consolesamplecreatename
+  ownerReferences:
+  - apiVersion: $OWNER_APIVERSION
+    kind: $OWNER_KIND
+    name: $OWNER_NAME
+    uid: $OWNER_UID
+spec:
+  description: Apply this configuration to create a Kafka Connect Source to Image framework for production environments. Each Kafka Connect replica is a separate chargeable unit.
+  snippet: false
+  targetResource:
+    apiVersion: eventstreams.ibm.com/v1beta1
+    kind: KafkaConnectS2I
+  title: Production Kafka Connect Source to Image
+  yaml: |
+    apiVersion: eventstreams.ibm.com/v1beta1
+    kind: KafkaConnectS2I
+    metadata:
+      name: prod
+    spec:
+      template:
+        pod:
+          metadata:
+            annotations:
+              eventstreams.production.type: CloudPakForIntegrationProduction
+              productID: 2cba508800504d0abfa48a0e2c4ecbe2
+              productName: IBM Event Streams
+              productVersion: 10.0.0
+              productMetric: VIRTUAL_PROCESSOR_CORE
+              productChargedContainers: <ADD-NAME-OF-KAFKA-CONNECT-CR>-connect
+              cloudpakId: c8b82d189e7545f0892db9ef2731b90d
+              cloudpakName: IBM Cloud Pak for Integration
+              cloudpakVersion: 2020.2.1
+              productCloudpakRatio: "1:1"
+      replicas: 1
+      bootstrapServers: my-cluster-kafka-bootstrap:9093
+      tls:
+        trustedCertificates:
+          - secretName: my-cluster-cluster-ca-cert
+            certificate: ca.crt
+      config:
+        group.id: connect-cluster
+        offset.storage.topic: connect-cluster-offsets
+        config.storage.topic: connect-cluster-configs
+        status.storage.topic: connect-cluster-status
+EOF
+      ;;
+    "kafka-connect-s2i-non-production.eventstreams.ibm.com")
+      echo "Creating the kafka connect Source To Image non-production sample"
+      ! cat <<EOF | kubectl apply -f -
+apiVersion: console.openshift.io/v1
+kind: ConsoleYAMLSample
+metadata:
+  name: $consolesamplecreatename
+  ownerReferences:
+  - apiVersion: $OWNER_APIVERSION
+    kind: $OWNER_KIND
+    name: $OWNER_NAME
+    uid: $OWNER_UID
+spec:
+  description: Apply this configuration to create a Kafka Connect Source to Image framework for development and testing purposes. Each Kafka Connect replica is a separate chargeable unit.
+  snippet: false
+  targetResource:
+    apiVersion: eventstreams.ibm.com/v1beta1
+    kind: KafkaConnectS2I
+  title: Non-Production Kafka Connect Source to Image
+  yaml: |
+    apiVersion: eventstreams.ibm.com/v1beta1
+    kind: KafkaConnectS2I
+    metadata:
+      name: non-prod
+    spec:
+      template:
+        pod:
+          metadata:
+            annotations:
+              eventstreams.production.type: CloudPakForIntegrationNonProduction
+              productID: 2a79e49111f44ec3acd89608e56138f5
+              productName: IBM Event Streams for Non Production
+              productVersion: 10.0.0
+              productMetric: VIRTUAL_PROCESSOR_CORE
+              productChargedContainers: <ADD-NAME-OF-KAFKA-CONNECT-CR>-connect
+              cloudpakId: c8b82d189e7545f0892db9ef2731b90d
+              cloudpakName: IBM Cloud Pak for Integration
+              cloudpakVersion: 2020.2.1
+              productCloudpakRatio: "2:1"
+      replicas: 1
+      bootstrapServers: my-cluster-kafka-bootstrap:9093
+      tls:
+        trustedCertificates:
+          - secretName: my-cluster-cluster-ca-cert
+            certificate: ca.crt
+      config:
+        group.id: connect-cluster
+        offset.storage.topic: connect-cluster-offsets
+        config.storage.topic: connect-cluster-configs
+        status.storage.topic: connect-cluster-status
+EOF
+      ;;
+    "mirror-maker-2-production.eventstreams.ibm.com")
+      echo "Creating the Mirror Maker 2 production sample"
+      ! cat <<EOF | kubectl apply -f -
+apiVersion: console.openshift.io/v1
+kind: ConsoleYAMLSample
+metadata:
+  name: $consolesamplecreatename
+  ownerReferences:
+  - apiVersion: $OWNER_APIVERSION
+    kind: $OWNER_KIND
+    name: $OWNER_NAME
+    uid: $OWNER_UID
+spec:
+  description: Apply this configuration to create a Mirror Maker 2 framework for production environments. Each Mirror Maker 2 replica is a separate chargeable unit.
+  snippet: false
+  targetResource:
+    apiVersion: eventstreams.ibm.com/v1alpha1
+    kind: KafkaMirrorMaker2
+  title: Production Mirror Maker 2
+  yaml: |
+    apiVersion: eventstreams.ibm.com/v1alpha1
+    kind: KafkaMirrorMaker2
+    metadata:
+      name: prod
+    spec:
+      template:
+        pod:
+          metadata:
+            annotations:
+              eventstreams.production.type: CloudPakForIntegrationProduction
+              productID: 2cba508800504d0abfa48a0e2c4ecbe2
+              productName: IBM Event Streams
+              productVersion: 10.0.0
+              productMetric: VIRTUAL_PROCESSOR_CORE
+              productChargedContainers: <ADD-NAME-OF-MM2-CR>-mirror-maker
+              cloudpakId: c8b82d189e7545f0892db9ef2731b90d
+              cloudpakName: IBM Cloud Pak for Integration
+              cloudpakVersion: 10.0.0
+              productCloudpakRatio: "1:1"
+      version: 2.5.0
+      replicas: 1
+      connectCluster: "my-cluster-target"
+      clusters:
+        - alias: "my-cluster-source"
+          bootstrapServers: my-cluster-source-kafka-bootstrap:9092
+        - alias: "my-cluster-target"
+          bootstrapServers: my-cluster-target-kafka-bootstrap:9092
+          config:
+            config.storage.replication.factor: 1
+            offset.storage.replication.factor: 1
+            status.storage.replication.factor: 1
+      mirrors:
+        - sourceCluster: "my-cluster-source"
+          targetCluster: "my-cluster-target"
+          sourceConnector:
+            config:
+              replication.factor: 1
+              offset-syncs.topic.replication.factor: 1
+              sync.topic.acls.enabled: "false"
+          heartbeatConnector:
+            config:
+              heartbeats.topic.replication.factor: 1
+          checkpointConnector:
+            config:
+              checkpoints.topic.replication.factor: 1
+          topicsPattern: ".*"
+          groupsPattern: ".*"
+EOF
+      ;;
+    "mirror-maker-2-non-production.eventstreams.ibm.com")
+      echo "Creating the Mirror Maker 2 non-production sample"
+      ! cat <<EOF | kubectl apply -f -
+apiVersion: console.openshift.io/v1
+kind: ConsoleYAMLSample
+metadata:
+  name: $consolesamplecreatename
+  ownerReferences:
+  - apiVersion: $OWNER_APIVERSION
+    kind: $OWNER_KIND
+    name: $OWNER_NAME
+    uid: $OWNER_UID
+spec:
+  description: Apply this configuration to create a Mirror Maker 2 framework for development and testing purposes. Each Mirror Maker 2 replica is a separate chargeable unit.
+  snippet: false
+  targetResource:
+    apiVersion: eventstreams.ibm.com/v1alpha1
+    kind: KafkaMirrorMaker2
+  title: Non-Production Mirror Maker 2
+  yaml: |
+    apiVersion: eventstreams.ibm.com/v1alpha1
+    kind: KafkaMirrorMaker2
+    metadata:
+      name: non-prod
+    spec:
+      template:
+        pod:
+          metadata:
+            annotations:
+              eventstreams.production.type: CloudPakForIntegrationNonProduction
+              productID: 2a79e49111f44ec3acd89608e56138f5
+              productName: IBM Event Streams for Non Production
+              productVersion: 10.0.0
+              productMetric: VIRTUAL_PROCESSOR_CORE
+              productChargedContainers: <ADD-NAME-OF-MM2-CR>-mirror-maker
+              cloudpakId: c8b82d189e7545f0892db9ef2731b90d
+              cloudpakName: IBM Cloud Pak for Integration
+              cloudpakVersion: 10.0.0
+              productCloudpakRatio: "2:1"
+      version: 2.5.0
+      replicas: 1
+      connectCluster: "my-cluster-target"
+      clusters:
+        - alias: "my-cluster-source"
+          bootstrapServers: my-cluster-source-kafka-bootstrap:9092
+        - alias: "my-cluster-target"
+          bootstrapServers: my-cluster-target-kafka-bootstrap:9092
+          config:
+            config.storage.replication.factor: 1
+            offset.storage.replication.factor: 1
+            status.storage.replication.factor: 1
+      mirrors:
+        - sourceCluster: "my-cluster-source"
+          targetCluster: "my-cluster-target"
+          sourceConnector:
+            config:
+              replication.factor: 1
+              offset-syncs.topic.replication.factor: 1
+              sync.topic.acls.enabled: "false"
+          heartbeatConnector:
+            config:
+              heartbeats.topic.replication.factor: 1
+          checkpointConnector:
+            config:
+              checkpoints.topic.replication.factor: 1
+          topicsPattern: ".*"
+          groupsPattern: ".*"
+EOF
+
       ;;
   esac
 done

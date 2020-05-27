@@ -38,7 +38,7 @@ public class NameValidation implements Validation {
         + "Edit metadata.name to provide a valid instance name.";
 
     public static final String INSTANCE_NAME_DOES_NOT_FOLLOW_REGEX_MESSAGE = "'%s' instance name is an invalid name."
-        + String.format("Instance names are lower case alphanumeric characters or dashes (-), and must start and end with an alphabetic character (%s). ", VALID_NAME_REGEX)
+        + String.format("Instance names are lower case alphanumeric characters or hyphens (-), and must start and end with an alphabetic character (%s). ", VALID_NAME_REGEX)
         + "Edit metadata.name to provide a valid instance name.";
 
     public List<StatusCondition> validateCr(EventStreams customResourceSpec) {
