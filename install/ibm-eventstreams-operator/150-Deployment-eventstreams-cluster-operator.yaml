@@ -46,7 +46,7 @@ spec:
       serviceAccountName: eventstreams-cluster-operator
       initContainers:
       - name: init
-        image: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator-init:2020-05-25-22.15.00-64a3aa6
+        image: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator-init:2020-05-27-10.50.00-1cbbd63
         securityContext:
           privileged: false
           readOnlyRootFilesystem: false
@@ -73,7 +73,7 @@ spec:
             memory: 256Mi
       containers:
       - name: eventstreams-cluster-operator
-        image: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator:2020-05-26-12.00.00-e290f4a
+        image: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator:2020-05-27-10.50.00-1cbbd63
         args:
         - /opt/strimzi/bin/eventstreams_cluster_operator_run.sh
         env:
@@ -129,7 +129,7 @@ spec:
         - name: EVENTSTREAMS_DEFAULT_TOPIC_OPERATOR_IMAGE
           value: "hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator:latest"
         - name: EVENTSTREAMS_DEFAULT_USER_OPERATOR_IMAGE
-          value: "hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator:2020-05-26-12.00.00-e290f4a"
+          value: "hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator:2020-05-27-10.50.00-1cbbd63"
         - name: EVENTSTREAMS_DEFAULT_KAFKA_INIT_IMAGE
           value: "hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator:latest"
         - name: EVENTSTREAMS_DEFAULT_JMXTRANS_IMAGE
