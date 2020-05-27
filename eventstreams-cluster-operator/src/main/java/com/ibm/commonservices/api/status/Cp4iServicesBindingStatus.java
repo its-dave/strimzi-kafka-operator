@@ -34,7 +34,7 @@ public class Cp4iServicesBindingStatus implements Serializable {
     private static final long serialVersionUID = 1L;
     public static final String URL_KEY = "uri";
     public static final String NAME_KEY = "name";
-    public static final String NAVIGATOR_ENDPOINT_NAME = "navigator";
+    public static final String SERVICES_ENDPOINT_NAME = "services";
 
     private Object conditions;
     private boolean customImages;

@@ -239,7 +239,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         final EventStreamsOperatorConfig.ImageLookup imageConfig;
         final EventStreamsCertificateManager certificateManager;
         CommonServices commonServices = null;
-        String cloudPakHeaderURL = null;
+        String cloudPakHeaderURL = "";
         boolean isGeoReplicationEnabled = false;
         String kafkaPrincipal;
         boolean cp4iPresent = false;

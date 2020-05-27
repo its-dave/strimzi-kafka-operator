@@ -87,7 +87,7 @@ public class Cp4iServicesBindingResourceOperator extends
             .map(Cp4iServicesBindingStatus::getEndpoints)
             .orElse(new ArrayList<>())
             .stream()
-            .filter(endpoint -> Cp4iServicesBindingStatus.NAVIGATOR_ENDPOINT_NAME.equals(endpoint.get(Cp4iServicesBindingStatus.NAME_KEY)))
+            .filter(endpoint -> Cp4iServicesBindingStatus.SERVICES_ENDPOINT_NAME.equals(endpoint.get(Cp4iServicesBindingStatus.NAME_KEY)))
             .findFirst()
             .map(navigatorEndpoint -> navigatorEndpoint.get(Cp4iServicesBindingStatus.URL_KEY));
         return headerUrl;

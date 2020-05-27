@@ -56,6 +56,8 @@ import io.strimzi.api.kafka.model.KafkaClusterSpec;
 import io.strimzi.api.kafka.model.KafkaSpec;
 import io.strimzi.api.kafka.model.template.PodTemplate;
 import io.strimzi.operator.cluster.model.ModelUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -101,6 +103,8 @@ public class AdminUIModel extends AbstractModel {
     private TlsVersion crTlsVersionValue;
     private String enableProducerMetricsPanels;
     private String enableMetricsPanels;
+
+    private static final Logger log = LogManager.getLogger(AdminUIModel.class.getName());
 
     /**
      * This class is used to model all the kube resources required for correct deployment of the Admin UI
@@ -417,7 +421,11 @@ public class AdminUIModel extends AbstractModel {
 
         envVarDefaults.add(new EnvVarBuilder().withName("ESFF_SECURITY_AUTH").withValue(isKafkaAuthenticationEnabled(instance).toString()).build());
         envVarDefaults.add(new EnvVarBuilder().withName("ESFF_SECURITY_AUTHZ").withValue(isKafkaAuthenticationEnabled(instance).toString()).build());
-        envVarDefaults.add(new EnvVarBuilder().withName("ICP4I_PLATFORM_SERVICES_URL").withValue(cloudPakHeaderURL).build());
+        if (!cloudPakHeaderURL.isEmpty()) {
+            log.debug("Setting ICP4I_PLATFORM_SERVICES_URL as {}", cloudPakHeaderURL);
+            envVarDefaults.add(new EnvVarBuilder().withName("ICP4I_PLATFORM_SERVICES_URL").withValue(cloudPakHeaderURL).build());
+            envVarDefaults.add(new EnvVarBuilder().withName("DEPLOYMENT_ENVIRONMENT").withValue("icp4i").build());
+        }
 
         List<EnvVar> envVars = combineEnvVarListsNoDuplicateKeys(envVarDefaults);
         return new ContainerBuilder()

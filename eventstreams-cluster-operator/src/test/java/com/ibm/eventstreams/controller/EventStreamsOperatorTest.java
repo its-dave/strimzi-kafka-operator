@@ -202,7 +202,6 @@ public class EventStreamsOperatorTest {
     private static final String IAM_BEARER_LABEL = "IAM-BEARER";
     private static final String SCRAM_SHA_512_LABEL = "SCRAM-SHA-512";
     private static final String TLS_LABEL = "TLS";
-    private static final String COMMON_SERVICES_NAMESPACE = "ibm-common-services";
     private static final String IAM_CLUSTER_NAME = "my-cluster";
     private static final String INGRESS_SERVICE = "ingress-service.ns";
     private static final String CLUSTER_ENDPOINT = "https://" + INGRESS_SERVICE + ".svc:443";
@@ -2503,13 +2502,13 @@ public class EventStreamsOperatorTest {
 
                     assertThat(adminUI.isPresent(), is(true));
                     Container uiContainer = adminUI.get().getSpec().getTemplate().getSpec().getContainers().get(0);
-                    assertThat(uiContainer.getEnv(), hasItem(new EnvVarBuilder().withName(CP4I_ADMIN_UI_ENVAR_NAME).withValue("").build()));
+                    assertThat(uiContainer.getEnv(), not(hasItem(new EnvVarBuilder().withName(CP4I_ADMIN_UI_ENVAR_NAME).withValue("").build())));
                     async.flag();
                 })));
     }
 
     @Test
-    public void testWaitForCp4iServicesBindingStatusFailsSetsEmptyHeaderURL(VertxTestContext context) {
+    public void testWaitForCp4iServicesBindingStatusFailsDoesNotSetHeaderURL(VertxTestContext context) {
         when(cp4iResourceOperator.waitForCp4iServicesBindingStatusAndMaybeGetUrl(matches(NAMESPACE), matches(CP4I_BINDING_NAME), anyLong(), anyLong()))
                 .thenReturn(Future.failedFuture("Failed to get status"));
 
@@ -2528,7 +2527,7 @@ public class EventStreamsOperatorTest {
 
                     assertThat(adminUI.isPresent(), is(true));
                     Container uiContainer = adminUI.get().getSpec().getTemplate().getSpec().getContainers().get(0);
-                    assertThat(uiContainer.getEnv(), hasItem(new EnvVarBuilder().withName(CP4I_ADMIN_UI_ENVAR_NAME).withValue("").build()));
+                    assertThat(uiContainer.getEnv(), not(hasItem(new EnvVarBuilder().withName(CP4I_ADMIN_UI_ENVAR_NAME).withValue("").build())));
                     async.flag();
                 })));
     }
@@ -2552,7 +2551,7 @@ public class EventStreamsOperatorTest {
 
                     assertThat(adminUI.isPresent(), is(true));
                     Container uiContainer = adminUI.get().getSpec().getTemplate().getSpec().getContainers().get(0);
-                    assertThat(uiContainer.getEnv(), hasItem(new EnvVarBuilder().withName(CP4I_ADMIN_UI_ENVAR_NAME).withValue("").build()));
+                    assertThat(uiContainer.getEnv(), not(hasItem(new EnvVarBuilder().withName(CP4I_ADMIN_UI_ENVAR_NAME).withValue("").build())));
                     async.flag();
                 })));
     }

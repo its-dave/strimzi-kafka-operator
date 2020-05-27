@@ -62,8 +62,10 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.ibm.eventstreams.api.model.AbstractSecureEndpointsModel.INTERNAL_SERVICE_SUFFIX;
+import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.aMapWithSize;
@@ -196,6 +198,11 @@ public class AdminUIModelTest {
     private AdminUIModel createAdminUIModelWithICPCM(CommonServices commonServices) {
         EventStreams instance = createDefaultEventStreams().build();
         return new AdminUIModel(instance, imageConfig, true, commonServices, headerURL);
+    }
+
+    private AdminUIModel createAdminUIModelWithHeaderURL(String customHeaderURL) {
+        EventStreams instance = createDefaultEventStreams().build();
+        return new AdminUIModel(instance, imageConfig, true, null, customHeaderURL);
     }
 
     @Test
@@ -888,6 +895,21 @@ public class AdminUIModelTest {
         assertThat(producerMetricsEnvVar.getValue(), is("false"));
         assertThat(metricsEnvVar.getValue(), is("false"));
      
+    }
+
+    @Test
+    public void testCP4IHeaderURLPresent() {
+        String customHeaderURL = "icp4-navigator.svc:8080";
+        List<EnvVar> envVars = createAdminUIModelWithHeaderURL(customHeaderURL).getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getEnv();
+        assertThat(envVars, hasItem(new EnvVarBuilder().withName("ICP4I_PLATFORM_SERVICES_URL").withValue(customHeaderURL).build()));
+        assertThat(envVars, hasItem(new EnvVarBuilder().withName("DEPLOYMENT_ENVIRONMENT").withValue("icp4i").build()));
+    }
+
+    @Test
+    public void testCP4IHeaderURLNotPresent() {
+        List<EnvVar> envVars = createDefaultAdminUIModel().getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getEnv();
+        assertThat(envVars, not(hasItem(new EnvVarBuilder().withName("ICP4I_PLATFORM_SERVICES_URL").withValue("").build())));
+        assertThat(envVars, not(hasItem(new EnvVarBuilder().withName("DEPLOYMENT_ENVIRONMENT").withValue("icp4i").build())));
     }
 
     private void checkNetworkPolicy(NetworkPolicy networkPolicy, int egressIndex, int expectedNumberOfPorts, int expectedGetTo, int expectedMatchLabels, int expectedPort, String expectedComponentName) {

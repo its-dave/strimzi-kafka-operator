@@ -66,7 +66,7 @@ public class Cp4iServicesBindingResourceOperatorTest {
     public void testGetCp4iHeaderUrl() {
         String url = "1.2.3.4:443";
         Map<String, String> navigatorEndpoint = new HashMap<>();
-        navigatorEndpoint.put(Cp4iServicesBindingStatus.NAME_KEY, Cp4iServicesBindingStatus.NAVIGATOR_ENDPOINT_NAME);
+        navigatorEndpoint.put(Cp4iServicesBindingStatus.NAME_KEY, Cp4iServicesBindingStatus.SERVICES_ENDPOINT_NAME);
         navigatorEndpoint.put(Cp4iServicesBindingStatus.URL_KEY, url);
         Cp4iServicesBindingStatus cp4iServicesBindingStatus = new Cp4iServicesBindingStatusBuilder()
                 .withEndpoints(Collections.singletonList(navigatorEndpoint))
@@ -122,7 +122,7 @@ public class Cp4iServicesBindingResourceOperatorTest {
     }
 
     @Test
-    public void testGetCp4iHeaderUrlNavigatorEndpointMissing() {
+    public void testGetCp4iHeaderUrlServicesEndpointMissing() {
         Map<String, String> navigatorEndpoint = new HashMap<>();
         navigatorEndpoint.put(Cp4iServicesBindingStatus.NAME_KEY, "endpoint");
         navigatorEndpoint.put(Cp4iServicesBindingStatus.URL_KEY, "1.2.3.4:443");
