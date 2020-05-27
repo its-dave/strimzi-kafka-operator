@@ -107,7 +107,7 @@ public class GeneralValidationTest {
         assertThat(responses, hasSize(1));
 
         assertThat(responses.get(0).getReason(), Matchers.is(GeneralValidation.INSTALLING_IN_LONG_NAMESPACE_REASON));
-        assertThat(responses.get(0).getMessage(), Matchers.is(GeneralValidation.INSTALLING_IN_LONG_NAMESPACE_MESSAGE));
+        assertThat(responses.get(0).getMessage(), Matchers.is(String.format(GeneralValidation.INSTALLING_IN_LONG_NAMESPACE_MESSAGE, longNamespace)));
     }
 
 }

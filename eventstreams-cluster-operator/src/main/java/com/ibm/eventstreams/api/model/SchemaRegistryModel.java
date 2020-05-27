@@ -82,6 +82,11 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
     private static final String DEFAULT_IBMCOM_AVRO_IMAGE = "ibmcom/avro:latest";
     private static final String DEFAULT_IBMCOM_SCHEMA_REGISTRY_PROXY_IMAGE = "ibmcom/schema-proxy:latest";
 
+    // variables from additional properties to look at
+    public static final String ACCESS_MODE_KEY = "accessMode";
+    public static final List<String> KNOWN_PROPERTIES = Collections.singletonList(ACCESS_MODE_KEY);
+
+
     private String logString;
     private String avroLogString;
     private String proxyTraceString;
@@ -229,25 +234,22 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
         defaultSchemaImages.add(DEFAULT_IBMCOM_SCHEMA_REGISTRY_IMAGE);
         defaultSchemaImages.add(defaultEnvSchemaImage.orElse(""));
         boolean schemaCustomImage = defaultSchemaImages
-                .stream()
-                .filter(image -> this.image.equals(image))
-                .findFirst().isPresent() ? false : true;
+            .stream()
+            .noneMatch(image -> this.image.equals(image));
 
         List<String> defaultAvroImages = new ArrayList<>();
         defaultAvroImages.add(DEFAULT_IBMCOM_AVRO_IMAGE);
         defaultAvroImages.add(defaultEnvAvroImage.orElse(""));
         boolean avroCustomImage = defaultAvroImages
-                .stream()
-                .filter(image -> avroImage.equals(image))
-                .findFirst().isPresent() ? false : true;
+            .stream()
+            .noneMatch(image -> avroImage.equals(image));
 
         List<String> defaultSchemaProxyImages = new ArrayList<>();
         defaultSchemaProxyImages.add(DEFAULT_IBMCOM_SCHEMA_REGISTRY_PROXY_IMAGE);
         defaultSchemaProxyImages.add(defaultEnvSchemaProxyImage.orElse(""));
         boolean schemaRegistryProxyCustomImage = defaultSchemaProxyImages
             .stream()
-            .filter(image -> schemaRegistryProxyImage.equals(image))
-            .findFirst().isPresent() ? false : true;
+            .noneMatch(image -> schemaRegistryProxyImage.equals(image));
 
         this.customImage = schemaCustomImage || avroCustomImage || schemaRegistryProxyCustomImage;
     }
@@ -590,8 +592,8 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
         String storageClass = Optional.ofNullable(storage.getStorageClass()).orElse("");
         
         String accessMode = Optional.ofNullable(storage.getAdditionalProperties())
-            .map(ap -> ap.get("accessMode"))
-            .map(obj -> obj.toString())
+            .map(ap -> ap.get(ACCESS_MODE_KEY))
+            .map(Object::toString)
             .orElse(replicas > 1 ? "ReadWriteMany" : "ReadWriteOnce");
 
         PersistentVolumeClaimBuilder pvc = new PersistentVolumeClaimBuilder()

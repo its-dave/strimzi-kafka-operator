@@ -88,7 +88,7 @@ public class GeneralValidation {
 
     private void checkLongNamespace(String namespace, List<StatusCondition> conditions) {
         if (namespace.length() >= LONG_NAMESPACE_CHARACTER_LIMIT) {
-            conditions.add(StatusCondition.createWarningCondition(INSTALLING_IN_LONG_NAMESPACE_REASON, INSTALLING_IN_LONG_NAMESPACE_MESSAGE));
+            conditions.add(StatusCondition.createWarningCondition(INSTALLING_IN_LONG_NAMESPACE_REASON, String.format(INSTALLING_IN_LONG_NAMESPACE_MESSAGE, namespace)));
         }
     }
 }

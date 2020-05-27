@@ -47,12 +47,13 @@ import com.ibm.eventstreams.controller.certificates.EventStreamsCertificateManag
 import com.ibm.eventstreams.controller.models.ConditionType;
 import com.ibm.eventstreams.controller.models.PhaseState;
 import com.ibm.eventstreams.controller.models.StatusCondition;
-import com.ibm.eventstreams.rest.eventstreams.GeneralSecurityValidation;
 import com.ibm.eventstreams.rest.eventstreams.AuthenticationValidation;
 import com.ibm.eventstreams.rest.eventstreams.EndpointValidation;
+import com.ibm.eventstreams.rest.eventstreams.GeneralSecurityValidation;
 import com.ibm.eventstreams.rest.eventstreams.GeneralValidation;
 import com.ibm.eventstreams.rest.eventstreams.LicenseValidation;
 import com.ibm.eventstreams.rest.eventstreams.NameValidation;
+import com.ibm.eventstreams.rest.eventstreams.UnknownPropertyValidation;
 import com.ibm.eventstreams.rest.eventstreams.VersionValidation;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.Secret;
@@ -279,6 +280,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             conditions.addAll(new AuthenticationValidation().validateCr(instance));
             conditions.addAll(new GeneralValidation().validateCr(instance));
             conditions.addAll(new GeneralSecurityValidation().validateCr(instance));
+            conditions.addAll(new UnknownPropertyValidation().validateCr(instance));
 
             conditions.forEach(condition -> {
                 addToConditions(condition.toCondition());

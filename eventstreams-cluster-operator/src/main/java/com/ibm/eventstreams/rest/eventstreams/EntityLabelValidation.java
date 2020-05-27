@@ -23,7 +23,6 @@ import io.vertx.ext.web.RoutingContext;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-
 /**
  * Checks an instance of KafkaUser or KafkaTopic to ensure that a label has been
  * included to specify which Kafka cluster it is for.

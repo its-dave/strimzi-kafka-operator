@@ -19,6 +19,7 @@ import com.ibm.eventstreams.rest.eventstreams.EntityLabelValidation;
 import com.ibm.eventstreams.rest.KubernetesProbe;
 import com.ibm.eventstreams.rest.eventstreams.LicenseValidation;
 import com.ibm.eventstreams.rest.eventstreams.NameValidation;
+import com.ibm.eventstreams.rest.eventstreams.UnknownPropertyValidation;
 import com.ibm.eventstreams.rest.eventstreams.VersionValidation;
 import com.ibm.commonservices.api.controller.Cp4iServicesBindingResourceOperator;
 import com.ibm.commonservices.api.spec.Cp4iServicesBinding;
@@ -173,6 +174,7 @@ public class EventStreamsVerticle extends AbstractVerticle {
         router.route(HttpMethod.POST, "/admissionwebhook/rejectinvalidtopics").handler(EntityLabelValidation::rejectInvalidKafkaTopics);
         router.route(HttpMethod.POST, "/admissionwebhook/rejectinvalidusers").handler(EntityLabelValidation::rejectInvalidKafkaUsers);
         router.route(HttpMethod.POST, "/admissionwebhook/rejectinvalidendpoints").handler(new EndpointValidation()::rejectCr);
+        router.route(HttpMethod.POST, "/admissionwebhook/rejectinvalidproperties").handler(new UnknownPropertyValidation()::rejectCr);
 
         router.errorHandler(500, rc -> {
             Throwable failure = rc.failure();

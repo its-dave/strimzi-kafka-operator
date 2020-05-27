@@ -325,6 +325,19 @@ webhooks:
         name: eventstreams-cluster-operator
         path: /admissionwebhook/rejectinvalidendpoints
       caBundle: "$cabundle"
+  - name: eventstreams.ibm.com.rejectinvalidproperties
+    rules:
+      - apiGroups: ["eventstreams.ibm.com"]
+        apiVersions: ["v1beta1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["eventstreams"]
+    failurePolicy: Ignore
+    clientConfig:
+      service:
+        namespace: $EVENTSTREAMS_OPERATOR_NAMESPACE
+        name: eventstreams-cluster-operator
+        path: /admissionwebhook/rejectinvalidproperties
+      caBundle: "$cabundle"
 EOF
 
 echo "Webhook config:"
