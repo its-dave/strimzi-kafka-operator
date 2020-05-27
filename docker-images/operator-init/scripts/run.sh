@@ -143,7 +143,41 @@ kubectl get service -n "$EVENTSTREAMS_OPERATOR_NAMESPACE" eventstreams-cluster-o
 echo "Service certificate"
 kubectl get secret -n "$EVENTSTREAMS_OPERATOR_NAMESPACE" eventstreams-cluster-operator --ignore-not-found -o yaml
 
+echo "---------------------------------------------------------------"
 
+#
+# 2.  Network Policy
+#
+# A network policy is required to allow the validating webhooks to contact the 
+# operator api when there is a deny all policy on the system.
+#
+#
+
+echo "Creating network policy"
+
+cat <<EOF | kubectl apply -n "$EVENTSTREAMS_OPERATOR_NAMESPACE" -f -
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: eventstreams-cluster-operator
+  ownerReferences:
+  - apiVersion: $OWNER_APIVERSION
+    kind: $OWNER_KIND
+    name: $OWNER_NAME
+    uid: $OWNER_UID
+spec:
+  podSelector:
+    matchLabels:
+      name: eventstreams-cluster-operator
+  ingress:
+    - ports:
+        - protocol: TCP
+          port: 8081
+      from:
+        - namespaceSelector: {}
+  policyTypes:
+    - Ingress
+EOF
 
 echo "---------------------------------------------------------------"
 
