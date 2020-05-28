@@ -22,7 +22,7 @@
   format: 2.5
   protocol: 2.5
   url: file://localhost/tmp/kafka_2.12-2.5.0.tgz
-  checksum: 9de93464d7dc94fe72c2cacb1b074fa7fb5d2eaa97eaee7fc055ee34b711c5dc47144cc2079c4079902cceba1bcd516d503c0a97bfc1f98bf7c5abec475e7b3d
+  checksum: 9f5f3a7a6c3345d68cd18d85c35362990fb06aec4c262072aebee184ab57738e9f4a8b664ebd28e32236722a29b61275295d419fde02a3e50350241d23336130
   zookeeper: 3.5.7
   third-party-libs: 2.5.x
   default: true
