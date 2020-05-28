@@ -2155,6 +2155,12 @@ public class EventStreamsOperatorTest {
                     .withNewAdminUI()
                         .withReplicas(1)
                     .endAdminUI()
+                    .withNewAdminApi()
+                    .endAdminApi()
+                    .withNewSchemaRegistry()
+                    .endSchemaRegistry()
+                    .withNewRestProducer()
+                    .endRestProducer()
                 .endSpec()
                 .build();
 
@@ -3181,6 +3187,10 @@ public class EventStreamsOperatorTest {
                 .withNewAdminUI()
                     .withNewHost(adminUIHost)
                 .endAdminUI()
+                .withNewRestProducer()
+                .endRestProducer()
+                .withNewSchemaRegistry()
+                .endSchemaRegistry()
             .endSpec()
             .build();
 

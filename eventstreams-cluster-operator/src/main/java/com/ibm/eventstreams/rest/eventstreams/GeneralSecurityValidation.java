@@ -17,11 +17,15 @@ import com.ibm.eventstreams.api.model.AbstractModel;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.controller.models.StatusCondition;
 import com.ibm.eventstreams.rest.Validation;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class GeneralSecurityValidation implements Validation {
+    private static final Logger log = LogManager.getLogger(GeneralSecurityValidation.class.getName());
+
     public static final String KAFKA_UNAUTHENTICATED_REASON = "KafkaUnauthenticated";
     public static final String KAFKA_UNAUTHENTICATED_MESSAGE = "No authentication is enabled for Kafka listeners. "
         + "Any client can connect to your Kafka brokers. "
@@ -39,6 +43,7 @@ public class GeneralSecurityValidation implements Validation {
 
     @Override
     public List<StatusCondition> validateCr(EventStreams instance) {
+        log.traceEntry(() -> instance);
         List<StatusCondition> conditions = new ArrayList<>();
 
         if (!isEventStreamsEncrypted(instance)) {
@@ -53,10 +58,11 @@ public class GeneralSecurityValidation implements Validation {
             conditions.add(StatusCondition.createWarningCondition(KAFKA_UNAUTHENTICATED_REASON, KAFKA_UNAUTHENTICATED_MESSAGE));
         }
 
-        return conditions;
+        return log.traceExit(conditions);
     }
 
     private boolean isEventStreamsEncrypted(EventStreams instance) {
-        return AbstractModel.getInternalTlsVersion(instance) != TlsVersion.NONE;
+        log.traceEntry();
+        return log.traceExit(AbstractModel.getInternalTlsVersion(instance) != TlsVersion.NONE);
     }
 }

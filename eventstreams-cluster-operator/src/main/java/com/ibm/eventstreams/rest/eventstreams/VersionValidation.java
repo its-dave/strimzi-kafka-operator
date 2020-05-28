@@ -27,7 +27,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableList;
 
 public class VersionValidation implements Validation {
-    private static final Logger log = LogManager.getLogger(NameValidation.class.getName());
+    private static final Logger log = LogManager.getLogger(VersionValidation.class.getName());
 
     public static final List<String> VALID_APP_VERSIONS = unmodifiableList(asList(EventStreamsVersions.OPERAND_VERSION, EventStreamsVersions.AUTO_UPGRADE_VERSION));
     public static final String INVALID_VERSION_REASON = "InvalidVersion";

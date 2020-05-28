@@ -27,7 +27,7 @@ import java.util.Optional;
 
 public class LicenseValidation implements Validation {
 
-    private static final Logger log = LogManager.getLogger(NameValidation.class.getName());
+    private static final Logger log = LogManager.getLogger(LicenseValidation.class.getName());
     public static final String LICENSE_NOT_ACCEPTED_REASON = "LicenseNotAccepted";
     public static final String LICENSE_NOT_ACCEPTED_MESSAGE = "You have not accepted the terms of the IBM Event Streams license. "
         + "To continue the installation, accept the license by setting spec.license.accept to true, or if you are using the form in the UI, set the License accept to True.";

@@ -23,6 +23,8 @@ import io.strimzi.api.kafka.model.KafkaClusterSpec;
 import io.strimzi.api.kafka.model.KafkaSpec;
 import io.strimzi.api.kafka.model.storage.PersistentClaimStorage;
 import io.strimzi.api.kafka.model.storage.Storage;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -32,6 +34,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class UnknownPropertyValidation implements Validation {
+    private static final Logger log = LogManager.getLogger(UnknownPropertyValidation.class.getName());
+
     private final static String KAFKA_JMX_OPTIONS_SPEC_PATH = "spec.strimziOverrides.kafka.jmxOptions";
     private final static String KAFKA_CONFIG_SPEC_PATH = "spec.strimziOverrides.kafka.config";
 
@@ -55,15 +59,17 @@ public class UnknownPropertyValidation implements Validation {
     private static final List<String> FORBIDDEN_KAFKA_JMX_OPTIONS_PREFIXES = Collections.emptyList();
 
     public List<StatusCondition> validateCr(EventStreams instance) {
+        log.traceEntry(() -> instance);
         List<StatusCondition> conditions = new ArrayList<>();
         checkSchemaRegistryForUnknownProperties(instance, conditions);
         checkKafkaForUnknownProperties(instance, conditions);
         checkForForbiddenKafkaConfigs(instance, FORBIDDEN_KAFKA_CONFIG_PREFIXES, conditions);
         checkForForbiddenKafkaJmxOptions(instance, FORBIDDEN_KAFKA_JMX_OPTIONS_PREFIXES, conditions);
-        return conditions;
+        return log.traceExit(conditions);
     }
 
     private void checkSchemaRegistryForUnknownProperties(EventStreams instance, List<StatusCondition> conditions) {
+        log.traceEntry(() -> conditions);
         Optional<Storage> schemaRegistryStorage = Optional.ofNullable(instance)
             .map(EventStreams::getSpec)
             .map(EventStreamsSpec::getSchemaRegistry)
@@ -79,9 +85,11 @@ public class UnknownPropertyValidation implements Validation {
                 conditions.add(StatusCondition.createWarningCondition(SCHEMA_REGISTRY_UNKNOWN_PROPERTY_REASON, getSchemaRegistryUnknownPropertyMessage(unknownKeys)));
             }
         });
+        log.traceExit();
     }
 
     private void checkKafkaForUnknownProperties(EventStreams instance, List<StatusCondition> conditions) {
+        log.traceEntry(() -> conditions);
         Optional<Map<String, Object>> kafkaAdditionalProperties = Optional.ofNullable(instance)
             .map(EventStreams::getSpec)
             .map(EventStreamsSpec::getStrimziOverrides)
@@ -96,10 +104,12 @@ public class UnknownPropertyValidation implements Validation {
                 );
             }
         });
+        log.traceExit();
     }
 
     // exposed for testing
     public void checkForForbiddenKafkaConfigs(EventStreams instance, List<String> forbiddenPrefixes, List<StatusCondition> conditions) {
+        log.traceEntry(() -> forbiddenPrefixes, () -> conditions);
         Optional<Map<String, Object>> kafkaConfig = Optional.ofNullable(instance)
             .map(EventStreams::getSpec)
             .map(EventStreamsSpec::getStrimziOverrides)
@@ -111,10 +121,12 @@ public class UnknownPropertyValidation implements Validation {
         if (!warningMessage.isEmpty()) {
             conditions.add(StatusCondition.createErrorCondition(KAFKA_CONFIG_FORBIDDEN_PREFIX_REASON, warningMessage));
         }
+        log.traceExit();
     }
 
     // exposed for testing
     public void checkForForbiddenKafkaJmxOptions(EventStreams instance, List<String> forbiddenPrefixes, List<StatusCondition> conditions) {
+        log.traceEntry(() -> forbiddenPrefixes, () -> conditions);
         Optional<Map<String, Object>> kafkaConfig = Optional.ofNullable(instance)
             .map(EventStreams::getSpec)
             .map(EventStreamsSpec::getStrimziOverrides)
@@ -127,34 +139,39 @@ public class UnknownPropertyValidation implements Validation {
         if (!warningMessage.isEmpty()) {
             conditions.add(StatusCondition.createErrorCondition(KAFKA_JMX_OPTIONS_FORBIDDEN_CONFIG_PREFIX_REASON, warningMessage));
         }
+        log.traceExit();
     }
 
     private String getForbiddenPropertyString(Optional<Map<String, Object>> properties, List<String> forbiddenPrefixes, String specPath, String startingString) {
+        log.traceEntry(() -> properties, () -> forbiddenPrefixes, () -> specPath, () -> startingString);
         List<String> forbiddenProperties = new ArrayList<>();
         properties.ifPresent(propertiesMap -> propertiesMap.keySet().stream()
             .filter(key -> forbiddenPrefixes.stream().anyMatch(key::startsWith))
             .forEach(key -> forbiddenProperties.add(String.format("%s.%s", specPath, key))));
 
-        return forbiddenProperties.isEmpty()
+        return log.traceExit(forbiddenProperties.isEmpty()
             ? ""
-            : String.format("%s: %s.", startingString, String.join(", ", forbiddenProperties));
+            : String.format("%s: %s.", startingString, String.join(", ", forbiddenProperties)));
     }
 
     private boolean isKnownProperty(boolean isPersistentStorage, String property) {
+        log.traceEntry(() -> isPersistentStorage, () -> property);
         if (isPersistentStorage) {
-            return SchemaRegistryModel.KNOWN_PROPERTIES.contains(property);
+            return log.traceExit(SchemaRegistryModel.KNOWN_PROPERTIES.contains(property));
         }
-        return false;
+        return log.traceExit(false);
     }
 
     private String getSchemaRegistryUnknownPropertyMessage(List<String> unknownProperties) {
+        log.traceEntry(() -> unknownProperties);
         String properties = String.join(", ", unknownProperties);
-        return String.format("%s: %s.", SCHEMA_REGISTRY_UNKNOWN_PROPERTY_MESSAGE, properties);
+        return log.traceExit(String.format("%s: %s.", SCHEMA_REGISTRY_UNKNOWN_PROPERTY_MESSAGE, properties));
     }
 
     private String getKafkaUnknownPropertyMessage(List<String> unknownProperties) {
+        log.traceEntry(() -> unknownProperties);
         String properties = String.join(", ", unknownProperties);
-        return String.format("%s: %s.", KAFKA_UNKNOWN_PROPERTY_MESSAGE, properties);
+        return log.traceExit(String.format("%s: %s.", KAFKA_UNKNOWN_PROPERTY_MESSAGE, properties));
     }
 }
 

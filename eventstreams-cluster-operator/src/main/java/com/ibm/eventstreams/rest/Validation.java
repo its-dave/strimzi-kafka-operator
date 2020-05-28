@@ -24,6 +24,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public interface Validation {
+    String ADMIN_API_SPEC_NAME = "adminApi";
+    String REST_PRODUCER_SPEC_NAME = "restProducer";
+    String SCHEMA_REGISTRY_SPEC_NAME = "schemaRegistry";
+    String ADMIN_UI_SPEC_NAME = "adminUi";
 
     static <T extends CustomResource> T getSpecFromRequest(RoutingContext routingContext, Class<T> specClass) {
         JsonObject requestBody = routingContext.getBodyAsJson();

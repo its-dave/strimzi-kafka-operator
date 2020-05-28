@@ -14,9 +14,12 @@ package com.ibm.eventstreams.rest.eventstreams;
 
 import com.ibm.eventstreams.api.model.utils.ModelUtils;
 import com.ibm.eventstreams.api.spec.EventStreams;
+import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
+import com.ibm.eventstreams.controller.models.ConditionType;
 import com.ibm.eventstreams.controller.models.StatusCondition;
 import io.strimzi.api.kafka.model.KafkaSpecBuilder;
 import io.strimzi.api.kafka.model.storage.EphemeralStorage;
+import io.strimzi.api.kafka.model.storage.PersistentClaimStorage;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
@@ -24,6 +27,7 @@ import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
 
 public class GeneralValidationTest {
     private final String instanceName = "test-instance";
@@ -31,7 +35,7 @@ public class GeneralValidationTest {
     private final String shortNamespace = "Wonder-what-that-string-is";
 
     @Test
-    public void warnsWhenCruiseControlEnabled() {
+    public void TestWarnsWhenCruiseControlEnabled() {
         EventStreams instance = ModelUtils.createDefaultEventStreams(instanceName)
             .editSpec()
                 .withStrimziOverrides(new KafkaSpecBuilder()
@@ -58,7 +62,7 @@ public class GeneralValidationTest {
     }
 
     @Test
-    public void warnsWhenEphemeralSchemaRegistry() {
+    public void TestWarnsWhenEphemeralSchemaRegistry() {
         EventStreams instance = ModelUtils.createDefaultEventStreams(instanceName)
             .editSpec()
             .withNewSchemaRegistry()
@@ -86,7 +90,7 @@ public class GeneralValidationTest {
     }
 
     @Test
-    public void warnsWhenLongNamespace() {
+    public void TestWarnsWhenLongNamespace() {
         EventStreams instance = ModelUtils.createDefaultEventStreams(instanceName)
             .editSpec()
             .withStrimziOverrides(new KafkaSpecBuilder()
@@ -110,4 +114,111 @@ public class GeneralValidationTest {
         assertThat(responses.get(0).getMessage(), Matchers.is(String.format(GeneralValidation.INSTALLING_IN_LONG_NAMESPACE_MESSAGE, longNamespace)));
     }
 
+    @Test
+    public void TestErrorsWhenNoAdminApiWithUI() {
+        EventStreams instance =  new EventStreamsBuilder()
+            .withNewSpec()
+                .withNewAdminUI()
+                .endAdminUI()
+                .withNewRestProducer()
+                .endRestProducer()
+                .withNewSchemaRegistry()
+                    .withStorage(new PersistentClaimStorage())
+                .endSchemaRegistry()
+                .withStrimziOverrides(new KafkaSpecBuilder()
+                    .withNewKafka()
+                    .endKafka()
+                    .build())
+            .endSpec()
+            .build();
+
+        List<StatusCondition> responses = new GeneralValidation().validateCr(instance);
+
+        assertThat(responses, hasSize(1));
+        assertThat(responses.get(0).getReason(), is(GeneralValidation.UI_REQUIRES_REST_COMPONENTS_REASON));
+        assertThat(responses.get(0).getMessage(), is("One of the following components have not been enabled: adminApi. The UI requires Schema Registry, Admin API and Rest Producer to be enabled to allow for its capabilities. Edit spec.adminApi.replicas to enable the component with more than 1 replica."));
+        assertThat(responses.get(0).getType(), is(ConditionType.ERROR));
+    }
+
+    @Test
+    public void TestErrorsWhenNoSchemaRegistryWithUI() {
+        EventStreams instance =  new EventStreamsBuilder()
+            .withNewSpec()
+            .withNewAdminUI()
+            .endAdminUI()
+            .withNewAdminApi()
+            .endAdminApi()
+            .withNewRestProducer()
+            .endRestProducer()
+            .withStrimziOverrides(new KafkaSpecBuilder()
+                .withNewKafka()
+                .endKafka()
+                .build())
+            .endSpec()
+            .build();
+
+        List<StatusCondition> responses = new GeneralValidation().validateCr(instance);
+
+        assertThat(responses, hasSize(1));
+        assertThat(responses.get(0).getReason(), is(GeneralValidation.UI_REQUIRES_REST_COMPONENTS_REASON));
+        assertThat(responses.get(0).getMessage(), is("One of the following components have not been enabled: schemaRegistry. The UI requires Schema Registry, Admin API and Rest Producer to be enabled to allow for its capabilities. Edit spec.schemaRegistry.replicas to enable the component with more than 1 replica."));
+        assertThat(responses.get(0).getType(), is(ConditionType.ERROR));
+    }
+
+    @Test
+    public void TestErrorsWhenNoRestProducerWithUI() {
+        EventStreams instance =  new EventStreamsBuilder()
+            .withNewSpec()
+            .withNewAdminUI()
+            .endAdminUI()
+            .withNewAdminApi()
+            .endAdminApi()
+            .withNewSchemaRegistry()
+                .withStorage(new PersistentClaimStorage())
+            .endSchemaRegistry()
+            .withStrimziOverrides(new KafkaSpecBuilder()
+                .withNewKafka()
+                .endKafka()
+                .build())
+            .endSpec()
+            .build();
+
+        List<StatusCondition> responses = new GeneralValidation().validateCr(instance);
+
+        assertThat(responses, hasSize(1));
+        assertThat(responses.get(0).getReason(), is(GeneralValidation.UI_REQUIRES_REST_COMPONENTS_REASON));
+        assertThat(responses.get(0).getMessage(), is("One of the following components have not been enabled: restProducer. The UI requires Schema Registry, Admin API and Rest Producer to be enabled to allow for its capabilities. Edit spec.restProducer.replicas to enable the component with more than 1 replica."));
+        assertThat(responses.get(0).getType(), is(ConditionType.ERROR));
+    }
+
+    @Test
+    public void TestErrorsWhenNoComponentsEnabledWithUI() {
+        EventStreams instance =  new EventStreamsBuilder()
+            .withNewSpec()
+            .withNewAdminUI()
+            .endAdminUI()
+            .withNewAdminApi()
+                .withReplicas(0)
+            .endAdminApi()
+            .withNewSchemaRegistry()
+                .withReplicas(0)
+                .withStorage(new PersistentClaimStorage())
+            .endSchemaRegistry()
+            .withNewRestProducer()
+                .withReplicas(0)
+            .endRestProducer()
+            .withStrimziOverrides(new KafkaSpecBuilder()
+                .withNewKafka()
+                .endKafka()
+                .build())
+            .endSpec()
+            .build();
+
+        List<StatusCondition> responses = new GeneralValidation().validateCr(instance);
+
+        assertThat(responses, hasSize(1));
+        assertThat(responses.get(0).getReason(), is(GeneralValidation.UI_REQUIRES_REST_COMPONENTS_REASON));
+        assertThat(responses.get(0).getMessage(), is("One of the following components have not been enabled: adminApi, schemaRegistry, restProducer. The UI requires Schema Registry, Admin API and Rest Producer to be enabled to allow for its capabilities. Edit spec.adminApi.replicas, spec.schemaRegistry.replicas, spec.restProducer.replicas to enable the component with more than 1 replica."));
+        assertThat(responses.get(0).getType(), is(ConditionType.ERROR));
+    }
 }

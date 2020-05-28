@@ -17,6 +17,7 @@ import com.ibm.eventstreams.api.spec.EventStreamsGeoReplicator;
 import com.ibm.eventstreams.rest.eventstreams.EndpointValidation;
 import com.ibm.eventstreams.rest.eventstreams.EntityLabelValidation;
 import com.ibm.eventstreams.rest.KubernetesProbe;
+import com.ibm.eventstreams.rest.eventstreams.GeneralValidation;
 import com.ibm.eventstreams.rest.eventstreams.LicenseValidation;
 import com.ibm.eventstreams.rest.eventstreams.NameValidation;
 import com.ibm.eventstreams.rest.eventstreams.UnknownPropertyValidation;
@@ -175,6 +176,7 @@ public class EventStreamsVerticle extends AbstractVerticle {
         router.route(HttpMethod.POST, "/admissionwebhook/rejectinvalidusers").handler(EntityLabelValidation::rejectInvalidKafkaUsers);
         router.route(HttpMethod.POST, "/admissionwebhook/rejectinvalidendpoints").handler(new EndpointValidation()::rejectCr);
         router.route(HttpMethod.POST, "/admissionwebhook/rejectinvalidproperties").handler(new UnknownPropertyValidation()::rejectCr);
+        router.route(HttpMethod.POST, "/admissionwebhook/rejectgeneralproperties").handler(new GeneralValidation()::rejectCr);
 
         router.errorHandler(500, rc -> {
             Throwable failure = rc.failure();
