@@ -33,7 +33,7 @@ spec:
         productVersion: "10.0.0"
         productMetric: "VIRTUAL_PROCESSOR_CORE"
         prometheus.io/port: "8080"
-        prometheus.io/scheme: https
+        prometheus.io/scheme: http
         prometheus.io/scrape: "true"
       labels:
         name: eventstreams-cluster-operator

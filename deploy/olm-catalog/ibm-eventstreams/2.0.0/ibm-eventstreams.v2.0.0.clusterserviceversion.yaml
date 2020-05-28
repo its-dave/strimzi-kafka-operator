@@ -762,7 +762,7 @@ spec:
                 productName: IBM Event Streams
                 productVersion: 10.0.0
                 prometheus.io/port: "8080"
-                prometheus.io/scheme: https
+                prometheus.io/scheme: http
                 prometheus.io/scrape: "true"
               labels:
                 app: eventstreams

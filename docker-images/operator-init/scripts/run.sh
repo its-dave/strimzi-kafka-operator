@@ -163,9 +163,11 @@ echo "---------------------------------------------------------------"
 #
 # 2.  Network Policy
 #
-# A network policy is required to allow the validating webhooks to contact the 
-# operator api when there is a deny all policy on the system.
+# A network policy is required to allow communication to the operator
+#  pod for:
 #
+# - (8080) API that Prometheus will scrape to fetch operator metrics
+# - (8081) API that the Kubernetes API server will use for webhooks
 #
 
 echo "Creating network policy"
@@ -186,6 +188,8 @@ spec:
       name: eventstreams-cluster-operator
   ingress:
     - ports:
+        - protocol: TCP
+          port: 8080
         - protocol: TCP
           port: 8081
       from:
