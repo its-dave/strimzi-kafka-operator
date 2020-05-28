@@ -50,8 +50,6 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
 
     public static final String INTERNAL_SERVICE_SUFFIX = "internal";
 
-    public static final String CERT_GENERATION_KEY = "certificateGenerationID";
-
     private static final String KEY_VALUE_SEPARATOR = ":";
     private static final String AUTHENTICATION_SEPARATOR = ";";
     private static final String PORT_SEPARATOR = ",";

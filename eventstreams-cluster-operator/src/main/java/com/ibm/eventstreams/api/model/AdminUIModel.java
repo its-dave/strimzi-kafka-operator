@@ -29,7 +29,6 @@ import com.ibm.eventstreams.api.spec.SecuritySpec;
 import com.ibm.eventstreams.api.status.EventStreamsStatus;
 import com.ibm.eventstreams.api.status.EventStreamsVersions;
 import com.ibm.eventstreams.controller.EventStreamsOperatorConfig;
-import com.ibm.commonservices.api.model.ClientModel;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.ContainerBuilder;
 import io.fabric8.kubernetes.api.model.EnvVar;
@@ -72,6 +71,7 @@ import static com.ibm.eventstreams.api.model.AbstractSecureEndpointsModel.getInt
 public class AdminUIModel extends AbstractModel {
 
     // static variables
+    public static final String TRUSTSTORE_GENERATION_KEY = "truststoreGenerationID";
     public static final String COMPONENT_NAME = "ui";
     public static final String APPLICATION_NAME = "admin-ui";
     public static final int UI_SERVICE_PORT = 3000;
@@ -99,7 +99,6 @@ public class AdminUIModel extends AbstractModel {
     private String traceString;
     private CommonServices commonServices;
     private String cloudPakHeaderURL;
-    private String oidcSecretName;
     private TlsVersion crTlsVersionValue;
     private String enableProducerMetricsPanels;
     private String enableMetricsPanels;
@@ -123,7 +122,6 @@ public class AdminUIModel extends AbstractModel {
 
         this.commonServices = commonServices;
         this.cloudPakHeaderURL = cloudPakHeaderURL;
-        this.oidcSecretName = ClientModel.getSecretName(getInstanceName());
 
         Optional<AdminUISpec> userInterfaceSpec = Optional
             .ofNullable(instance.getSpec())
@@ -215,13 +213,18 @@ public class AdminUIModel extends AbstractModel {
      * @return A list of volumes to put in the Admin UI pod
      */
     private List<Volume> getVolumes() {
-        Volume redis = new VolumeBuilder()
+        List<Volume> volumes = new ArrayList<>();
+        volumes.add(new VolumeBuilder()
             .withName("redis-storage")
             .withNewEmptyDir()
             .endEmptyDir()
-            .build();
+            .build());
 
-        return Collections.singletonList(redis);
+        if (commonServices.isPresent()) {
+            volumes.addAll(commonServices.volumes());
+        }
+
+        return volumes;
 
     }
 
@@ -306,7 +309,7 @@ public class AdminUIModel extends AbstractModel {
         envVarDefaults.add(new EnvVarBuilder().withName("LICENSE").withValue("accept").build());
         envVarDefaults.add(
             new EnvVarBuilder()
-                .withName("TLS_CERT")
+                .withName("TLS_CERT") // This and TLS_KEY  are fine as secret refs as there is logic to roll the UI in the operator if the referenced secret changes.
                 .withNewValueFrom()
                     .withNewSecretKeyRef()
                         .withName(getServiceCertificateName())
@@ -355,7 +358,7 @@ public class AdminUIModel extends AbstractModel {
         envVarDefaults.add(new EnvVarBuilder().withName("METRICS_ENABLED").withValue(enableMetricsPanels).build());
         envVarDefaults.add(new EnvVarBuilder().withName(TLS_VERSION_ENV_KEY).withValue(getTlsVersionEnvValue(instance)).build());
         envVarDefaults.add(
-            new EnvVarBuilder().withName("TRUSTSTORE")
+            new EnvVarBuilder().withName("TRUSTSTORE") // This is fine as secret refs as there is logic to roll the UI in the operator if the referenced secret changes.
                 .withNewValueFrom()
                     .withNewSecretKeyRef()
                         .withName(EventStreamsKafkaModel.getKafkaClusterCaCertName(getInstanceName()))
@@ -378,45 +381,24 @@ public class AdminUIModel extends AbstractModel {
                 .build()
         );
 
-        envVarDefaults.add(new EnvVarBuilder().withName("ICP_USER_MGMT_PORT").withValue("443").build());
-        envVarDefaults.add(new EnvVarBuilder().withName("ICP_USER_MGMT_HIGHEST_ROLE_FOR_CRN").withValue("idmgmt/identity/api/v1/teams/highestRole").build());
-
-        if (commonServices != null) {
+        if (commonServices.isPresent()) {
+            envVarDefaults.addAll(commonServices.envVars());
             String clusterIp = commonServices.getConsoleHost();
             String secureClusterPort = commonServices.getConsolePort();
-            String iamClusterName = commonServices.getClusterName();
             String iamIp = commonServices.getIngressServiceNameAndNamespace();
             envVarDefaults.add(new EnvVarBuilder().withName("CLUSTER_EXTERNAL_IP").withValue(clusterIp).build());
             envVarDefaults.add(new EnvVarBuilder().withName("CLUSTER_EXTERNAL_PORT").withValue(secureClusterPort).build());
-            envVarDefaults.add(new EnvVarBuilder().withName("IAM_CLUSTER_NAME").withValue(iamClusterName).build());
             envVarDefaults.add(new EnvVarBuilder().withName("ICP_USER_MGMT_IP").withValue(iamIp).build());
-            envVarDefaults.add(
-                new EnvVarBuilder()
-                    .withName("CLIENT_ID")
-                    .withNewValueFrom()
-                    .withNewSecretKeyRef()
-                    .withName(oidcSecretName)
-                    .withKey("CLIENT_ID")
-                    .endSecretKeyRef()
-                    .endValueFrom()
-                    .build()
-            );
-            envVarDefaults.add(
-                new EnvVarBuilder()
-                    .withName("CLIENT_SECRET")
-                    .withNewValueFrom()
-                    .withNewSecretKeyRef()
-                    .withName(oidcSecretName)
-                    .withKey("CLIENT_SECRET")
-                    .endSecretKeyRef()
-                    .endValueFrom()
-                    .build()
-            );
+            envVarDefaults.add(new EnvVarBuilder().withName("ICP_USER_MGMT_PORT").withValue("443").build()); // These are duplicated, but it creates a clearer separation of concerns
+            envVarDefaults.add(new EnvVarBuilder().withName("ICP_USER_MGMT_HIGHEST_ROLE_FOR_CRN").withValue("idmgmt/identity/api/v1/teams/highestRole").build());
+
         } else {
             envVarDefaults.add(new EnvVarBuilder().withName("CLUSTER_EXTERNAL_IP").withValue("").build());
             envVarDefaults.add(new EnvVarBuilder().withName("CLUSTER_EXTERNAL_PORT").withValue("").build());
             envVarDefaults.add(new EnvVarBuilder().withName("IAM_CLUSTER_NAME").withValue("mycluster").build());
             envVarDefaults.add(new EnvVarBuilder().withName("ICP_USER_MGMT_IP").withValue("icp-management-ingress.ibm-common-services").build());
+            envVarDefaults.add(new EnvVarBuilder().withName("ICP_USER_MGMT_PORT").withValue("443").build());
+            envVarDefaults.add(new EnvVarBuilder().withName("ICP_USER_MGMT_HIGHEST_ROLE_FOR_CRN").withValue("idmgmt/identity/api/v1/teams/highestRole").build());
         }
 
         envVarDefaults.add(new EnvVarBuilder().withName("ESFF_SECURITY_AUTH").withValue(isKafkaAuthenticationEnabled(instance).toString()).build());
@@ -428,7 +410,7 @@ public class AdminUIModel extends AbstractModel {
         }
 
         List<EnvVar> envVars = combineEnvVarListsNoDuplicateKeys(envVarDefaults);
-        return new ContainerBuilder()
+        ContainerBuilder containerBuilder =  new ContainerBuilder()
             .withName(COMPONENT_NAME)
             .withImage(getImage())
             .withEnv(envVars)
@@ -439,8 +421,13 @@ public class AdminUIModel extends AbstractModel {
                 .withContainerPort(UI_SERVICE_PORT)
             .endPort()
             .withLivenessProbe(createLivenessProbe())
-            .withReadinessProbe(createReadinessProbe())
-            .build();
+            .withReadinessProbe(createReadinessProbe());
+
+        if (commonServices.isPresent()) {
+            containerBuilder.addAllToVolumeMounts(commonServices.volumeMounts());
+        }
+
+        return containerBuilder.build();
     }
 
     /**
@@ -576,10 +563,29 @@ public class AdminUIModel extends AbstractModel {
     }
 
     /**
-     * @return Deployment return the deployment
+     * @return Deployment return the deployment with an empty generation id
      */
     public Deployment getDeployment() {
-        return this.deployment;
+        return getDeployment("", "");
+    }
+
+    /**
+     * @return Deployment return the deployment with the specified generation id this is used
+     * to control rolling updates, for example when the cert secret changes.
+     */
+    public Deployment getDeployment(String certGenerationID, String truststoreCertGenerationID) {
+        if (deployment != null) {
+            if (certGenerationID != null) {
+                deployment.getMetadata().getLabels().put(CERT_GENERATION_KEY, certGenerationID);
+                deployment.getSpec().getTemplate().getMetadata().getLabels().put(CERT_GENERATION_KEY, certGenerationID);
+            }
+            if (truststoreCertGenerationID != null) {
+                deployment.getMetadata().getLabels().put(TRUSTSTORE_GENERATION_KEY, truststoreCertGenerationID);
+                deployment.getSpec().getTemplate().getMetadata().getLabels().put(TRUSTSTORE_GENERATION_KEY, truststoreCertGenerationID);
+            }
+        }
+
+        return deployment;
     }
 
     /**
@@ -625,7 +631,7 @@ public class AdminUIModel extends AbstractModel {
      * The default resource name with a suffix "service-cert"
      * @return Then service certificate name
      */
-    private String getServiceCertificateName() {
+    public String getServiceCertificateName() {
         return getDefaultResourceNameWithSuffix("service-cert");
     }
 

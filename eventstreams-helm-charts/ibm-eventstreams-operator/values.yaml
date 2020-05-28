@@ -92,8 +92,8 @@ adminUi:
   image:
     repository: cp.icr.io
     name: cp/ibm-eventstreams-admin-ui
-    tag: 2020-05-22-09.31.46-ffb0b03-dev
-    digest: 130436c1c9f1e18862079973305aa59af54b9a43220249ccd3a30a9ed68e61c0
+    tag: 2020-05-28-14.15.51-08bcbe5-dev
+    digest: 5cbc2e5df4af4344f4d5ecad737520876f3a2c283494baf34999f274626ac17c
 adminUiDatabase:
   image:
     repository: cp.icr.io

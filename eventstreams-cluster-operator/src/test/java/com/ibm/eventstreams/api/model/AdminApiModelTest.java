@@ -32,8 +32,6 @@ import io.fabric8.kubernetes.api.model.AffinityBuilder;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.EnvVarBuilder;
-import io.fabric8.kubernetes.api.model.EnvVarSource;
-import io.fabric8.kubernetes.api.model.EnvVarSourceBuilder;
 import io.fabric8.kubernetes.api.model.IntOrString;
 import io.fabric8.kubernetes.api.model.LocalObjectReference;
 import io.fabric8.kubernetes.api.model.LocalObjectReferenceBuilder;
@@ -45,7 +43,6 @@ import io.fabric8.kubernetes.api.model.OwnerReference;
 import io.fabric8.kubernetes.api.model.Quantity;
 import io.fabric8.kubernetes.api.model.ResourceRequirements;
 import io.fabric8.kubernetes.api.model.ResourceRequirementsBuilder;
-import io.fabric8.kubernetes.api.model.SecretKeySelector;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.VolumeMount;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
@@ -262,9 +259,6 @@ public class AdminApiModelTest {
         EnvVar geoRepExternalServerAuthEnv = new EnvVarBuilder().withName("GEOREPLICATION_EXTERNAL_SERVER_AUTH_ENABLED").withValue("false").build();
         EnvVar geoRepInternalClientAuthTypeEnv = new EnvVarBuilder().withName("GEOREPLICATION_INTERNAL_CLIENT_AUTH_TYPE").withValue("NONE").build();
 
-        EnvVarSource esCaCertEnvVarSource = new EnvVarSourceBuilder().withSecretKeyRef(new SecretKeySelector("ca.crt", instanceName + "-cluster-ca-cert", true)).build();
-        EnvVar esCaCertEnv = new EnvVarBuilder().withName("ES_CACERT").withValueFrom(esCaCertEnvVarSource).build();
-
         Container adminApiContainer = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0);
         List<EnvVar> defaultEnvVars = adminApiContainer.getEnv();
         assertThat(defaultEnvVars, hasItem(zkConnectEnv));
@@ -273,7 +267,6 @@ public class AdminApiModelTest {
         assertThat(defaultEnvVars, hasItem(clientCaCertPath));
         assertThat(defaultEnvVars, hasItem(authentication));
         assertThat(defaultEnvVars, hasItem(endpoints));
-        assertThat(defaultEnvVars, hasItem(esCaCertEnv));
         assertThat(defaultEnvVars, hasItem(tlsVersion));
         assertThat(defaultEnvVars, hasItem(kafkaPrincipalEnv));
         assertThat(defaultEnvVars, hasItem(kafkaConnectRestApiEnv));

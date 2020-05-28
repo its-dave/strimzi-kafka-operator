@@ -121,6 +121,7 @@ public abstract class AbstractModel {
     public static final int MAX_RESOURCE_NAME_LENGTH = 63;
 
     public static final String CONFIG_MAP_SUFFIX = "-config";
+    public static final String CERT_GENERATION_KEY = "certificateGenerationID";
 
     protected static final String TLS_VERSION_ENV_KEY = "TLS_VERSION";
     protected static final TlsVersion DEFAULT_TLS_VERSION = TlsVersion.TLS_V1_2;

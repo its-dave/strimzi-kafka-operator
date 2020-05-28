@@ -263,19 +263,8 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
             new EnvVarBuilder().withName("GEOREPLICATION_EXTERNAL_CLIENT_AUTH_ENABLED").withValue(Boolean.toString(isReplicatorExternalClientAuthForConnectEnabled(instance))).build(),
             new EnvVarBuilder().withName("GEOREPLICATION_INTERNAL_SERVER_AUTH_ENABLED").withValue(Boolean.toString(isReplicatorInternalServerAuthForConnectEnabled(instance))).build(),
             new EnvVarBuilder().withName("GEOREPLICATION_EXTERNAL_SERVER_AUTH_ENABLED").withValue(Boolean.toString(isReplicatorExternalServerAuthForConnectEnabled(instance))).build(),
-            new EnvVarBuilder().withName("GEOREPLICATION_INTERNAL_CLIENT_AUTH_TYPE").withValue(isReplicatorInternalClientAuthForConnectEnabled(instance) ? GeoReplicatorModel.getInternalTlsKafkaListenerAuthentication(instance).getType() : "NONE").build(),
-            new EnvVarBuilder()
-                .withName("ES_CACERT")
-                .withNewValueFrom()
-                .withNewSecretKeyRef()
-                .withName(EventStreamsKafkaModel.getKafkaClusterCaCertName(getInstanceName()))
-                .withKey("ca.crt")
-                .withOptional(true)
-                .endSecretKeyRef()
-                .endValueFrom()
-                .build()
-            ));
-
+            new EnvVarBuilder().withName("GEOREPLICATION_INTERNAL_CLIENT_AUTH_TYPE").withValue(isReplicatorInternalClientAuthForConnectEnabled(instance) ? GeoReplicatorModel.getInternalTlsKafkaListenerAuthentication(instance).getType() : "NONE").build()
+        ));
 
         if (commonServices.isPresent()) {
             envVars.addAll(commonServices.envVars());

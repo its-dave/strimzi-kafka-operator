@@ -731,11 +731,27 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             if (ui.getCustomImage()) {
                 customImageCount++;
             }
+            Future<Secret> serviceSecret = secretOperator.getAsync(namespace, ui.getServiceCertificateName());
+            Future<Secret> clusterCaSecret = secretOperator.getAsync(namespace, EventStreamsKafkaModel.getKafkaClusterCaCertName(instance.getMetadata().getName()));
             adminUIFutures.add(serviceAccountOperator.reconcile(namespace, ui.getDefaultResourceName(), ui.getServiceAccount()));
-            adminUIFutures.add(deploymentOperator.reconcile(namespace, ui.getDefaultResourceName(), ui.getDeployment()));
             adminUIFutures.add(roleBindingOperator.reconcile(namespace, ui.getDefaultResourceName(), ui.getRoleBinding()));
-            adminUIFutures.add(serviceOperator.reconcile(namespace, ui.getDefaultResourceName(), ui.getService()));
             adminUIFutures.add(networkPolicyOperator.reconcile(namespace, ui.getDefaultResourceName(), ui.getNetworkPolicy()));
+            adminUIFutures.add(
+                serviceOperator.reconcile(namespace, ui.getDefaultResourceName(), ui.getService())
+                    .compose(svc -> CompositeFuture.join(serviceSecret, clusterCaSecret))
+                    .compose(secrets -> {
+                        String certGenerationID = Optional.ofNullable(serviceSecret.result())
+                            .map(Secret::getMetadata)
+                            .map(ObjectMeta::getResourceVersion)
+                            .orElse("");
+                        String trustGenerationID = Optional.ofNullable(clusterCaSecret.result())
+                            .map(Secret::getMetadata)
+                            .map(ObjectMeta::getResourceVersion)
+                            .orElse("");
+                        return deploymentOperator.reconcile(namespace, ui.getDefaultResourceName(), ui.getDeployment(certGenerationID, trustGenerationID));
+                    })
+            );
+
             if (AdminUIModel.isUIEnabled(instance)) {
                 adminUIFutures.add(checkPullSecrets(ui));
             }

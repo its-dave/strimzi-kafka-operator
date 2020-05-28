@@ -860,7 +860,7 @@ spec:
                 - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_PROXY_IMAGE
                   value: cp.icr.io/cp/ibm-eventstreams-schema-proxy@sha256:02671670ccdbbddaf567edb9ac13e14052f2213aead1bfec44f9bcd986f2bc73
                 - name: EVENTSTREAMS_DEFAULT_ADMIN_UI_IMAGE
-                  value: cp.icr.io/cp/ibm-eventstreams-admin-ui@sha256:130436c1c9f1e18862079973305aa59af54b9a43220249ccd3a30a9ed68e61c0
+                  value: cp.icr.io/cp/ibm-eventstreams-admin-ui@sha256:5cbc2e5df4af4344f4d5ecad737520876f3a2c283494baf34999f274626ac17c
                 - name: EVENTSTREAMS_DEFAULT_ADMIN_UI_REDIS_IMAGE
                   value: cp.icr.io/cp/ibm-eventstreams-session-store@sha256:63bbdfe2e4ffc6442346fb59212b436191338fdace7de0bb909cdfd95c823518
                 - name: EVENTSTREAMS_DEFAULT_COLLECTOR_IMAGE
@@ -995,7 +995,7 @@ spec:
   - name: cp/ibm-eventstreams-schema-proxy
     image: cp.icr.io/cp/ibm-eventstreams-schema-proxy@sha256:02671670ccdbbddaf567edb9ac13e14052f2213aead1bfec44f9bcd986f2bc73
   - name: cp/ibm-eventstreams-admin-ui
-    image: cp.icr.io/cp/ibm-eventstreams-admin-ui@sha256:130436c1c9f1e18862079973305aa59af54b9a43220249ccd3a30a9ed68e61c0
+    image: cp.icr.io/cp/ibm-eventstreams-admin-ui@sha256:5cbc2e5df4af4344f4d5ecad737520876f3a2c283494baf34999f274626ac17c
   - name: cp/ibm-eventstreams-session-store
     image: cp.icr.io/cp/ibm-eventstreams-session-store@sha256:63bbdfe2e4ffc6442346fb59212b436191338fdace7de0bb909cdfd95c823518
   - name: cp/ibm-eventstreams-metrics-collector

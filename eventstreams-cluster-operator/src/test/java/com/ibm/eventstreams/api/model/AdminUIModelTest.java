@@ -37,6 +37,8 @@ import io.fabric8.kubernetes.api.model.Quantity;
 import io.fabric8.kubernetes.api.model.ResourceRequirements;
 import io.fabric8.kubernetes.api.model.ResourceRequirementsBuilder;
 import io.fabric8.kubernetes.api.model.Service;
+import io.fabric8.kubernetes.api.model.Volume;
+import io.fabric8.kubernetes.api.model.VolumeMount;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicy;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicyPeer;
@@ -74,6 +76,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.emptyIterableOf;
 import static org.hamcrest.Matchers.hasEntry;
+import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -84,6 +87,7 @@ public class AdminUIModelTest {
 
     private final String instanceName = "test-instance";
     private final String componentPrefix = instanceName + "-" + AbstractModel.APP_NAME + "-" + AdminUIModel.COMPONENT_NAME;
+    private final CommonServices mockCommonServices = new CommonServices(instanceName, ModelUtils.mockCommonServicesClusterData());
     private final int defaultReplicas = 1;
     private final String namespace = "test-namespace";
     private final String restProducerHost = "rest-producer.route.os.com";
@@ -177,22 +181,22 @@ public class AdminUIModelTest {
 
     private AdminUIModel createDefaultAdminUIModel() {
         EventStreams instance = createDefaultEventStreams().build();
-        return new AdminUIModel(instance, imageConfig, false, null, headerURL);
+        return new AdminUIModel(instance, imageConfig, false, mockCommonServices, headerURL);
     }
 
     private AdminUIModel createAdminUIModelWithoutStatus() {
         EventStreams instance = createEventStreamsWithoutStatus().build();
-        return new AdminUIModel(instance, imageConfig, false, null, headerURL);
+        return new AdminUIModel(instance, imageConfig, false, mockCommonServices, headerURL);
     }
 
     private AdminUIModel createAdminUIModelWithAuth() {
         EventStreams instance = createEventStreamsWithAuthentication().build();
-        return new AdminUIModel(instance, imageConfig, false, null, headerURL);
+        return new AdminUIModel(instance, imageConfig, false, mockCommonServices, headerURL);
     }
 
     private AdminUIModel createAdminUIModelWithExternalAuth() {
         EventStreams instance = createEventStreamsWithAuthenticatedExternalAccess().build();
-        return new AdminUIModel(instance, imageConfig, true, null, headerURL);
+        return new AdminUIModel(instance, imageConfig, true, mockCommonServices, headerURL);
     }
 
     private AdminUIModel createAdminUIModelWithICPCM(CommonServices commonServices) {
@@ -202,7 +206,7 @@ public class AdminUIModelTest {
 
     private AdminUIModel createAdminUIModelWithHeaderURL(String customHeaderURL) {
         EventStreams instance = createDefaultEventStreams().build();
-        return new AdminUIModel(instance, imageConfig, true, null, customHeaderURL);
+        return new AdminUIModel(instance, imageConfig, true, mockCommonServices, customHeaderURL);
     }
 
     @Test
@@ -251,7 +255,8 @@ public class AdminUIModelTest {
                 new EnvVarBuilder().withName("EXTERNAL_REST_PRODUCER_URL").withValue("https://" + restProducerHost).build(),
                 new EnvVarBuilder().withName("EXTERNAL_SCHEMA_REGISTRY_URL").withValue("https://" + schemaRegistryHost).build(),
                 new EnvVarBuilder().withName(AbstractModel.TLS_VERSION_ENV_KEY).withValue("TLSv1.2").build(),
-                new EnvVarBuilder().withName("ICP_USER_MGMT_HIGHEST_ROLE_FOR_CRN").withValue("idmgmt/identity/api/v1/teams/highestRole").build()));
+                new EnvVarBuilder().withName("CLIENT_ID").withValue("file:///env/commonServices/CLIENT_ID").build(),
+                new EnvVarBuilder().withName("CLIENT_SECRET").withValue("file:///env/commonServices/CLIENT_SECRET").build()));
 
         Service userInterfaceService = adminUIModel.getService();
         assertThat(userInterfaceService.getMetadata().getName(), startsWith(componentPrefix));
@@ -457,7 +462,7 @@ public class AdminUIModelTest {
                     .endAdminUI()
                 .endSpec()
                 .build();
-        AdminUIModel adminUIModel = new AdminUIModel(eventStreamsResource, imageConfig, false, null, headerURL);
+        AdminUIModel adminUIModel = new AdminUIModel(eventStreamsResource, imageConfig, false, mockCommonServices, headerURL);
 
         List<Container> containerList = adminUIModel.getDeployment().getSpec().getTemplate().getSpec().getContainers();
 
@@ -498,7 +503,7 @@ public class AdminUIModelTest {
         expectedImages.put(AdminUIModel.COMPONENT_NAME, uiImage);
         expectedImages.put(AdminUIModel.REDIS_CONTAINER_NAME, redisImage);
 
-        List<Container> containers = new AdminUIModel(instance, imageConfig, false, null, headerURL).getDeployment().getSpec().getTemplate()
+        List<Container> containers = new AdminUIModel(instance, imageConfig, false, mockCommonServices, headerURL).getDeployment().getSpec().getTemplate()
                 .getSpec().getContainers();
 
         ModelUtils.assertCorrectImageOverridesOnContainers(containers, expectedImages);
@@ -508,30 +513,30 @@ public class AdminUIModelTest {
     @Test
     public void testExternalAccessOverrideWithNodePort() {
         EventStreams instance = createDefaultEventStreamsWithExternalAccess(ExternalAccess.TYPE_NODEPORT).build();
-        AdminUIModel adminUIModelK8s = new AdminUIModel(instance, imageConfig, false, null, headerURL);
+        AdminUIModel adminUIModelK8s = new AdminUIModel(instance, imageConfig, false, mockCommonServices, headerURL);
         assertThat(adminUIModelK8s.getService().getSpec().getType(), is("NodePort"));
 
-        AdminUIModel adminUIModelOpenShift = new AdminUIModel(instance, imageConfig, true, null, headerURL);
+        AdminUIModel adminUIModelOpenShift = new AdminUIModel(instance, imageConfig, true, mockCommonServices, headerURL);
         assertThat(adminUIModelOpenShift.getService().getSpec().getType(), is("NodePort"));
     }
 
     @Test
     public void testExternalAccessOverrideWithRoutes() {
         EventStreams instance = createDefaultEventStreamsWithExternalAccess(ExternalAccess.TYPE_ROUTE).build();
-        AdminUIModel adminUIModelK8s = new AdminUIModel(instance, imageConfig, false, null, headerURL);
+        AdminUIModel adminUIModelK8s = new AdminUIModel(instance, imageConfig, false, mockCommonServices, headerURL);
         assertThat(adminUIModelK8s.getService().getSpec().getType(), is("ClusterIP"));
 
-        AdminUIModel adminUIModelOpenShift = new AdminUIModel(instance, imageConfig, true, null, headerURL);
+        AdminUIModel adminUIModelOpenShift = new AdminUIModel(instance, imageConfig, true, mockCommonServices, headerURL);
         assertThat(adminUIModelOpenShift.getService().getSpec().getType(), is("ClusterIP"));
     }
 
     @Test
     public void testDefaultServiceType() {
         EventStreams instance = createDefaultEventStreams().build();
-        AdminUIModel adminUIModelK8s = new AdminUIModel(instance, imageConfig, false, null, headerURL);
+        AdminUIModel adminUIModelK8s = new AdminUIModel(instance, imageConfig, false, mockCommonServices, headerURL);
         assertThat(adminUIModelK8s.getService().getSpec().getType(), is("ClusterIP"));
 
-        AdminUIModel adminUIModelOpenShift = new AdminUIModel(instance, imageConfig, true, null, headerURL);
+        AdminUIModel adminUIModelOpenShift = new AdminUIModel(instance, imageConfig, true, mockCommonServices, headerURL);
         assertThat(adminUIModelOpenShift.getService().getSpec().getType(), is("ClusterIP"));
     }
 
@@ -577,7 +582,7 @@ public class AdminUIModelTest {
                 .build();
 
 
-        AdminUIModel adminUIModel = new AdminUIModel(instance, imageConfig, false, null, headerURL);
+        AdminUIModel adminUIModel = new AdminUIModel(instance, imageConfig, false, mockCommonServices, headerURL);
         assertThat(adminUIModel.getImage(), is(uiImage));
         assertTrue(adminUIModel.getCustomImage());
 
@@ -611,7 +616,7 @@ public class AdminUIModelTest {
             .endSpec()
             .build();
 
-        assertThat(new AdminUIModel(eventStreams, imageConfig, false, null, headerURL).getServiceAccount()
+        assertThat(new AdminUIModel(eventStreams, imageConfig, false, mockCommonServices, headerURL).getServiceAccount()
                         .getImagePullSecrets(), contains(imagePullSecretOverride));
     }
 
@@ -631,7 +636,7 @@ public class AdminUIModelTest {
             .endSpec()
             .build();
 
-        assertThat(new AdminUIModel(eventStreams, imageConfig, false, null, headerURL).getServiceAccount()
+        assertThat(new AdminUIModel(eventStreams, imageConfig, false, mockCommonServices, headerURL).getServiceAccount()
                         .getImagePullSecrets(), contains(imagePullSecretOverride));
     }
 
@@ -671,7 +676,7 @@ public class AdminUIModelTest {
             .endSpec()
             .build();
 
-        assertThat(new AdminUIModel(eventStreams, imageConfig, false, null, headerURL).getServiceAccount()
+        assertThat(new AdminUIModel(eventStreams, imageConfig, false, mockCommonServices, headerURL).getServiceAccount()
                         .getImagePullSecrets(), containsInAnyOrder(globalPullSecretOverride, componentPullSecretOverride));
     }
 
@@ -680,7 +685,7 @@ public class AdminUIModelTest {
     public void testCreateAdminUIRouteWithDefaultTlsEncryption() {
         EventStreams eventStreams = createDefaultEventStreams().build();
 
-        AdminUIModel ui = new AdminUIModel(eventStreams, imageConfig, false, null, headerURL);
+        AdminUIModel ui = new AdminUIModel(eventStreams, imageConfig, false, mockCommonServices, headerURL);
 
         String expectedServiceCertName = "test-instance-ibm-es-ui-service-cert";
 
@@ -712,7 +717,7 @@ public class AdminUIModelTest {
     public void testDefaultLogging() {
         EventStreams eventStreams = createDefaultEventStreams().build();
 
-        List<EnvVar> envVars = new AdminUIModel(eventStreams, imageConfig, false, null, headerURL).getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getEnv();
+        List<EnvVar> envVars = new AdminUIModel(eventStreams, imageConfig, false, mockCommonServices, headerURL).getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getEnv();
         EnvVar traceEnvVar = envVars.stream().filter(var -> var.getName() == AdminUIModel.TRACE_STATE).findFirst().orElseGet(EnvVar::new);
         assertThat(traceEnvVar.getValue(), is("ExpressApp:INFO,Simulated:INFO,KubernetesClient:INFO"));
     }
@@ -733,7 +738,7 @@ public class AdminUIModelTest {
                 .endSpec()
                 .build();
 
-        List<EnvVar> envVars = new AdminUIModel(eventStreams, imageConfig, false, null, headerURL).getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getEnv();
+        List<EnvVar> envVars = new AdminUIModel(eventStreams, imageConfig, false, mockCommonServices, headerURL).getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getEnv();
         EnvVar traceEnvVar = envVars.stream().filter(var -> var.getName() == AdminUIModel.TRACE_STATE).findFirst().orElseGet(EnvVar::new);
         assertThat(traceEnvVar.getValue(), is("logger.one:INFO,logger.two:DEBUG"));
     }
@@ -750,7 +755,7 @@ public class AdminUIModelTest {
                 .endSpec()
                 .build();
 
-        List<EnvVar> envVars = new AdminUIModel(eventStreams, imageConfig, false, null, headerURL).getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getEnv();
+        List<EnvVar> envVars = new AdminUIModel(eventStreams, imageConfig, false, mockCommonServices, headerURL).getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getEnv();
         EnvVar traceEnvVar = envVars.stream().filter(var -> var.getName() == AdminUIModel.TRACE_STATE).findFirst().orElseGet(EnvVar::new);
         assertThat(traceEnvVar.getValue(), is("ExpressApp:INFO,Simulated:INFO,KubernetesClient:INFO"));
     }
@@ -784,7 +789,7 @@ public class AdminUIModelTest {
                 .endAdminUI()
                 .endSpec()
                 .build();
-        AdminUIModel adminUiModel = new AdminUIModel(eventStreamsResource, imageConfig, false, null, headerURL);
+        AdminUIModel adminUiModel = new AdminUIModel(eventStreamsResource, imageConfig, false, mockCommonServices, headerURL);
 
         Map<String, String> computedAnnotations = adminUiModel.getDeployment().getSpec().getTemplate().getMetadata().getAnnotations();
         ModelUtils.assertMeteringAnnotationsPresent(computedAnnotations);
@@ -809,7 +814,7 @@ public class AdminUIModelTest {
                 .endAdminUI()
                 .endSpec()
                 .build();
-        AdminUIModel adminUiModel = new AdminUIModel(eventStreamsResource, imageConfig, false, null, headerURL);
+        AdminUIModel adminUiModel = new AdminUIModel(eventStreamsResource, imageConfig, false, mockCommonServices, headerURL);
 
         Map<String, String> computedLabels = adminUiModel.getDeployment().getSpec().getTemplate().getMetadata().getLabels();
         ModelUtils.assertEventStreamsLabelsPresent(computedLabels);
@@ -852,7 +857,7 @@ public class AdminUIModelTest {
                 .endSpec()
             .build();
 
-        AdminUIModel adminUiModel = new AdminUIModel(eventStreamsResource, imageConfig, false, null, headerURL);
+        AdminUIModel adminUiModel = new AdminUIModel(eventStreamsResource, imageConfig, false, mockCommonServices, headerURL);
 
         Affinity collectorAffinity = adminUiModel.getDeployment().getSpec().getTemplate().getSpec().getAffinity();
         PodAffinityTerm computedPodAffinity = collectorAffinity.getPodAffinity().getRequiredDuringSchedulingIgnoredDuringExecution().get(0);
@@ -877,7 +882,7 @@ public class AdminUIModelTest {
             .endSpec()
             .build();
 
-        List<EnvVar> envVars = new AdminUIModel(eventStreams, imageConfig, false, null, headerURL).getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getEnv();
+        List<EnvVar> envVars = new AdminUIModel(eventStreams, imageConfig, false, mockCommonServices, headerURL).getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getEnv();
         EnvVar producerMetricsEnvVar = envVars.stream().filter(var -> var.getName() == "PRODUCER_METRICS_ENABLED").findFirst().orElseGet(EnvVar::new);
         EnvVar metricsEnvVar = envVars.stream().filter(var -> var.getName() == "METRICS_ENABLED").findFirst().orElseGet(EnvVar::new);
         assertThat(producerMetricsEnvVar.getValue(), is("true"));
@@ -889,7 +894,7 @@ public class AdminUIModelTest {
         EventStreams eventStreams = createDefaultEventStreams()
             .build();
 
-        List<EnvVar> envVars = new AdminUIModel(eventStreams, imageConfig, false, null, headerURL).getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getEnv();
+        List<EnvVar> envVars = new AdminUIModel(eventStreams, imageConfig, false, mockCommonServices, headerURL).getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getEnv();
         EnvVar producerMetricsEnvVar = envVars.stream().filter(var -> var.getName() == "PRODUCER_METRICS_ENABLED").findFirst().orElseGet(EnvVar::new);
         EnvVar metricsEnvVar = envVars.stream().filter(var -> var.getName() == "METRICS_ENABLED").findFirst().orElseGet(EnvVar::new);
         assertThat(producerMetricsEnvVar.getValue(), is("false"));
@@ -963,5 +968,51 @@ public class AdminUIModelTest {
     public void testCheckIfDisabled() {
         EventStreams eventStreams = ModelUtils.createDefaultEventStreams(instanceName).build();
         assertThat(AdminUIModel.isUIEnabled(eventStreams), is(false));
+    }
+
+    @Test
+    public void testGenerationIdLabelOnDeployment() {
+        EventStreams eventStreams = createDefaultEventStreams().build();
+        AdminUIModel adminUIModel = new AdminUIModel(eventStreams, imageConfig, true, mockCommonServices, headerURL);
+
+        assertThat(adminUIModel.getDeployment("newID1", "newID2").getMetadata().getLabels(), hasKey(AbstractSecureEndpointsModel.CERT_GENERATION_KEY));
+        assertThat(adminUIModel.getDeployment("newID1", "newID2").getMetadata().getLabels(), hasEntry(AbstractSecureEndpointsModel.CERT_GENERATION_KEY, "newID1"));
+        assertThat(adminUIModel.getDeployment("newID1", "newID2").getMetadata().getLabels(), hasKey(AdminUIModel.TRUSTSTORE_GENERATION_KEY));
+        assertThat(adminUIModel.getDeployment("newID1", "newID2").getMetadata().getLabels(), hasEntry(AdminUIModel.TRUSTSTORE_GENERATION_KEY, "newID2"));
+        assertThat(adminUIModel.getDeployment("newID1", "newID2").getSpec().getTemplate().getMetadata().getLabels(), hasKey(AbstractSecureEndpointsModel.CERT_GENERATION_KEY));
+        assertThat(adminUIModel.getDeployment("newID1", "newID2").getSpec().getTemplate().getMetadata().getLabels(), hasEntry(AbstractSecureEndpointsModel.CERT_GENERATION_KEY, "newID1"));
+        assertThat(adminUIModel.getDeployment("newID1", "newID2").getSpec().getTemplate().getMetadata().getLabels(), hasKey(AdminUIModel.TRUSTSTORE_GENERATION_KEY));
+        assertThat(adminUIModel.getDeployment("newID1", "newID2").getSpec().getTemplate().getMetadata().getLabels(), hasEntry(AdminUIModel.TRUSTSTORE_GENERATION_KEY, "newID2"));
+    }
+
+    @Test
+    public void testVolumeMounts() {
+        EventStreams eventStreams = createDefaultEventStreams().build();
+        AdminUIModel adminUIModel = new AdminUIModel(eventStreams, imageConfig, true, mockCommonServices, headerURL);
+
+        List<VolumeMount> volumeMounts = adminUIModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getVolumeMounts();
+
+        assertThat(volumeMounts.size(), is(2));
+
+        assertThat(volumeMounts.get(0).getName(), is("ibmcloud"));
+        assertThat(volumeMounts.get(0).getReadOnly(), is(true));
+        assertThat(volumeMounts.get(0).getMountPath(), is("/certs/ibmcloud"));
+
+        assertThat(volumeMounts.get(1).getName(), is("oidc-secret"));
+        assertThat(volumeMounts.get(1).getReadOnly(), is(true));
+        assertThat(volumeMounts.get(1).getMountPath(), is("/env/commonServices"));
+    }
+
+    @Test
+    public void testVolumes() {
+        EventStreams eventStreams = createDefaultEventStreams().build();
+        AdminUIModel adminUIModel = new AdminUIModel(eventStreams, imageConfig, true, mockCommonServices, headerURL);
+
+        List<Volume> volumes = adminUIModel.getDeployment().getSpec().getTemplate().getSpec().getVolumes();
+
+        assertThat(volumes.size(), is(3));
+        assertThat(volumes.get(0).getName(), is("redis-storage"));
+        assertThat(volumes.get(1).getName(), is("ibmcloud"));
+        assertThat(volumes.get(2).getName(), is("oidc-secret"));
     }
 }
