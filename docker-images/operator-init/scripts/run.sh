@@ -52,15 +52,19 @@ source ./createAndWaitForCommonServices.sh
 echo "---------------------------------------------------------------"
 
 #
-# 0.   Identifying suitable owner reference
+# 0.   Identifying suitable owner references
 #
-#  The ideal owner for resources created by this script is the clusterrole
-#  created for the operator deployment.
+#  The ideal owner for resources created for specific instances of
+#  Event Streams operators is the clusterrole created for the ES
+#  operator deployment.
+#
+#  The ideal owner for cluster-wide resources shared by all instances
+#  of Event Streams operators is the Event Streams CRD.
 #
 
-echo "Identifying owner reference to use"
+echo "Identifying owner references to use"
 
-# default owner if we don't find a cluster role
+# default operator-instance-specific owner if we don't find a cluster role
 OWNER_APIVERSION="apps/v1"
 OWNER_KIND="Deployment"
 OWNER_NAME="eventstreams-cluster-operator"
@@ -75,12 +79,11 @@ for crbname in $clusterrolebindingnames;
         crbattrs=$(kubectl get "$crbname" -o jsonpath='{.subjects[0].kind}{" "}{.subjects[0].name}{" "}{.subjects[0].namespace}{" "}{.roleRef.kind}{" "}{.roleRef.name}')
         echo "Attributes: $crbattrs"
 
-        crb=( "$crbattrs" )
-        subjectkind=${crb[0]}
-        subjectname=${crb[1]}
-        subjectns=${crb[2]}
-        rolerefkind=${crb[3]}
-        rolerefname=${crb[4]}
+        subjectkind=$(cut -d' ' -f1 <<< "$crbattrs")
+        subjectname=$(cut -d' ' -f2 <<< "$crbattrs")
+        subjectns=$(cut -d' ' -f3 <<< "$crbattrs")
+        rolerefkind=$(cut -d' ' -f4 <<< "$crbattrs")
+        rolerefname=$(cut -d' ' -f5 <<< "$crbattrs")
 
         if [ "$subjectkind" == "ServiceAccount" ] && \
             [ "$subjectname" == "eventstreams-cluster-operator-namespaced" ] && \
@@ -104,6 +107,18 @@ echo "  kind:       $OWNER_KIND"
 echo "  name:       $OWNER_NAME"
 echo "  uid:        $OWNER_UID"
 
+
+echo "Getting Event Streams CRD info"
+CRD_APIVERSION="apiextensions.k8s.io/v1beta1"
+CRD_KIND="CustomResourceDefinition"
+CRD_NAME="eventstreams.eventstreams.ibm.com"
+CRD_UID=$(kubectl get crd -o jsonpath='{.metadata.uid}' $CRD_NAME)
+
+echo "Resource to use as owner for cluster-wide resources"
+echo "  apiVersion: $CRD_APIVERSION"
+echo "  kind:       $CRD_KIND"
+echo "  name:       $CRD_NAME"
+echo "  uid:        $CRD_UID"
 
 
 echo "---------------------------------------------------------------"
@@ -359,39 +374,17 @@ echo "---------------------------------------------------------------"
 
 echo "Creating ConsoleYAMLSample samples"
 
-all_samples=("es-0-quickstart.eventstreams.ibm.com" "es-1-broker.eventstreams.ibm.com" "es-3-broker.eventstreams.ibm.com" "es-6-broker.eventstreams.ibm.com" "es-9-broker.eventstreams.ibm.com" "user-0-consumer.eventstreams.ibm.com" "user-1-producer.eventstreams.ibm.com" "user-2-everything.eventstreams.ibm.com" "kafka-connect-production.eventstreams.ibm.com" "kafka-connect-non-production.eventstreams.ibm.com" "kafka-connect-s2i-production.eventstreams.ibm.com" "kafka-connect-s2i-non-production.eventstreams.ibm.com" "mirror-maker-2-production.eventstreams.ibm.com" "mirror-maker-2-non-production.eventstreams.ibm.com")
-samples_to_create=()
-
-for consolesamplename in "${all_samples[@]}"
-do
-  echo "Checking $consolesamplename"
-  ! SAMPLEEXISTS=$(kubectl get ConsoleYAMLSample "$consolesamplename" --ignore-not-found)
-  if [ -n "$SAMPLEEXISTS" ]; then
-    echo "$consolesamplename exists, adding ownerReference"
-    kubectl patch ConsoleYAMLSample "$consolesamplename" --type='json' -p="[{\"op\": \"add\", \"path\": \"/metadata/ownerReferences/-\", \"value\":{\"apiVersion\": \"$OWNER_APIVERSION\", \"kind\": \"$OWNER_KIND\", \"name\": \"$OWNER_NAME\", \"uid\": $OWNER_UID}}]"
-  else
-    echo "$consolesamplename does not exist, adding to list to create"
-    samples_to_create+=("$consolesamplename")
-  fi
-done
-
-echo "Creating missing ConsoleYAMLSamples"
-
-for consolesamplecreatename in "${samples_to_create[@]}"
-do
-  case $consolesamplecreatename in
-    "es-0-quickstart.eventstreams.ibm.com")
-      echo "Creating the quickstart sample"
-      ! cat <<EOF | kubectl apply -f -
+echo "Creating the quickstart sample"
+! cat <<EOF | kubectl apply -f -
 apiVersion: console.openshift.io/v1
 kind: ConsoleYAMLSample
 metadata:
-  name: $consolesamplecreatename
+  name: es-0-quickstart.eventstreams.ibm.com
   ownerReferences:
-  - apiVersion: $OWNER_APIVERSION
-    kind: $OWNER_KIND
-    name: $OWNER_NAME
-    uid: $OWNER_UID
+  - apiVersion: $CRD_APIVERSION
+    kind: $CRD_KIND
+    name: $CRD_NAME
+    uid: $CRD_UID
 spec:
   description: Small cluster, with security disabled, for development use
   snippet: false
@@ -441,19 +434,18 @@ spec:
                     type: ephemeral
                 metrics: {}
 EOF
-      ;;
-    "es-1-broker.eventstreams.ibm.com")
-      echo "Creating the one-broker sample"
-      ! cat <<EOF | kubectl apply -f -
+
+echo "Creating the one-broker sample"
+! cat <<EOF | kubectl apply -f -
 apiVersion: console.openshift.io/v1
 kind: ConsoleYAMLSample
 metadata:
-  name: $consolesamplecreatename
+  name: es-1-broker.eventstreams.ibm.com
   ownerReferences:
-  - apiVersion: $OWNER_APIVERSION
-    kind: $OWNER_KIND
-    name: $OWNER_NAME
-    uid: $OWNER_UID
+  - apiVersion: $CRD_APIVERSION
+    kind: $CRD_KIND
+    name: $CRD_NAME
+    uid: $CRD_UID
 spec:
   description:  Small secured cluster for development use
   snippet: false
@@ -505,19 +497,18 @@ spec:
                     type: ephemeral
                 metrics: {}
 EOF
-      ;;
-    "es-3-broker.eventstreams.ibm.com")
-      echo "Creating the three-brokers sample"
-      ! cat <<EOF | kubectl apply -f -
+
+echo "Creating the three-brokers sample"
+! cat <<EOF | kubectl apply -f -
 apiVersion: console.openshift.io/v1
 kind: ConsoleYAMLSample
 metadata:
-  name: $consolesamplecreatename
+  name: es-3-broker.eventstreams.ibm.com
   ownerReferences:
-  - apiVersion: $OWNER_APIVERSION
-    kind: $OWNER_KIND
-    name: $OWNER_NAME
-    uid: $OWNER_UID
+  - apiVersion: $CRD_APIVERSION
+    kind: $CRD_KIND
+    name: $CRD_NAME
+    uid: $CRD_UID
 spec:
   description: Secure production cluster with three brokers
   snippet: false
@@ -579,19 +570,18 @@ spec:
                     type: ephemeral
                 metrics: {}
 EOF
-      ;;
-    "es-6-broker.eventstreams.ibm.com")
-      echo "Creating the six-brokers sample"
-      ! cat <<EOF | kubectl apply -f -
+
+echo "Creating the six-brokers sample"
+! cat <<EOF | kubectl apply -f -
 apiVersion: console.openshift.io/v1
 kind: ConsoleYAMLSample
 metadata:
-  name: $consolesamplecreatename
+  name: es-6-broker.eventstreams.ibm.com
   ownerReferences:
-  - apiVersion: $OWNER_APIVERSION
-    kind: $OWNER_KIND
-    name: $OWNER_NAME
-    uid: $OWNER_UID
+  - apiVersion: $CRD_APIVERSION
+    kind: $CRD_KIND
+    name: $CRD_NAME
+    uid: $CRD_UID
 spec:
   description: Secure production cluster with six brokers
   snippet: false
@@ -653,19 +643,18 @@ spec:
                     type: ephemeral
                 metrics: {}
 EOF
-      ;;
-    "es-9-broker.eventstreams.ibm.com")
-      echo "Creating the nine-brokers sample"
-      ! cat <<EOF | kubectl apply -f -
+
+echo "Creating the nine-brokers sample"
+! cat <<EOF | kubectl apply -f -
 apiVersion: console.openshift.io/v1
 kind: ConsoleYAMLSample
 metadata:
-  name: $consolesamplecreatename
+  name: es-9-broker.eventstreams.ibm.com
   ownerReferences:
-  - apiVersion: $OWNER_APIVERSION
-    kind: $OWNER_KIND
-    name: $OWNER_NAME
-    uid: $OWNER_UID
+  - apiVersion: $CRD_APIVERSION
+    kind: $CRD_KIND
+    name: $CRD_NAME
+    uid: $CRD_UID
 spec:
   description: Secure production cluster with nine brokers
   snippet: false
@@ -727,19 +716,18 @@ spec:
                     type: ephemeral
                 metrics: {}
 EOF
-      ;;
-    "user-0-consumer.eventstreams.ibm.com")
-      echo "Creating the consumer user sample"
-      ! cat <<EOF | kubectl apply -f -
+
+echo "Creating the consumer user sample"
+! cat <<EOF | kubectl apply -f -
 apiVersion: console.openshift.io/v1
 kind: ConsoleYAMLSample
 metadata:
-  name: $consolesamplecreatename
+  name: user-0-consumer.eventstreams.ibm.com
   ownerReferences:
-  - apiVersion: $OWNER_APIVERSION
-    kind: $OWNER_KIND
-    name: $OWNER_NAME
-    uid: $OWNER_UID
+  - apiVersion: $CRD_APIVERSION
+    kind: $CRD_KIND
+    name: $CRD_NAME
+    uid: $CRD_UID
 spec:
   description: Client credentials for a Kafka consumer
   snippet: false
@@ -777,19 +765,18 @@ spec:
               patternType: prefix
             operation: Read
 EOF
-      ;;
-    "user-1-producer.eventstreams.ibm.com")
-      echo "Creating the producer user sample"
-      ! cat <<EOF | kubectl apply -f -
+
+echo "Creating the producer user sample"
+! cat <<EOF | kubectl apply -f -
 apiVersion: console.openshift.io/v1
 kind: ConsoleYAMLSample
 metadata:
-  name: $consolesamplecreatename
+  name: user-1-producer.eventstreams.ibm.com
   ownerReferences:
-  - apiVersion: $OWNER_APIVERSION
-    kind: $OWNER_KIND
-    name: $OWNER_NAME
-    uid: $OWNER_UID
+  - apiVersion: $CRD_APIVERSION
+    kind: $CRD_KIND
+    name: $CRD_NAME
+    uid: $CRD_UID
 spec:
   description: Client credentials for a Kafka producer
   snippet: false
@@ -822,19 +809,18 @@ spec:
               patternType: prefix
             operation: Read
 EOF
-      ;;
-    "user-2-everything.eventstreams.ibm.com")
-      echo "Creating the all-permissions user sample"
-      ! cat <<EOF | kubectl apply -f -
+
+echo "Creating the all-permissions user sample"
+! cat <<EOF | kubectl apply -f -
 apiVersion: console.openshift.io/v1
 kind: ConsoleYAMLSample
 metadata:
-  name: $consolesamplecreatename
+  name: user-2-everything.eventstreams.ibm.com
   ownerReferences:
-  - apiVersion: $OWNER_APIVERSION
-    kind: $OWNER_KIND
-    name: $OWNER_NAME
-    uid: $OWNER_UID
+  - apiVersion: $CRD_APIVERSION
+    kind: $CRD_KIND
+    name: $CRD_NAME
+    uid: $CRD_UID
 spec:
   description: Client credentials granting all permissions
   snippet: false
@@ -892,21 +878,20 @@ spec:
               patternType: literal
             operation: Write
 EOF
-      ;;
-    "kafka-connect-production.eventstreams.ibm.com")
-      echo "Creating the kafka connect production sample"
-      ! cat <<EOF | kubectl apply -f -
+
+echo "Creating the kafka connect production sample"
+! cat <<EOF | kubectl apply -f -
 apiVersion: console.openshift.io/v1
 kind: ConsoleYAMLSample
 metadata:
-  name: $consolesamplecreatename
+  name: kafka-connect-production.eventstreams.ibm.com
   ownerReferences:
-  - apiVersion: $OWNER_APIVERSION
-    kind: $OWNER_KIND
-    name: $OWNER_NAME
-    uid: $OWNER_UID
+  - apiVersion: $CRD_APIVERSION
+    kind: $CRD_KIND
+    name: $CRD_NAME
+    uid: $CRD_UID
 spec:
-  description: Apply this configuration to create a Kafka Connect framework for production environments. Each Kafka Connect replica is a separate chargeable unit.
+  description: Create a Kafka Connect framework for production use. Each Kafka Connect replica is a separate chargeable unit.
   snippet: false
   targetResource:
     apiVersion: eventstreams.ibm.com/v1beta1
@@ -944,21 +929,20 @@ spec:
         config.storage.topic: connect-cluster-configs
         status.storage.topic: connect-cluster-status
 EOF
-      ;;
-    "kafka-connect-non-production.eventstreams.ibm.com")
-      echo "Creating the kafka connect non-production sample"
-      ! cat <<EOF | kubectl apply -f -
+
+echo "Creating the kafka connect non-production sample"
+! cat <<EOF | kubectl apply -f -
 apiVersion: console.openshift.io/v1
 kind: ConsoleYAMLSample
 metadata:
-  name: $consolesamplecreatename
+  name: kafka-connect-non-production.eventstreams.ibm.com
   ownerReferences:
-  - apiVersion: $OWNER_APIVERSION
-    kind: $OWNER_KIND
-    name: $OWNER_NAME
-    uid: $OWNER_UID
+  - apiVersion: $CRD_APIVERSION
+    kind: $CRD_KIND
+    name: $CRD_NAME
+    uid: $CRD_UID
 spec:
-  description: Apply this configuration to create a Kafka Connect framework for development and testing purposes. Each Kafka Connect replica is a separate chargeable unit.
+  description: Create a Kafka Connect framework for development and testing use. Each Kafka Connect replica is a separate chargeable unit.
   snippet: false
   targetResource:
     apiVersion: eventstreams.ibm.com/v1beta1
@@ -996,21 +980,20 @@ spec:
         config.storage.topic: connect-cluster-configs
         status.storage.topic: connect-cluster-status
 EOF
-      ;;
-    "kafka-connect-s2i-production.eventstreams.ibm.com")
-      echo "Creating the kafka connect Source To Image production sample"
-      ! cat <<EOF | kubectl apply -f -
+
+echo "Creating the kafka connect Source To Image production sample"
+! cat <<EOF | kubectl apply -f -
 apiVersion: console.openshift.io/v1
 kind: ConsoleYAMLSample
 metadata:
-  name: $consolesamplecreatename
+  name: kafka-connect-s2i-production.eventstreams.ibm.com
   ownerReferences:
-  - apiVersion: $OWNER_APIVERSION
-    kind: $OWNER_KIND
-    name: $OWNER_NAME
-    uid: $OWNER_UID
+  - apiVersion: $CRD_APIVERSION
+    kind: $CRD_KIND
+    name: $CRD_NAME
+    uid: $CRD_UID
 spec:
-  description: Apply this configuration to create a Kafka Connect Source to Image framework for production environments. Each Kafka Connect replica is a separate chargeable unit.
+  description: Create a Kafka Connect Source to Image framework for production use. Each Kafka Connect replica is a separate chargeable unit.
   snippet: false
   targetResource:
     apiVersion: eventstreams.ibm.com/v1beta1
@@ -1048,21 +1031,20 @@ spec:
         config.storage.topic: connect-cluster-configs
         status.storage.topic: connect-cluster-status
 EOF
-      ;;
-    "kafka-connect-s2i-non-production.eventstreams.ibm.com")
-      echo "Creating the kafka connect Source To Image non-production sample"
-      ! cat <<EOF | kubectl apply -f -
+
+echo "Creating the kafka connect Source To Image non-production sample"
+! cat <<EOF | kubectl apply -f -
 apiVersion: console.openshift.io/v1
 kind: ConsoleYAMLSample
 metadata:
-  name: $consolesamplecreatename
+  name: kafka-connect-s2i-non-production.eventstreams.ibm.com
   ownerReferences:
-  - apiVersion: $OWNER_APIVERSION
-    kind: $OWNER_KIND
-    name: $OWNER_NAME
-    uid: $OWNER_UID
+  - apiVersion: $CRD_APIVERSION
+    kind: $CRD_KIND
+    name: $CRD_NAME
+    uid: $CRD_UID
 spec:
-  description: Apply this configuration to create a Kafka Connect Source to Image framework for development and testing purposes. Each Kafka Connect replica is a separate chargeable unit.
+  description: Create a Kafka Connect Source to Image framework for development and testing use. Each Kafka Connect replica is a separate chargeable unit.
   snippet: false
   targetResource:
     apiVersion: eventstreams.ibm.com/v1beta1
@@ -1100,21 +1082,20 @@ spec:
         config.storage.topic: connect-cluster-configs
         status.storage.topic: connect-cluster-status
 EOF
-      ;;
-    "mirror-maker-2-production.eventstreams.ibm.com")
-      echo "Creating the Mirror Maker 2 production sample"
-      ! cat <<EOF | kubectl apply -f -
+
+echo "Creating the Mirror Maker 2 production sample"
+! cat <<EOF | kubectl apply -f -
 apiVersion: console.openshift.io/v1
 kind: ConsoleYAMLSample
 metadata:
-  name: $consolesamplecreatename
+  name: mirror-maker-2-production.eventstreams.ibm.com
   ownerReferences:
-  - apiVersion: $OWNER_APIVERSION
-    kind: $OWNER_KIND
-    name: $OWNER_NAME
-    uid: $OWNER_UID
+  - apiVersion: $CRD_APIVERSION
+    kind: $CRD_KIND
+    name: $CRD_NAME
+    uid: $CRD_UID
 spec:
-  description: Apply this configuration to create a Mirror Maker 2 framework for production environments. Each Mirror Maker 2 replica is a separate chargeable unit.
+  description: Create a Mirror Maker 2 framework for production use. Each Mirror Maker 2 replica is a separate chargeable unit.
   snippet: false
   targetResource:
     apiVersion: eventstreams.ibm.com/v1alpha1
@@ -1169,21 +1150,20 @@ spec:
           topicsPattern: ".*"
           groupsPattern: ".*"
 EOF
-      ;;
-    "mirror-maker-2-non-production.eventstreams.ibm.com")
-      echo "Creating the Mirror Maker 2 non-production sample"
-      ! cat <<EOF | kubectl apply -f -
+
+echo "Creating the Mirror Maker 2 non-production sample"
+! cat <<EOF | kubectl apply -f -
 apiVersion: console.openshift.io/v1
 kind: ConsoleYAMLSample
 metadata:
-  name: $consolesamplecreatename
+  name: mirror-maker-2-non-production.eventstreams.ibm.com
   ownerReferences:
-  - apiVersion: $OWNER_APIVERSION
-    kind: $OWNER_KIND
-    name: $OWNER_NAME
-    uid: $OWNER_UID
+  - apiVersion: $CRD_APIVERSION
+    kind: $CRD_KIND
+    name: $CRD_NAME
+    uid: $CRD_UID
 spec:
-  description: Apply this configuration to create a Mirror Maker 2 framework for development and testing purposes. Each Mirror Maker 2 replica is a separate chargeable unit.
+  description: Create a Mirror Maker 2 framework for development and testing use. Each Mirror Maker 2 replica is a separate chargeable unit.
   snippet: false
   targetResource:
     apiVersion: eventstreams.ibm.com/v1alpha1
@@ -1239,11 +1219,9 @@ spec:
           groupsPattern: ".*"
 EOF
 
-      ;;
-  esac
-done
 
 echo "Verifying Console YAML samples:"
+all_samples=("es-0-quickstart.eventstreams.ibm.com" "es-1-broker.eventstreams.ibm.com" "es-3-broker.eventstreams.ibm.com" "es-6-broker.eventstreams.ibm.com" "es-9-broker.eventstreams.ibm.com" "user-0-consumer.eventstreams.ibm.com" "user-1-producer.eventstreams.ibm.com" "user-2-everything.eventstreams.ibm.com" "kafka-connect-production.eventstreams.ibm.com" "kafka-connect-non-production.eventstreams.ibm.com" "kafka-connect-s2i-production.eventstreams.ibm.com" "kafka-connect-s2i-non-production.eventstreams.ibm.com" "mirror-maker-2-production.eventstreams.ibm.com" "mirror-maker-2-non-production.eventstreams.ibm.com")
 for sample_to_check in "${all_samples[@]}"
 do
   ! kubectl get ConsoleYAMLSample "$sample_to_check" -o yaml
