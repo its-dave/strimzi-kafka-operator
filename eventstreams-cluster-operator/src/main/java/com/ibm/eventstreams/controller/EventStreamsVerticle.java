@@ -12,6 +12,7 @@
  */
 package com.ibm.eventstreams.controller;
 
+import com.ibm.commonservices.api.controller.OperandRequestResourceOperator;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsGeoReplicator;
 import com.ibm.eventstreams.rest.eventstreams.EndpointValidation;
@@ -94,15 +95,16 @@ public class EventStreamsVerticle extends AbstractVerticle {
             KubernetesDeserializer.registerCustomKind(EventStreams.RESOURCE_GROUP + "/" + EventStreams.V1BETA1, EventStreams.RESOURCE_KIND, EventStreams.class);
 
             EventStreamsResourceOperator esResourceOperator = new EventStreamsResourceOperator(vertx, client);
+            OperandRequestResourceOperator operandRequestResourceOperator = new OperandRequestResourceOperator(vertx, client);
             Cp4iServicesBindingResourceOperator cp4iResourceOperator = new Cp4iServicesBindingResourceOperator(vertx, client, Cp4iServicesBinding.RESOURCE_KIND);
             EventStreamsGeoReplicatorResourceOperator replicatorResourceOperator = new EventStreamsGeoReplicatorResourceOperator(vertx, client, EventStreamsGeoReplicator.RESOURCE_KIND);
             KafkaUserOperator kafkaUserOperator = new KafkaUserOperator(vertx, client);
-            EventStreamsOperator eventStreamsOperator = new EventStreamsOperator(
-                    vertx,
+            EventStreamsOperator eventStreamsOperator = new EventStreamsOperator(vertx,
                     client,
                     EventStreams.RESOURCE_KIND,
                     pfa,
                     esResourceOperator,
+                    operandRequestResourceOperator,
                     cp4iResourceOperator,
                     replicatorResourceOperator,
                     kafkaUserOperator,

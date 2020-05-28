@@ -14,6 +14,7 @@
 package com.ibm.eventstreams.controller;
 
 import com.ibm.commonservices.CommonServices;
+import com.ibm.commonservices.api.controller.OperandRequestResourceOperator;
 import com.ibm.eventstreams.api.Endpoint;
 import com.ibm.eventstreams.api.EndpointServiceType;
 import com.ibm.eventstreams.api.ProductUse;
@@ -192,6 +193,7 @@ public class EventStreamsOperatorTest {
     private static final String SCHEMA_REGISTRY_ROUTE_NAME = CLUSTER_NAME + "-ibm-es-" + SchemaRegistryModel.COMPONENT_NAME;
     private static final String ADMIN_API_ROUTE_NAME = CLUSTER_NAME + "-ibm-es-" + AdminApiModel.COMPONENT_NAME;
     private static final String CP4I_BINDING_NAME = CLUSTER_NAME + "-ibm-es-eventstreams";
+    private static final String OPERAND_REQUEST_NAME = CLUSTER_NAME + "-ibm-es-eventstreams";
     private static final String ROUTE_HOST_POSTFIX = "apps.route.test";
     private static final int EXPECTED_DEFAULT_REPLICAS = 1;
     private static final String REPLICATOR_DATA = "[replicatorTestData]";
@@ -211,6 +213,7 @@ public class EventStreamsOperatorTest {
     private static Vertx vertx;
     private KubernetesClient mockClient;
     private EventStreamsResourceOperator esResourceOperator;
+    private OperandRequestResourceOperator operandRequestResourceOperator;
     private Cp4iServicesBindingResourceOperator cp4iResourceOperator;
     private EventStreamsGeoReplicatorResourceOperator esReplicatorResourceOperator;
     private EventStreamsOperator esOperator;
@@ -279,6 +282,9 @@ public class EventStreamsOperatorTest {
         when(esResourceOperator.getKafkaInstance(anyString(), anyString())).thenReturn(mockKafkaInstance);
         when(esResourceOperator.getAsync(anyString(), anyString())).thenReturn(Future.succeededFuture(mockEventStreams));
         when(esResourceOperator.updateEventStreamsStatus(any(EventStreams.class))).thenReturn(Future.succeededFuture(mockEventStreams));
+
+        operandRequestResourceOperator = mock(OperandRequestResourceOperator.class);
+        when(operandRequestResourceOperator.reconcile(matches(NAMESPACE), matches(OPERAND_REQUEST_NAME), any())).thenReturn(Future.succeededFuture());
 
         cp4iResourceOperator = mock(Cp4iServicesBindingResourceOperator.class);
         when(cp4iResourceOperator.reconcile(matches(NAMESPACE), matches(CP4I_BINDING_NAME), any())).thenReturn(Future.succeededFuture());
@@ -355,6 +361,7 @@ public class EventStreamsOperatorTest {
                 EventStreams.RESOURCE_KIND,
                 pfa,
                 esResourceOperator,
+                operandRequestResourceOperator,
                 cp4iResourceOperator,
                 esReplicatorResourceOperator,
                 kafkaUserOperator,
@@ -902,7 +909,20 @@ public class EventStreamsOperatorTest {
     @Test
     public void testEventStreamsHasMultipleSecurityWarnings(VertxTestContext context) {
         PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
-        esOperator = new EventStreamsOperator(vertx, mockClient, EventStreams.RESOURCE_KIND, pfa, esResourceOperator, cp4iResourceOperator, esReplicatorResourceOperator, kafkaUserOperator, imageConfig, routeOperator, metricsProvider, OPERATOR_NAMESPACE, kafkaStatusReadyTimeoutMs);
+        esOperator = new EventStreamsOperator(vertx,
+                mockClient,
+                EventStreams.RESOURCE_KIND,
+                pfa,
+                esResourceOperator,
+                operandRequestResourceOperator,
+                cp4iResourceOperator,
+                esReplicatorResourceOperator,
+                kafkaUserOperator,
+                imageConfig,
+                routeOperator,
+                metricsProvider,
+                OPERATOR_NAMESPACE,
+                kafkaStatusReadyTimeoutMs);
 
         EndpointSpec endpoint = new EndpointSpecBuilder()
             .withName("ok-name")

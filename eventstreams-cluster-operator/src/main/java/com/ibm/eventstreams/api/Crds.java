@@ -12,6 +12,7 @@
  */
 package com.ibm.eventstreams.api;
 
+import com.ibm.commonservices.api.spec.OperandRequest;
 import com.ibm.eventstreams.api.spec.EventStreams;
 
 import com.ibm.eventstreams.api.spec.EventStreamsGeoReplicator;
@@ -51,7 +52,7 @@ public class Crds {
             group = EventStreams.RESOURCE_GROUP;
             kind = EventStreams.RESOURCE_KIND;
             listKind = EventStreams.RESOURCE_LIST_KIND;
-            shortName = "es";
+            shortName = EventStreams.SHORT_NAME;
             status = new CustomResourceSubresourceStatus();
         } else if (cls.equals(Client.class)) {
             version = Client.V1;
@@ -74,6 +75,17 @@ public class Crds {
             kind = Cp4iServicesBinding.RESOURCE_KIND;
             listKind = Cp4iServicesBinding.RESOURCE_LIST_KIND;
             shortName = Cp4iServicesBinding.SHORT_NAME;
+            status = new CustomResourceSubresourceStatus();
+        } else if (cls.equals(OperandRequest.class)) {
+            version = OperandRequest.V1ALPHA1;
+            scope = OperandRequest.SCOPE;
+            crdApiVersion = OperandRequest.CRD_API_VERSION;
+            plural = OperandRequest.RESOURCE_PLURAL;
+            singular = OperandRequest.RESOURCE_SINGULAR;
+            group = OperandRequest.RESOURCE_GROUP;
+            kind = OperandRequest.RESOURCE_KIND;
+            listKind = OperandRequest.RESOURCE_LIST_KIND;
+            shortName = OperandRequest.SHORT_NAME;
             status = new CustomResourceSubresourceStatus();
         } else if (cls.equals(EventStreamsGeoReplicator.class)) {
             version = EventStreamsGeoReplicator.V1BETA1;

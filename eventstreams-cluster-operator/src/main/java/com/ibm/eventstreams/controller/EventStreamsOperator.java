@@ -14,8 +14,10 @@ package com.ibm.eventstreams.controller;
 
 import com.ibm.commonservices.CommonServices;
 import com.ibm.commonservices.api.controller.Cp4iServicesBindingResourceOperator;
+import com.ibm.commonservices.api.controller.OperandRequestResourceOperator;
 import com.ibm.commonservices.api.model.ClientModel;
 import com.ibm.commonservices.api.model.Cp4iServicesBindingModel;
+import com.ibm.commonservices.api.model.OperandRequestModel;
 import com.ibm.commonservices.api.spec.Client;
 import com.ibm.commonservices.api.spec.ClientDoneable;
 import com.ibm.commonservices.api.spec.ClientList;
@@ -113,6 +115,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
 
     private final KubernetesClient client;
     private final EventStreamsResourceOperator esResourceOperator;
+    private final OperandRequestResourceOperator operandRequestResourceOperator;
     private final Cp4iServicesBindingResourceOperator cp4iResourceOperator;
     private final EventStreamsGeoReplicatorResourceOperator replicatorResourceOperator;
     private final KafkaUserOperator kafkaUserOperator;
@@ -141,8 +144,10 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
     public static final String COMMON_SERVICES_CERTIFICATE_NOT_FOUND_REASON = "CommonServicesCertificateNotFound";
     public static final String EVENTSTREAMS_CREATING_REASON = "Creating";
 
+    @SuppressWarnings("checkstyle:ParameterNumber")
     public EventStreamsOperator(Vertx vertx, KubernetesClient client, String kind, PlatformFeaturesAvailability pfa,
                                 EventStreamsResourceOperator esResourceOperator,
+                                OperandRequestResourceOperator operandRequestResourceOperator,
                                 Cp4iServicesBindingResourceOperator cp4iResourceOperator,
                                 EventStreamsGeoReplicatorResourceOperator replicatorResourceOperator,
                                 KafkaUserOperator kafkaUserOperator,
@@ -158,6 +163,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         log.info("Creating EventStreamsOperator");
         this.esResourceOperator = esResourceOperator;
         this.kafkaUserOperator = kafkaUserOperator;
+        this.operandRequestResourceOperator = operandRequestResourceOperator;
         this.cp4iResourceOperator = cp4iResourceOperator;
         this.replicatorResourceOperator = replicatorResourceOperator;
         this.client = client;
@@ -198,6 +204,8 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         customImageCount =  0;
 
         return log.traceExit(reconcileState.validateCustomResource()
+                .compose(state -> state.createCommonServicesOperandRequest())
+//                .compose(state -> state.waitForCommonServicesOperandRequest())
                 .compose(state -> state.getCommonServices())
                 .compose(state -> state.getCommonServicesClusterCert())
                 .compose(state -> state.createCloudPakClusterCertSecret())
@@ -316,6 +324,16 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 log.debug("Invalid Event Streams specification: further details in the status conditions");
                 return log.traceExit(Future.failedFuture("Invalid Event Streams specification: further details in the status conditions"));
             }
+        }
+
+        Future<ReconciliationState> createCommonServicesOperandRequest() {
+            log.traceEntry();
+            OperandRequestModel operandRequestModel = new OperandRequestModel(instance);
+            return log.traceExit(
+                    operandRequestResourceOperator.reconcile(namespace,
+                        operandRequestModel.operandRequestName(instance.getMetadata().getName()),
+                        operandRequestModel.getOperandRequest())
+                    .map(rs -> this));
         }
 
         Future<ReconciliationState> getCommonServices() {
