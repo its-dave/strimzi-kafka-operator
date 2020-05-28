@@ -18,7 +18,6 @@ import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.spec.SchemaRegistrySpec;
 import com.ibm.eventstreams.controller.models.StatusCondition;
-import com.ibm.eventstreams.rest.Validation;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.strimzi.api.kafka.model.CruiseControlSpec;
 import io.strimzi.api.kafka.model.KafkaSpec;
@@ -39,7 +38,7 @@ import java.util.stream.Collectors;
  * configurations that aren't necessarily illegal or invalid, but that could potentially
  * lead to problems.
  */
-public class GeneralValidation implements Validation {
+public class GeneralValidation implements EventStreamsValidation {
     private static final Logger log = LogManager.getLogger(GeneralValidation.class.getName());
 
     public static final String INSTALLING_IN_LONG_NAMESPACE_REASON = "RouteInLongNameSpace";

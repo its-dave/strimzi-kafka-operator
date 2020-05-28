@@ -523,11 +523,15 @@ public abstract class AbstractModel {
                 .orElse(null);
     }
 
-    protected Map<String, String> getEventStreamsMeteringAnnotations() {
-        return getEventStreamsMeteringAnnotations("");
+    protected Map<String, String> getEventStreamsMeteringAnnotations(String chargedContainer) {
+        return getEventStreamsMeteringAnnotations(chargedContainer, productUse);
     }
 
-    protected Map<String, String> getEventStreamsMeteringAnnotations(String chargedContainers) {
+    protected Map<String, String> getEventStreamsMeteringAnnotations() {
+        return getEventStreamsMeteringAnnotations("", productUse);
+    }
+
+    public static Map<String, String> getEventStreamsMeteringAnnotations(String chargedContainers, ProductUse productUse) {
         switch (productUse) {
             case CP4I_PRODUCTION:
                 return getDefaultEventStreamsMeteringAnnotations(PRODUCT_ID_PRODUCTION, PRODUCT_NAME_PRODUCTION, chargedContainers, PRODUCT_CLOUDPAK_RATIO_PRODUCTION);
@@ -540,7 +544,7 @@ public abstract class AbstractModel {
         }
     }
 
-    private Map<String, String> getDefaultEventStreamsMeteringAnnotations(String productId, String productName, String chargedContainers, String cloudPakRatio) {
+    private static Map<String, String> getDefaultEventStreamsMeteringAnnotations(String productId, String productName, String chargedContainers, String cloudPakRatio) {
         Map<String, String> annotations = new HashMap<String, String>();
 
         annotations.put(PRODUCT_ID_KEY, productId);
@@ -556,7 +560,7 @@ public abstract class AbstractModel {
         return annotations;
     }
 
-    protected Map<String, String> getEmbeddedEventStreamsMeteringAnnotations() {
+    private static Map<String, String> getEmbeddedEventStreamsMeteringAnnotations() {
         Map<String, String> annotations = new HashMap<String, String>();
 
         annotations.put(PRODUCT_ID_KEY, PRODUCT_ID_PRODUCTION);

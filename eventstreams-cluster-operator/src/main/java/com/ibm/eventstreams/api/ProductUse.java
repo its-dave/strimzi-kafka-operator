@@ -4,7 +4,7 @@
  *
  * 5737-H33
  *
- * (C) Copyright IBM Corp. 2019  All Rights Reserved.
+ * (C) Copyright IBM Corp. 2020  All Rights Reserved.
  *
  * The source code for this program is not published or otherwise
  * divested of its trade secrets, irrespective of what has been
@@ -12,41 +12,32 @@
  */
 package com.ibm.eventstreams.api;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum ProductUse {
-    CP4I_PRODUCTION,
-    CP4I_NON_PRODUCTION,
-    IBM_SUPPORTING_PROGRAM;
+    CP4I_PRODUCTION("CloudPakForIntegrationProduction"),
+    CP4I_NON_PRODUCTION("CloudPakForIntegrationNonProduction"),
+    IBM_SUPPORTING_PROGRAM("IBMSupportingProgram");
 
-    private static final String CP4I_PRODUCTION_STRING = "CloudPakForIntegrationProduction";
-    private static final String CP4I_NON_PRODUCTION_STRING = "CloudPakForIntegrationNonProduction";
-    private static final String IBM_SUPPORTING_PROGRAM_STRING = "IBMSupportingProgram";
+    private final String value;
 
-    @JsonCreator
-    public static ProductUse forValue(String value) {
-        switch (value) {
-            case CP4I_PRODUCTION_STRING:
-                return CP4I_PRODUCTION;
-            case CP4I_NON_PRODUCTION_STRING:
-                return CP4I_NON_PRODUCTION;
-            case IBM_SUPPORTING_PROGRAM_STRING:
-                return IBM_SUPPORTING_PROGRAM;
-            default:
-                return null;
-        }
+    ProductUse(String value) {
+        this.value = value;
     }
 
     @JsonValue
     public String toValue() {
-        switch (this) {
-            case CP4I_PRODUCTION:
-                return CP4I_PRODUCTION_STRING;
-            case CP4I_NON_PRODUCTION:
-                return CP4I_NON_PRODUCTION_STRING;
-            case IBM_SUPPORTING_PROGRAM:
-                return IBM_SUPPORTING_PROGRAM_STRING;
+        return this.value;
+    }
+
+    public static ProductUse fromValue(String value) {
+        switch (value) {
+            case "CloudPakForIntegrationProduction":
+                return CP4I_PRODUCTION;
+            case "CloudPakForIntegrationNonProduction":
+                return CP4I_NON_PRODUCTION;
+            case "IBMSupportingProgram":
+                return IBM_SUPPORTING_PROGRAM;
             default:
                 return null;
         }

@@ -21,7 +21,6 @@ import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.spec.SchemaRegistrySpec;
 import com.ibm.eventstreams.api.spec.SecurityComponentSpec;
 import com.ibm.eventstreams.controller.models.StatusCondition;
-import com.ibm.eventstreams.rest.Validation;
 import io.strimzi.api.kafka.model.KafkaClusterSpec;
 import io.strimzi.api.kafka.model.KafkaSpec;
 import io.strimzi.api.kafka.model.listener.KafkaListenerExternal;
@@ -40,7 +39,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 
 
-public class EndpointValidation implements Validation {
+public class EndpointValidation implements EventStreamsValidation {
 
     private static final Logger log = LogManager.getLogger(EndpointValidation.class.getName());
 

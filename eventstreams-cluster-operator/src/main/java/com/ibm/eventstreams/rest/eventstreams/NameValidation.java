@@ -14,7 +14,6 @@ package com.ibm.eventstreams.rest.eventstreams;
 
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.controller.models.StatusCondition;
-import com.ibm.eventstreams.rest.Validation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -22,7 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
-public class NameValidation implements Validation {
+public class NameValidation implements EventStreamsValidation {
 
     private static final Logger log = LogManager.getLogger(NameValidation.class.getName());
 

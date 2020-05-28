@@ -51,7 +51,6 @@ public class ReplicatorKafkaListenerValidation implements Validation {
         this.conditions = validateCr(instance);
     }
 
-    @Override
     public List<StatusCondition> validateCr(EventStreams instance) {
         Map<ListenerType, ListenerAuthentication> listenerAuthentications = ListenerAuthentication.getListenerAuth(instance);
         List<StatusCondition> conditions = new ArrayList<>();

@@ -17,7 +17,6 @@ import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.spec.SchemaRegistrySpec;
 import com.ibm.eventstreams.controller.models.StatusCondition;
-import com.ibm.eventstreams.rest.Validation;
 import io.strimzi.api.kafka.model.JvmOptions;
 import io.strimzi.api.kafka.model.KafkaClusterSpec;
 import io.strimzi.api.kafka.model.KafkaSpec;
@@ -33,7 +32,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-public class UnknownPropertyValidation implements Validation {
+public class UnknownPropertyValidation implements EventStreamsValidation {
     private static final Logger log = LogManager.getLogger(UnknownPropertyValidation.class.getName());
 
     private final static String KAFKA_JMX_OPTIONS_SPEC_PATH = "spec.strimziOverrides.kafka.jmxOptions";

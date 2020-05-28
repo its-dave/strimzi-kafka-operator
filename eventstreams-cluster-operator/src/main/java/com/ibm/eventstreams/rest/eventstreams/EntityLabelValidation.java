@@ -54,7 +54,7 @@ public class EntityLabelValidation {
     private static void rejectInvalidEntities(RoutingContext routingContext, Class entityClass) {
         log.traceEntry();
 
-        CustomResource customResourceSpec = Validation.getSpecFromRequest(routingContext, entityClass);
+        CustomResource customResourceSpec = (CustomResource) Validation.getSpecFromRequest(routingContext, entityClass);
 
         ValidationResponsePayload outcome;
 

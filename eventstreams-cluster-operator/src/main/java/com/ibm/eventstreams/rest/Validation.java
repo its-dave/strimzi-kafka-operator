@@ -12,10 +12,8 @@
  */
 package com.ibm.eventstreams.rest;
 
-import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.controller.models.ConditionType;
 import com.ibm.eventstreams.controller.models.StatusCondition;
-import io.fabric8.kubernetes.client.CustomResource;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
@@ -29,20 +27,10 @@ public interface Validation {
     String SCHEMA_REGISTRY_SPEC_NAME = "schemaRegistry";
     String ADMIN_UI_SPEC_NAME = "adminUi";
 
-    static <T extends CustomResource> T getSpecFromRequest(RoutingContext routingContext, Class<T> specClass) {
+    static <T> T getSpecFromRequest(RoutingContext routingContext, Class<T> specClass) {
         JsonObject requestBody = routingContext.getBodyAsJson();
         JsonObject requestPayload = requestBody.getJsonObject("request");
         return requestPayload.getJsonObject("object").mapTo(specClass);
-    }
-
-    static EventStreams getSpecFromRequest(RoutingContext routingContext) {
-        return getSpecFromRequest(routingContext, EventStreams.class);
-    }
-
-    List<StatusCondition> validateCr(EventStreams spec);
-
-    default void rejectCr(RoutingContext routingContext) {
-        sendResponse(routingContext, validateCr(getSpecFromRequest(routingContext)));
     }
 
     default void sendResponse(RoutingContext routingContext, List<StatusCondition> conditions) {

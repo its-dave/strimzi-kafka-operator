@@ -12,20 +12,22 @@
  */
 package com.ibm.eventstreams.controller;
 
+import com.ibm.commonservices.api.controller.Cp4iServicesBindingResourceOperator;
 import com.ibm.commonservices.api.controller.OperandRequestResourceOperator;
+import com.ibm.commonservices.api.spec.Cp4iServicesBinding;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsGeoReplicator;
+import com.ibm.eventstreams.rest.KubernetesProbe;
 import com.ibm.eventstreams.rest.eventstreams.EndpointValidation;
 import com.ibm.eventstreams.rest.eventstreams.EntityLabelValidation;
-import com.ibm.eventstreams.rest.KubernetesProbe;
 import com.ibm.eventstreams.rest.eventstreams.GeneralValidation;
 import com.ibm.eventstreams.rest.eventstreams.LicenseValidation;
 import com.ibm.eventstreams.rest.eventstreams.NameValidation;
 import com.ibm.eventstreams.rest.eventstreams.UnknownPropertyValidation;
 import com.ibm.eventstreams.rest.eventstreams.VersionValidation;
-import com.ibm.commonservices.api.controller.Cp4iServicesBindingResourceOperator;
-import com.ibm.commonservices.api.spec.Cp4iServicesBinding;
-
+import com.ibm.eventstreams.rest.kafkaconnect.KafkaConnectMeteringAnnotationsValidation;
+import com.ibm.eventstreams.rest.kafkaconnectS2I.KafkaConnectS2IMeteringAnnotationsValidation;
+import com.ibm.eventstreams.rest.mirrormaker2.MirrorMaker2MeteringAnnotationValidation;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.Watch;
 import io.fabric8.kubernetes.internal.KubernetesDeserializer;
@@ -178,6 +180,9 @@ public class EventStreamsVerticle extends AbstractVerticle {
         router.route(HttpMethod.POST, "/admissionwebhook/rejectinvalidusers").handler(EntityLabelValidation::rejectInvalidKafkaUsers);
         router.route(HttpMethod.POST, "/admissionwebhook/rejectinvalidendpoints").handler(new EndpointValidation()::rejectCr);
         router.route(HttpMethod.POST, "/admissionwebhook/rejectinvalidproperties").handler(new UnknownPropertyValidation()::rejectCr);
+        router.route(HttpMethod.POST, "/admissionwebhook/rejectinvalidkafkaconnectmetering").handler(new KafkaConnectMeteringAnnotationsValidation()::rejectCr);
+        router.route(HttpMethod.POST, "/admissionwebhook/rejectinvalidkafkaconnects2imetering").handler(new KafkaConnectS2IMeteringAnnotationsValidation()::rejectCr);
+        router.route(HttpMethod.POST, "/admissionwebhook/rejectinvalidmirrormaker2metering").handler(new MirrorMaker2MeteringAnnotationValidation()::rejectCr);
         router.route(HttpMethod.POST, "/admissionwebhook/rejectgeneralproperties").handler(new GeneralValidation()::rejectCr);
 
         router.errorHandler(500, rc -> {

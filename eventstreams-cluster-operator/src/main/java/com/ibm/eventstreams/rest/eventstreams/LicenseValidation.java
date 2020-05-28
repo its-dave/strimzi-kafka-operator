@@ -16,7 +16,6 @@ import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.api.spec.LicenseSpec;
 import com.ibm.eventstreams.controller.models.StatusCondition;
-import com.ibm.eventstreams.rest.Validation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -25,7 +24,7 @@ import java.util.List;
 import java.util.Optional;
 
 
-public class LicenseValidation implements Validation {
+public class LicenseValidation implements EventStreamsValidation {
 
     private static final Logger log = LogManager.getLogger(LicenseValidation.class.getName());
     public static final String LICENSE_NOT_ACCEPTED_REASON = "LicenseNotAccepted";

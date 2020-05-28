@@ -608,6 +608,54 @@ public class EventStreamsOperatorTest {
     }
 
     @Test
+    public void testStatusMessagesGetRemoved(VertxTestContext context) {
+        esOperator = createDefaultEventStreamsOperator(true);
+
+        EndpointSpec adminApiEndpointWithoutIamBearerEndpoint = new EndpointSpecBuilder()
+            .withName("test")
+            .withContainerPort(9999)
+            .withTlsVersion(TlsVersion.TLS_V1_2)
+            .withType(EndpointServiceType.ROUTE)
+            .withAuthenticationMechanisms()
+            .build();
+
+        EventStreams instanceNoIamBearer = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
+
+        instanceNoIamBearer.getSpec().getAdminApi().setEndpoints(Collections.singletonList(adminApiEndpointWithoutIamBearerEndpoint));
+
+        Checkpoint async = context.checkpoint();
+
+        esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), instanceNoIamBearer)
+            .onComplete(context.succeeding(v -> context.verify(() -> {
+                ArgumentCaptor<EventStreams> updatedEventStreams = ArgumentCaptor.forClass(EventStreams.class);
+                verify(esResourceOperator, times(2)).updateEventStreamsStatus(updatedEventStreams.capture());
+                EventStreamsStatus status = updatedEventStreams.getValue().getStatus();
+                assertThat(status.getConditions().stream().filter(condition -> condition.getReason().matches(EndpointValidation.ADMIN_API_MISSING_IAM_BEARER_REASON)).findFirst().get().getMessage(),
+                    is(EndpointValidation.ADMIN_API_MISSING_IAM_BEARER_MESSAGE));
+            })))
+            .map(v -> {
+                ArgumentCaptor<EventStreams> updatedEventStreams = ArgumentCaptor.forClass(EventStreams.class);
+                verify(esResourceOperator, times(2)).updateEventStreamsStatus(updatedEventStreams.capture());
+
+                EventStreams instanceWithCorrectAdminAPI = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
+
+                instanceWithCorrectAdminAPI.setStatus(updatedEventStreams.getValue().getStatus());
+
+                return instanceWithCorrectAdminAPI;
+            })
+            .compose(instanceWithCorrectAdminAPI -> esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), instanceWithCorrectAdminAPI))
+            .onComplete(context.succeeding(v -> context.verify(() -> {
+                ArgumentCaptor<EventStreams> updatedEventStreams = ArgumentCaptor.forClass(EventStreams.class);
+                verify(esResourceOperator, times(3)).updateEventStreamsStatus(updatedEventStreams.capture());
+                EventStreamsStatus status = updatedEventStreams.getValue().getStatus();
+
+                assertThat(status.getConditions().stream().filter(condition -> condition.getReason().matches(EndpointValidation.ADMIN_API_MISSING_IAM_BEARER_REASON)).collect(Collectors.toList()),
+                    hasSize(0));
+                async.flag();
+            })));
+    }
+
+    @Test
     public void testDefaultClusterHasEndpointsInStatus(VertxTestContext context) {
         esOperator = createDefaultEventStreamsOperator(true);
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);

@@ -16,14 +16,13 @@ import com.ibm.eventstreams.api.TlsVersion;
 import com.ibm.eventstreams.api.model.AbstractModel;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.controller.models.StatusCondition;
-import com.ibm.eventstreams.rest.Validation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class GeneralSecurityValidation implements Validation {
+public class GeneralSecurityValidation implements EventStreamsValidation {
     private static final Logger log = LogManager.getLogger(GeneralSecurityValidation.class.getName());
 
     public static final String KAFKA_UNAUTHENTICATED_REASON = "KafkaUnauthenticated";

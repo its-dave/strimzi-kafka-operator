@@ -357,6 +357,45 @@ webhooks:
         name: eventstreams-cluster-operator
         path: /admissionwebhook/rejectinvalidproperties
       caBundle: "$cabundle"
+  - name: eventstreams.ibm.com.rejectinvalidkafkaconnectmetering
+    rules:
+      - apiGroups: ["eventstreams.ibm.com"]
+        apiVersions: ["v1beta1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["kafkaconnects"]
+    failurePolicy: Ignore
+    clientConfig:
+      service:
+        namespace: $EVENTSTREAMS_OPERATOR_NAMESPACE
+        name: eventstreams-cluster-operator
+        path: /admissionwebhook/rejectinvalidkafkaconnectmetering
+      caBundle: "$cabundle"
+  - name: eventstreams.ibm.com.rejectinvalidkafkaconnects2imetering
+    rules:
+      - apiGroups: ["eventstreams.ibm.com"]
+        apiVersions: ["v1beta1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["kafkaconnects2is"]
+    failurePolicy: Ignore
+    clientConfig:
+      service:
+        namespace: $EVENTSTREAMS_OPERATOR_NAMESPACE
+        name: eventstreams-cluster-operator
+        path: /admissionwebhook/rejectinvalidkafkaconnects2imetering
+      caBundle: "$cabundle"
+  - name: eventstreams.ibm.com.rejectinvalidmirrormaker2metering
+    rules:
+      - apiGroups: ["eventstreams.ibm.com"]
+        apiVersions: ["v1alpha1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["kafkamirrormaker2s"]
+    failurePolicy: Ignore
+    clientConfig:
+      service:
+        namespace: $EVENTSTREAMS_OPERATOR_NAMESPACE
+        name: eventstreams-cluster-operator
+        path: /admissionwebhook/rejectinvalidmirrormaker2metering
+      caBundle: "$cabundle"
   - name: eventstreams.ibm.com.rejectgeneralproperties
     rules:
       - apiGroups: ["eventstreams.ibm.com"]
