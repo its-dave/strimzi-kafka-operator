@@ -100,9 +100,9 @@ public class CollectorModelTest {
 
         ResourceRequirements resourceRequirements = collectorModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getResources();
         assertThat(resourceRequirements.getRequests().get("cpu").getAmount(), is("100m"));
-        assertThat(resourceRequirements.getRequests().get("memory").getAmount(), is("50Mi"));
+        assertThat(resourceRequirements.getRequests().get("memory").getAmount(), is("128Mi"));
         assertThat(resourceRequirements.getLimits().get("cpu").getAmount(), is("100m"));
-        assertThat(resourceRequirements.getLimits().get("memory").getAmount(), is("50Mi"));
+        assertThat(resourceRequirements.getLimits().get("memory").getAmount(), is("128Mi"));
     }
 
     @Test
@@ -124,7 +124,7 @@ public class CollectorModelTest {
         assertThat(resourceRequirements.getRequests().get("cpu").getAmount(), is("100m"));
         assertThat(resourceRequirements.getRequests().get("memory").getAmount(), is("450Mi"));
         assertThat(resourceRequirements.getLimits().get("cpu").getAmount(), is("100m"));
-        assertThat(resourceRequirements.getLimits().get("memory").getAmount(), is("50Mi"));
+        assertThat(resourceRequirements.getLimits().get("memory").getAmount(), is("128Mi"));
     }
 
     @Test

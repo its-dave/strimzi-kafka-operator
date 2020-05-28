@@ -7,56 +7,65 @@ metadata:
     operators.operatorframework.io/internal-objects: '["kafkas.eventstreams.ibm.com"]'
     alm-examples-metadata: |-
       {
-        "quickstart": {
-          "description": "Development cluster with security disabled, and a single Kafka broker",
-          "name": "quickstart",
+        "light-insecure": {
+          "description": "Suitable for basic development and test activities in environments with minimum resource requirements where storage persistence, access control and encryption are not required.",
+          "name": "lightweight insecure",
           "resources": {
-            "cpu": "4",
-            "memory": "4 GB",
+            "cpu": "8.8",
+            "memory": "9.1 GB",
             "vpc": "0.5"
           }
         },
-        "sample-1-broker": {
-          "description": "Secure development cluster with a single Kafka broker",
-          "name": "1 broker",
+        "development": {
+          "description": "Ideal for trying out Event Streams. Suitable for basic development and test activities, with high availability but no storage persistence.",
+          "name": "development",
           "resources": {
-            "cpu": "4",
-            "memory": "4 GB",
-            "vpc": "0.5"
+            "cpu": "13",
+            "memory": "15.3 GB",
+            "vpc": "1.5"
           }
         },
-        "sample-3-broker": {
-          "description": "Secure production cluster with three Kafka brokers",
+        "minimal-prod": {
+          "description": "A secured cluster of 3 Kafka brokers licensed for production use, with the least resource footprint for a gentle workload.",
+          "name": "minimal production",
+          "resources": {
+            "cpu": "13",
+            "memory": "15.3 GB",
+            "vpc": "3"
+          }
+        },
+        "prod-3-brokers": {
+          "description": "A secured cluster of 3 Kafka brokers licensed for production use, tuned to handle a more demanding workload.",
           "name": "3 brokers",
           "resources": {
-            "cpu": "16",
-            "memory": "29 GB",
+            "cpu": "19",
+            "memory": "30.3 GB",
             "vpc": "12"
           }
         },
-        "sample-6-broker": {
-          "description": "Secure production cluster with six Kafka brokers",
+        "prod-6-brokers": {
+          "description": "A secured cluster of 6 Kafka brokers licensed for production use, tuned to handle a more demanding workload.",
           "name": "6 brokers",
           "resources": {
-            "cpu": "28",
-            "memory": "53 GB",
+            "cpu": "31.3",
+            "memory": "54.7 GB",
             "vpc": "24"
           }
         },
-        "sample-9-broker": {
-          "description": "Secure production cluster with nine Kafka brokers",
+        "prod-9-brokers": {
+          "description": "A secured cluster of 9 Kafka brokers licensed for production use, tuned to handle a more demanding workload.",
           "name": "9 brokers",
           "resources": {
-            "cpu": "40",
-            "memory": "78 GB",
+            "cpu": "43.6",
+            "memory": "79.1 GB",
             "vpc": "36"
           }
         },
         "georeplicator": {
           "name": "georeplicator",
           "resources": {
-            "cpu": "1",
-            "memory": "1.5 GB",
+            "cpu": "2",
+            "memory": "2 GB",
             "vpc": "1"
           }
         }

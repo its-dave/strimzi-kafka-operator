@@ -2,59 +2,68 @@ apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
   annotations:
-    alm-examples: '[{"apiVersion":"eventstreams.ibm.com/v1beta1","kind":"EventStreams","metadata":{"name":"quickstart"},"spec":{"version":"10.0.0","license":{"accept":false,"use":"CloudPakForIntegrationNonProduction"},"adminApi":{},"adminUI":{},"collector":{},"restProducer":{},"schemaRegistry":{"storage":{"type":"ephemeral"}},"security":{"internalTls":"NONE"},"strimziOverrides":{"kafka":{"config":{"interceptor.class.names":"com.ibm.eventstreams.interceptors.metrics.ProducerMetricsInterceptor","offsets.topic.replication.factor":1,"transaction.state.log.min.isr":1,"transaction.state.log.replication.factor":1},"listeners":{"external":{"type":"route"},"plain":{},"tls":{}},"metrics":{},"replicas":1,"storage":{"type":"ephemeral"}},"zookeeper":{"metrics":{},"replicas":1,"storage":{"type":"ephemeral"}}}}},{"apiVersion":"eventstreams.ibm.com/v1beta1","kind":"EventStreams","metadata":{"name":"sample-1-broker"},"spec":{"version":"10.0.0","license":{"accept":false,"use":"CloudPakForIntegrationNonProduction"},"adminApi":{},"adminUI":{},"collector":{},"restProducer":{},"schemaRegistry":{"storage":{"type":"ephemeral"}},"strimziOverrides":{"kafka":{"authorization":{"type":"runas"},"config":{"interceptor.class.names":"com.ibm.eventstreams.interceptors.metrics.ProducerMetricsInterceptor","offsets.topic.replication.factor":1,"transaction.state.log.min.isr":1,"transaction.state.log.replication.factor":1},"listeners":{"external":{"authentication":{"type":"scram-sha-512"},"type":"route"},"plain":{},"tls":{}},"metrics":{},"replicas":1,"storage":{"type":"ephemeral"}},"zookeeper":{"metrics":{},"replicas":1,"storage":{"type":"ephemeral"}}}}},{"apiVersion":"eventstreams.ibm.com/v1beta1","kind":"EventStreams","metadata":{"name":"sample-3-broker"},"spec":{"version":"10.0.0","license":{"accept":false,"use":"CloudPakForIntegrationProduction"},"adminApi":{},"adminUI":{},"collector":{},"restProducer":{},"schemaRegistry":{"storage":{"type":"ephemeral"}},"strimziOverrides":{"kafka":{"authorization":{"type":"runas"},"config":{"interceptor.class.names":"com.ibm.eventstreams.interceptors.metrics.ProducerMetricsInterceptor","log.cleaner.threads":6,"num.io.threads":24,"num.network.threads":9,"num.replica.fetchers":3},"listeners":{"external":{"authentication":{"type":"scram-sha-512"},"type":"route"},"tls":{"authentication":{"type":"tls"}}},"metrics":{},"replicas":3,"resources":{"limits":{"cpu":"4000m","memory":"8096Mi"},"requests":{"cpu":"4000m","memory":"8096Mi"}},"storage":{"type":"ephemeral"}},"zookeeper":{"metrics":{},"replicas":3,"storage":{"type":"ephemeral"}}}}},{"apiVersion":"eventstreams.ibm.com/v1beta1","kind":"EventStreams","metadata":{"name":"sample-6-broker"},"spec":{"version":"10.0.0","license":{"accept":false,"use":"CloudPakForIntegrationProduction"},"adminApi":{},"adminUI":{},"collector":{},"restProducer":{},"schemaRegistry":{"storage":{"type":"ephemeral"}},"strimziOverrides":{"kafka":{"authorization":{"type":"runas"},"config":{"interceptor.class.names":"com.ibm.eventstreams.interceptors.metrics.ProducerMetricsInterceptor","log.cleaner.threads":6,"num.io.threads":24,"num.network.threads":9,"num.replica.fetchers":6},"listeners":{"external":{"authentication":{"type":"scram-sha-512"},"type":"route"},"tls":{"authentication":{"type":"tls"}}},"metrics":{},"replicas":6,"resources":{"limits":{"cpu":"4000m","memory":"8096Mi"},"requests":{"cpu":"4000m","memory":"8096Mi"}},"storage":{"type":"ephemeral"}},"zookeeper":{"metrics":{},"replicas":3,"storage":{"type":"ephemeral"}}}}},{"apiVersion":"eventstreams.ibm.com/v1beta1","kind":"EventStreams","metadata":{"name":"sample-9-broker"},"spec":{"version":"10.0.0","license":{"accept":false,"use":"CloudPakForIntegrationProduction"},"adminApi":{},"adminUI":{},"collector":{},"restProducer":{},"schemaRegistry":{"storage":{"type":"ephemeral"}},"strimziOverrides":{"kafka":{"authorization":{"type":"runas"},"config":{"interceptor.class.names":"com.ibm.eventstreams.interceptors.metrics.ProducerMetricsInterceptor","log.cleaner.threads":6,"num.io.threads":24,"num.network.threads":9,"num.replica.fetchers":9},"listeners":{"external":{"authentication":{"type":"scram-sha-512"},"type":"route"},"tls":{"authentication":{"type":"tls"}}},"metrics":{},"replicas":9,"resources":{"limits":{"cpu":"4000m","memory":"8096Mi"},"requests":{"cpu":"4000m","memory":"8096Mi"}},"storage":{"type":"ephemeral"}},"zookeeper":{"metrics":{},"replicas":3,"storage":{"type":"ephemeral"}}}}},{"apiVersion":"eventstreams.ibm.com/v1beta1","kind":"EventStreamsGeoReplicator","metadata":{"labels":{"eventstreams.ibm.com/cluster":"sample-3-broker"},"name":"sample-3-broker"},"spec":{"version":"10.0.0","replicas":1}},{"apiVersion":"eventstreams.ibm.com/v1beta1","kind":"KafkaUser","metadata":{"labels":{"eventstreams.ibm.com/cluster":"placeholdercluster"},"name":"consumer"},"spec":{"authentication":{"type":"scram-sha-512"},"authorization":{"acls":[{"operation":"Read","resource":{"name":"your.topic.name","patternType":"literal","type":"topic"}},{"operation":"Read","resource":{"name":"*","patternType":"literal","type":"group"}},{"operation":"Read","resource":{"name":"__schema_","patternType":"prefix","type":"topic"}}],"type":"simple"}}},{"apiVersion":"eventstreams.ibm.com/v1beta1","kind":"KafkaUser","metadata":{"labels":{"eventstreams.ibm.com/cluster":"placeholdercluster"},"name":"producer"},"spec":{"authentication":{"type":"scram-sha-512"},"authorization":{"acls":[{"operation":"Write","resource":{"name":"your.topic.name","patternType":"literal","type":"topic"}},{"operation":"Read","resource":{"name":"__schema_","patternType":"prefix","type":"topic"}}],"type":"simple"}}},{"apiVersion":"eventstreams.ibm.com/v1beta1","kind":"KafkaUser","metadata":{"labels":{"eventstreams.ibm.com/cluster":"placeholdercluster"},"name":"everything"},"spec":{"authentication":{"type":"scram-sha-512"},"authorization":{"acls":[{"operation":"Write","resource":{"name":"*","patternType":"literal","type":"topic"}},{"operation":"Read","resource":{"name":"*","patternType":"literal","type":"topic"}},{"operation":"Create","resource":{"name":"*","patternType":"literal","type":"topic"}},{"operation":"Read","resource":{"name":"*","patternType":"literal","type":"group"}},{"operation":"Read","resource":{"name":"__schema_","patternType":"prefix","type":"topic"}},{"operation":"Alter","resource":{"name":"__schema_","patternType":"prefix","type":"topic"}}],"type":"simple"}}}]'
+    alm-examples: '[{"apiVersion":"eventstreams.ibm.com/v1beta1","kind":"EventStreams","metadata":{"name":"light-insecure"},"spec":{"version":"10.0.0","license":{"accept":false,"use":"CloudPakForIntegrationNonProduction"},"adminApi":{},"adminUI":{},"collector":{},"restProducer":{},"schemaRegistry":{"storage":{"type":"ephemeral"}},"security":{"internalTls":"NONE"},"strimziOverrides":{"kafka":{"config":{"interceptor.class.names":"com.ibm.eventstreams.interceptors.metrics.ProducerMetricsInterceptor","offsets.topic.replication.factor":1,"transaction.state.log.min.isr":1,"transaction.state.log.replication.factor":1},"listeners":{"external":{"type":"route"},"plain":{},"tls":{}},"metrics":{},"replicas":1,"storage":{"type":"ephemeral"}},"zookeeper":{"metrics":{},"replicas":1,"storage":{"type":"ephemeral"}}}}},{"apiVersion":"eventstreams.ibm.com/v1beta1","kind":"EventStreams","metadata":{"name":"development"},"spec":{"version":"10.0.0","license":{"accept":false,"use":"CloudPakForIntegrationNonProduction"},"adminApi":{},"adminUI":{},"collector":{},"restProducer":{},"schemaRegistry":{"storage":{"type":"ephemeral"}},"strimziOverrides":{"kafka":{"authorization":{"type":"runas"},"config":{"interceptor.class.names":"com.ibm.eventstreams.interceptors.metrics.ProducerMetricsInterceptor","log.cleaner.threads":6,"num.io.threads":24,"num.network.threads":9,"num.replica.fetchers":3},"listeners":{"external":{"authentication":{"type":"scram-sha-512"},"type":"route"},"tls":{"authentication":{"type":"tls"}}},"metrics":{},"replicas":3,"storage":{"type":"ephemeral"}},"zookeeper":{"metrics":{},"replicas":3,"storage":{"type":"ephemeral"}}}}},{"apiVersion":"eventstreams.ibm.com/v1beta1","kind":"EventStreams","metadata":{"name":"minimal-prod"},"spec":{"version":"10.0.0","license":{"accept":false,"use":"CloudPakForIntegrationProduction"},"adminApi":{},"adminUI":{},"collector":{},"restProducer":{},"schemaRegistry":{"storage":{"class":"enter-storage-class-name-here","size":"enter-size-of-pv-here","type":"persistent-claim"}},"strimziOverrides":{"kafka":{"authorization":{"type":"runas"},"config":{"interceptor.class.names":"com.ibm.eventstreams.interceptors.metrics.ProducerMetricsInterceptor","log.cleaner.threads":6,"num.io.threads":24,"num.network.threads":9,"num.replica.fetchers":3},"listeners":{"external":{"authentication":{"type":"scram-sha-512"},"type":"route"},"tls":{"authentication":{"type":"tls"}}},"metrics":{},"replicas":3,"storage":{"class":"enter-storage-class-name-here","size":"enter-size-of-pv-here","type":"persistent-claim"}},"zookeeper":{"metrics":{},"replicas":3,"storage":{"class":"enter-storage-class-name-here","size":"enter-size-of-pv-here","type":"persistent-claim"}}}}},{"apiVersion":"eventstreams.ibm.com/v1beta1","kind":"EventStreams","metadata":{"name":"prod-3-brokers"},"spec":{"version":"10.0.0","license":{"accept":false,"use":"CloudPakForIntegrationProduction"},"adminApi":{},"adminUI":{},"collector":{},"restProducer":{},"schemaRegistry":{"storage":{"class":"enter-storage-class-name-here","size":"enter-size-of-pv-here","type":"persistent-claim"}},"strimziOverrides":{"kafka":{"authorization":{"type":"runas"},"config":{"interceptor.class.names":"com.ibm.eventstreams.interceptors.metrics.ProducerMetricsInterceptor","log.cleaner.threads":6,"num.io.threads":24,"num.network.threads":9,"num.replica.fetchers":3},"listeners":{"external":{"authentication":{"type":"scram-sha-512"},"type":"route"},"tls":{"authentication":{"type":"tls"}}},"metrics":{},"replicas":3,"resources":{"limits":{"cpu":"4000m","memory":"8096Mi"},"requests":{"cpu":"4000m","memory":"8096Mi"}},"storage":{"class":"enter-storage-class-name-here","size":"enter-size-of-pv-here","type":"persistent-claim"}},"zookeeper":{"metrics":{},"replicas":3,"storage":{"class":"enter-storage-class-name-here","size":"enter-size-of-pv-here","type":"persistent-claim"}}}}},{"apiVersion":"eventstreams.ibm.com/v1beta1","kind":"EventStreams","metadata":{"name":"prod-6-brokers"},"spec":{"version":"10.0.0","license":{"accept":false,"use":"CloudPakForIntegrationProduction"},"adminApi":{},"adminUI":{},"collector":{},"restProducer":{},"schemaRegistry":{"storage":{"class":"enter-storage-class-name-here","size":"enter-size-of-pv-here","type":"persistent-claim"}},"strimziOverrides":{"kafka":{"authorization":{"type":"runas"},"config":{"interceptor.class.names":"com.ibm.eventstreams.interceptors.metrics.ProducerMetricsInterceptor","log.cleaner.threads":6,"num.io.threads":24,"num.network.threads":9,"num.replica.fetchers":6},"listeners":{"external":{"authentication":{"type":"scram-sha-512"},"type":"route"},"tls":{"authentication":{"type":"tls"}}},"metrics":{},"replicas":6,"resources":{"limits":{"cpu":"4000m","memory":"8096Mi"},"requests":{"cpu":"4000m","memory":"8096Mi"}},"storage":{"class":"enter-storage-class-name-here","size":"enter-size-of-pv-here","type":"persistent-claim"}},"zookeeper":{"metrics":{},"replicas":3,"storage":{"class":"enter-storage-class-name-here","size":"enter-size-of-pv-here","type":"persistent-claim"}}}}},{"apiVersion":"eventstreams.ibm.com/v1beta1","kind":"EventStreams","metadata":{"name":"prod-9-brokers"},"spec":{"version":"10.0.0","license":{"accept":false,"use":"CloudPakForIntegrationProduction"},"adminApi":{},"adminUI":{},"collector":{},"restProducer":{},"schemaRegistry":{"storage":{"class":"enter-storage-class-name-here","size":"enter-size-of-pv-here","type":"persistent-claim"}},"strimziOverrides":{"kafka":{"authorization":{"type":"runas"},"config":{"interceptor.class.names":"com.ibm.eventstreams.interceptors.metrics.ProducerMetricsInterceptor","log.cleaner.threads":6,"num.io.threads":24,"num.network.threads":9,"num.replica.fetchers":9},"listeners":{"external":{"authentication":{"type":"scram-sha-512"},"type":"route"},"tls":{"authentication":{"type":"tls"}}},"metrics":{},"replicas":9,"resources":{"limits":{"cpu":"4000m","memory":"8096Mi"},"requests":{"cpu":"4000m","memory":"8096Mi"}},"storage":{"class":"enter-storage-class-name-here","size":"enter-size-of-pv-here","type":"persistent-claim"}},"zookeeper":{"metrics":{},"replicas":3,"storage":{"class":"enter-storage-class-name-here","size":"enter-size-of-pv-here","type":"persistent-claim"}}}}},{"apiVersion":"eventstreams.ibm.com/v1beta1","kind":"EventStreamsGeoReplicator","metadata":{"labels":{"eventstreams.ibm.com/cluster":"minimal-prod"},"name":"minimal-prod"},"spec":{"version":"10.0.0","replicas":1}},{"apiVersion":"eventstreams.ibm.com/v1beta1","kind":"KafkaUser","metadata":{"labels":{"eventstreams.ibm.com/cluster":"placeholdercluster"},"name":"consumer"},"spec":{"authentication":{"type":"scram-sha-512"},"authorization":{"acls":[{"operation":"Read","resource":{"name":"your.topic.name","patternType":"literal","type":"topic"}},{"operation":"Read","resource":{"name":"*","patternType":"literal","type":"group"}},{"operation":"Read","resource":{"name":"__schema_","patternType":"prefix","type":"topic"}}],"type":"simple"}}},{"apiVersion":"eventstreams.ibm.com/v1beta1","kind":"KafkaUser","metadata":{"labels":{"eventstreams.ibm.com/cluster":"placeholdercluster"},"name":"producer"},"spec":{"authentication":{"type":"scram-sha-512"},"authorization":{"acls":[{"operation":"Write","resource":{"name":"your.topic.name","patternType":"literal","type":"topic"}},{"operation":"Read","resource":{"name":"__schema_","patternType":"prefix","type":"topic"}}],"type":"simple"}}},{"apiVersion":"eventstreams.ibm.com/v1beta1","kind":"KafkaUser","metadata":{"labels":{"eventstreams.ibm.com/cluster":"placeholdercluster"},"name":"everything"},"spec":{"authentication":{"type":"scram-sha-512"},"authorization":{"acls":[{"operation":"Write","resource":{"name":"*","patternType":"literal","type":"topic"}},{"operation":"Read","resource":{"name":"*","patternType":"literal","type":"topic"}},{"operation":"Create","resource":{"name":"*","patternType":"literal","type":"topic"}},{"operation":"Read","resource":{"name":"*","patternType":"literal","type":"group"}},{"operation":"Read","resource":{"name":"__schema_","patternType":"prefix","type":"topic"}},{"operation":"Alter","resource":{"name":"__schema_","patternType":"prefix","type":"topic"}}],"type":"simple"}}}]'
     alm-examples-metadata: |-
       {
-        "quickstart": {
-          "description": "Development cluster with security disabled, and a single Kafka broker",
-          "name": "quickstart",
+        "light-insecure": {
+          "description": "Suitable for basic development and test activities in environments with minimum resource requirements where storage persistence, access control and encryption are not required.",
+          "name": "lightweight insecure",
           "resources": {
-            "cpu": "4",
-            "memory": "4 GB",
+            "cpu": "8.8",
+            "memory": "9.1 GB",
             "vpc": "0.5"
           }
         },
-        "sample-1-broker": {
-          "description": "Secure development cluster with a single Kafka broker",
-          "name": "1 broker",
+        "development": {
+          "description": "Ideal for trying out Event Streams. Suitable for basic development and test activities, with high availability but no storage persistence.",
+          "name": "development",
           "resources": {
-            "cpu": "4",
-            "memory": "4 GB",
-            "vpc": "0.5"
+            "cpu": "13",
+            "memory": "15.3 GB",
+            "vpc": "1.5"
           }
         },
-        "sample-3-broker": {
-          "description": "Secure production cluster with three Kafka brokers",
+        "minimal-prod": {
+          "description": "A secured cluster of 3 Kafka brokers licensed for production use, with the least resource footprint for a gentle workload.",
+          "name": "minimal production",
+          "resources": {
+            "cpu": "13",
+            "memory": "15.3 GB",
+            "vpc": "3"
+          }
+        },
+        "prod-3-brokers": {
+          "description": "A secured cluster of 3 Kafka brokers licensed for production use, tuned to handle a more demanding workload.",
           "name": "3 brokers",
           "resources": {
-            "cpu": "16",
-            "memory": "29 GB",
+            "cpu": "19",
+            "memory": "30.3 GB",
             "vpc": "12"
           }
         },
-        "sample-6-broker": {
-          "description": "Secure production cluster with six Kafka brokers",
+        "prod-6-brokers": {
+          "description": "A secured cluster of 6 Kafka brokers licensed for production use, tuned to handle a more demanding workload.",
           "name": "6 brokers",
           "resources": {
-            "cpu": "28",
-            "memory": "53 GB",
+            "cpu": "31.3",
+            "memory": "54.7 GB",
             "vpc": "24"
           }
         },
-        "sample-9-broker": {
-          "description": "Secure production cluster with nine Kafka brokers",
+        "prod-9-brokers": {
+          "description": "A secured cluster of 9 Kafka brokers licensed for production use, tuned to handle a more demanding workload.",
           "name": "9 brokers",
           "resources": {
-            "cpu": "40",
-            "memory": "78 GB",
+            "cpu": "43.6",
+            "memory": "79.1 GB",
             "vpc": "36"
           }
         },
         "georeplicator": {
           "name": "georeplicator",
           "resources": {
-            "cpu": "1",
-            "memory": "1.5 GB",
+            "cpu": "2",
+            "memory": "2 GB",
             "vpc": "1"
           }
         }
@@ -62,7 +71,7 @@ metadata:
     capabilities: Basic Install
     categories: Streaming & Messaging
     certified: 'false'
-    createdAt: 2020-05-27T15:03:11Z
+    createdAt: 2020-05-28T09:41:17Z
     description: Kafka-based messaging platform for handling real-time data feeds.
     operators.operatorframework.io/internal-objects: '["kafkas.eventstreams.ibm.com"]'
     support: IBM

@@ -438,9 +438,9 @@ public class AdminUIModelTest {
 
         ResourceRequirements redisResources = resourceRequirements.get(AdminUIModel.REDIS_CONTAINER_NAME);
         assertThat(redisResources.getRequests().get("cpu").getAmount(), is("100m"));
-        assertThat(redisResources.getRequests().get("memory").getAmount(), is("100Mi"));
+        assertThat(redisResources.getRequests().get("memory").getAmount(), is("128Mi"));
         assertThat(redisResources.getLimits().get("cpu").getAmount(), is("100m"));
-        assertThat(redisResources.getLimits().get("memory").getAmount(), is("100Mi"));
+        assertThat(redisResources.getLimits().get("memory").getAmount(), is("128Mi"));
     }
 
     @Test
@@ -473,9 +473,9 @@ public class AdminUIModelTest {
 
         ResourceRequirements avroResources = resourceRequirements.get(AdminUIModel.REDIS_CONTAINER_NAME);
         assertThat(avroResources.getRequests().get("cpu").getAmount(), is("100m"));
-        assertThat(avroResources.getRequests().get("memory").getAmount(), is("100Mi"));
+        assertThat(avroResources.getRequests().get("memory").getAmount(), is("128Mi"));
         assertThat(avroResources.getLimits().get("cpu").getAmount(), is("100m"));
-        assertThat(avroResources.getLimits().get("memory").getAmount(), is("100Mi"));
+        assertThat(avroResources.getLimits().get("memory").getAmount(), is("128Mi"));
     }
 
     @Test

@@ -1,7 +1,7 @@
 apiVersion: eventstreams.ibm.com/v1beta1
 kind: EventStreams
 metadata:
-  name: sample-9-broker
+  name: prod-9-brokers
 spec:
   license:
     accept: false
@@ -13,7 +13,9 @@ spec:
   restProducer: {}
   schemaRegistry:
     storage:
-      type: ephemeral
+      type: persistent-claim
+      size: enter-size-of-pv-here
+      class: enter-storage-class-name-here
   strimziOverrides:
     kafka:
       replicas: 9
@@ -34,7 +36,9 @@ spec:
       authorization:
         type: runas
       storage:
-        type: ephemeral
+        type: persistent-claim
+        size: enter-size-of-pv-here
+        class: enter-storage-class-name-here
       metrics: {}
       resources:
         requests:
@@ -46,5 +50,7 @@ spec:
     zookeeper:
       replicas: 3
       storage:
-        type: ephemeral
+        type: persistent-claim
+        size: enter-size-of-pv-here
+        class: enter-storage-class-name-here
       metrics: {}

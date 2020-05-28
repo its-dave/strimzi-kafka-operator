@@ -27,9 +27,9 @@ public class DefaultResourceRequirements {
         
     public static final ResourceRequirements ADMIN_UI_REDIS = new ResourceRequirementsBuilder()
         .addToRequests("cpu", new Quantity("100m"))
-        .addToRequests("memory", new Quantity("100Mi"))
+        .addToRequests("memory", new Quantity("128Mi"))
         .addToLimits("cpu", new Quantity("100m"))
-        .addToLimits("memory", new Quantity("100Mi"))
+        .addToLimits("memory", new Quantity("128Mi"))
         .build();
 
     public static final ResourceRequirements ADMIN_API = new ResourceRequirementsBuilder()
@@ -41,30 +41,30 @@ public class DefaultResourceRequirements {
     
     public static final ResourceRequirements COLLECTOR = new ResourceRequirementsBuilder()
         .addToRequests("cpu", new Quantity("100m"))
-        .addToRequests("memory", new Quantity("50Mi"))
+        .addToRequests("memory", new Quantity("128Mi"))
         .addToLimits("cpu", new Quantity("100m"))
-        .addToLimits("memory", new Quantity("50Mi"))
+        .addToLimits("memory", new Quantity("128Mi"))
         .build();
 
     public static final ResourceRequirements KAFKA = new ResourceRequirementsBuilder()
         .addToRequests("cpu", new Quantity("100m"))
-        .addToRequests("memory", new Quantity("100Mi"))
+        .addToRequests("memory", new Quantity("128Mi"))
         .addToLimits("cpu", new Quantity("1000m"))
         .addToLimits("memory", new Quantity("2Gi"))
         .build();
 
     public static final ResourceRequirements ZOOKEEPER = new ResourceRequirementsBuilder()
         .addToRequests("cpu", new Quantity("100m"))
-        .addToRequests("memory", new Quantity("100Mi"))
+        .addToRequests("memory", new Quantity("128Mi"))
         .addToLimits("cpu", new Quantity("1000m"))
         .addToLimits("memory", new Quantity("1Gi"))
         .build();
 
     public static final ResourceRequirements TLS_SIDECAR = new ResourceRequirementsBuilder()
         .addToRequests("cpu", new Quantity("10m"))
-        .addToRequests("memory", new Quantity("10Mi"))
+        .addToRequests("memory", new Quantity("128Mi"))
         .addToLimits("cpu", new Quantity("100m"))
-        .addToLimits("memory", new Quantity("100Mi"))
+        .addToLimits("memory", new Quantity("128Mi"))
         .build();
 
     public static final ResourceRequirements ENTITY_OPERATOR = new ResourceRequirementsBuilder()
@@ -108,5 +108,4 @@ public class DefaultResourceRequirements {
         .addToLimits("cpu", new Quantity("1000m"))
         .addToLimits("memory", new Quantity("1Gi"))
         .build();
-        
 }

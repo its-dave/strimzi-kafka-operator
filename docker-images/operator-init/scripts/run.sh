@@ -378,29 +378,29 @@ echo "---------------------------------------------------------------"
 
 echo "Creating ConsoleYAMLSample samples"
 
-echo "Creating the quickstart sample"
+echo "Creating the lightweight insecure sample"
 ! cat <<EOF | kubectl apply -f -
 apiVersion: console.openshift.io/v1
 kind: ConsoleYAMLSample
 metadata:
-  name: es-0-quickstart.eventstreams.ibm.com
+  name: es-0-light-insecure.eventstreams.ibm.com
   ownerReferences:
   - apiVersion: $CRD_APIVERSION
     kind: $CRD_KIND
     name: $CRD_NAME
     uid: $CRD_UID
 spec:
-  description: Small cluster, with security disabled, for development use
+  description: Suitable for basic development and test activities in environments with minimum resource requirements where storage persistence, access control and encryption are not required.
   snippet: false
   targetResource:
     apiVersion: eventstreams.ibm.com/v1beta1
     kind: EventStreams
-  title: quickstart
+  title: lighweight insecure
   yaml: |
     apiVersion: eventstreams.ibm.com/v1beta1
     kind: EventStreams
     metadata:
-        name: quickstart
+        name: light-insecure
         namespace: placeholder
     spec:
         license:
@@ -439,29 +439,29 @@ spec:
                 metrics: {}
 EOF
 
-echo "Creating the one-broker sample"
+echo "Creating the development sample"
 ! cat <<EOF | kubectl apply -f -
 apiVersion: console.openshift.io/v1
 kind: ConsoleYAMLSample
 metadata:
-  name: es-1-broker.eventstreams.ibm.com
+  name: es-1-development.eventstreams.ibm.com
   ownerReferences:
   - apiVersion: $CRD_APIVERSION
     kind: $CRD_KIND
     name: $CRD_NAME
     uid: $CRD_UID
 spec:
-  description:  Small secured cluster for development use
+  description:  Ideal for trying out Event Streams. Suitable for basic development and test activities, with high availability but no storage persistence.
   snippet: false
   targetResource:
     apiVersion: eventstreams.ibm.com/v1beta1
     kind: EventStreams
-  title: 1 Kafka broker
+  title: development
   yaml: |
     apiVersion: eventstreams.ibm.com/v1beta1
     kind: EventStreams
     metadata:
-        name: sample-1-broker
+        name: development
         namespace: placeholder
     spec:
         license:
@@ -479,52 +479,51 @@ spec:
             kafka:
                 authorization:
                     type: runas
-                replicas: 1
+                replicas: 3
                 config:
                     interceptor.class.names: com.ibm.eventstreams.interceptors.metrics.ProducerMetricsInterceptor
-                    offsets.topic.replication.factor: 1
-                    transaction.state.log.min.isr: 1
-                    transaction.state.log.replication.factor: 1
+                    num.replica.fetchers: 3
+                    num.io.threads: 24
+                    num.network.threads: 9
+                    log.cleaner.threads: 6
                 listeners:
                     external:
                         type: route
                         authentication:
                             type: scram-sha-512
-                    plain: {}
-                    tls: {}
                 storage:
                     type: ephemeral
                 metrics: {}
             zookeeper:
-                replicas: 1
+                replicas: 3
                 storage:
                     type: ephemeral
                 metrics: {}
 EOF
 
-echo "Creating the three-brokers sample"
+echo "Creating the minimal production sample"
 ! cat <<EOF | kubectl apply -f -
 apiVersion: console.openshift.io/v1
 kind: ConsoleYAMLSample
 metadata:
-  name: es-3-broker.eventstreams.ibm.com
+  name: es-2-minimal-prod.eventstreams.ibm.com
   ownerReferences:
   - apiVersion: $CRD_APIVERSION
     kind: $CRD_KIND
     name: $CRD_NAME
     uid: $CRD_UID
 spec:
-  description: Secure production cluster with three brokers
+  description: A secured cluster of 3 Kafka brokers licensed for production use, with the least resource footprint for a gentle workload.
   snippet: false
   targetResource:
     apiVersion: eventstreams.ibm.com/v1beta1
     kind: EventStreams
-  title: 3 Kafka brokers
+  title: minimal production
   yaml: |
     apiVersion: eventstreams.ibm.com/v1beta1
     kind: EventStreams
     metadata:
-        name: sample-3-broker
+        name: minimal-prod
         namespace: placeholder
     spec:
         license:
@@ -535,10 +534,11 @@ spec:
         adminUI: {}
         collector: {}
         restProducer: {}
-        replicator: {}
         schemaRegistry:
             storage:
-                type: ephemeral
+                type: persistent-claim
+                size: enter-size-of-pv-here
+                class: enter-storage-class-name-here
         strimziOverrides:
             kafka:
                 replicas: 3
@@ -559,7 +559,80 @@ spec:
                 authorization:
                     type: runas
                 storage:
-                    type: ephemeral
+                    type: persistent-claim
+                    size: enter-size-of-pv-here
+                    class: enter-storage-class-name-here
+                metrics: {}
+            zookeeper:
+                replicas: 3
+                storage:
+                    type: persistent-claim
+                    size: enter-size-of-pv-here
+                    class: enter-storage-class-name-here
+                metrics: {}
+EOF
+
+echo "Creating the production three brokers sample"
+! cat <<EOF | kubectl apply -f -
+apiVersion: console.openshift.io/v1
+kind: ConsoleYAMLSample
+metadata:
+  name: es-3-broker.eventstreams.ibm.com
+  ownerReferences:
+  - apiVersion: $CRD_APIVERSION
+    kind: $CRD_KIND
+    name: $CRD_NAME
+    uid: $CRD_UID
+spec:
+  description: A secured cluster of 3 Kafka brokers licensed for production use, tuned to handle a more demanding workload.
+  snippet: false
+  targetResource:
+    apiVersion: eventstreams.ibm.com/v1beta1
+    kind: EventStreams
+  title: production 3 brokers
+  yaml: |
+    apiVersion: eventstreams.ibm.com/v1beta1
+    kind: EventStreams
+    metadata:
+        name: prod-3-brokers
+        namespace: placeholder
+    spec:
+        license:
+          accept: false
+          use: CloudPakForIntegrationProduction
+        version: 10.0.0
+        adminApi: {}
+        adminUI: {}
+        collector: {}
+        restProducer: {}
+        schemaRegistry:
+            storage:
+                type: persistent-claim
+                size: enter-size-of-pv-here
+                class: enter-storage-class-name-here
+        strimziOverrides:
+            kafka:
+                replicas: 3
+                config:
+                    interceptor.class.names: com.ibm.eventstreams.interceptors.metrics.ProducerMetricsInterceptor
+                    num.replica.fetchers: 6
+                    num.io.threads: 24
+                    num.network.threads: 9
+                    log.cleaner.threads: 6
+                listeners:
+                    external:
+                        type: route
+                        authentication:
+                            type: scram-sha-512
+                    tls:
+                        authentication:
+                            type: tls
+                authorization:
+                    type: runas
+                storage:
+                    type: persistent-claim
+                    size: enter-size-of-pv-here
+                    class: enter-storage-class-name-here
                 metrics: {}
                 resources:
                     requests:
@@ -571,11 +644,13 @@ spec:
             zookeeper:
                 replicas: 3
                 storage:
-                    type: ephemeral
+                    type: persistent-claim
+                    size: enter-size-of-pv-here
+                    class: enter-storage-class-name-here
                 metrics: {}
 EOF
 
-echo "Creating the six-brokers sample"
+echo "Creating the production six-brokers sample"
 ! cat <<EOF | kubectl apply -f -
 apiVersion: console.openshift.io/v1
 kind: ConsoleYAMLSample
@@ -592,12 +667,12 @@ spec:
   targetResource:
     apiVersion: eventstreams.ibm.com/v1beta1
     kind: EventStreams
-  title: 6 Kafka brokers
+  title: production 6 brokers
   yaml: |
     apiVersion: eventstreams.ibm.com/v1beta1
     kind: EventStreams
     metadata:
-        name: sample-6-broker
+        name: prod-6-brokers
         namespace: placeholder
     spec:
         license:
@@ -608,10 +683,11 @@ spec:
         adminUI: {}
         collector: {}
         restProducer: {}
-        replicator: {}
         schemaRegistry:
             storage:
-                type: ephemeral
+                type: persistent-claim
+                size: enter-size-of-pv-here
+                class: enter-storage-class-name-here
         strimziOverrides:
             kafka:
                 replicas: 6
@@ -632,7 +708,9 @@ spec:
                 authorization:
                     type: runas
                 storage:
-                    type: ephemeral
+                    type: persistent-claim
+                    size: enter-size-of-pv-here
+                    class: enter-storage-class-name-here
                 metrics: {}
                 resources:
                     requests:
@@ -644,11 +722,13 @@ spec:
             zookeeper:
                 replicas: 3
                 storage:
-                    type: ephemeral
+                    type: persistent-claim
+                    size: enter-size-of-pv-here
+                    class: enter-storage-class-name-here
                 metrics: {}
 EOF
 
-echo "Creating the nine-brokers sample"
+echo "Creating the production nine brokers sample"
 ! cat <<EOF | kubectl apply -f -
 apiVersion: console.openshift.io/v1
 kind: ConsoleYAMLSample
@@ -665,12 +745,12 @@ spec:
   targetResource:
     apiVersion: eventstreams.ibm.com/v1beta1
     kind: EventStreams
-  title: 9 Kafka brokers
+  title: production 9 brokers
   yaml: |
     apiVersion: eventstreams.ibm.com/v1beta1
     kind: EventStreams
     metadata:
-        name: sample-9-broker
+        name: prod-9-brokers
         namespace: placeholder
     spec:
         license:
@@ -681,10 +761,11 @@ spec:
         adminUI: {}
         collector: {}
         restProducer: {}
-        replicator: {}
         schemaRegistry:
             storage:
-                type: ephemeral
+                type: persistent-claim
+                size: enter-size-of-pv-here
+                class: enter-storage-class-name-here
         strimziOverrides:
             kafka:
                 replicas: 9
@@ -705,7 +786,9 @@ spec:
                 authorization:
                     type: runas
                 storage:
-                    type: ephemeral
+                    type: persistent-claim
+                    size: enter-size-of-pv-here
+                    class: enter-storage-class-name-here
                 metrics: {}
                 resources:
                     requests:
@@ -717,7 +800,9 @@ spec:
             zookeeper:
                 replicas: 3
                 storage:
-                    type: ephemeral
+                    type: persistent-claim
+                    size: enter-size-of-pv-here
+                    class: enter-storage-class-name-here
                 metrics: {}
 EOF
 
@@ -1225,7 +1310,7 @@ EOF
 
 
 echo "Verifying Console YAML samples:"
-all_samples=("es-0-quickstart.eventstreams.ibm.com" "es-1-broker.eventstreams.ibm.com" "es-3-broker.eventstreams.ibm.com" "es-6-broker.eventstreams.ibm.com" "es-9-broker.eventstreams.ibm.com" "user-0-consumer.eventstreams.ibm.com" "user-1-producer.eventstreams.ibm.com" "user-2-everything.eventstreams.ibm.com" "kafka-connect-production.eventstreams.ibm.com" "kafka-connect-non-production.eventstreams.ibm.com" "kafka-connect-s2i-production.eventstreams.ibm.com" "kafka-connect-s2i-non-production.eventstreams.ibm.com" "mirror-maker-2-production.eventstreams.ibm.com" "mirror-maker-2-non-production.eventstreams.ibm.com")
+all_samples=("es-0-light-insecure.eventstreams.ibm.com" "es-1-development.eventstreams.ibm.com" "es-2-minimal-prod.eventstreams.ibm.com" "es-3-broker.eventstreams.ibm.com" "es-6-broker.eventstreams.ibm.com" "es-9-broker.eventstreams.ibm.com" "user-0-consumer.eventstreams.ibm.com" "user-1-producer.eventstreams.ibm.com" "user-2-everything.eventstreams.ibm.com" "kafka-connect-production.eventstreams.ibm.com" "kafka-connect-non-production.eventstreams.ibm.com" "kafka-connect-s2i-production.eventstreams.ibm.com" "kafka-connect-s2i-non-production.eventstreams.ibm.com" "mirror-maker-2-production.eventstreams.ibm.com" "mirror-maker-2-non-production.eventstreams.ibm.com")
 for sample_to_check in "${all_samples[@]}"
 do
   ! kubectl get ConsoleYAMLSample "$sample_to_check" -o yaml

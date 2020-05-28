@@ -1,7 +1,7 @@
 apiVersion: eventstreams.ibm.com/v1beta1
 kind: EventStreams
 metadata:
-  name: sample-1-broker
+  name: light-insecure
 spec:
   license:
     accept: false
@@ -14,10 +14,13 @@ spec:
   schemaRegistry:
     storage:
       type: ephemeral
+  security:
+    internalTls: NONE
   strimziOverrides:
     kafka:
-      authorization:
-        type: runas
+      #      uncomment to enable security
+      #      authorization:
+      #        type: runas
       replicas: 1
       config:
         interceptor.class.names: com.ibm.eventstreams.interceptors.metrics.ProducerMetricsInterceptor
@@ -27,8 +30,9 @@ spec:
       listeners:
         external:
           type: route
-          authentication:
-            type: scram-sha-512
+          #          uncomment to enable security
+          #          authentication:
+          #            type: scram-sha-512
         plain: {}
         tls: {}
       storage:

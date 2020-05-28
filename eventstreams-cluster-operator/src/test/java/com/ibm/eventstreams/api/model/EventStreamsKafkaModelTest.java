@@ -227,7 +227,7 @@ public class EventStreamsKafkaModelTest {
         ResourceRequirements resources = kafka.getSpec().getKafka().getResources();
         assertThat(resources.getRequests().get("cpu"), is(new Quantity("100m")));
         assertThat(resources.getLimits().get("cpu"), is(new Quantity("1000m")));
-        assertThat(resources.getRequests().get("memory"), is(new Quantity("100Mi")));
+        assertThat(resources.getRequests().get("memory"), is(new Quantity("128Mi")));
         assertThat(resources.getLimits().get("memory"), is(new Quantity("2Gi")));
     }
 
@@ -263,8 +263,8 @@ public class EventStreamsKafkaModelTest {
         ResourceRequirements resources = kafka.getSpec().getKafka().getTlsSidecar().getResources();
         assertThat(resources.getRequests().get("cpu"), is(new Quantity("10m")));
         assertThat(resources.getLimits().get("cpu"), is(new Quantity("100m")));
-        assertThat(resources.getRequests().get("memory"), is(new Quantity("10Mi")));
-        assertThat(resources.getLimits().get("memory"), is(new Quantity("100Mi")));
+        assertThat(resources.getRequests().get("memory"), is(new Quantity("128Mi")));
+        assertThat(resources.getLimits().get("memory"), is(new Quantity("128Mi")));
     }
 
     @Test
@@ -290,7 +290,7 @@ public class EventStreamsKafkaModelTest {
         ResourceRequirements actualResources = kafka.getSpec().getKafka().getTlsSidecar().getResources();
         assertThat(actualResources.getRequests().get("cpu"), is(new Quantity("20m")));
         assertThat(actualResources.getLimits().get("cpu"), is(new Quantity("100m")));
-        assertThat(actualResources.getRequests().get("memory"), is(new Quantity("10Mi")));
+        assertThat(actualResources.getRequests().get("memory"), is(new Quantity("128Mi")));
         assertThat(actualResources.getLimits().get("memory"), is(new Quantity("1Gi")));
     }
 
@@ -352,7 +352,7 @@ public class EventStreamsKafkaModelTest {
         ResourceRequirements resources = zookeeper.getResources();
         assertThat(resources.getRequests().get("cpu"), is(new Quantity("100m")));
         assertThat(resources.getLimits().get("cpu"), is(new Quantity("1000m")));
-        assertThat(resources.getRequests().get("memory"), is(new Quantity("100Mi")));
+        assertThat(resources.getRequests().get("memory"), is(new Quantity("128Mi")));
         assertThat(resources.getLimits().get("memory"), is(new Quantity("1Gi")));
     }
 
@@ -377,7 +377,7 @@ public class EventStreamsKafkaModelTest {
         ResourceRequirements actualResources = kafka.getSpec().getZookeeper().getResources();
         assertThat(actualResources.getRequests().get("cpu"), is(new Quantity("20m")));
         assertThat(actualResources.getLimits().get("cpu"), is(new Quantity("1000m")));
-        assertThat(actualResources.getRequests().get("memory"), is(new Quantity("100Mi")));
+        assertThat(actualResources.getRequests().get("memory"), is(new Quantity("128Mi")));
         assertThat(actualResources.getLimits().get("memory"), is(new Quantity("1Gi")));
     }
 
@@ -479,8 +479,8 @@ public class EventStreamsKafkaModelTest {
         ResourceRequirements resources = entityOperator.getTlsSidecar().getResources();
         assertThat(resources.getRequests().get("cpu"), is(new Quantity("10m")));
         assertThat(resources.getLimits().get("cpu"), is(new Quantity("100m")));
-        assertThat(resources.getRequests().get("memory"), is(new Quantity("10Mi")));
-        assertThat(resources.getLimits().get("memory"), is(new Quantity("100Mi")));
+        assertThat(resources.getRequests().get("memory"), is(new Quantity("128Mi")));
+        assertThat(resources.getLimits().get("memory"), is(new Quantity("128Mi")));
     }
 
     @Test
@@ -505,7 +505,7 @@ public class EventStreamsKafkaModelTest {
         ResourceRequirements actualResources = kafka.getSpec().getEntityOperator().getTlsSidecar().getResources();
         assertThat(actualResources.getRequests().get("cpu"), is(new Quantity("20m")));
         assertThat(actualResources.getLimits().get("cpu"), is(new Quantity("100m")));
-        assertThat(actualResources.getRequests().get("memory"), is(new Quantity("10Mi")));
+        assertThat(actualResources.getRequests().get("memory"), is(new Quantity("128Mi")));
         assertThat(actualResources.getLimits().get("memory"), is(new Quantity("2Gi")));
     }
 
