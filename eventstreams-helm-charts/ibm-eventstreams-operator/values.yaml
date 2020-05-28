@@ -18,172 +18,190 @@
 # the chart will fail because duplicate RoleBindings will be attempted to be created in the same namespace
 watchNamespaces: []
 watchAnyNamespace: false
-
 logLevel: INFO
 fullReconciliationIntervalMs: 120000
 operationTimeoutMs: 300000
 kubernetesServiceDnsDomain: cluster.local
-
 tolerations: []
 affinity:
   nodeAffinity:
     requiredDuringSchedulingIgnoredDuringExecution:
       nodeSelectorTerms:
-        - matchExpressions:
-            - key: beta.kubernetes.io/arch
-              operator: In
-              values:
-                - amd64
+      - matchExpressions:
+        - key: beta.kubernetes.io/arch
+          operator: In
+          values:
+          - amd64
 nodeSelector: {}
-
 imagePullSecrets: ibm-entitlement-key
-
 operatorIndex:
   image:
-    repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
-    name: operator-index
-    tag: latest
-
+    repository: dockerhub.io
+    name: ibmcom/ibm-eventstreams-catalog
+    tag: 2020-05-27-20.18.23-dddcbaf
+    digest: e94005266418e74721e00c4118b6552c1bddbca82dc2b871a0051aea88a14fa2
 operatorBundle:
-    image:
-      repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
-      name: operator-bundle
-      tag: latest
-
+  image:
+    repository: dockerhub.io
+    name: ibmcom/ibm-eventstreams-operator-bundle
+    tag: 2020-05-27-20.18.23-dddcbaf
+    digest: 89ea3a219f864b40cb89cb3c65070ce583d011ee57ec7971429c89cb7b02e4a0
 operator:
   image:
-    repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
-    name: strimzi/operator
-    tag: 2020-05-27-10.50.00-1cbbd63
+    repository: dockerhub.io
+    name: ibmcom/ibm-eventstreams-operator
+    tag: 2020-05-27-20.18.23-dddcbaf
+    digest: b13567a10f774051852a4d37e7845acd7dc3a0a93a7d3c1bf83f5d301526409e
 operatorInit:
   image:
-    repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
-    name: strimzi/operator-init
-    tag: 2020-05-27-10.50.00-1cbbd63
-
-
+    repository: dockerhub.io
+    name: ibmcom/ibm-eventstreams-operator-init
+    tag: 2020-05-27-20.18.23-dddcbaf
+    digest: cc6dbc15cdcc9c8b098cf4037130ed1b6b739be2907d06cce60b53e86a4164a5
 restProducer:
   image:
-    repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
-    name: eventstreams-rest-producer-v2-icp-linux
+    repository: cp.icr.io
+    name: cp/ibm-eventstreams-rest-producer
     tag: 2020-05-19-15.34.50-b7c951c
+    digest: 677388f419d3f47c0a42a0692b94dc5901e651810bcf70208d6c5c8124d7440e
 adminApi:
   image:
-    repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
-    name: eventstreams-admin-icp-linux
+    repository: cp.icr.io
+    name: cp/ibm-eventstreams-admin
     tag: 2020-05-26-16.43.05-1ca91a8
+    digest: 85802380ea17d074f7d7d74a1d1ee8bed56354ee10f402db8b4da93fadd1b3bc
 schemaRegistry:
   image:
-    repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
-    name: eventstreams-schema-registry-icp-linux
+    repository: cp.icr.io
+    name: cp/ibm-eventstreams-schema-registry
     tag: 2020-05-21-15.38.36-21cd0a7-dev
+    digest: c5723111dd19ae4624593ff8f4b79fe85ca10dcea1a43bad9b5505e19ca397e9
 schemaRegistryAvro:
   image:
-    repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
-    name: eventstreams-schema-registry-avro-icp-linux
+    repository: cp.icr.io
+    name: cp/ibm-eventstreams-schema-registry-avro
     tag: 2020-05-21-15.36.30-3e46cc0-dev
+    digest: 5f0cb0af84c2a15a3accac1b7c2ce9feb2334ef6c7104f54e8dd68696f53ad79
 schemaRegistryProxy:
   image:
-    repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
-    name: eventstreams-schema-proxy-icp-linux
+    repository: cp.icr.io
+    name: cp/ibm-eventstreams-schema-proxy
     tag: 2020-05-19-15.35.21-b7c951c
+    digest: 02671670ccdbbddaf567edb9ac13e14052f2213aead1bfec44f9bcd986f2bc73
 adminUi:
   image:
-    repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
-    name: eventstreams-admin-ui-icp-linux
+    repository: cp.icr.io
+    name: cp/ibm-eventstreams-admin-ui
     tag: 2020-05-22-09.31.46-ffb0b03-dev
+    digest: 130436c1c9f1e18862079973305aa59af54b9a43220249ccd3a30a9ed68e61c0
 adminUiDatabase:
   image:
-    repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
-    name: eventstreams-session-store-icp-linux
+    repository: cp.icr.io
+    name: cp/ibm-eventstreams-session-store
     tag: 2020-04-09-15.40.36-f32e234
+    digest: 63bbdfe2e4ffc6442346fb59212b436191338fdace7de0bb909cdfd95c823518
 collector:
   image:
-    repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
-    name: eventstreams-metrics-collector-icp-linux
+    repository: cp.icr.io
+    name: cp/ibm-eventstreams-metrics-collector
     tag: 2020-04-08-11.08.41-3cb71d9
-
-
+    digest: bfe704c05bd1ad576592d5d0c89bde0fc26f90340ae0962ceed3e24726a6593d
 zookeeper:
   image:
-    repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
-    name: strimzi/kafka
-    tagPrefix: latest
+    repository: cp.icr.io
+    name: cp/ibm-eventstreams-kafka
+    tagPrefix: 2020-05-27-20.18.23-dddcbaf
+    digest: 856171b4e0f17eec71ab95965d7162d78b4bad3d3b4935389e9b14b948be5137
 kafka:
   image:
-    repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
-    name: strimzi/kafka
-    tagPrefix: latest
+    repository: cp.icr.io
+    name: cp/ibm-eventstreams-kafka
+    tagPrefix: 2020-05-27-20.18.23-dddcbaf
+    digest: 856171b4e0f17eec71ab95965d7162d78b4bad3d3b4935389e9b14b948be5137
 kafkaConnect:
   image:
-    repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
-    name: strimzi/kafka
-    tagPrefix: latest
+    repository: cp.icr.io
+    name: cp/ibm-eventstreams-kafka
+    tagPrefix: 2020-05-27-20.18.23-dddcbaf
+    digest: 856171b4e0f17eec71ab95965d7162d78b4bad3d3b4935389e9b14b948be5137
 kafkaConnects2i:
   image:
-    repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
-    name: strimzi/kafka
-    tagPrefix: latest
+    repository: cp.icr.io
+    name: cp/ibm-eventstreams-kafka
+    tagPrefix: 2020-05-27-20.18.23-dddcbaf
+    digest: 856171b4e0f17eec71ab95965d7162d78b4bad3d3b4935389e9b14b948be5137
 cruiseControl:
   image:
-    repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
-    name: strimzi/kafka
-    tagPrefix: latest
+    repository: cp.icr.io
+    name: cp/ibm-eventstreams-kafka
+    tagPrefix: 2020-05-27-20.18.23-dddcbaf
+    digest: 856171b4e0f17eec71ab95965d7162d78b4bad3d3b4935389e9b14b948be5137
 topicOperator:
   image:
-    repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
-    name: strimzi/operator
-    tag: latest
+    repository: dockerhub.io
+    name: ibmcom/ibm-eventstreams-operator
+    tag: 2020-05-27-20.18.23-dddcbaf
+    digest: b13567a10f774051852a4d37e7845acd7dc3a0a93a7d3c1bf83f5d301526409e
 userOperator:
   image:
-    repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
-    name: strimzi/operator
-    tag: 2020-05-27-10.50.00-1cbbd63
+    repository: dockerhub.io
+    name: ibmcom/ibm-eventstreams-operator
+    tag: 2020-05-27-20.18.23-dddcbaf
+    digest: b13567a10f774051852a4d37e7845acd7dc3a0a93a7d3c1bf83f5d301526409e
 kafkaInit:
   image:
-    repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
-    name: strimzi/operator
-    tag: latest
+    repository: dockerhub.io
+    name: ibmcom/ibm-eventstreams-operator
+    tag: 2020-05-27-20.18.23-dddcbaf
+    digest: b13567a10f774051852a4d37e7845acd7dc3a0a93a7d3c1bf83f5d301526409e
 tlsSidecarZookeeper:
   image:
-    repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
-    name: strimzi/kafka
-    tagPrefix: latest
+    repository: cp.icr.io
+    name: cp/ibm-eventstreams-kafka
+    tagPrefix: 2020-05-27-20.18.23-dddcbaf
+    digest: 856171b4e0f17eec71ab95965d7162d78b4bad3d3b4935389e9b14b948be5137
 tlsSidecarKafka:
   image:
-    repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
-    name: strimzi/kafka
-    tagPrefix: latest
+    repository: cp.icr.io
+    name: cp/ibm-eventstreams-kafka
+    tagPrefix: 2020-05-27-20.18.23-dddcbaf
+    digest: 856171b4e0f17eec71ab95965d7162d78b4bad3d3b4935389e9b14b948be5137
 tlsSidecarEntityOperator:
   image:
-    repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
-    name: strimzi/kafka
-    tagPrefix: latest
+    repository: cp.icr.io
+    name: cp/ibm-eventstreams-kafka
+    tagPrefix: 2020-05-27-20.18.23-dddcbaf
+    digest: 856171b4e0f17eec71ab95965d7162d78b4bad3d3b4935389e9b14b948be5137
 tlsSidecarCruiseControl:
   image:
-    repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
-    name: strimzi/kafka
-    tagPrefix: latest
+    repository: cp.icr.io
+    name: cp/ibm-eventstreams-kafka
+    tagPrefix: 2020-05-27-20.18.23-dddcbaf
+    digest: 856171b4e0f17eec71ab95965d7162d78b4bad3d3b4935389e9b14b948be5137
 kafkaMirrorMaker:
   image:
-    repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
-    name: strimzi/kafka
-    tagPrefix: latest
+    repository: cp.icr.io
+    name: cp/ibm-eventstreams-kafka
+    tagPrefix: 2020-05-27-20.18.23-dddcbaf
+    digest: 856171b4e0f17eec71ab95965d7162d78b4bad3d3b4935389e9b14b948be5137
 kafkaExporter:
   image:
-    repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
-    name: strimzi/kafka
-    tagPrefix: latest
+    repository: cp.icr.io
+    name: cp/ibm-eventstreams-kafka
+    tagPrefix: 2020-05-27-20.18.23-dddcbaf
+    digest: 856171b4e0f17eec71ab95965d7162d78b4bad3d3b4935389e9b14b948be5137
 jmxTrans:
   image:
-    repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
-    name: strimzi/jmxtrans
-    tag: latest
+    repository: cp.icr.io
+    name: cp/ibm-eventstreams-jmxtrans
+    tag: 2020-05-27-20.18.23-dddcbaf
+    digest: e585501364e928873d39bec035e512b726ebdd641e366bdd30457b528748e05e
 kafkaMirrorMaker2:
   image:
-    repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
-    name: strimzi/kafka
-    tagPrefix: latest
+    repository: cp.icr.io
+    name: cp/ibm-eventstreams-kafka
+    tagPrefix: 2020-05-27-20.18.23-dddcbaf
+    digest: 856171b4e0f17eec71ab95965d7162d78b4bad3d3b4935389e9b14b948be5137
 resources:
   limits:
     memory: 1Gi
@@ -203,9 +221,4 @@ readinessProbe:
   successThreshold: 1
   failureThreshold: 3
   timeoutSeconds: 5
-
-# Override the docker image repository used by all Strimzi images
-# imageRepositoryOverride: foobar
-# Override the docker image tag used by all Strimzi images
-# imageTagOverride: latest
 createGlobalResources: true

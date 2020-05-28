@@ -50,7 +50,7 @@ spec:
       serviceAccountName: eventstreams-cluster-operator
       initContainers:
       - name: init
-        image: {{ default .Values.operatorInit.image.repository .Values.imageRepositoryOverride }}/{{ .Values.operatorInit.image.name }}:{{ .Values.operatorInit.image.tag }}
+        image: {{ default .Values.operatorInit.image.repository .Values.imageRepositoryOverride }}/{{ .Values.operatorInit.image.name }}@sha256:{{ .Values.operatorInit.image.digest }}
         securityContext:
           privileged: false
           readOnlyRootFilesystem: false
@@ -77,7 +77,7 @@ spec:
             memory: 256Mi
       containers:
         - name: eventstreams-cluster-operator
-          image: {{ default .Values.operator.image.repository .Values.imageRepositoryOverride }}/{{ .Values.operator.image.name }}:{{ .Values.operator.image.tag }}
+          image: {{ default .Values.operator.image.repository .Values.imageRepositoryOverride }}/{{ .Values.operator.image.name }}@sha256:{{ .Values.operator.image.digest }}
           args:
           - /opt/strimzi/bin/eventstreams_cluster_operator_run.sh
           env:
@@ -118,30 +118,30 @@ spec:
             # Core images
             {{ template "strimzi.kafka.image.map" . }}
             - name: EVENTSTREAMS_DEFAULT_TOPIC_OPERATOR_IMAGE
-              value: "{{ default .Values.topicOperator.image.repository .Values.imageRepositoryOverride }}/{{ .Values.topicOperator.image.name }}:{{ .Values.topicOperator.image.tag }}"
+              value: "{{ default .Values.topicOperator.image.repository .Values.imageRepositoryOverride }}/{{ .Values.topicOperator.image.name }}@sha256:{{ .Values.topicOperator.image.digest }}"
             - name: EVENTSTREAMS_DEFAULT_USER_OPERATOR_IMAGE
-              value: "{{ default .Values.userOperator.image.repository .Values.imageRepositoryOverride }}/{{ .Values.userOperator.image.name }}:{{ .Values.userOperator.image.tag }}"
+              value: "{{ default .Values.userOperator.image.repository .Values.imageRepositoryOverride }}/{{ .Values.userOperator.image.name }}@sha256:{{ .Values.userOperator.image.digest }}"
             - name: EVENTSTREAMS_DEFAULT_KAFKA_INIT_IMAGE
-              value: "{{ default .Values.kafkaInit.image.repository .Values.imageRepositoryOverride }}/{{ .Values.kafkaInit.image.name }}:{{ .Values.kafkaInit.image.tag }}"
+              value: "{{ default .Values.kafkaInit.image.repository .Values.imageRepositoryOverride }}/{{ .Values.kafkaInit.image.name }}@sha256:{{ .Values.kafkaInit.image.digest }}"
             - name: EVENTSTREAMS_DEFAULT_JMXTRANS_IMAGE
-              value: "{{ default .Values.jmxTrans.image.repository .Values.imageRepositoryOverride }}/{{ .Values.jmxTrans.image.name }}:{{ .Values.jmxTrans.image.tag }}"
+              value: "{{ default .Values.jmxTrans.image.repository .Values.imageRepositoryOverride }}/{{ .Values.jmxTrans.image.name }}@sha256:{{ .Values.jmxTrans.image.digest }}"
             # Proprietary images
             - name: EVENTSTREAMS_DEFAULT_REST_PRODUCER_IMAGE
-              value: "{{ default .Values.restProducer.image.repository .Values.imageRepositoryOverride }}/{{ .Values.restProducer.image.name }}:{{ .Values.restProducer.image.tag }}"
+              value: "{{ default .Values.restProducer.image.repository .Values.imageRepositoryOverride }}/{{ .Values.restProducer.image.name }}@sha256:{{ .Values.restProducer.image.digest }}"
             - name: EVENTSTREAMS_DEFAULT_ADMIN_API_IMAGE
-              value: "{{ default .Values.adminApi.image.repository .Values.imageRepositoryOverride }}/{{ .Values.adminApi.image.name }}:{{ .Values.adminApi.image.tag }}"
+              value: "{{ default .Values.adminApi.image.repository .Values.imageRepositoryOverride }}/{{ .Values.adminApi.image.name }}@sha256:{{ .Values.adminApi.image.digest }}"
             - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_IMAGE
-              value: "{{ default .Values.schemaRegistry.image.repository .Values.imageRepositoryOverride }}/{{ .Values.schemaRegistry.image.name }}:{{ .Values.schemaRegistry.image.tag }}"
+              value: "{{ default .Values.schemaRegistry.image.repository .Values.imageRepositoryOverride }}/{{ .Values.schemaRegistry.image.name }}@sha256:{{ .Values.schemaRegistry.image.digest }}"
             - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_AVRO_IMAGE
-              value: "{{ default .Values.schemaRegistryAvro.image.repository .Values.imageRepositoryOverride }}/{{ .Values.schemaRegistryAvro.image.name }}:{{ .Values.schemaRegistryAvro.image.tag }}"
+              value: "{{ default .Values.schemaRegistryAvro.image.repository .Values.imageRepositoryOverride }}/{{ .Values.schemaRegistryAvro.image.name }}@sha256:{{ .Values.schemaRegistryAvro.image.digest }}"
             - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_PROXY_IMAGE
-              value: "{{ default .Values.schemaRegistryProxy.image.repository .Values.imageRepositoryOverride }}/{{ .Values.schemaRegistryProxy.image.name }}:{{ .Values.schemaRegistryProxy.image.tag }}"
+              value: "{{ default .Values.schemaRegistryProxy.image.repository .Values.imageRepositoryOverride }}/{{ .Values.schemaRegistryProxy.image.name }}@sha256:{{ .Values.schemaRegistryProxy.image.digest }}"
             - name: EVENTSTREAMS_DEFAULT_ADMIN_UI_IMAGE
-              value: "{{ default .Values.adminUi.image.repository .Values.imageRepositoryOverride }}/{{ .Values.adminUi.image.name }}:{{ .Values.adminUi.image.tag }}"
+              value: "{{ default .Values.adminUi.image.repository .Values.imageRepositoryOverride }}/{{ .Values.adminUi.image.name }}@sha256:{{ .Values.adminUi.image.digest }}"
             - name: EVENTSTREAMS_DEFAULT_ADMIN_UI_REDIS_IMAGE
-              value: "{{ default .Values.adminUiDatabase.image.repository .Values.imageRepositoryOverride }}/{{ .Values.adminUiDatabase.image.name }}:{{ .Values.adminUiDatabase.image.tag }}"
+              value: "{{ default .Values.adminUiDatabase.image.repository .Values.imageRepositoryOverride }}/{{ .Values.adminUiDatabase.image.name }}@sha256:{{ .Values.adminUiDatabase.image.digest }}"
             - name: EVENTSTREAMS_DEFAULT_COLLECTOR_IMAGE
-              value: "{{ default .Values.collector.image.repository .Values.imageRepositoryOverride }}/{{ .Values.collector.image.name }}:{{ .Values.collector.image.tag }}"
+              value: "{{ default .Values.collector.image.repository .Values.imageRepositoryOverride }}/{{ .Values.collector.image.name }}@sha256:{{ .Values.collector.image.digest }}"
             - name: JAVA_OPTS
               value: "-XX:+UseContainerSupport -Xdump:what -Xdump:java+system+snap:events=user -Xdump:directory=/tmp/dumps -XX:+HeapDumpOnOutOfMemoryError"
           livenessProbe:

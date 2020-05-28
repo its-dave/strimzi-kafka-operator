@@ -14,11 +14,16 @@ CHART_RENDERED_TEMPLATES=$(TARGET_FOLDER)/$(EVENTSTREAMS_CHART_NAME)
 CHART_RENDERED_TEMPLATES_TMP_DIR=$(TARGET_FOLDER)/pre-templated-charts/$(EVENTSTREAMS_CHART_NAME)
 CHART_RENDERED_TEMPLATES_INSTALL=../install/$(EVENTSTREAMS_CHART_NAME)/
 
+CHART_VALUES_YAML_FILE=./$(EVENTSTREAMS_CHART_NAME)/values.yaml
+VALUES_YAML_FILE=./values.yaml
 
 .PHONY: helm_clean
 helm_clean:
 	rm -rf target
 
+.PHONY: .EXPORT_ALL_VARIABLES
+generate_chart_values_yaml: .EXPORT_ALL_VARIABLES
+	./generate-chart-values-yaml.sh
 
 # Lint Helm Charts for errors
 .PHONY: helm_lint
@@ -28,7 +33,7 @@ helm_lint:
 
 # Merge the EventStreams and the Strimzi OpenSource charts
 .PHONY: helm_merge
-helm_merge: helm_clean
+helm_merge: helm_clean generate_chart_values_yaml
 	mkdir -p $(CHART_RENDERED_TEMPLATES_TMP_DIR)
 
 	# Copy over charts into the TMP DIR
@@ -51,6 +56,11 @@ helm_merge: helm_clean
 	$(FIND) $(CHART_RENDERED_TEMPLATES_TMP_DIR)/templates -type f -name '050-Deployment-strimzi-cluster-operator.yaml' -exec rm {} \;
 	$(FIND) $(CHART_RENDERED_TEMPLATES_TMP_DIR)/templates -type f -name '*.yaml' -exec $(SED) -E -i 's+(name: )(strimzi)(.*)+\1eventstreams\3+g' {} \;
 	$(FIND) $(CHART_RENDERED_TEMPLATES_TMP_DIR)/templates -type f -name '*.yaml' -exec $(SED) -E -i 's+kafka.strimzi.io+eventstreams.ibm.com+g' {} \;
+
+	# change kafka tpl file to use digests
+	$(FIND) $(CHART_RENDERED_TEMPLATES_TMP_DIR)/templates -type f -name '_kafka_image_map.tpl' -exec $(SED) -E -i 's+:\{\{+@sha256:\{\{+g' {} \;
+	$(FIND) $(CHART_RENDERED_TEMPLATES_TMP_DIR)/templates -type f -name '_kafka_image_map.tpl' -exec $(SED) -E -i 's+image.tagPrefix+image.digest+g' {} \;
+	$(FIND) $(CHART_RENDERED_TEMPLATES_TMP_DIR)/templates -type f -name '_kafka_image_map.tpl' -exec $(SED) -E -i 's+-kafka-[0-9]\.[0-9]\.[0-9]++g' {} \;
 
 
 .PHONY: helm_template
@@ -94,7 +104,6 @@ helm_install: helm_template
 .PHONY: helm_pkg
 helm_pkg: helm_install
 	helm package --version $(CHART_SEMANTIC_RELEASE_VERSION) --app-version $(CHART_SEMANTIC_RELEASE_VERSION) --destination ../ $(CHART_RENDERED_TEMPLATES_TMP_DIR)
-
 
 .PHONY: docker_build docker_tag docker_push all clean
 

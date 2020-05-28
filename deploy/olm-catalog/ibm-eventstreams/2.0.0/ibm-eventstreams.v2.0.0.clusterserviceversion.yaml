@@ -71,7 +71,7 @@ metadata:
     capabilities: Basic Install
     categories: Streaming & Messaging
     certified: 'false'
-    createdAt: 2020-05-28T09:41:17Z
+    createdAt: 2020-05-28T09:59:39Z
     description: Kafka-based messaging platform for handling real-time data feeds.
     operators.operatorframework.io/internal-objects: '["kafkas.eventstreams.ibm.com"]'
     support: IBM
@@ -817,58 +817,58 @@ spec:
                     fieldRef:
                       fieldPath: metadata.name
                 - name: EVENTSTREAMS_DEFAULT_TLS_SIDECAR_ENTITY_OPERATOR_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:latest-kafka-2.5.0
+                  value: cp.icr.io/cp/ibm-eventstreams-kafka@sha256:856171b4e0f17eec71ab95965d7162d78b4bad3d3b4935389e9b14b948be5137
                 - name: EVENTSTREAMS_DEFAULT_TLS_SIDECAR_KAFKA_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:latest-kafka-2.5.0
+                  value: cp.icr.io/cp/ibm-eventstreams-kafka@sha256:856171b4e0f17eec71ab95965d7162d78b4bad3d3b4935389e9b14b948be5137
                 - name: EVENTSTREAMS_DEFAULT_KAFKA_EXPORTER_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:latest-kafka-2.5.0
+                  value: cp.icr.io/cp/ibm-eventstreams-kafka@sha256:856171b4e0f17eec71ab95965d7162d78b4bad3d3b4935389e9b14b948be5137
                 - name: EVENTSTREAMS_DEFAULT_CRUISE_CONTROL_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:latest-kafka-2.5.0
+                  value: cp.icr.io/cp/ibm-eventstreams-kafka@sha256:856171b4e0f17eec71ab95965d7162d78b4bad3d3b4935389e9b14b948be5137
                 - name: EVENTSTREAMS_DEFAULT_TLS_SIDECAR_CRUISE_CONTROL_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:latest-kafka-2.5.0
+                  value: cp.icr.io/cp/ibm-eventstreams-kafka@sha256:856171b4e0f17eec71ab95965d7162d78b4bad3d3b4935389e9b14b948be5137
                 - name: EVENTSTREAMS_KAFKA_IMAGES
                   value: |
-                    2.5.0=hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:latest-kafka-2.5.0
+                    2.5.0=cp.icr.io/cp/ibm-eventstreams-kafka@sha256:856171b4e0f17eec71ab95965d7162d78b4bad3d3b4935389e9b14b948be5137
                 - name: EVENTSTREAMS_KAFKA_CONNECT_IMAGES
                   value: |
-                    2.5.0=hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:latest-kafka-2.5.0
+                    2.5.0=cp.icr.io/cp/ibm-eventstreams-kafka@sha256:856171b4e0f17eec71ab95965d7162d78b4bad3d3b4935389e9b14b948be5137
                 - name: EVENTSTREAMS_KAFKA_CONNECT_S2I_IMAGES
                   value: |
-                    2.5.0=hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:latest-kafka-2.5.0
+                    2.5.0=cp.icr.io/cp/ibm-eventstreams-kafka@sha256:856171b4e0f17eec71ab95965d7162d78b4bad3d3b4935389e9b14b948be5137
                 - name: EVENTSTREAMS_KAFKA_MIRROR_MAKER_IMAGES
                   value: |
-                    2.5.0=hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:latest-kafka-2.5.0
+                    2.5.0=cp.icr.io/cp/ibm-eventstreams-kafka@sha256:856171b4e0f17eec71ab95965d7162d78b4bad3d3b4935389e9b14b948be5137
                 - name: EVENTSTREAMS_KAFKA_MIRROR_MAKER_2_IMAGES
                   value: |
-                    2.5.0=hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka:latest-kafka-2.5.0
+                    2.5.0=cp.icr.io/cp/ibm-eventstreams-kafka@sha256:856171b4e0f17eec71ab95965d7162d78b4bad3d3b4935389e9b14b948be5137
                 - name: EVENTSTREAMS_DEFAULT_TOPIC_OPERATOR_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator:latest
+                  value: dockerhub.io/ibmcom/ibm-eventstreams-operator@sha256:b13567a10f774051852a4d37e7845acd7dc3a0a93a7d3c1bf83f5d301526409e
                 - name: EVENTSTREAMS_DEFAULT_USER_OPERATOR_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator:2020-05-27-10.50.00-1cbbd63
+                  value: dockerhub.io/ibmcom/ibm-eventstreams-operator@sha256:b13567a10f774051852a4d37e7845acd7dc3a0a93a7d3c1bf83f5d301526409e
                 - name: EVENTSTREAMS_DEFAULT_KAFKA_INIT_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator:latest
+                  value: dockerhub.io/ibmcom/ibm-eventstreams-operator@sha256:b13567a10f774051852a4d37e7845acd7dc3a0a93a7d3c1bf83f5d301526409e
                 - name: EVENTSTREAMS_DEFAULT_JMXTRANS_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/jmxtrans:latest
+                  value: cp.icr.io/cp/ibm-eventstreams-jmxtrans@sha256:e585501364e928873d39bec035e512b726ebdd641e366bdd30457b528748e05e
                 - name: EVENTSTREAMS_DEFAULT_REST_PRODUCER_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-rest-producer-v2-icp-linux:2020-05-19-15.34.50-b7c951c
+                  value: cp.icr.io/cp/ibm-eventstreams-rest-producer@sha256:677388f419d3f47c0a42a0692b94dc5901e651810bcf70208d6c5c8124d7440e
                 - name: EVENTSTREAMS_DEFAULT_ADMIN_API_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-admin-icp-linux:2020-05-26-16.43.05-1ca91a8
+                  value: cp.icr.io/cp/ibm-eventstreams-admin@sha256:85802380ea17d074f7d7d74a1d1ee8bed56354ee10f402db8b4da93fadd1b3bc
                 - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-schema-registry-icp-linux:2020-05-21-15.38.36-21cd0a7-dev
+                  value: cp.icr.io/cp/ibm-eventstreams-schema-registry@sha256:c5723111dd19ae4624593ff8f4b79fe85ca10dcea1a43bad9b5505e19ca397e9
                 - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_AVRO_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-schema-registry-avro-icp-linux:2020-05-21-15.36.30-3e46cc0-dev
+                  value: cp.icr.io/cp/ibm-eventstreams-schema-registry-avro@sha256:5f0cb0af84c2a15a3accac1b7c2ce9feb2334ef6c7104f54e8dd68696f53ad79
                 - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_PROXY_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-schema-proxy-icp-linux:2020-05-19-15.35.21-b7c951c
+                  value: cp.icr.io/cp/ibm-eventstreams-schema-proxy@sha256:02671670ccdbbddaf567edb9ac13e14052f2213aead1bfec44f9bcd986f2bc73
                 - name: EVENTSTREAMS_DEFAULT_ADMIN_UI_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-admin-ui-icp-linux:2020-05-22-09.31.46-ffb0b03-dev
+                  value: cp.icr.io/cp/ibm-eventstreams-admin-ui@sha256:130436c1c9f1e18862079973305aa59af54b9a43220249ccd3a30a9ed68e61c0
                 - name: EVENTSTREAMS_DEFAULT_ADMIN_UI_REDIS_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-session-store-icp-linux:2020-04-09-15.40.36-f32e234
+                  value: cp.icr.io/cp/ibm-eventstreams-session-store@sha256:63bbdfe2e4ffc6442346fb59212b436191338fdace7de0bb909cdfd95c823518
                 - name: EVENTSTREAMS_DEFAULT_COLLECTOR_IMAGE
-                  value: hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-metrics-collector-icp-linux:2020-04-08-11.08.41-3cb71d9
+                  value: cp.icr.io/cp/ibm-eventstreams-metrics-collector@sha256:bfe704c05bd1ad576592d5d0c89bde0fc26f90340ae0962ceed3e24726a6593d
                 - name: JAVA_OPTS
                   value: -XX:+UseContainerSupport -Xdump:what -Xdump:java+system+snap:events=user
                     -Xdump:directory=/tmp/dumps -XX:+HeapDumpOnOutOfMemoryError
-                image: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator:2020-05-27-10.50.00-1cbbd63
+                image: dockerhub.io/ibmcom/ibm-eventstreams-operator@sha256:b13567a10f774051852a4d37e7845acd7dc3a0a93a7d3c1bf83f5d301526409e
                 livenessProbe:
                   failureThreshold: 3
                   httpGet:
@@ -917,7 +917,7 @@ spec:
                   valueFrom:
                     fieldRef:
                       fieldPath: metadata.uid
-                image: hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator-init:2020-05-27-10.50.00-1cbbd63
+                image: dockerhub.io/ibmcom/ibm-eventstreams-operator-init@sha256:cc6dbc15cdcc9c8b098cf4037130ed1b6b739be2907d06cce60b53e86a4164a5
                 name: init
                 resources:
                   limits:
@@ -977,29 +977,27 @@ spec:
       name: ibm-eventstreams
   version: 2.0.0
   relatedImages:
-  - name: operator-index-latest
-    image: cp.icr.io/cp/icp4i/es/operator-index-latest@sha256:4097889236A2AF26C293033FEB964C4CF118C0224E0D063FEC0A89E9D0569EF2
-  - name: operator-bundle-latest
-    image: cp.icr.io/cp/icp4i/es/operator-bundle-latest@sha256:4097889236A2AF26C293033FEB964C4CF118C0224E0D063FEC0A89E9D0569EF2
-  - name: strimzi-operator-2020-05-27-10.50.00-1cbbd63
-    image: cp.icr.io/cp/icp4i/es/strimzi-operator-2020-05-27-10.50.00-1cbbd63@sha256:null
-  - name: strimzi-operator-init-2020-05-27-10.50.00-1cbbd63
-    image: cp.icr.io/cp/icp4i/es/strimzi-operator-init-2020-05-27-10.50.00-1cbbd63@sha256:null
-  - name: eventstreams-rest-producer-v2-icp-linux-2020-05-19-15.34.50-b7c951c
-    image: cp.icr.io/cp/icp4i/es/eventstreams-rest-producer-v2-icp-linux-2020-05-19-15.34.50-b7c951c@sha256:677388f419d3f47c0a42a0692b94dc5901e651810bcf70208d6c5c8124d7440e
-  - name: eventstreams-admin-icp-linux-2020-05-26-16.43.05-1ca91a8
-    image: cp.icr.io/cp/icp4i/es/eventstreams-admin-icp-linux-2020-05-26-16.43.05-1ca91a8@sha256:85802380ea17d074f7d7d74a1d1ee8bed56354ee10f402db8b4da93fadd1b3bc
-  - name: eventstreams-schema-registry-icp-linux-2020-05-21-15.38.36-21cd0a7-dev
-    image: cp.icr.io/cp/icp4i/es/eventstreams-schema-registry-icp-linux-2020-05-21-15.38.36-21cd0a7-dev@sha256:c5723111dd19ae4624593ff8f4b79fe85ca10dcea1a43bad9b5505e19ca397e9
-  - name: eventstreams-schema-registry-avro-icp-linux-2020-05-21-15.36.30-3e46cc0-dev
-    image: cp.icr.io/cp/icp4i/es/eventstreams-schema-registry-avro-icp-linux-2020-05-21-15.36.30-3e46cc0-dev@sha256:5f0cb0af84c2a15a3accac1b7c2ce9feb2334ef6c7104f54e8dd68696f53ad79
-  - name: eventstreams-schema-proxy-icp-linux-2020-05-19-15.35.21-b7c951c
-    image: cp.icr.io/cp/icp4i/es/eventstreams-schema-proxy-icp-linux-2020-05-19-15.35.21-b7c951c@sha256:02671670ccdbbddaf567edb9ac13e14052f2213aead1bfec44f9bcd986f2bc73
-  - name: eventstreams-admin-ui-icp-linux-2020-05-22-09.31.46-ffb0b03-dev
-    image: cp.icr.io/cp/icp4i/es/eventstreams-admin-ui-icp-linux-2020-05-22-09.31.46-ffb0b03-dev@sha256:130436c1c9f1e18862079973305aa59af54b9a43220249ccd3a30a9ed68e61c0
-  - name: eventstreams-session-store-icp-linux-2020-04-09-15.40.36-f32e234
-    image: cp.icr.io/cp/icp4i/es/eventstreams-session-store-icp-linux-2020-04-09-15.40.36-f32e234@sha256:63bbdfe2e4ffc6442346fb59212b436191338fdace7de0bb909cdfd95c823518
-  - name: eventstreams-metrics-collector-icp-linux-2020-04-08-11.08.41-3cb71d9
-    image: cp.icr.io/cp/icp4i/es/eventstreams-metrics-collector-icp-linux-2020-04-08-11.08.41-3cb71d9@sha256:bfe704c05bd1ad576592d5d0c89bde0fc26f90340ae0962ceed3e24726a6593d
-  - name: strimzi-kafka-latest-kafka-2.4.0
-    image: cp.icr.io/cp/icp4i/es/strimzi-kafka-latest-kafka-2.4.0@sha256:4097889236A2AF26C293033FEB964C4CF118C0224E0D063FEC0A89E9D0569EF2
+  - name: ibmcom/ibm-eventstreams-operator
+    image: dockerhub.io/ibmcom/ibm-eventstreams-operator@sha256:b13567a10f774051852a4d37e7845acd7dc3a0a93a7d3c1bf83f5d301526409e
+  - name: ibmcom/ibm-eventstreams-operator-init
+    image: dockerhub.io/ibmcom/ibm-eventstreams-operator-init@sha256:cc6dbc15cdcc9c8b098cf4037130ed1b6b739be2907d06cce60b53e86a4164a5
+  - name: cp/ibm-eventstreams-rest-producer
+    image: cp.icr.io/cp/ibm-eventstreams-rest-producer@sha256:677388f419d3f47c0a42a0692b94dc5901e651810bcf70208d6c5c8124d7440e
+  - name: cp/ibm-eventstreams-admin
+    image: cp.icr.io/cp/ibm-eventstreams-admin@sha256:85802380ea17d074f7d7d74a1d1ee8bed56354ee10f402db8b4da93fadd1b3bc
+  - name: cp/ibm-eventstreams-schema-registry
+    image: cp.icr.io/cp/ibm-eventstreams-schema-registry@sha256:c5723111dd19ae4624593ff8f4b79fe85ca10dcea1a43bad9b5505e19ca397e9
+  - name: cp/ibm-eventstreams-schema-registry-avro
+    image: cp.icr.io/cp/ibm-eventstreams-schema-registry-avro@sha256:5f0cb0af84c2a15a3accac1b7c2ce9feb2334ef6c7104f54e8dd68696f53ad79
+  - name: cp/ibm-eventstreams-schema-proxy
+    image: cp.icr.io/cp/ibm-eventstreams-schema-proxy@sha256:02671670ccdbbddaf567edb9ac13e14052f2213aead1bfec44f9bcd986f2bc73
+  - name: cp/ibm-eventstreams-admin-ui
+    image: cp.icr.io/cp/ibm-eventstreams-admin-ui@sha256:130436c1c9f1e18862079973305aa59af54b9a43220249ccd3a30a9ed68e61c0
+  - name: cp/ibm-eventstreams-session-store
+    image: cp.icr.io/cp/ibm-eventstreams-session-store@sha256:63bbdfe2e4ffc6442346fb59212b436191338fdace7de0bb909cdfd95c823518
+  - name: cp/ibm-eventstreams-metrics-collector
+    image: cp.icr.io/cp/ibm-eventstreams-metrics-collector@sha256:bfe704c05bd1ad576592d5d0c89bde0fc26f90340ae0962ceed3e24726a6593d
+  - name: cp/ibm-eventstreams-kafka
+    image: cp.icr.io/cp/ibm-eventstreams-kafka@sha256:856171b4e0f17eec71ab95965d7162d78b4bad3d3b4935389e9b14b948be5137
+  - name: cp/ibm-eventstreams-jmxtrans
+    image: cp.icr.io/cp/ibm-eventstreams-jmxtrans@sha256:e585501364e928873d39bec035e512b726ebdd641e366bdd30457b528748e05e
