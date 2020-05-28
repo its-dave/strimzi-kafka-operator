@@ -18,6 +18,7 @@ import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
 import com.ibm.eventstreams.api.spec.EventStreamsGeoReplicator;
 import com.ibm.eventstreams.api.spec.EventStreamsGeoReplicatorBuilder;
 import com.ibm.eventstreams.georeplicator.GeoReplicatorCredentials;
+import io.fabric8.kubernetes.api.model.ResourceRequirements;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.SecretBuilder;
@@ -226,6 +227,22 @@ public class GeoReplicatorModelTest {
                 hasEntry(Labels.STRIMZI_NAME_LABEL, "test-ibm-es-georep"),
                 hasEntry(Labels.STRIMZI_CLUSTER_LABEL, instanceName),
                 hasEntry(Labels.STRIMZI_KIND_LABEL, "EventStreams")));
+    }
+
+    /**
+     * We are not testing custom resource requirements as we do not allow
+     * custom resource requirements to be set for mm2's. This will just test
+     * the defaults.
+     */
+    @Test
+    public void testResourceRequirements() {
+        KafkaMirrorMaker2 kmm2 = createDefaultReplicator();
+
+        ResourceRequirements resourceRequirements = kmm2.getSpec().getResources();
+        assertThat(resourceRequirements.getRequests().get("cpu").getAmount(), is("1000m"));
+        assertThat(resourceRequirements.getRequests().get("memory").getAmount(), is("2Gi"));
+        assertThat(resourceRequirements.getLimits().get("cpu").getAmount(), is("2000m"));
+        assertThat(resourceRequirements.getLimits().get("memory").getAmount(), is("2Gi"));
     }
 
     private EventStreamsGeoReplicatorBuilder createDefaultEventStreamsGeoReplicator() {

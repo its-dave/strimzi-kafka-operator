@@ -108,4 +108,12 @@ public class DefaultResourceRequirements {
         .addToLimits("cpu", new Quantity("1000m"))
         .addToLimits("memory", new Quantity("1Gi"))
         .build();
+
+    public static final ResourceRequirements MM2 = new ResourceRequirementsBuilder()
+        .addToRequests("cpu", new Quantity("1000m"))
+        .addToRequests("memory", new Quantity("2Gi"))
+        .addToLimits("cpu", new Quantity("2000m"))
+        .addToLimits("memory", new Quantity("2Gi"))
+        .build();
+        
 }

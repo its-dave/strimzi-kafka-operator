@@ -12,11 +12,13 @@
  */
 package com.ibm.eventstreams.api.model;
 
+import com.ibm.eventstreams.api.DefaultResourceRequirements;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsGeoReplicator;
 import com.ibm.eventstreams.api.spec.EventStreamsGeoReplicatorSpec;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
 import com.ibm.eventstreams.georeplicator.GeoReplicatorCredentials;
+import io.fabric8.kubernetes.api.model.ResourceRequirements;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicy;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicyEgressRule;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicyIngressRule;
@@ -81,6 +83,7 @@ public class GeoReplicatorModel extends AbstractModel {
         super(instance, COMPONENT_NAME, APPLICATION_NAME);
 
         setOwnerReference(replicatorInstance);
+        setResourceRequirements(new ResourceRequirements());
         
         if (isReplicatorEnabled(replicatorInstance)) {
             kafkaMirrorMaker2 = createMirrorMaker2(replicatorInstance, instance, geoReplicatorCredentials, mirrorMaker2);
@@ -153,6 +156,8 @@ public class GeoReplicatorModel extends AbstractModel {
                 .endPod()
                 .build();
         mm2Spec.setTemplate(kafkaMirrorMaker2Template);
+
+        mm2Spec.setResources(getResourceRequirements(DefaultResourceRequirements.MM2));
 
         //if no security set then caCert and clientAuthentication are null and just not set on the connect object
         //if we have an oauth config then the bootstrap will be the TLS port, but the clientAuthentication will be null so the connection will fail (and we log earlier that oauth is unsupported)
