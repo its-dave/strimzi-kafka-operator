@@ -77,7 +77,6 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
     private final ServiceAccount serviceAccount;
     private final NetworkPolicy networkPolicy;
     private final RoleBinding roleBinding;
-    private final boolean isGeoReplicationEnabled;
     private final String internalKafkaUsername;
 
     private static final Logger log = LogManager.getLogger(AdminApiModel.class.getName());
@@ -94,7 +93,6 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
                          EventStreamsOperatorConfig.ImageLookup imageConfig,
                          List<ListenerStatus> kafkaListeners,
                          CommonServices commonServices,
-                         boolean isGeoReplicationEnabled,
                          String internalKafkaUsername) {
         super(instance, COMPONENT_NAME, APPLICATION_NAME);
         this.kafkaListeners = kafkaListeners != null ? new ArrayList<>(kafkaListeners) : new ArrayList<>();
@@ -103,7 +101,6 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
         this.prometheusPort = commonServices.getConsolePort();
         this.commonServices = commonServices;
 
-        this.isGeoReplicationEnabled = isGeoReplicationEnabled;
         this.internalKafkaUsername = internalKafkaUsername;
 
         Optional<SecurityComponentSpec> adminApiSpec = Optional.ofNullable(instance.getSpec())
@@ -261,7 +258,6 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
             new EnvVarBuilder().withName("KAFKA_STS_NAME").withValue(EventStreamsKafkaModel.getKafkaInstanceName(getInstanceName()) + "-" + EventStreamsKafkaModel.KAFKA_COMPONENT_NAME).build(),
             new EnvVarBuilder().withName("KAFKA_CONNECT_REST_API_ADDRESS").withValue(kafkaConnectRestEndpoint).build(),
             new EnvVarBuilder().withName("KAFKA_PRINCIPAL").withValue(internalKafkaUsername).build(),
-            new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue(Boolean.toString(isGeoReplicationEnabled)).build(),
             new EnvVarBuilder().withName("GEOREPLICATION_SECRET_NAME").withValue(getResourcePrefix() + "-" + GeoReplicatorSecretModel.REPLICATOR_SECRET_NAME).build(),
             new EnvVarBuilder().withName("GEOREPLICATION_INTERNAL_CLIENT_AUTH_ENABLED").withValue(Boolean.toString(isReplicatorInternalClientAuthForConnectEnabled(instance))).build(),
             new EnvVarBuilder().withName("GEOREPLICATION_EXTERNAL_CLIENT_AUTH_ENABLED").withValue(Boolean.toString(isReplicatorExternalClientAuthForConnectEnabled(instance))).build(),

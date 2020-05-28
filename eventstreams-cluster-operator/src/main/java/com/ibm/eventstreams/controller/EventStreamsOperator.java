@@ -29,7 +29,6 @@ import com.ibm.eventstreams.api.model.AdminUIModel;
 import com.ibm.eventstreams.api.model.ClusterSecretsModel;
 import com.ibm.eventstreams.api.model.CollectorModel;
 import com.ibm.eventstreams.api.model.EventStreamsKafkaModel;
-import com.ibm.eventstreams.api.model.GeoReplicatorModel;
 import com.ibm.eventstreams.api.model.GeoReplicatorSecretModel;
 import com.ibm.eventstreams.api.model.GeoReplicatorSourceUsersModel;
 import com.ibm.eventstreams.api.model.InternalKafkaUserModel;
@@ -213,7 +212,6 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 .compose(state -> state.createMessageAuthenticationSecret())
                 .compose(state -> state.createRestProducer(this::dateSupplier))
                 .compose(state -> state.createReplicatorSecret())
-                .compose(state -> state.hasEventStreamsGeoReplicator())
                 .compose(state -> state.createAdminApi(this::dateSupplier))
                 .compose(state -> state.createSchemaRegistry(this::dateSupplier))
                 .compose(state -> state.createAdminUI())
@@ -241,7 +239,6 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         final EventStreamsCertificateManager certificateManager;
         CommonServices commonServices = null;
         String cloudPakHeaderURL = "";
-        boolean isGeoReplicationEnabled = false;
         String kafkaPrincipal;
         boolean cp4iPresent = false;
 
@@ -521,14 +518,6 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 .map(v -> this));
         }
 
-        Future<ReconciliationState> hasEventStreamsGeoReplicator() {
-            log.traceEntry();
-            return log.traceExit(replicatorResourceOperator.getAsync(namespace, instance.getMetadata().getName()).compose(replicator -> {
-                isGeoReplicationEnabled = GeoReplicatorModel.isReplicatorEnabled(replicator) && GeoReplicatorModel.hasValidExternalAuthenticationForGeoReplication(instance);
-                return Future.succeededFuture(this);
-            }));
-        }
-
         Future<ReconciliationState> createReplicatorUsers() {
             log.traceEntry();
             GeoReplicatorSourceUsersModel geoReplicatorSourceUsersModel = new GeoReplicatorSourceUsersModel(instance);
@@ -627,7 +616,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         Future<ReconciliationState> createAdminApi(Supplier<Date> dateSupplier) {
             log.traceEntry(() -> dateSupplier);
             List<Future> adminApiFutures = new ArrayList<>();
-            AdminApiModel adminApi = new AdminApiModel(instance, imageConfig, status.getKafkaListeners(), commonServices, isGeoReplicationEnabled, kafkaPrincipal);
+            AdminApiModel adminApi = new AdminApiModel(instance, imageConfig, status.getKafkaListeners(), commonServices, kafkaPrincipal);
             if (adminApi.getCustomImage()) {
                 customImageCount++;
             }
