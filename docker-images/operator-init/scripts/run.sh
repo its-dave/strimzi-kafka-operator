@@ -886,6 +886,11 @@ spec:
               name: __schema_
               patternType: prefix
             operation: Alter
+          - resource:
+              type: transactionalId
+              name: '*'
+              patternType: literal
+            operation: Write
 EOF
       ;;
     "kafka-connect-production.eventstreams.ibm.com")
