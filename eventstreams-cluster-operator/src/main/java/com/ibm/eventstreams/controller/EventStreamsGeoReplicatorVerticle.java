@@ -12,7 +12,6 @@
  */
 package com.ibm.eventstreams.controller;
 
-import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsGeoReplicator;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.Watch;
@@ -78,7 +77,7 @@ public class EventStreamsGeoReplicatorVerticle extends AbstractVerticle {
             EventStreamsGeoReplicatorOperator eventStreamsGeoReplicatorOperator = new EventStreamsGeoReplicatorOperator(
                     vertx,
                     client,
-                    EventStreams.RESOURCE_KIND,
+                    EventStreamsGeoReplicator.RESOURCE_KIND,
                     pfa,
                     geoReplicatorResourceOperator,
                     esResourceOperator,
