@@ -341,7 +341,7 @@ public class AdminUIModel extends AbstractModel {
                                 .map(EventStreamsSpec::getStrimziOverrides)
                                 .map(KafkaSpec::getKafka)
                                 .map(KafkaClusterSpec::getVersion)
-                                .orElse("2.4.0"))
+                                .orElse("2.5.0"))
                         .build());
         envVarDefaults.add(
                 new EnvVarBuilder()
