@@ -436,7 +436,7 @@ public class SchemaRegistryModelTest {
         EventStreams defaultEs = createDefaultEventStreams().build();
         SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockCommonServices, kafkaPrincipal);
 
-        EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:RUNAS-ANONYMOUS,7443:RUNAS-ANONYMOUS").build();
+        EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:runas-anonymous,7443:runas-anonymous").build();
         EnvVar endpoints = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7443:p2ptls").build();
         EnvVar tlsVersion = new EnvVarBuilder().withName("TLS_VERSION").withValue("9443:TLSv1.2,7443:TLSv1.2").build();
         EnvVar authEnabled  = new EnvVarBuilder().withName("AUTHORIZATION_ENABLED").withValue("false").build();
@@ -451,7 +451,7 @@ public class SchemaRegistryModelTest {
         EventStreams defaultEs = createEventStreamsWithAuthorization().build();
         SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(defaultEs, imageConfig, null, mockCommonServices, kafkaPrincipal);
 
-        EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:IAM-BEARER;TLS;SCRAM-SHA-512,7443:IAM-BEARER;MAC").build();
+        EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:iam-bearer;tls;scram-sha-512,7443:iam-bearer;mac").build();
         EnvVar endpoints = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7443:p2ptls").build();
         EnvVar tlsVersion = new EnvVarBuilder().withName("TLS_VERSION").withValue("9443:TLSv1.2,7443:TLSv1.2").build();
         EnvVar authEnabled  = new EnvVarBuilder().withName("AUTHORIZATION_ENABLED").withValue("true").build();

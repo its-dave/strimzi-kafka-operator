@@ -494,7 +494,7 @@ public class AbstractSecureEndpointsModelTest {
 
         assertThat(envVars, hasSize(10));
 
-        EnvVar authenticationEnvVar = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:RUNAS-ANONYMOUS,7443:RUNAS-ANONYMOUS").build();
+        EnvVar authenticationEnvVar = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:runas-anonymous,7443:runas-anonymous").build();
         EnvVar endpointsEnvVar = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7443:p2ptls").build();
         EnvVar tlsEnvVar = new EnvVarBuilder().withName("TLS_VERSION").withValue("9443:TLSv1.2,7443:TLSv1.2").build();
         EnvVar truststoreP12EnvVar = new EnvVarBuilder().withName(SSL_TRUSTSTORE_P12_PATH_ENV_KEY).withValue("/certs/cluster/ca.p12").build();
@@ -528,7 +528,7 @@ public class AbstractSecureEndpointsModelTest {
 
         assertThat(envVars, hasSize(10));
 
-        EnvVar authenticationEnvVar = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:IAM-BEARER;TLS;SCRAM-SHA-512,7443:RUNAS-ANONYMOUS").build();
+        EnvVar authenticationEnvVar = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:iam-bearer;tls;scram-sha-512,7443:runas-anonymous").build();
         EnvVar endpointsEnvVar = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7443:p2ptls").build();
         EnvVar tlsEnvVar = new EnvVarBuilder().withName("TLS_VERSION").withValue("9443:TLSv1.2,7443:TLSv1.2").build();
         EnvVar truststoreP12EnvVar = new EnvVarBuilder().withName(SSL_TRUSTSTORE_P12_PATH_ENV_KEY).withValue("/certs/cluster/ca.p12").build();
@@ -566,7 +566,7 @@ public class AbstractSecureEndpointsModelTest {
 
         assertThat(envVars, hasSize(10));
 
-        EnvVar authenticationEnvVar = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:IAM-BEARER;TLS;SCRAM-SHA-512,9444:RUNAS-ANONYMOUS,7443:RUNAS-ANONYMOUS").build();
+        EnvVar authenticationEnvVar = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:iam-bearer;tls;scram-sha-512,9444:runas-anonymous,7443:runas-anonymous").build();
         EnvVar endpointsEnvVar = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:required-field,9444:no-auth,7443:p2ptls").build();
         EnvVar tlsEnvVar = new EnvVarBuilder().withName("TLS_VERSION").withValue("9443:TLSv1.2,9444:TLSv1.2,7443:TLSv1.2").build();
         EnvVar truststoreP12EnvVar = new EnvVarBuilder().withName(SSL_TRUSTSTORE_P12_PATH_ENV_KEY).withValue("/certs/cluster/ca.p12").build();
@@ -604,7 +604,7 @@ public class AbstractSecureEndpointsModelTest {
 
         assertThat(envVars, hasSize(10));
 
-        EnvVar authenticationEnvVar = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9080:IAM-BEARER;TLS;SCRAM-SHA-512,8080:TLS,7443:RUNAS-ANONYMOUS").build();
+        EnvVar authenticationEnvVar = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9080:iam-bearer;tls;scram-sha-512,8080:TLS,7443:runas-anonymous").build();
         EnvVar endpointsEnvVar = new EnvVarBuilder().withName("ENDPOINTS").withValue("9080,8080:fully-configured,7443:p2ptls").build();
         EnvVar tlsEnvVar = new EnvVarBuilder().withName("TLS_VERSION").withValue("9080,8080:TLSv1.2,7443:TLSv1.2").build();
         EnvVar truststoreP12EnvVar = new EnvVarBuilder().withName(SSL_TRUSTSTORE_P12_PATH_ENV_KEY).withValue("/certs/cluster/ca.p12").build();
@@ -715,7 +715,7 @@ public class AbstractSecureEndpointsModelTest {
         assertThat(routes, aMapWithSize(1));
 
         routes.forEach((key, route) -> {
-            assertThat(route.getMetadata().getLabels(), hasEntry(AbstractModel.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + "RUNAS-ANONYMOUS", "true"));
+            assertThat(route.getMetadata().getLabels(), hasEntry(AbstractModel.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + "runas-anonymous", "true"));
             assertThat(route.getMetadata().getLabels(), hasEntry(AbstractModel.EVENTSTREAMS_PROTOCOL_LABEL, "https"));
         });
     }
@@ -730,9 +730,9 @@ public class AbstractSecureEndpointsModelTest {
         assertThat(routes, aMapWithSize(1));
 
         routes.forEach((key, route) -> {
-            assertThat(route.getMetadata().getLabels(), hasEntry(AbstractModel.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + "SCRAM-SHA-512", "true"));
-            assertThat(route.getMetadata().getLabels(), hasEntry(AbstractModel.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + "TLS", "true"));
-            assertThat(route.getMetadata().getLabels(), hasEntry(AbstractModel.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + "IAM-BEARER", "true"));
+            assertThat(route.getMetadata().getLabels(), hasEntry(AbstractModel.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + "scram-sha-512", "true"));
+            assertThat(route.getMetadata().getLabels(), hasEntry(AbstractModel.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + "tls", "true"));
+            assertThat(route.getMetadata().getLabels(), hasEntry(AbstractModel.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + "iam-bearer", "true"));
             assertThat(route.getMetadata().getLabels(), hasEntry(AbstractModel.EVENTSTREAMS_PROTOCOL_LABEL, "https"));
         });
     }
@@ -828,7 +828,7 @@ public class AbstractSecureEndpointsModelTest {
 
         assertThat(routes, aMapWithSize(1));
         routes.forEach((key, route) -> {
-            assertThat(route.getMetadata().getLabels(), hasEntry(AbstractModel.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + "RUNAS-ANONYMOUS", "true"));
+            assertThat(route.getMetadata().getLabels(), hasEntry(AbstractModel.EVENTSTREAMS_AUTHENTICATION_LABEL + AUTHENTICATION_LABEL_SEPARATOR + "runas-anonymous", "true"));
             assertThat(route.getMetadata().getLabels(), hasEntry(AbstractModel.EVENTSTREAMS_PROTOCOL_LABEL, "http"));
         });
     }

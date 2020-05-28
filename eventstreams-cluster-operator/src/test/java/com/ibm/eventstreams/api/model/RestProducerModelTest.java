@@ -518,7 +518,7 @@ public class RestProducerModelTest {
         RestProducerModel restProducerModel = new RestProducerModel(defaultEs, imageConfig, listeners, mockCommonServices);
 
         String runasKafkaBootstrap = instanceName + "-kafka-bootstrap." + restProducerModel.getNamespace() + ".svc:" + EventStreamsKafkaModel.KAFKA_RUNAS_PORT;
-        EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:RUNAS-ANONYMOUS,7443:RUNAS-ANONYMOUS").build();
+        EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:runas-anonymous,7443:runas-anonymous").build();
         EnvVar endpoints = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7443:p2ptls").build();
         EnvVar tlsVersion = new EnvVarBuilder().withName("TLS_VERSION").withValue("9443:TLSv1.2,7443:TLSv1.2").build();
         EnvVar runasKafkaBootstrapUrlEnv = new EnvVarBuilder().withName("RUNAS_KAFKA_BOOTSTRAP_SERVERS").withValue(runasKafkaBootstrap).build();
@@ -537,7 +537,7 @@ public class RestProducerModelTest {
         RestProducerModel restProducerModel = new RestProducerModel(defaultEs, imageConfig, listeners, mockCommonServices);
 
         String runasKafkaBootstrap = instanceName + "-kafka-bootstrap." + restProducerModel.getNamespace() + ".svc:" + EventStreamsKafkaModel.KAFKA_RUNAS_PORT;
-        EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:TLS;SCRAM-SHA-512,7443:RUNAS-ANONYMOUS").build();
+        EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:tls;scram-sha-512,7443:runas-anonymous").build();
         EnvVar endpoints = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7443:p2ptls").build();
         EnvVar tlsVersion = new EnvVarBuilder().withName("TLS_VERSION").withValue("9443:TLSv1.2,7443:TLSv1.2").build();
         EnvVar runasKafkaBootstrapUrlEnv = new EnvVarBuilder().withName("RUNAS_KAFKA_BOOTSTRAP_SERVERS").withValue(runasKafkaBootstrap).build();

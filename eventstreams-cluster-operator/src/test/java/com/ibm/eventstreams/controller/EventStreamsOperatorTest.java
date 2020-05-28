@@ -199,9 +199,9 @@ public class EventStreamsOperatorTest {
     private static final int TWO_YEARS_PLUS_IN_SECONDS = 70000000;
     private static final String CP4I_TEST_HEADER_URL = "https://icp4i-services-demo.my-ns.svc.cluster.local:3000";
     private static final String CP4I_ADMIN_UI_ENVAR_NAME = "ICP4I_PLATFORM_SERVICES_URL";
-    private static final String IAM_BEARER_LABEL = "IAM-BEARER";
-    private static final String SCRAM_SHA_512_LABEL = "SCRAM-SHA-512";
-    private static final String TLS_LABEL = "TLS";
+    private static final String IAM_BEARER_LABEL = "iam-bearer";
+    private static final String SCRAM_SHA_512_LABEL = "scram-sha-512";
+    private static final String TLS_LABEL = "tls";
     private static final String IAM_CLUSTER_NAME = "my-cluster";
     private static final String INGRESS_SERVICE = "ingress-service.ns";
     private static final String CLUSTER_ENDPOINT = "https://" + INGRESS_SERVICE + ".svc:443";

@@ -35,12 +35,12 @@ public class Endpoint {
     public static final int DEFAULT_EXTERNAL_TLS_PORT = 9443;
     public static final EndpointServiceType DEFAULT_EXTERNAL_SERVICE_TYPE = EndpointServiceType.ROUTE;
     private static final int DEFAULT_EXTERNAL_PLAIN_PORT = 9080;
-    public static final String IAM_BEARER_KEY = "IAM-BEARER";
-    public static final String SCRAM_SHA_512_KEY = "SCRAM-SHA-512";
-    public static final String MUTUAL_TLS_KEY = "TLS";
+    public static final String IAM_BEARER_KEY = "iam-bearer";
+    public static final String SCRAM_SHA_512_KEY = "scram-sha-512";
+    public static final String MUTUAL_TLS_KEY = "tls";
     public static final String DEFAULT_HOST_ADDRESS = null;
-    public static final String MAC_KEY = "MAC";
-    public static final String RUNAS_ANONYMOUS_KEY = "RUNAS-ANONYMOUS";
+    public static final String MAC_KEY = "mac";
+    public static final String RUNAS_ANONYMOUS_KEY = "runas-anonymous";
     private static final List<String> DEFAULT_EXTERNAL_AUTHENTICATION_MECHANISM = Arrays.asList(IAM_BEARER_KEY, MUTUAL_TLS_KEY, SCRAM_SHA_512_KEY);
 
     public static final String DEFAULT_P2P_TLS_NAME = "p2ptls";
@@ -194,7 +194,7 @@ public class Endpoint {
      */
     private static List<String> getAuthenticationMechanismsOrDefault(EndpointSpec spec) {
         return Optional.ofNullable(spec.getAuthenticationMechanisms())
-                .map(list -> list.isEmpty() ? Collections.singletonList(RUNAS_ANONYMOUS_KEY) : list) // if set empty use RUNAS-ANONYMOUS, otherwise use list
+                .map(list -> list.isEmpty() ? Collections.singletonList(RUNAS_ANONYMOUS_KEY) : list) // if set empty use runas-anonymous, otherwise use list
                 .orElse(DEFAULT_EXTERNAL_AUTHENTICATION_MECHANISM); // if authenticationMechanisms not set use default
     }
 

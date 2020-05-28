@@ -246,7 +246,7 @@ public class EndpointValidationTest extends RestApiTest {
         EndpointSpec endpoint = new EndpointSpecBuilder()
             .withName("good-endpoint-1")
             .withContainerPort(8888)
-            .withAuthenticationMechanisms("IAM-BEARER")
+            .withAuthenticationMechanisms("iam-bearer")
             .build();
 
         EventStreams test = ModelUtils.createDefaultEventStreams("test-es")
@@ -316,7 +316,7 @@ public class EndpointValidationTest extends RestApiTest {
         EndpointSpec endpoint = new EndpointSpecBuilder()
             .withName("test-endpoint")
             .withContainerPort(8888)
-            .addToAuthenticationMechanisms("SCRAM-SHA-512")
+            .addToAuthenticationMechanisms("scram-sha-512")
             .build();
 
         EventStreams test = ModelUtils.createDefaultEventStreams("test-es")
@@ -373,7 +373,7 @@ public class EndpointValidationTest extends RestApiTest {
         EndpointSpec endpoint = new EndpointSpecBuilder()
             .withName("test-endpoint")
             .withContainerPort(8888)
-            .addToAuthenticationMechanisms("SCRAM-SHA-512", "IAM-BEARER")
+            .addToAuthenticationMechanisms("scram-sha-512", "iam-bearer")
             .build();
 
         EventStreams test = ModelUtils.createDefaultEventStreams("test-es")
@@ -401,7 +401,7 @@ public class EndpointValidationTest extends RestApiTest {
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("reason"), is(EndpointValidation.UNSUPPORTED_ENDPOINT_AUTHENTICATION_MECHANISM_REASON));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getInteger("code"), is(400));
             assertThat(responseObj.getJsonObject("response").getJsonObject("status").getString("message"),
-                is("restProducer has an endpoint using authentication mechanism 'IAM-BEARER' which is not supported. Edit the authenticationMechanisms property in spec.restProducer.endpoints to set 'SCRAM-SHA-512', 'MAC', or both."));
+                is("restProducer has an endpoint using authentication mechanism 'iam-bearer' which is not supported. Edit the authenticationMechanisms property in spec.restProducer.endpoints to set 'scram-sha-512', 'mac', or both."));
             async.flag();
         })));
     }
@@ -411,7 +411,7 @@ public class EndpointValidationTest extends RestApiTest {
         EndpointSpec endpoint = new EndpointSpecBuilder()
             .withName("test-endpoint")
             .withContainerPort(8888)
-            .addToAuthenticationMechanisms("SCRAM-SHA-512", "IAM-BEARER")
+            .addToAuthenticationMechanisms("scram-sha-512", "iam-bearer")
             .build();
 
         EventStreams test = ModelUtils.createDefaultEventStreams("test-es")
@@ -445,7 +445,7 @@ public class EndpointValidationTest extends RestApiTest {
             .withName("test-endpoint")
             .withContainerPort(8888)
             .withHost("this-will-work.com")
-            .addToAuthenticationMechanisms("SCRAM-SHA-512", "IAM-BEARER")
+            .addToAuthenticationMechanisms("scram-sha-512", "iam-bearer")
             .build();
 
         EventStreams test = ModelUtils.createDefaultEventStreams("test-es")
@@ -478,7 +478,7 @@ public class EndpointValidationTest extends RestApiTest {
             .withName("test-endpoint")
             .withContainerPort(8888)
             .withHost("a-very-long-name-ibm-es-ui-this-is-an-absurdly-long-namespace-cos-i-like-to-break-things.apps.frodo.os.fyre.ibm.com")
-            .addToAuthenticationMechanisms("SCRAM-SHA-512", "IAM-BEARER")
+            .addToAuthenticationMechanisms("scram-sha-512", "iam-bearer")
             .build();
 
         EventStreams test = ModelUtils.createDefaultEventStreams("test-es")
@@ -515,7 +515,7 @@ public class EndpointValidationTest extends RestApiTest {
             .withName("test-endpoint")
             .withContainerPort(8888)
             .withHost("THIS-WON'T-Work")
-            .addToAuthenticationMechanisms("SCRAM-SHA-512", "IAM-BEARER")
+            .addToAuthenticationMechanisms("scram-sha-512", "iam-bearer")
             .build();
 
         EventStreams test = ModelUtils.createDefaultEventStreams("test-es")
@@ -589,7 +589,7 @@ public class EndpointValidationTest extends RestApiTest {
             .withName("test-endpoint")
             .withContainerPort(8888)
             .withHost("THIS-WON'T-Work")
-            .addToAuthenticationMechanisms("SCRAM-SHA-512", "IAM-BEARER")
+            .addToAuthenticationMechanisms("scram-sha-512", "iam-bearer")
             .build();
 
         EventStreams test = ModelUtils.createDefaultEventStreams("test-es")
@@ -658,14 +658,14 @@ public class EndpointValidationTest extends RestApiTest {
             .withName("first-endpoint")
             .withContainerPort(8888)
             .withHost("this-will-work.com")
-            .addToAuthenticationMechanisms("SCRAM-SHA-512", "IAM-BEARER")
+            .addToAuthenticationMechanisms("scram-sha-512", "iam-bearer")
             .build();
 
         EndpointSpec second = new EndpointSpecBuilder()
             .withName("second-endpoint2")
             .withContainerPort(9999)
             .withHost("this-will-work.com")
-            .addToAuthenticationMechanisms("SCRAM-SHA-512", "IAM-BEARER")
+            .addToAuthenticationMechanisms("scram-sha-512", "iam-bearer")
             .build();
 
         EventStreams test = ModelUtils.createDefaultEventStreams("test-es")
@@ -704,7 +704,7 @@ public class EndpointValidationTest extends RestApiTest {
             .withName("first-endpoint")
             .withContainerPort(8888)
             .withHost("this-will-work.com")
-            .addToAuthenticationMechanisms("SCRAM-SHA-512", "IAM-BEARER")
+            .addToAuthenticationMechanisms("scram-sha-512", "iam-bearer")
             .build();
 
 

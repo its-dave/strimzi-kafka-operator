@@ -203,7 +203,7 @@ public class AdminApiModelTest {
         EnvVar zkConnectEnv = new EnvVarBuilder().withName("ZOOKEEPER_CONNECT").withValue(zookeeperEndpoint).build();
         EnvVar kafkaStsEnv = new EnvVarBuilder().withName("KAFKA_STS_NAME").withValue(instanceName + "-" + EventStreamsKafkaModel.KAFKA_COMPONENT_NAME).build();
         EnvVar clientCaCertPath = new EnvVarBuilder().withName("CLIENT_CA_PATH").withValue("/certs/client/ca.crt").build();
-        EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:RUNAS-ANONYMOUS,7443:RUNAS-ANONYMOUS").build();
+        EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:runas-anonymous,7443:runas-anonymous").build();
         EnvVar endpoints = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7443:p2ptls").build();
         EnvVar tlsVersion = new EnvVarBuilder().withName("TLS_VERSION").withValue("9443:TLSv1.2,7443:TLSv1.2").build();
         EnvVar kafkaConnectRestApiEnv = new EnvVarBuilder().withName("KAFKA_CONNECT_REST_API_ADDRESS").withValue(kafkaConnectRestEndpoint).build();
@@ -248,7 +248,7 @@ public class AdminApiModelTest {
         EnvVar zkConnectEnv = new EnvVarBuilder().withName("ZOOKEEPER_CONNECT").withValue(zookeeperEndpoint).build();
         EnvVar kafkaStsEnv = new EnvVarBuilder().withName("KAFKA_STS_NAME").withValue(instanceName + "-" + EventStreamsKafkaModel.KAFKA_COMPONENT_NAME).build();
         EnvVar clientCaCertPath = new EnvVarBuilder().withName("CLIENT_CA_PATH").withValue("/certs/client/ca.crt").build();
-        EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:IAM-BEARER;TLS;SCRAM-SHA-512,7443:IAM-BEARER").build();
+        EnvVar authentication = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:iam-bearer;tls;scram-sha-512,7443:iam-bearer").build();
         EnvVar endpoints = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7443:p2ptls").build();
         EnvVar tlsVersion = new EnvVarBuilder().withName("TLS_VERSION").withValue("9443:TLSv1.2,7443:TLSv1.2").build();
         EnvVar kafkaPrincipalEnv = new EnvVarBuilder().withName("KAFKA_PRINCIPAL").withValue(kafkaPrincipal).build();

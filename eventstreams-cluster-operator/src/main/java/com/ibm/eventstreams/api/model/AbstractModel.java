@@ -126,7 +126,7 @@ public abstract class AbstractModel {
     protected static final TlsVersion DEFAULT_TLS_VERSION = TlsVersion.TLS_V1_2;
     public static final TlsVersion DEFAULT_INTERNAL_TLS = DEFAULT_TLS_VERSION;
     public static final String AUTHENTICATION_LABEL_SEPARATOR = "-";
-    public static final String AUTHENTICATION_LABEL_NO_AUTH = "NO-AUTHENTICATION";
+    public static final String AUTHENTICATION_LABEL_NO_AUTH = "no-authentication";
 
     public static final String PRODUCT_ID_KEY = "productID";
     public static final String PRODUCT_NAME_KEY = "productName";

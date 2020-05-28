@@ -71,7 +71,7 @@ metadata:
     capabilities: Basic Install
     categories: Streaming & Messaging
     certified: 'false'
-    createdAt: 2020-05-28T09:59:39Z
+    createdAt: 2020-05-28T11:52:06Z
     description: Kafka-based messaging platform for handling real-time data feeds.
     operators.operatorframework.io/internal-objects: '["kafkas.eventstreams.ibm.com"]'
     support: IBM
@@ -852,7 +852,7 @@ spec:
                 - name: EVENTSTREAMS_DEFAULT_REST_PRODUCER_IMAGE
                   value: cp.icr.io/cp/ibm-eventstreams-rest-producer@sha256:677388f419d3f47c0a42a0692b94dc5901e651810bcf70208d6c5c8124d7440e
                 - name: EVENTSTREAMS_DEFAULT_ADMIN_API_IMAGE
-                  value: cp.icr.io/cp/ibm-eventstreams-admin@sha256:85802380ea17d074f7d7d74a1d1ee8bed56354ee10f402db8b4da93fadd1b3bc
+                  value: cp.icr.io/cp/ibm-eventstreams-admin@sha256:90b142e6e3f7b4e12afcfa41e7ef869b8ab73f02f22881c51f6fb8654e3a1a2e
                 - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_IMAGE
                   value: cp.icr.io/cp/ibm-eventstreams-schema-registry@sha256:c5723111dd19ae4624593ff8f4b79fe85ca10dcea1a43bad9b5505e19ca397e9
                 - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_AVRO_IMAGE
@@ -984,7 +984,7 @@ spec:
   - name: cp/ibm-eventstreams-rest-producer
     image: cp.icr.io/cp/ibm-eventstreams-rest-producer@sha256:677388f419d3f47c0a42a0692b94dc5901e651810bcf70208d6c5c8124d7440e
   - name: cp/ibm-eventstreams-admin
-    image: cp.icr.io/cp/ibm-eventstreams-admin@sha256:85802380ea17d074f7d7d74a1d1ee8bed56354ee10f402db8b4da93fadd1b3bc
+    image: cp.icr.io/cp/ibm-eventstreams-admin@sha256:90b142e6e3f7b4e12afcfa41e7ef869b8ab73f02f22881c51f6fb8654e3a1a2e
   - name: cp/ibm-eventstreams-schema-registry
     image: cp.icr.io/cp/ibm-eventstreams-schema-registry@sha256:c5723111dd19ae4624593ff8f4b79fe85ca10dcea1a43bad9b5505e19ca397e9
   - name: cp/ibm-eventstreams-schema-registry-avro

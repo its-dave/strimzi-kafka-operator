@@ -60,9 +60,9 @@ public class EndpointValidation implements Validation {
     public static final String INVALID_HOSTNAME_REASON = "InvalidHostNames";
     public static final String DUPLICATE_HOST_NAMES_REASON = "DuplicateHostNames";
 
-    public static final String ADMIN_API_MISSING_IAM_BEARER_MESSAGE = "Admin Api does not have a route with IAM-BEARER authentication. "
-        + "IAM-BEARER authentication is required to use the Event Streams CLI and to create KafkaUsers through Admin API. "
-        + "To enable these functionalities, add 'IAM-BEARER' to an endpoint in spec.adminApi.endpoints";
+    public static final String ADMIN_API_MISSING_IAM_BEARER_MESSAGE = "Admin Api does not have a route with iam-bearer authentication. "
+        + "iam-bearer authentication is required to use the Event Streams CLI and to create KafkaUsers through Admin API."
+        + "To enable these functionalities, add 'iam-bearer' to an endpoint in spec.adminApi.endpoints";
 
     public static final int ENDPOINT_NAME_MAX_LENGTH = 16;
     public static final int ROUTE_HOST_NAME_MAX_LENGTH = 64;

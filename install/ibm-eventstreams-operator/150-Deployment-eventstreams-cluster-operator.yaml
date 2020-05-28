@@ -137,7 +137,7 @@ spec:
         - name: EVENTSTREAMS_DEFAULT_REST_PRODUCER_IMAGE # Proprietary images
           value: "cp.icr.io/cp/ibm-eventstreams-rest-producer@sha256:677388f419d3f47c0a42a0692b94dc5901e651810bcf70208d6c5c8124d7440e"
         - name: EVENTSTREAMS_DEFAULT_ADMIN_API_IMAGE
-          value: "cp.icr.io/cp/ibm-eventstreams-admin@sha256:85802380ea17d074f7d7d74a1d1ee8bed56354ee10f402db8b4da93fadd1b3bc"
+          value: "cp.icr.io/cp/ibm-eventstreams-admin@sha256:90b142e6e3f7b4e12afcfa41e7ef869b8ab73f02f22881c51f6fb8654e3a1a2e"
         - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_IMAGE
           value: "cp.icr.io/cp/ibm-eventstreams-schema-registry@sha256:c5723111dd19ae4624593ff8f4b79fe85ca10dcea1a43bad9b5505e19ca397e9"
         - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_AVRO_IMAGE

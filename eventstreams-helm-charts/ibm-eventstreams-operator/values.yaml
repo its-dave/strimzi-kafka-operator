@@ -68,8 +68,8 @@ adminApi:
   image:
     repository: cp.icr.io
     name: cp/ibm-eventstreams-admin
-    tag: 2020-05-26-16.43.05-1ca91a8
-    digest: 85802380ea17d074f7d7d74a1d1ee8bed56354ee10f402db8b4da93fadd1b3bc
+    tag: 2020-05-28-10.00.08-db632da
+    digest: 90b142e6e3f7b4e12afcfa41e7ef869b8ab73f02f22881c51f6fb8654e3a1a2e
 schemaRegistry:
   image:
     repository: cp.icr.io

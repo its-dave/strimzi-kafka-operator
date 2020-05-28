@@ -34,7 +34,7 @@ public class AuthenticationValidation implements Validation {
     public static final String UNAUTH_ENDPOINT_AUTH_ES_WARNING = "At least one Kafka listener has required authentication. "
         + "However, a supporting Event Streams component has an endpoint without authentication enabled. "
         + "Clients connecting through this insecure endpoint will not have permission to access %s features. "
-        + "If authentication is required, edit spec.%s.endpoints in the CR YAML and add one or more of the following authenticationMechanisms: 'IAM-BEARER', 'SCRAM-SHA-512', or 'TLS'.";
+        + "If authentication is required, edit spec.%s.endpoints in the CR YAML and add one or more of the following authenticationMechanisms: 'iam-bearer', 'scram-sha-512', or 'tls'. ";
 
     public static final String AUTH_ENDPOINT_UNAUTH_ES_WARNING = "No authentication is enabled for Kafka listeners. "
         + "However, there is a secure endpoint configured for %s. "
