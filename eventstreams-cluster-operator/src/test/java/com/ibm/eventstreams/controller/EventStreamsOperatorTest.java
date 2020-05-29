@@ -10,7 +10,6 @@
  * divested of its trade secrets, irrespective of what has been
  * deposited with the U.S. Copyright Office.
  */
-
 package com.ibm.eventstreams.controller;
 
 import com.ibm.commonservices.CommonServices;
@@ -284,7 +283,10 @@ public class EventStreamsOperatorTest {
         when(esResourceOperator.updateEventStreamsStatus(any(EventStreams.class))).thenReturn(Future.succeededFuture(mockEventStreams));
 
         operandRequestResourceOperator = mock(OperandRequestResourceOperator.class);
-        when(operandRequestResourceOperator.reconcile(matches(NAMESPACE), matches(OPERAND_REQUEST_NAME), any())).thenReturn(Future.succeededFuture());
+        when(operandRequestResourceOperator.reconcile(matches(NAMESPACE), matches(OPERAND_REQUEST_NAME), any()))
+            .thenReturn(Future.succeededFuture());
+        when(operandRequestResourceOperator.waitForReady(matches(NAMESPACE), matches(OPERAND_REQUEST_NAME), anyLong(), anyLong()))
+                .thenReturn(Future.succeededFuture());
 
         cp4iResourceOperator = mock(Cp4iServicesBindingResourceOperator.class);
         when(cp4iResourceOperator.reconcile(matches(NAMESPACE), matches(CP4I_BINDING_NAME), any())).thenReturn(Future.succeededFuture());

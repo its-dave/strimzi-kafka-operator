@@ -205,7 +205,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
 
         return log.traceExit(reconcileState.validateCustomResource()
                 .compose(state -> state.createCommonServicesOperandRequest())
-//                .compose(state -> state.waitForCommonServicesOperandRequest())
+                .compose(state -> state.waitForCommonServicesOperandRequestReady())
                 .compose(state -> state.getCommonServices())
                 .compose(state -> state.getCommonServicesClusterCert())
                 .compose(state -> state.createCloudPakClusterCertSecret())
@@ -334,6 +334,18 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                         operandRequestModel.operandRequestName(instance.getMetadata().getName()),
                         operandRequestModel.getOperandRequest())
                     .map(rs -> this));
+        }
+
+        Future<ReconciliationState> waitForCommonServicesOperandRequestReady() {
+            log.traceEntry();
+
+            String operandRequestName = OperandRequestModel.operandRequestName(instance.getMetadata().getName());
+
+            return log.traceExit(operandRequestResourceOperator.waitForReady(namespace,
+                    operandRequestName,
+                    defaultPollIntervalMs,
+                    kafkaStatusReadyTimeoutMs)
+                .map(v -> this));
         }
 
         Future<ReconciliationState> getCommonServices() {

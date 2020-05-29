@@ -13,6 +13,9 @@
 
 package com.ibm.eventstreams.api.model.utils;
 
+import com.ibm.commonservices.api.spec.OperandRequest;
+import com.ibm.commonservices.api.spec.OperandRequestDoneable;
+import com.ibm.commonservices.api.spec.OperandRequestList;
 import com.ibm.eventstreams.api.Crds;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsDoneable;
@@ -42,21 +45,29 @@ public class MockEventStreamsKube extends MockKube {
     public MockEventStreamsKube() {
         super();
 
-        // EventStreams CRDs
+        /**
+         * EventStreams Crds
+          */
         super.withCustomResourceDefinition(Crds.getCrd(EventStreams.class), EventStreams.class, EventStreamsList.class, EventStreamsDoneable.class)
             .end()
             .withCustomResourceDefinition(Crds.getCrd(EventStreamsGeoReplicator.class), EventStreamsGeoReplicator.class, EventStreamsGeoReplicatorList.class, EventStreamsGeoReplicatorDoneable.class)
             .end()
-        // Strimzi CRDs
+        /**
+         * Strimzi CRDs
+         */
             .withCustomResourceDefinition(io.strimzi.api.kafka.Crds.kafka(), Kafka.class, KafkaList.class, DoneableKafka.class)
             .end()
             .withCustomResourceDefinition(io.strimzi.api.kafka.Crds.kafkaUser(), KafkaUser.class, KafkaUserList.class, DoneableKafkaUser.class)
             .end()
             .withCustomResourceDefinition(io.strimzi.api.kafka.Crds.kafkaMirrorMaker2(), KafkaMirrorMaker2.class, KafkaMirrorMaker2List.class, DoneableKafkaMirrorMaker2.class)
             .end()
+        /**
+         * Common Services CRDs
+         */
+            .withCustomResourceDefinition(Crds.getCrd(OperandRequest.class), OperandRequest.class, OperandRequestList.class, OperandRequestDoneable.class)
+            .end()
             .withCustomResourceDefinition(Crds.getCrd(Cp4iServicesBinding.class), Cp4iServicesBinding.class, Cp4iServicesBindingList.class, Cp4iServicesBindingDoneable.class)
             .end()
-        // Dependency CRDs
             .withCustomResourceDefinition(Crds.getCrd(Client.class), Client.class, ClientList.class, ClientDoneable.class)
             .end();
     }

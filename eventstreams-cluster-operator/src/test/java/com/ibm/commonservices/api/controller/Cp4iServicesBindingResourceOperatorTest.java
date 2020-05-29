@@ -51,13 +51,13 @@ public class Cp4iServicesBindingResourceOperatorTest {
     private static KubernetesClient mockClient;
 
     @BeforeAll
-    public static void setup() {
+    public static void beforeAll() {
         vertx = Vertx.vertx();
         mockClient = new MockEventStreamsKube().build();
     }
 
     @AfterAll
-    public static void closeVertxInstance() {
+    public static void afterAll() {
         vertx.close();
         mockClient.close();
     }

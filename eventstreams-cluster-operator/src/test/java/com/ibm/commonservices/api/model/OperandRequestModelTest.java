@@ -45,27 +45,26 @@ public class OperandRequestModelTest {
         return new OperandRequestModel(createDefaultEventStreams().build());
     }
 
-/*
-Valid Example:
+    /*
+    Valid Example:
 
-apiVersion: operator.ibm.com/v1alpha1
-kind: OperandRequest
-metadata:
-  name: eventstreams-cluster-operator
-spec:
-  requests:
-    - operands:
-        - name: ibm-management-ingress-operator
-        - name: ibm-monitoring-exporters-operator
-        - name: ibm-monitoring-prometheusext-operator
-        - name: ibm-monitoring-grafana-operator
-        - name: ibm-iam-operator
-        - name: ibm-commonui-operator
-        - name: ibm-platform-api-operator
-      registry: common-service
-      registryNamespace: ibm-common-services
- */
-
+    apiVersion: operator.ibm.com/v1alpha1
+    kind: OperandRequest
+    metadata:
+      name: eventstreams-cluster-operator
+    spec:
+      requests:
+        - operands:
+            - name: ibm-management-ingress-operator
+            - name: ibm-monitoring-exporters-operator
+            - name: ibm-monitoring-prometheusext-operator
+            - name: ibm-monitoring-grafana-operator
+            - name: ibm-iam-operator
+            - name: ibm-commonui-operator
+            - name: ibm-platform-api-operator
+          registry: common-service
+          registryNamespace: ibm-common-services
+     */
     @Test
     public void testOperandRequestMModel() {
         OperandRequestModel operandRequestModel = createDefaultOperandRequestModel();

@@ -4,7 +4,7 @@
  *
  * 5737-H33
  *
- * (C) Copyright IBM Corp. 2019  All Rights Reserved.
+ * (C) Copyright IBM Corp. 2020  All Rights Reserved.
  *
  * The source code for this program is not published or otherwise
  * divested of its trade secrets, irrespective of what has been
@@ -21,6 +21,10 @@ import io.strimzi.operator.common.model.Labels;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.json.jackson.DatabindCodec;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 /*
 Example:
@@ -46,6 +50,24 @@ spec:
 public class OperandRequestModel extends AbstractModel {
     private static final String COMPONENT_NAME = DEFAULT_COMPONENT_NAME;
 
+    public static final String MANAGEMENT_INGRESS_OPERATOR_NAME = "ibm-management-ingress-operator";
+    public static final String MONITORING_EXPORTER_OPERATOR_NAME = "ibm-monitoring-exporters-operator";
+    public static final String MONITORING_PROMETHEUS_OPERATOR_NAME = "ibm-monitoring-prometheusext-operator";
+    public static final String MONITORING_GRAFANA_OPERATOR_NAME = "ibm-monitoring-grafana-operator";
+    public static final String IAM_OPERATOR_NAME = "ibm-iam-operator";
+    public static final String COMMON_SERVICES_UI_OPERATOR_NAME = "ibm-commonui-operator";
+    public static final String COMMON_SERVICES_API_OPERATOR_NAME = "ibm-platform-api-operator";
+
+    // Add all requests to a list to ensure all logic handling them use the exhaustive list
+    public static final List<String> REQUESTED_OPERANDS = Collections.unmodifiableList(Arrays.asList(
+            MANAGEMENT_INGRESS_OPERATOR_NAME,
+            MONITORING_EXPORTER_OPERATOR_NAME,
+            MONITORING_PROMETHEUS_OPERATOR_NAME,
+            MONITORING_GRAFANA_OPERATOR_NAME,
+            IAM_OPERATOR_NAME,
+            COMMON_SERVICES_UI_OPERATOR_NAME,
+            COMMON_SERVICES_API_OPERATOR_NAME));
+
     private OperandRequest operandRequest;
 
     public OperandRequestModel(EventStreams instance) {
@@ -68,14 +90,10 @@ public class OperandRequestModel extends AbstractModel {
      * @return the untyped spec of the OperandRequest
      */
     private Object spec() {
-        JsonArray operands = new JsonArray()
-                .add(new JsonObject().put("name", "ibm-management-ingress-operator"))
-                .add(new JsonObject().put("name", "ibm-monitoring-exporters-operator"))
-                .add(new JsonObject().put("name", "ibm-monitoring-prometheusext-operator"))
-                .add(new JsonObject().put("name", "ibm-monitoring-grafana-operator"))
-                .add(new JsonObject().put("name", "ibm-iam-operator"))
-                .add(new JsonObject().put("name", "ibm-commonui-operator"))
-                .add(new JsonObject().put("name", "ibm-platform-api-operator"));
+        JsonArray operands = new JsonArray();
+        for (String request : REQUESTED_OPERANDS) {
+            operands.add(new JsonObject().put("name", request));
+        }
 
         JsonObject request = new JsonObject()
                 .put("operands", operands)
