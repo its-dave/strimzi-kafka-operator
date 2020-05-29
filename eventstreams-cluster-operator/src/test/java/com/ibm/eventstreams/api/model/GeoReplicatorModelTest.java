@@ -68,7 +68,7 @@ public class GeoReplicatorModelTest {
     private final String nonDefaultClusterAlias = "nonDefaultClusterAlias";
     private final String kafkaInstanceName = EventStreamsKafkaModel.getKafkaInstanceName(instanceName);
     private final String namespace = "myproject";
-    private final String bootstrap = kafkaInstanceName + "-kafka-bootstrap." + namespace + ".svc." + io.strimzi.operator.cluster.model.ModelUtils.KUBERNETES_SERVICE_DNS_DOMAIN + ":" + EventStreamsKafkaModel.KAFKA_PORT_TLS;
+    private final String bootstrap = kafkaInstanceName + "-kafka-bootstrap." + namespace + ".svc:" + EventStreamsKafkaModel.KAFKA_PORT_TLS;
     private final String nonDefaultBootstrap = "nonDefaultBootstrap";
 
     private GeoReplicatorCredentials geoReplicatorCredentials;

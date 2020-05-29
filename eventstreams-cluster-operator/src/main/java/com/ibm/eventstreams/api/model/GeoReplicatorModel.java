@@ -47,10 +47,12 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class GeoReplicatorModel extends AbstractModel {
 
@@ -119,23 +121,16 @@ public class GeoReplicatorModel extends AbstractModel {
         // Maximum number of replicas for ConnectConfig topics is 3
         int connectConfigTopicReplicas = (kafkaReplicas >= 3) ? 3 : kafkaReplicas;
 
+        final Optional<KafkaMirrorMaker2ClusterSpec> existingClusterSpec = Optional.ofNullable(mm2Spec.getClusters())
+            .flatMap(populatedList -> populatedList
+                .stream()
+                .filter(item -> connectClusterName.equals(item.getAlias()))
+                .findFirst());
 
         Map<String, Object> kafkaMirrorMaker2Config = new HashMap<>();
         //don't overwrite any existing config that's been set for the connectCluster
-        if (mm2Spec.getClusters() != null) {
-            final Optional<KafkaMirrorMaker2ClusterSpec> existingClusterSpec = Optional.ofNullable(mm2Spec)
-                    .map(KafkaMirrorMaker2Spec::getClusters)
-                    .filter(list -> !list.isEmpty())
-                    .flatMap(populatedList -> populatedList
-                            .stream()
-                            .filter(item -> connectClusterName.equals(item.getAlias()))
-                            .findFirst());
-
-            if (existingClusterSpec.isPresent()) {
-                kafkaMirrorMaker2Config = existingClusterSpec.get().getConfig();
-            } else {
-                addConfigToProperties(kafkaMirrorMaker2Config, connectConfigTopicReplicas);
-            }
+        if (existingClusterSpec.isPresent()) {
+            kafkaMirrorMaker2Config = existingClusterSpec.get().getConfig();
         } else {
             addConfigToProperties(kafkaMirrorMaker2Config, connectConfigTopicReplicas);
         }
@@ -169,14 +164,17 @@ public class GeoReplicatorModel extends AbstractModel {
                 .withConfig(kafkaMirrorMaker2Config)
                 .build();
 
-        if (mm2Spec.getClusters() != null) {
+        if (mm2Spec.getClusters() != null && !mm2Spec.getClusters().isEmpty()) {
+            final List<KafkaMirrorMaker2ClusterSpec> clusters = mm2Spec.getClusters();
+            // Replace the connect cluster spec if it already exists
+            clusters.removeIf(item -> connectClusterName.equals(item.getAlias()));
+            clusters.add(newKafkaMirrorMaker2ClusterSpec);
 
-            Optional.ofNullable(mm2Spec)
-                    .map(KafkaMirrorMaker2Spec::getClusters)
-                    .filter(list -> !list.isEmpty())
-                    .map(populatedList -> populatedList.removeIf(item -> connectClusterName.equals(item.getAlias())));
-
-            mm2Spec.getClusters().add(newKafkaMirrorMaker2ClusterSpec);
+            // Sort the clusters list by cluster alias so that adding new clusters via the admin-api
+            // does not mean we cause extra pod bounces here
+            mm2Spec.setClusters(clusters.stream()
+                .sorted(Comparator.comparing(KafkaMirrorMaker2ClusterSpec::getAlias))
+                .collect(Collectors.toList()));
 
         } else {
 
@@ -213,7 +211,7 @@ public class GeoReplicatorModel extends AbstractModel {
     private String getDefaultBootstrap(KafkaListenerTls internalTlsKafkaListener) {
         // Check is done on instance.getSpec()... as caCert might be null due to an error, or because oauth is on
         // We use the internal port for connect, so we don't query here on listeners.external
-        String bootstrap = ModelUtils.serviceDnsName(getNamespace(), KafkaCluster.serviceName(getInstanceName())) + ":";
+        String bootstrap = ModelUtils.serviceDnsNameWithoutClusterDomain(getNamespace(), KafkaCluster.serviceName(getInstanceName())) + ":";
 
         if (internalTlsKafkaListener != null) {
             bootstrap += EventStreamsKafkaModel.KAFKA_PORT_TLS;
