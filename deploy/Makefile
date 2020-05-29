@@ -43,6 +43,7 @@ B_OS ?= macos
 LOCAL_REPO_PORT := 5000
 LOCAL_REPO_ADDR := localhost:$(LOCAL_REPO_PORT)/
 BUNDLE_IMAGE_NAME := olm-bundle:latest
+BUNDLE_LOCATION := $(LOCAL_REPO_ADDR)$(BUNDLE_IMAGE_NAME)
 
 include ../Makefile.os
 .PHONY: all clean build_csv deploy delete_deploy verify docker_build docker_push
@@ -97,8 +98,20 @@ build_bundle: build_csv start_local_registry
 	cd .. && opm alpha bundle build --tag $(BUNDLE_IMAGE_NAME) --package $(OPERATOR_NAME) --directory deploy/olm-catalog/$(OPERATOR_NAME)/$(CSV_VERSION) --channels $(CHANNELS) --default $(DEFAULT_CHANNEL)
 	docker tag $(BUNDLE_IMAGE_NAME) $(LOCAL_REPO_ADDR)$(BUNDLE_IMAGE_NAME)
 	docker push $(LOCAL_REPO_ADDR)$(BUNDLE_IMAGE_NAME)
-	opm alpha bundle validate --tag $(LOCAL_REPO_ADDR)$(BUNDLE_IMAGE_NAME) --image-builder docker
-	cd .. && opm index add --bundles $(LOCAL_REPO_ADDR)$(BUNDLE_IMAGE_NAME) --container-tool docker --tag $(IMAGE_NAME)
+	# push to Dockerhub only if we run on jenkins
+ifeq ($(USER),jenkins)
+	docker login -u $(DOCKERHUB_USERNAME) -p $(DOCKERHUB_PASSWORD)
+	docker tag $(LOCAL_REPO_ADDR)$(BUNDLE_IMAGE_NAME) ibmcom/ibm-eventstreams-operator-bundle:$(TAG)
+	docker push ibmcom/ibm-eventstreams-operator-bundle:$(TAG)
+	$(eval BUNDLE_LOCATION=ibmcom/ibm-eventstreams-operator-bundle)
+endif
+	opm alpha bundle validate --tag $(BUNDLE_LOCATION) --image-builder docker
+	cd .. && opm index add --bundles $(BUNDLE_LOCATION) --container-tool docker --tag $(IMAGE_NAME)
+ifeq ($(USER),jenkins)
+	docker login -u $(DOCKERHUB_USERNAME) -p $(DOCKERHUB_PASSWORD)
+	docker tag $(IMAGE_NAME) ibmcom/ibm-eventstreams-catalog:$(TAG)
+	docker push ibmcom/ibm-eventstreams-catalog:$(TAG)
+endif
 	rm -rf olm-catalog/$(OPERATOR_NAME)
 	$(CP) -R tmp/ olm-catalog/$(OPERATOR_NAME)
 

@@ -50,5 +50,15 @@ for ((i=0; i<${#sourceImageNameSuffixes[*]}; i++)); do
     targetLatestImage="${targetImageName}:${targetImageLatestTagOverride[i]:-"latest"}"
     docker tag "${sourceImage}" "${targetLatestImage}"
     docker push "${targetLatestImage}"
+
+    if [[ $sourceImage == "strimzi/operator" || $sourceImage == "strimzi/operator-init" ]]; then
+      imageName="ibmcom/ibm-eventstreams-operator"
+      if [[ $sourceImage == "strimzi/operator-init" ]]; then
+        imageName="ibmcom/ibm-eventstreams-operator-init"
+      fi
+      docker login -u "${DOCKERHUB_USERNAME}" -p "${DOCKERHUB_PASSWORD}"
+      docker tag "${targetLatestImage}" "${imageName}:${TAG}"
+      docker push "${imageName}:${TAG}"
+    fi
   fi
 done
