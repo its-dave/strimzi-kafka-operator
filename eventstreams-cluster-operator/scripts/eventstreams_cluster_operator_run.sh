@@ -1,4 +1,15 @@
 #!/usr/bin/env bash
+#
+# Licensed Materials - Property of IBM
+#
+# 5737-H33
+#
+# (C) Copyright IBM Corp. 2020  All Rights Reserved.
+#
+# US Government Users Restricted Rights - Use, duplication or
+# disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+#
+
 # Clone WATCHED_NAMESPACE as the EVENTSTREAMS_NAMESPACE env var
 export EVENTSTREAMS_NAMESPACE="${WATCHED_NAMESPACE}"
 # Search for all EVENTSTREAMS environmental variables, clone them as STRIMZI env vars and export

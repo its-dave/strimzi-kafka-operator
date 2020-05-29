@@ -1,3 +1,15 @@
+###############################################################################
+#
+# Licensed Materials - Property of IBM
+#
+# 5737-H33
+#
+# (C) Copyright IBM Corp. 2019, 2020  All Rights Reserved.
+#
+# US Government Users Restricted Rights - Use, duplication or
+# disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+#
+###############################################################################
 # Event Streams copy of the kafka versions file, this is to be renamed to `kafka-versions.yaml` at build time as part
 # of an automated build process
 #
