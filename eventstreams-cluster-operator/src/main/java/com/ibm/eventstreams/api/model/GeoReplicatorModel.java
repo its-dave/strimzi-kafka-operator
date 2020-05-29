@@ -13,11 +13,14 @@
 package com.ibm.eventstreams.api.model;
 
 import com.ibm.eventstreams.api.DefaultResourceRequirements;
+import com.ibm.eventstreams.api.ProductUse;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsGeoReplicator;
 import com.ibm.eventstreams.api.spec.EventStreamsGeoReplicatorSpec;
 import com.ibm.eventstreams.api.spec.EventStreamsSpec;
+import com.ibm.eventstreams.api.spec.LicenseSpec;
 import com.ibm.eventstreams.georeplicator.GeoReplicatorCredentials;
+import com.ibm.eventstreams.rest.common.MeteringAnnotations;
 import io.fabric8.kubernetes.api.model.ResourceRequirements;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicy;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicyEgressRule;
@@ -137,6 +140,13 @@ public class GeoReplicatorModel extends AbstractModel {
 
         Labels labels = labelsWithoutResourceGroup();
 
+        // Get the MM2 product use annotation from the associated ES instance
+        String productUse = Optional.ofNullable(instance.getSpec())
+            .map(EventStreamsSpec::getLicense)
+            .map(LicenseSpec::getUse)
+            .map(ProductUse::toValue)
+            .orElse("");
+
         // Needs to be KafkaConnectTemplate here, not MM2 equivalent
         KafkaConnectTemplate kafkaMirrorMaker2Template = new KafkaConnectTemplateBuilder()
                 .editOrNewConnectContainer()
@@ -145,6 +155,7 @@ public class GeoReplicatorModel extends AbstractModel {
                 .editOrNewPod()
                     .withNewMetadata()
                         .addToAnnotations(getEventStreamsMeteringAnnotations(containerName))
+                        .addToAnnotations(MeteringAnnotations.EVENTSTREAMS_PRODUCT_USAGE_KEY, productUse)
                         .addToAnnotations(getPrometheusAnnotations(DEFAULT_PROMETHEUS_PORT))
                         .addToLabels(labels.toMap())
                     .endMetadata()

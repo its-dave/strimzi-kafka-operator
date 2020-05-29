@@ -12,12 +12,14 @@
  */
 package com.ibm.eventstreams.api.model;
 
+import com.ibm.eventstreams.api.ProductUse;
 import com.ibm.eventstreams.api.model.utils.ModelUtils;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
 import com.ibm.eventstreams.api.spec.EventStreamsGeoReplicator;
 import com.ibm.eventstreams.api.spec.EventStreamsGeoReplicatorBuilder;
 import com.ibm.eventstreams.georeplicator.GeoReplicatorCredentials;
+import com.ibm.eventstreams.rest.common.MeteringAnnotations;
 import io.fabric8.kubernetes.api.model.ResourceRequirements;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
 import io.fabric8.kubernetes.api.model.Secret;
@@ -171,6 +173,7 @@ public class GeoReplicatorModelTest {
         assertThat(replicatorPodAnnotations.get(CLOUDPAK_ID_KEY),  is(CLOUDPAK_ID));
         assertThat(replicatorPodAnnotations.get(PRODUCT_CHARGED_CONTAINERS_KEY),  is(instanceName + "-mirrormaker2"));
         assertThat(replicatorPodAnnotations.get("prometheus.io/port"),  is(AbstractModel.DEFAULT_PROMETHEUS_PORT));
+        assertThat(replicatorPodAnnotations.get(MeteringAnnotations.EVENTSTREAMS_PRODUCT_USAGE_KEY), is(ProductUse.CP4I_PRODUCTION.toValue()));
 
     }
 
