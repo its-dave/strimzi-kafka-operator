@@ -28,6 +28,12 @@ apiVersion: operator.ibm.com/v1alpha1
 kind: OperandRequest
 metadata:
   name: eventstreams-cluster-operator
+  namespace: $EVENTSTREAMS_OPERATOR_NAMESPACE  
+  ownerReferences:
+  - apiVersion: $OWNER_APIVERSION
+    kind: $OWNER_KIND
+    name: $OWNER_NAME
+    uid: $OWNER_UID
 spec:
   requests:
     - operands:

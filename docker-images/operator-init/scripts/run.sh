@@ -44,15 +44,7 @@ echo "   running in              : $EVENTSTREAMS_OPERATOR_NAMESPACE"
 echo "---------------------------------------------------------------"
 
 #
-# Create OperandRequest
-#
-
-source ./createAndWaitForCommonServices.sh
-
-echo "---------------------------------------------------------------"
-
-#
-# 0.   Identifying suitable owner references
+# 0.   Identifying suitable owner reference
 #
 #  The ideal owner for resources created for specific instances of
 #  Event Streams operators is the clusterrole created for the ES
@@ -120,6 +112,14 @@ echo "  kind:       $CRD_KIND"
 echo "  name:       $CRD_NAME"
 echo "  uid:        $CRD_UID"
 
+
+echo "---------------------------------------------------------------"
+
+#
+# Create OperandRequest
+#
+
+source ./createAndWaitForCommonServices.sh
 
 echo "---------------------------------------------------------------"
 
