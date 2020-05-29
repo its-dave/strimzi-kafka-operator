@@ -447,7 +447,7 @@ spec:
   targetResource:
     apiVersion: eventstreams.ibm.com/v1beta1
     kind: EventStreams
-  title: lighweight insecure
+  title: Lightweight insecure
   yaml: |
     apiVersion: eventstreams.ibm.com/v1beta1
     kind: EventStreams
@@ -508,7 +508,7 @@ spec:
   targetResource:
     apiVersion: eventstreams.ibm.com/v1beta1
     kind: EventStreams
-  title: development
+  title: Development
   yaml: |
     apiVersion: eventstreams.ibm.com/v1beta1
     kind: EventStreams
@@ -570,7 +570,7 @@ spec:
   targetResource:
     apiVersion: eventstreams.ibm.com/v1beta1
     kind: EventStreams
-  title: minimal production
+  title: Minimal production
   yaml: |
     apiVersion: eventstreams.ibm.com/v1beta1
     kind: EventStreams
@@ -641,7 +641,7 @@ spec:
   targetResource:
     apiVersion: eventstreams.ibm.com/v1beta1
     kind: EventStreams
-  title: production 3 brokers
+  title: Production 3 brokers
   yaml: |
     apiVersion: eventstreams.ibm.com/v1beta1
     kind: EventStreams
@@ -719,7 +719,7 @@ spec:
   targetResource:
     apiVersion: eventstreams.ibm.com/v1beta1
     kind: EventStreams
-  title: production 6 brokers
+  title: Production 6 brokers
   yaml: |
     apiVersion: eventstreams.ibm.com/v1beta1
     kind: EventStreams
@@ -797,7 +797,7 @@ spec:
   targetResource:
     apiVersion: eventstreams.ibm.com/v1beta1
     kind: EventStreams
-  title: production 9 brokers
+  title: Production 9 brokers
   yaml: |
     apiVersion: eventstreams.ibm.com/v1beta1
     kind: EventStreams
