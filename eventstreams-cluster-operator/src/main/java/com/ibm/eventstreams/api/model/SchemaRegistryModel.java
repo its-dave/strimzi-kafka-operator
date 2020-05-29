@@ -662,6 +662,9 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
     private NetworkPolicy createNetworkPolicy() {
         List<NetworkPolicyIngressRule> ingressRules = new ArrayList<>();
 
+        // unrestricted ingress to default external port (9443)
+        // restricted ingress for p2p communication depending on internal TLS (7443 or 7080)
+        // custom configured endpoints (optional)
         endpoints.forEach(endpoint -> ingressRules.add(createIngressRule(endpoint.getPort(), endpoint.getEndpointIngressLabels())));
 
         return createNetworkPolicy(createLabelSelector(APPLICATION_NAME), ingressRules, null);

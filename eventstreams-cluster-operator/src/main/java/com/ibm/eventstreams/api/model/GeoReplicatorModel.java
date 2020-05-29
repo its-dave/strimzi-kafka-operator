@@ -243,6 +243,7 @@ public class GeoReplicatorModel extends AbstractModel {
 
     private NetworkPolicy createNetworkPolicy() {
         List<NetworkPolicyIngressRule> ingressRules = new ArrayList<>(1);
+        // restricted ingress on 8083
         ingressRules.add(createCustomReplicatorConnectIngressRule());
         List<NetworkPolicyEgressRule> egressRules = new ArrayList<>(0);
         return super.createNetworkPolicy(createLabelSelector(APPLICATION_NAME), ingressRules, egressRules);

@@ -259,6 +259,8 @@ public class CollectorModel extends AbstractSecureEndpointsModel {
     private NetworkPolicy createNetworkPolicy() {
         List<NetworkPolicyIngressRule> ingressRules = new ArrayList<>();
 
+        // unrestricted ingress for prometheus (7888)
+        // restricted ingress for p2p communication depending on internal TLS (7443 or 7080)
         endpoints.forEach(endpoint -> ingressRules.add(createIngressRule(endpoint.getPort(), endpoint.getEndpointIngressLabels())));
 
         return createNetworkPolicy(createLabelSelector(APPLICATION_NAME), ingressRules, null);

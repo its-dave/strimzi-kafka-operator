@@ -39,6 +39,8 @@ public class KafkaNetworkPolicyExtensionModel extends AbstractModel {
     private NetworkPolicy createNetworkPolicy() {
         List<NetworkPolicyIngressRule> ingressRules = new ArrayList<>();
 
+        // restricted ingress on 8091 (runas) for communication with admin-api, schema-reg and restproducer
+        // in addition to the kafka network policies added by Strimzi
         ingressRules.add(generateRunAsIngressRule());
 
         return createNetworkPolicy(createLabelSelector(getComponentName()), ingressRules, null);
