@@ -222,4 +222,52 @@ public class AuthenticationValidationTest {
         assertThat(responses.get(2).getReason(), is(AuthenticationValidation.ENDPOINT_UNAUTHENTICATED_WHEN_KAFKA_AUTHENTICATED_REASON));
         assertThat(responses.get(2).getMessage(), is(String.format(AuthenticationValidation.UNAUTH_ENDPOINT_AUTH_ES_WARNING, EndpointValidation.SCHEMA_REGISTRY_SPEC_NAME, EndpointValidation.SCHEMA_REGISTRY_SPEC_NAME)));
     }
+
+    @Test
+    public void TestUnAuthEventStreamsConfigurationWithNullAuthenticatedAdminApiEndpointShouldWarn() {
+        EventStreams instance = ModelUtils.createDefaultEventStreams(instanceName)
+            .editSpec()
+            .withNewAdminApi()
+            .withEndpoints(new EndpointSpecBuilder()
+                .withNewName("test")
+                .withContainerPort(9999)
+            .build())
+            .endAdminApi()
+            .withNewRestProducer()
+            .withEndpoints(unauthenticatedEndpoint)
+            .endRestProducer()
+            .withNewSchemaRegistry()
+            .withEndpoints(unauthenticatedEndpoint)
+            .endSchemaRegistry()
+            .endSpec()
+            .build();
+
+        List<StatusCondition> responses = new AuthenticationValidation().validateCr(instance);
+        assertThat(responses, hasSize(1));
+        assertThat(responses.get(0).getReason(), is(AuthenticationValidation.ENDPOINT_AUTHENTICATED_WHEN_KAFKA_UNAUTHENTICATED_REASON));
+        assertThat(responses.get(0).getMessage(), is(String.format(AuthenticationValidation.AUTH_ENDPOINT_UNAUTH_ES_WARNING, EndpointValidation.ADMIN_API_SPEC_NAME, EndpointValidation.ADMIN_API_SPEC_NAME)));
+    }
+
+    @Test
+    public void TestAuthEventStreamsConfigurationWithNullAuthenticatedAdminApiEndpointShouldNotWarn() {
+        EventStreams instance = ModelUtils.createEventStreamsWithAuthentication(instanceName)
+            .editSpec()
+            .withNewAdminApi()
+            .withEndpoints(new EndpointSpecBuilder()
+                .withNewName("test")
+                .withContainerPort(9999)
+                .build())
+            .endAdminApi()
+            .withNewRestProducer()
+                .withEndpoints(authenticatedEndpoint)
+            .endRestProducer()
+            .withNewSchemaRegistry()
+                .withEndpoints(authenticatedEndpoint)
+            .endSchemaRegistry()
+            .endSpec()
+            .build();
+
+        List<StatusCondition> responses = new AuthenticationValidation().validateCr(instance);
+        assertThat(responses, hasSize(0));
+    }
 }

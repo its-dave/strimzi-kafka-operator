@@ -41,7 +41,8 @@ public class Endpoint {
     public static final String DEFAULT_HOST_ADDRESS = null;
     public static final String MAC_KEY = "mac";
     public static final String RUNAS_ANONYMOUS_KEY = "runas-anonymous";
-    private static final List<String> DEFAULT_EXTERNAL_AUTHENTICATION_MECHANISM = Arrays.asList(IAM_BEARER_KEY, MUTUAL_TLS_KEY, SCRAM_SHA_512_KEY);
+    public static final List<String> DEFAULT_EXTERNAL_AUTHENTICATION_MECHANISM = Collections.unmodifiableList(
+            Arrays.asList(IAM_BEARER_KEY, MUTUAL_TLS_KEY, SCRAM_SHA_512_KEY));
 
     public static final String DEFAULT_P2P_TLS_NAME = "p2ptls";
     public static final String DEFAULT_P2P_PLAIN_NAME = "pod2pod";

@@ -28,6 +28,9 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Optional;
 
+import static com.ibm.eventstreams.api.Endpoint.DEFAULT_EXTERNAL_AUTHENTICATION_MECHANISM;
+import static com.ibm.eventstreams.api.Endpoint.RUNAS_ANONYMOUS_KEY;
+
 @JsonDeserialize(using = JsonDeserializer.None.class)
 @Buildable(editableEnabled = false, generateBuilderPackage = false, builderPackage = "io.fabric8.kubernetes.api.builder")
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -111,7 +114,7 @@ public class EndpointSpec implements Serializable {
 
     public boolean hasAuth() {
         return Optional.ofNullable(authenticationMechanisms)
-            .map(authenticationMechanisms -> authenticationMechanisms.size() > 0)
-            .orElse(false);
+            .map(authenticationMechanisms -> !authenticationMechanisms.isEmpty() && !authenticationMechanisms.contains(RUNAS_ANONYMOUS_KEY))
+            .orElse(!DEFAULT_EXTERNAL_AUTHENTICATION_MECHANISM.isEmpty());
     }
 }

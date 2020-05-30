@@ -618,7 +618,7 @@ public class EventStreamsOperatorTest {
             .withContainerPort(9999)
             .withTlsVersion(TlsVersion.TLS_V1_2)
             .withType(EndpointServiceType.ROUTE)
-            .withAuthenticationMechanisms()
+            .withAuthenticationMechanisms(Collections.emptyList())
             .build();
 
         EventStreams instanceNoIamBearer = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);

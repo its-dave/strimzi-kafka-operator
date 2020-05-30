@@ -29,7 +29,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -88,7 +87,7 @@ public class EndpointValidation implements EventStreamsValidation {
             checkUniqueNames(conditions, REST_PRODUCER_SPEC_NAME, restProdEndpoints.get());
             checkUniquePorts(conditions, REST_PRODUCER_SPEC_NAME, restProdEndpoints.get());
             checkValidTypes(conditions, REST_PRODUCER_SPEC_NAME, restProdEndpoints.get());
-            checkNoIAMBearer(conditions, restProdEndpoints.get());
+            checkRestProducerHasNoIamBearerAuth(conditions, restProdEndpoints.get());
         }
         if (schemaRegistryEndpoints.isPresent()) {
             checkNoEndpointsOnReservedPorts(conditions, SCHEMA_REGISTRY_SPEC_NAME, schemaRegistryEndpoints.get());
@@ -324,9 +323,9 @@ public class EndpointValidation implements EventStreamsValidation {
             String.format("%s has an endpoint with an invalid type. Acceptable types are 'Route' and 'Internal'. Edit spec.%s.endpoints to ensure that each endpoint has an acceptable type.", spec, spec)));
     }
 
-    private static void checkNoIAMBearer(List<StatusCondition> conditions, List<EndpointSpec> endpoints) {
+    private static void checkRestProducerHasNoIamBearerAuth(List<StatusCondition> conditions, List<EndpointSpec> endpoints) {
         log.traceEntry(() -> conditions, () -> endpoints);
-        if (hasIAMBearerAuth(endpoints)) {
+        if (hasIAMBearerAuth(endpoints, true)) {
             conditions.add(invalidIAMBearerEndpointResponse());
         }
         log.traceExit();
@@ -334,16 +333,20 @@ public class EndpointValidation implements EventStreamsValidation {
 
     private static void checkAdminApiHasIAMBearer(List<StatusCondition> conditions, List<EndpointSpec> endpoints) {
         log.traceEntry(() -> endpoints);
-        if (!hasIAMBearerAuth(endpoints)) {
+        if (!hasIAMBearerAuth(endpoints, false)) {
             conditions.add(StatusCondition.createWarningCondition(ADMIN_API_MISSING_IAM_BEARER_REASON, ADMIN_API_MISSING_IAM_BEARER_MESSAGE));
         }
         log.traceExit();
     }
 
-    private static boolean hasIAMBearerAuth(List<EndpointSpec> endpoints) {
+    private static boolean hasIAMBearerAuth(List<EndpointSpec> endpoints, boolean isRestProducer) {
         log.traceEntry(() -> endpoints);
         return log.traceExit(endpoints.stream()
-            .anyMatch(endpoint -> Optional.ofNullable(endpoint.getAuthenticationMechanisms()).orElse(Collections.emptyList()).contains(Endpoint.IAM_BEARER_KEY)));
+            .anyMatch(endpoint -> Optional
+                .ofNullable(endpoint.getAuthenticationMechanisms())
+                .map(auths -> auths.contains(Endpoint.IAM_BEARER_KEY))
+                .orElse(isRestProducer ? false : true)
+                ));
     }
 
     private static StatusCondition invalidIAMBearerEndpointResponse() {

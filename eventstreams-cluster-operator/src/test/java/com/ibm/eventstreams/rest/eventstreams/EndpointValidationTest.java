@@ -336,6 +336,26 @@ public class EndpointValidationTest extends RestApiTest {
     }
 
     @Test
+    public void testAdminApiWithoutAuthenticationMechanismsDoesNotWarn() {
+        EndpointSpec endpoint = new EndpointSpecBuilder()
+            .withName("test-endpoint")
+            .withContainerPort(8888)
+            .build();
+
+        EventStreams test = ModelUtils.createDefaultEventStreams("test-es")
+            .editOrNewSpec()
+            .withNewAdminApi()
+            .withEndpoints(endpoint)
+            .endAdminApi()
+            .endSpec()
+            .build();
+
+        List<StatusCondition> conditions = new EndpointValidation().validateCr(test);
+
+        assertThat(conditions, hasSize(0));
+    }
+
+    @Test
     public void testAdminApiWithoutIamBearerDoesNotReject(VertxTestContext context) {
         EndpointSpec endpoint = new EndpointSpecBuilder()
             .withName("test-endpoint")
