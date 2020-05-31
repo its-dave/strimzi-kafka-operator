@@ -32,6 +32,10 @@ public class KafkaListenerValidationTest {
                 .withStrimziOverrides(new KafkaSpecBuilder()
                     .withNewKafka()
                         .withNewListeners()
+                            .withNewKafkaListenerExternalRoute()
+                                .withNewKafkaListenerAuthenticationTlsAuth()
+                                .endKafkaListenerAuthenticationTlsAuth()
+                            .endKafkaListenerExternalRoute()
                             .withNewTls()
                                 .withNewKafkaListenerAuthenticationOAuth()
                                 .endKafkaListenerAuthenticationOAuth()
@@ -52,7 +56,7 @@ public class KafkaListenerValidationTest {
     }
 
     @Test
-    public void testInvalidExternalKafkaListener() {
+    public void testInvalidExternalKafkaListenerOauth() {
         EventStreams test = ModelUtils.createDefaultEventStreams("test-es")
             .editOrNewSpec()
                 .withStrimziOverrides(new KafkaSpecBuilder()
@@ -62,6 +66,10 @@ public class KafkaListenerValidationTest {
                                 .withNewKafkaListenerAuthenticationOAuth()
                                 .endKafkaListenerAuthenticationOAuth()
                             .endKafkaListenerExternalRoute()
+                        .withNewTls()
+                            .withNewKafkaListenerAuthenticationTlsAuth()
+                            .endKafkaListenerAuthenticationTlsAuth()
+                        .endTls()
                         .endListeners()
                     .endKafka()
                 .build())
@@ -79,7 +87,7 @@ public class KafkaListenerValidationTest {
 
 
     @Test
-    public void testMissingExternalKafkaListener() {
+    public void testMissingExternalKafkaListenerAuth() {
         EventStreams test = ModelUtils.createDefaultEventStreams("test-es")
             .editOrNewSpec()
             .withStrimziOverrides(new KafkaSpecBuilder()
@@ -88,6 +96,8 @@ public class KafkaListenerValidationTest {
                         .withNewKafkaListenerExternalRoute()
                         .endKafkaListenerExternalRoute()
                         .withNewTls()
+                            .withNewKafkaListenerAuthenticationTlsAuth()
+                            .endKafkaListenerAuthenticationTlsAuth()
                         .endTls()
                     .endListeners()
                 .endKafka()
@@ -104,36 +114,90 @@ public class KafkaListenerValidationTest {
             .findFirst().get().getMessage(), is(String.format(ReplicatorKafkaListenerValidation.INVALID_EXTERNAL_KAFKA_LISTENER_MESSAGE, ListenerAuthentication.NONE.toValue())));
     }
 
+
     @Test
-    public void testUnauthenticatedTlsListenerButAuthenticatedExternalListenerThrows() {
+    public void testMissingInternallKafkaListener() {
         EventStreams test = ModelUtils.createDefaultEventStreams("test-es")
-            .editOrNewSpec()
+                .editOrNewSpec()
                 .withStrimziOverrides(new KafkaSpecBuilder()
-                    .withNewKafka()
+                        .withNewKafka()
                         .withNewListeners()
                             .withNewKafkaListenerExternalRoute()
                                 .withNewKafkaListenerAuthenticationTlsAuth()
                                 .endKafkaListenerAuthenticationTlsAuth()
                             .endKafkaListenerExternalRoute()
-                            .withNewTls()
-                            .endTls()
                         .endListeners()
-                    .endKafka()
-                .build())
-            .endSpec()
-            .build();
+                        .endKafka()
+                        .build())
+                .endSpec()
+                .build();
 
         ReplicatorKafkaListenerValidation validation = new ReplicatorKafkaListenerValidation(test);
 
         assertThat(validation.getConditions(), hasSize(1));
 
         assertThat(validation.getConditions().stream()
-            .filter(condition -> condition.getReason().equals(ReplicatorKafkaListenerValidation.MISMATCHED_INTERNAL_AND_EXTERNAL_AUTHENTICATION_REASON))
-            .findFirst().get().getMessage(), is(ReplicatorKafkaListenerValidation.UNAUTHENTICATED_TLS_BUT_AUTHENTICATED_EXTERNAL_MESSAGE));
+                .filter(condition -> condition.getReason().equals(ReplicatorKafkaListenerValidation.INVALID_INTERNAL_KAFKA_LISTENER_REASON))
+                .findFirst().get().getMessage(), is(String.format(ReplicatorKafkaListenerValidation.INVALID_INTERNAL_KAFKA_LISTENER_MESSAGE, ListenerAuthentication.NONE.toValue(), ListenerType.TLS.toValue(), ListenerType.TLS.toValue())));
     }
 
     @Test
-    public void testAuthenticatedTlsListenerButUnauthenticatedExternalListenerThrows() {
+    public void testMissingInternallKafkaListenerAuth() {
+        EventStreams test = ModelUtils.createDefaultEventStreams("test-es")
+                .editOrNewSpec()
+                .withStrimziOverrides(new KafkaSpecBuilder()
+                        .withNewKafka()
+                        .withNewListeners()
+                            .withNewKafkaListenerExternalRoute()
+                                .withNewKafkaListenerAuthenticationTlsAuth()
+                                .endKafkaListenerAuthenticationTlsAuth()
+                            .endKafkaListenerExternalRoute()
+                        .withNewTls()
+                        .endTls()
+                        .endListeners()
+                        .endKafka()
+                        .build())
+                .endSpec()
+                .build();
 
+        ReplicatorKafkaListenerValidation validation = new ReplicatorKafkaListenerValidation(test);
+
+        assertThat(validation.getConditions(), hasSize(1));
+
+        assertThat(validation.getConditions().stream()
+                .filter(condition -> condition.getReason().equals(ReplicatorKafkaListenerValidation.INVALID_INTERNAL_KAFKA_LISTENER_REASON))
+                .findFirst().get().getMessage(), is(String.format(ReplicatorKafkaListenerValidation.INVALID_INTERNAL_KAFKA_LISTENER_MESSAGE,  ListenerAuthentication.NONE.toValue(), ListenerType.TLS.toValue(), ListenerType.TLS.toValue())));
     }
+
+
+    @Test
+    public void testPlainListenerFails() {
+        EventStreams test = ModelUtils.createDefaultEventStreams("test-es")
+                .editOrNewSpec()
+                .withStrimziOverrides(new KafkaSpecBuilder()
+                        .withNewKafka()
+                        .withNewListeners()
+                        .withNewKafkaListenerExternalRoute()
+                        .withNewKafkaListenerAuthenticationTlsAuth()
+                        .endKafkaListenerAuthenticationTlsAuth()
+                        .endKafkaListenerExternalRoute()
+                        .withNewPlain()
+                            .withNewKafkaListenerAuthenticationScramSha512Auth()
+                            .endKafkaListenerAuthenticationScramSha512Auth()
+                        .endPlain()
+                        .endListeners()
+                        .endKafka()
+                        .build())
+                .endSpec()
+                .build();
+
+        ReplicatorKafkaListenerValidation validation = new ReplicatorKafkaListenerValidation(test);
+
+        assertThat(validation.getConditions(), hasSize(1));
+
+        assertThat(validation.getConditions().stream()
+                .filter(condition -> condition.getReason().equals(ReplicatorKafkaListenerValidation.INVALID_INTERNAL_KAFKA_LISTENER_REASON))
+                .findFirst().get().getMessage(), is(String.format(ReplicatorKafkaListenerValidation.INVALID_INTERNAL_KAFKA_LISTENER_MESSAGE,  ListenerAuthentication.NONE.toValue(), ListenerType.TLS.toValue(), ListenerType.TLS.toValue())));
+    }
+
 }

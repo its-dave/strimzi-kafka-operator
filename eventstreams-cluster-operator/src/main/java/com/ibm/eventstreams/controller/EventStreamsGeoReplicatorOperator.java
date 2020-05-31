@@ -212,6 +212,7 @@ public class EventStreamsGeoReplicatorOperator extends AbstractOperator<EventStr
                                 return failReconcile.future();
 
                             }
+                            //Need internal and external client auth on
                             ReplicatorKafkaListenerValidation replicatorKafkaListenerValidation = new ReplicatorKafkaListenerValidation(instance);
                             if (replicatorKafkaListenerValidation.hasInvalidAuthenticationCondition()) {
                                 EventStreamsGeoReplicatorStatus statusSubresource = status.withPhase(PhaseState.FAILED).build();
@@ -220,22 +221,11 @@ public class EventStreamsGeoReplicatorOperator extends AbstractOperator<EventStr
                                 Promise<EventStreamsGeoReplicatorOperator.ReconciliationState> failReconcile = Promise.promise();
                                 updateStatus(statusSubresource).onComplete(f -> {
                                     log.info("UnsupportedAuthorization : " + f.succeeded());
-                                    failReconcile.fail("Exit Reconcile as listener client authentication unsupported for GeoReplication");
+                                    failReconcile.fail("Exit Reconcile as client authentication required on both internal and external endpoints");
                                 });
                                 return failReconcile.future();
                             }
-                            //if internal auth is on then external must be too.  Vice versa is ok
-                            if (replicatorKafkaListenerValidation.hasMismatchedExternalAndInternalListenerAuthentication()) {
-                                EventStreamsGeoReplicatorStatus statusSubresource = status.withPhase(PhaseState.FAILED).build();
-                                replicatorInstance.setStatus(statusSubresource);
 
-                                Promise<EventStreamsGeoReplicatorOperator.ReconciliationState> failReconcile = Promise.promise();
-                                updateStatus(statusSubresource).onComplete(f -> {
-                                    log.info("UnsupportedAuthorization : " + f.succeeded());
-                                    failReconcile.fail("Exit Reconcile as listener client authentication unsupported for GeoReplication");
-                                });
-                                return failReconcile.future();
-                            }
                             replicatorKafkaListenerValidation.getConditions().forEach(condition -> addToConditions(condition.toCondition()));
 
                             GeoReplicatorCredentials geoReplicatorCredentials = new GeoReplicatorCredentials(instance);
