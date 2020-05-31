@@ -18,4 +18,10 @@ def versionfirst:
   | if $i==null then . else [$s] + .[:$i] + .[$i+1:] end
 ;
 
-reorder(licensefirst) | reorder(versionfirst)
+def replicasfirst:
+    "replicas" as $s
+  | index($s) as $i
+  | if $i==null then . else [$s] + .[:$i] + .[$i+1:] end
+;
+
+reorder(replicasfirst) | reorder(licensefirst) | reorder(versionfirst)

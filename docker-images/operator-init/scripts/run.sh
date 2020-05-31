@@ -447,7 +447,7 @@ spec:
   targetResource:
     apiVersion: eventstreams.ibm.com/v1beta1
     kind: EventStreams
-  title: Lightweight insecure
+  title: Lightweight without security
   yaml: |
     apiVersion: eventstreams.ibm.com/v1beta1
     kind: EventStreams
@@ -455,10 +455,10 @@ spec:
         name: light-insecure
         namespace: placeholder
     spec:
-        license:
-          accept: false
-          use: CloudPakForIntegrationNonProduction
         version: 10.0.0
+        license:
+            accept: false
+            use: CloudPakForIntegrationNonProduction
         adminApi: {}
         adminUI: {}
         collector: {}
@@ -481,14 +481,14 @@ spec:
                         type: route
                     plain: {}
                     tls: {}
+                metrics: {}
                 storage:
                     type: ephemeral
-                metrics: {}
             zookeeper:
                 replicas: 1
+                metrics: {}
                 storage:
                     type: ephemeral
-                metrics: {}
 EOF
 
 echo "Creating the development sample"
@@ -516,10 +516,10 @@ spec:
         name: development
         namespace: placeholder
     spec:
-        license:
-          accept: false
-          use: CloudPakForIntegrationNonProduction
         version: 10.0.0
+        license:
+            accept: false
+            use: CloudPakForIntegrationNonProduction
         adminApi: {}
         adminUI: {}
         collector: {}
@@ -529,28 +529,28 @@ spec:
                 type: ephemeral
         strimziOverrides:
             kafka:
+                replicas: 3
                 authorization:
                     type: runas
-                replicas: 3
                 config:
                     interceptor.class.names: com.ibm.eventstreams.interceptors.metrics.ProducerMetricsInterceptor
-                    num.replica.fetchers: 3
+                    log.cleaner.threads: 6
                     num.io.threads: 24
                     num.network.threads: 9
-                    log.cleaner.threads: 6
+                    num.replica.fetchers: 3
                 listeners:
                     external:
-                        type: route
                         authentication:
                             type: scram-sha-512
+                        type: route
+                metrics: {}
                 storage:
                     type: ephemeral
-                metrics: {}
             zookeeper:
                 replicas: 3
+                metrics: {}
                 storage:
                     type: ephemeral
-                metrics: {}
 EOF
 
 echo "Creating the minimal production sample"
@@ -578,10 +578,10 @@ spec:
         name: minimal-prod
         namespace: placeholder
     spec:
-        license:
-          accept: false
-          use: CloudPakForIntegrationProduction
         version: 10.0.0
+        license:
+            accept: false
+            use: CloudPakForIntegrationProduction
         adminApi: {}
         adminUI: {}
         collector: {}
@@ -594,12 +594,14 @@ spec:
         strimziOverrides:
             kafka:
                 replicas: 3
+                authorization:
+                    type: runas
                 config:
                     interceptor.class.names: com.ibm.eventstreams.interceptors.metrics.ProducerMetricsInterceptor
-                    num.replica.fetchers: 3
+                    log.cleaner.threads: 6
                     num.io.threads: 24
                     num.network.threads: 9
-                    log.cleaner.threads: 6
+                    num.replica.fetchers: 3
                 listeners:
                     external:
                         type: route
@@ -608,20 +610,18 @@ spec:
                     tls:
                         authentication:
                             type: tls
-                authorization:
-                    type: runas
+                metrics: {}
                 storage:
                     type: persistent-claim
                     size: enter-size-of-pv-here
                     class: enter-storage-class-name-here
-                metrics: {}
             zookeeper:
                 replicas: 3
+                metrics: {}
                 storage:
                     type: persistent-claim
                     size: enter-size-of-pv-here
                     class: enter-storage-class-name-here
-                metrics: {}
 EOF
 
 echo "Creating the production three brokers sample"
@@ -649,10 +649,10 @@ spec:
         name: prod-3-brokers
         namespace: placeholder
     spec:
-        license:
-          accept: false
-          use: CloudPakForIntegrationProduction
         version: 10.0.0
+        license:
+            accept: false
+            use: CloudPakForIntegrationProduction
         adminApi: {}
         adminUI: {}
         collector: {}
@@ -665,12 +665,14 @@ spec:
         strimziOverrides:
             kafka:
                 replicas: 3
+                authorization:
+                    type: runas
                 config:
                     interceptor.class.names: com.ibm.eventstreams.interceptors.metrics.ProducerMetricsInterceptor
+                    log.cleaner.threads: 6
+                    num.io.threads: 24
+                    num.network.threads: 9
                     num.replica.fetchers: 6
-                    num.io.threads: 24
-                    num.network.threads: 9
-                    log.cleaner.threads: 6
                 listeners:
                     external:
                         type: route
@@ -679,13 +681,11 @@ spec:
                     tls:
                         authentication:
                             type: tls
-                authorization:
-                    type: runas
+                metrics: {}
                 storage:
                     type: persistent-claim
                     size: enter-size-of-pv-here
                     class: enter-storage-class-name-here
-                metrics: {}
                 resources:
                     requests:
                         memory: 8096Mi
@@ -695,167 +695,11 @@ spec:
                         cpu: 4000m
             zookeeper:
                 replicas: 3
+                metrics: {}
                 storage:
                     type: persistent-claim
                     size: enter-size-of-pv-here
                     class: enter-storage-class-name-here
-                metrics: {}
-EOF
-
-echo "Creating the production six-brokers sample"
-! cat <<EOF | kubectl apply -f -
-apiVersion: console.openshift.io/v1
-kind: ConsoleYAMLSample
-metadata:
-  name: es-6-broker.eventstreams.ibm.com
-  ownerReferences:
-  - apiVersion: $CRD_APIVERSION
-    kind: $CRD_KIND
-    name: $CRD_NAME
-    uid: $CRD_UID
-spec:
-  description: Secure production cluster with six brokers
-  snippet: false
-  targetResource:
-    apiVersion: eventstreams.ibm.com/v1beta1
-    kind: EventStreams
-  title: Production 6 brokers
-  yaml: |
-    apiVersion: eventstreams.ibm.com/v1beta1
-    kind: EventStreams
-    metadata:
-        name: prod-6-brokers
-        namespace: placeholder
-    spec:
-        license:
-          accept: false
-          use: CloudPakForIntegrationProduction
-        version: 10.0.0
-        adminApi: {}
-        adminUI: {}
-        collector: {}
-        restProducer: {}
-        schemaRegistry:
-            storage:
-                type: persistent-claim
-                size: enter-size-of-pv-here
-                class: enter-storage-class-name-here
-        strimziOverrides:
-            kafka:
-                replicas: 6
-                config:
-                    interceptor.class.names: com.ibm.eventstreams.interceptors.metrics.ProducerMetricsInterceptor
-                    num.replica.fetchers: 6
-                    num.io.threads: 24
-                    num.network.threads: 9
-                    log.cleaner.threads: 6
-                listeners:
-                    external:
-                        type: route
-                        authentication:
-                            type: scram-sha-512
-                    tls:
-                        authentication:
-                            type: tls
-                authorization:
-                    type: runas
-                storage:
-                    type: persistent-claim
-                    size: enter-size-of-pv-here
-                    class: enter-storage-class-name-here
-                metrics: {}
-                resources:
-                    requests:
-                        memory: 8096Mi
-                        cpu: 4000m
-                    limits:
-                        memory: 8096Mi
-                        cpu: 4000m
-            zookeeper:
-                replicas: 3
-                storage:
-                    type: persistent-claim
-                    size: enter-size-of-pv-here
-                    class: enter-storage-class-name-here
-                metrics: {}
-EOF
-
-echo "Creating the production nine brokers sample"
-! cat <<EOF | kubectl apply -f -
-apiVersion: console.openshift.io/v1
-kind: ConsoleYAMLSample
-metadata:
-  name: es-9-broker.eventstreams.ibm.com
-  ownerReferences:
-  - apiVersion: $CRD_APIVERSION
-    kind: $CRD_KIND
-    name: $CRD_NAME
-    uid: $CRD_UID
-spec:
-  description: Secure production cluster with nine brokers
-  snippet: false
-  targetResource:
-    apiVersion: eventstreams.ibm.com/v1beta1
-    kind: EventStreams
-  title: Production 9 brokers
-  yaml: |
-    apiVersion: eventstreams.ibm.com/v1beta1
-    kind: EventStreams
-    metadata:
-        name: prod-9-brokers
-        namespace: placeholder
-    spec:
-        license:
-          accept: false
-          use: CloudPakForIntegrationProduction
-        version: 10.0.0
-        adminApi: {}
-        adminUI: {}
-        collector: {}
-        restProducer: {}
-        schemaRegistry:
-            storage:
-                type: persistent-claim
-                size: enter-size-of-pv-here
-                class: enter-storage-class-name-here
-        strimziOverrides:
-            kafka:
-                replicas: 9
-                config:
-                    interceptor.class.names: com.ibm.eventstreams.interceptors.metrics.ProducerMetricsInterceptor
-                    num.replica.fetchers: 9
-                    num.io.threads: 24
-                    num.network.threads: 9
-                    log.cleaner.threads: 6
-                listeners:
-                    external:
-                        type: route
-                        authentication:
-                            type: scram-sha-512
-                    tls:
-                        authentication:
-                            type: tls
-                authorization:
-                    type: runas
-                storage:
-                    type: persistent-claim
-                    size: enter-size-of-pv-here
-                    class: enter-storage-class-name-here
-                metrics: {}
-                resources:
-                    requests:
-                        memory: 8096Mi
-                        cpu: 4000m
-                    limits:
-                        memory: 8096Mi
-                        cpu: 4000m
-            zookeeper:
-                replicas: 3
-                storage:
-                    type: persistent-claim
-                    size: enter-size-of-pv-here
-                    class: enter-storage-class-name-here
-                metrics: {}
 EOF
 
 echo "Creating the consumer user sample"

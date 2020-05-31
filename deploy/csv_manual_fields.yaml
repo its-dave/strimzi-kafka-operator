@@ -9,7 +9,7 @@ metadata:
       {
         "light-insecure": {
           "description": "Suitable for basic development and test activities in environments with minimum resource requirements where storage persistence, access control and encryption are not required.",
-          "name": "Lightweight insecure",
+          "name": "Lightweight without security",
           "resources": {
             "cpu": "8.8",
             "memory": "9.1 GB",
