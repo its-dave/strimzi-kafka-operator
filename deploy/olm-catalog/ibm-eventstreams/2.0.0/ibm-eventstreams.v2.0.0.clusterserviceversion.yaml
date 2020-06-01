@@ -313,29 +313,25 @@ spec:
   description: "Built on the open-source [Apache Kafka](https://kafka.apache.org),
     IBM Event Streams is a high-throughput, fault-tolerant, event streaming platform
     that helps you build intelligent, responsive, event-driven applications.\n \n###
-    IBM Event Streams features include:\n* A resilient Apache Kafka deployment that
-    maximizes the spread of Kafka brokers to avoid many classes of failure with automatic
-    restart of brokers included.\n* Health check information and options to resolve
-    issues with your clusters and brokers.\n* Geo-replication of your topics between
-    clusters to enable disaster recovery and scalability.\n* UI for browsing data
-    to help view hundreds of thousands of messages, including options to drill in
-    and see message details from a set time.\n* CLI for managing your deployment and
-    its operations, including Kafka tasks.\n* Encrypted communication between internal
-    components and encrypted storage.\n* Support for a number of file systems to use
-    for persistent storage of your data.\n* Security with authentication and authorization
-    for users and connecting applications.\n* Schema registry and support for schemas
-    to define structure of data.\n* Support for setting up your clusters across multiple
-    availability zones to add resilience to your  deployment.\n### What's new in 10.0.0:\n*
-    Fully supported  operator-based deployment.\n* Support for OpenShift 4.3.\n* Apache
-    Kafka version updated to 2.5.0.\n* New supported connectors added to the expanded
-    Connector catalog.\n###Prerequisites\nYou must have a secret called `ibm-entitlement-key`
-    in any namespaces where you create an instance of IBM Event Streams.\n\nGet an
-    entitlement key from https://myibm.ibm.com/products-services/containerlibrary
-    \n\nCreate an image pull secret using your entitlement key as the password, `cp`
-    as the username, and `cp.icr.io` as the docker server.\n\n `oc create secret docker-registry
-    ibm-entitlement-key --docker-username=cp --docker-password=YOUR_ENTITLEMENT_KEY
-    --docker-server=cp.icr.io -n TARGET_NAMESPACE \n` \n### Documentation\n For more
-    information, see the [IBM Event Streams documentation](https://ibm.github.io/event-streams)."
+    Features\nIBM Event Streams features include:\n\n* An Apache Kafka deployment
+    that provides a highly-scalable and fault-tolerant messaging platform.\n* An administrative
+    UI to help with common Kafka tasks.\n* A comprehensive CLI to enable manual and
+    scripted cluster management.\n* A range of tools and sample applications to help
+    you get going quickly.\n* Geo-replication of topics between clusters to enable
+    disaster recovery and scalability.\n* A REST API for producing messages to Event
+    Streams topics.\n* A schema registry to support the definition and enforcement
+    of message formats using Apache Avro schemas.\n* Health check information to help
+    resolve issues with your clusters and brokers.\n* Security with authentication
+    and authorization for users and connecting applications.\n###Prerequisites\nBefore
+    installing the operator, ensure you create a secret called `ibm-entitlement-key`
+    in the namespace where you want to create an instance of IBM Event Streams.\n\n1.
+    Get an entitlement key from https://myibm.ibm.com/products-services/containerlibrary\n2.
+    Create an image pull secret by using `cp` as the username, your entitlement key
+    as the password, and `cp.icr.io` as the docker server.\n   `oc create secret docker-registry
+    ibm-entitlement-key --docker-username=cp --docker-password=<your-entitlement-key>
+    --docker-server=cp.icr.io -n <target-namespace>`\n\nYou can now install the operator
+    and use it to deploy instances of IBM Event Streams in your target namespace.\n###
+    Documentation\nFor more information, see the [IBM Event Streams documentation](https://ibm.github.io/event-streams)."
   displayName: IBM Event Streams
   icon:
   - base64data: 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
@@ -817,38 +813,38 @@ spec:
                     fieldRef:
                       fieldPath: metadata.name
                 - name: EVENTSTREAMS_DEFAULT_TLS_SIDECAR_ENTITY_OPERATOR_IMAGE
-                  value: cp.icr.io/cp/ibm-eventstreams-kafka@sha256:a8af70a33c4dc8c2d3db5f4bba893f8abda67fffa5c339de42d161b9bdb5f0e5
+                  value: cp.icr.io/cp/ibm-eventstreams-kafka@sha256:e107913569be4956adaad6b87f3a605c6381a6e95dd3e4b2b6db8fbf4fef557a
                 - name: EVENTSTREAMS_DEFAULT_TLS_SIDECAR_KAFKA_IMAGE
-                  value: cp.icr.io/cp/ibm-eventstreams-kafka@sha256:a8af70a33c4dc8c2d3db5f4bba893f8abda67fffa5c339de42d161b9bdb5f0e5
+                  value: cp.icr.io/cp/ibm-eventstreams-kafka@sha256:e107913569be4956adaad6b87f3a605c6381a6e95dd3e4b2b6db8fbf4fef557a
                 - name: EVENTSTREAMS_DEFAULT_KAFKA_EXPORTER_IMAGE
-                  value: cp.icr.io/cp/ibm-eventstreams-kafka@sha256:a8af70a33c4dc8c2d3db5f4bba893f8abda67fffa5c339de42d161b9bdb5f0e5
+                  value: cp.icr.io/cp/ibm-eventstreams-kafka@sha256:e107913569be4956adaad6b87f3a605c6381a6e95dd3e4b2b6db8fbf4fef557a
                 - name: EVENTSTREAMS_DEFAULT_CRUISE_CONTROL_IMAGE
-                  value: cp.icr.io/cp/ibm-eventstreams-kafka@sha256:a8af70a33c4dc8c2d3db5f4bba893f8abda67fffa5c339de42d161b9bdb5f0e5
+                  value: cp.icr.io/cp/ibm-eventstreams-kafka@sha256:e107913569be4956adaad6b87f3a605c6381a6e95dd3e4b2b6db8fbf4fef557a
                 - name: EVENTSTREAMS_DEFAULT_TLS_SIDECAR_CRUISE_CONTROL_IMAGE
-                  value: cp.icr.io/cp/ibm-eventstreams-kafka@sha256:a8af70a33c4dc8c2d3db5f4bba893f8abda67fffa5c339de42d161b9bdb5f0e5
+                  value: cp.icr.io/cp/ibm-eventstreams-kafka@sha256:e107913569be4956adaad6b87f3a605c6381a6e95dd3e4b2b6db8fbf4fef557a
                 - name: EVENTSTREAMS_KAFKA_IMAGES
                   value: |
-                    2.5.0=cp.icr.io/cp/ibm-eventstreams-kafka@sha256:a8af70a33c4dc8c2d3db5f4bba893f8abda67fffa5c339de42d161b9bdb5f0e5
+                    2.5.0=cp.icr.io/cp/ibm-eventstreams-kafka@sha256:e107913569be4956adaad6b87f3a605c6381a6e95dd3e4b2b6db8fbf4fef557a
                 - name: EVENTSTREAMS_KAFKA_CONNECT_IMAGES
                   value: |
-                    2.5.0=cp.icr.io/cp/ibm-eventstreams-kafka@sha256:a8af70a33c4dc8c2d3db5f4bba893f8abda67fffa5c339de42d161b9bdb5f0e5
+                    2.5.0=cp.icr.io/cp/ibm-eventstreams-kafka@sha256:e107913569be4956adaad6b87f3a605c6381a6e95dd3e4b2b6db8fbf4fef557a
                 - name: EVENTSTREAMS_KAFKA_CONNECT_S2I_IMAGES
                   value: |
-                    2.5.0=cp.icr.io/cp/ibm-eventstreams-kafka@sha256:a8af70a33c4dc8c2d3db5f4bba893f8abda67fffa5c339de42d161b9bdb5f0e5
+                    2.5.0=cp.icr.io/cp/ibm-eventstreams-kafka@sha256:e107913569be4956adaad6b87f3a605c6381a6e95dd3e4b2b6db8fbf4fef557a
                 - name: EVENTSTREAMS_KAFKA_MIRROR_MAKER_IMAGES
                   value: |
-                    2.5.0=cp.icr.io/cp/ibm-eventstreams-kafka@sha256:a8af70a33c4dc8c2d3db5f4bba893f8abda67fffa5c339de42d161b9bdb5f0e5
+                    2.5.0=cp.icr.io/cp/ibm-eventstreams-kafka@sha256:e107913569be4956adaad6b87f3a605c6381a6e95dd3e4b2b6db8fbf4fef557a
                 - name: EVENTSTREAMS_KAFKA_MIRROR_MAKER_2_IMAGES
                   value: |
-                    2.5.0=cp.icr.io/cp/ibm-eventstreams-kafka@sha256:a8af70a33c4dc8c2d3db5f4bba893f8abda67fffa5c339de42d161b9bdb5f0e5
+                    2.5.0=cp.icr.io/cp/ibm-eventstreams-kafka@sha256:e107913569be4956adaad6b87f3a605c6381a6e95dd3e4b2b6db8fbf4fef557a
                 - name: EVENTSTREAMS_DEFAULT_TOPIC_OPERATOR_IMAGE
-                  value: dockerhub.io/ibmcom/ibm-eventstreams-operator@sha256:a4e4d930f59cd26d7f6a46eabff571af6f85fe6877d62f411555e4948914a68f
+                  value: dockerhub.io/ibmcom/ibm-eventstreams-operator@sha256:c3ca909d7a1dd1ea55f7694f7a951952aa8dbd1b5da7ab22f6c65f64c2d456df
                 - name: EVENTSTREAMS_DEFAULT_USER_OPERATOR_IMAGE
-                  value: dockerhub.io/ibmcom/ibm-eventstreams-operator@sha256:a4e4d930f59cd26d7f6a46eabff571af6f85fe6877d62f411555e4948914a68f
+                  value: dockerhub.io/ibmcom/ibm-eventstreams-operator@sha256:c3ca909d7a1dd1ea55f7694f7a951952aa8dbd1b5da7ab22f6c65f64c2d456df
                 - name: EVENTSTREAMS_DEFAULT_KAFKA_INIT_IMAGE
-                  value: dockerhub.io/ibmcom/ibm-eventstreams-operator@sha256:a4e4d930f59cd26d7f6a46eabff571af6f85fe6877d62f411555e4948914a68f
+                  value: dockerhub.io/ibmcom/ibm-eventstreams-operator@sha256:c3ca909d7a1dd1ea55f7694f7a951952aa8dbd1b5da7ab22f6c65f64c2d456df
                 - name: EVENTSTREAMS_DEFAULT_JMXTRANS_IMAGE
-                  value: cp.icr.io/cp/ibm-eventstreams-jmxtrans@sha256:1508a8bb919328db7b4de44a698c89b45af0ff06b1c8d56052f5a86fb56eb323
+                  value: cp.icr.io/cp/ibm-eventstreams-jmxtrans@sha256:6596d01ada88dfac0b23cfa630f39598dc4ff7f597595c826da34972a041e6d0
                 - name: EVENTSTREAMS_DEFAULT_REST_PRODUCER_IMAGE
                   value: cp.icr.io/cp/ibm-eventstreams-rest-producer@sha256:1d205b3022aa6fb199cb00be5fbaa36ae8d23cb6c8518119fdc573311cf7415d
                 - name: EVENTSTREAMS_DEFAULT_ADMIN_API_IMAGE
@@ -868,7 +864,7 @@ spec:
                 - name: JAVA_OPTS
                   value: -XX:+UseContainerSupport -Xdump:what -Xdump:java+system+snap:events=user
                     -Xdump:directory=/tmp/dumps -XX:+HeapDumpOnOutOfMemoryError
-                image: dockerhub.io/ibmcom/ibm-eventstreams-operator@sha256:a4e4d930f59cd26d7f6a46eabff571af6f85fe6877d62f411555e4948914a68f
+                image: dockerhub.io/ibmcom/ibm-eventstreams-operator@sha256:c3ca909d7a1dd1ea55f7694f7a951952aa8dbd1b5da7ab22f6c65f64c2d456df
                 livenessProbe:
                   failureThreshold: 3
                   httpGet:
@@ -917,7 +913,7 @@ spec:
                   valueFrom:
                     fieldRef:
                       fieldPath: metadata.uid
-                image: dockerhub.io/ibmcom/ibm-eventstreams-operator-init@sha256:14b5f1e6ec31c6ffd64d17964177f8fa3431287216493ae6878da27384cbf3df
+                image: dockerhub.io/ibmcom/ibm-eventstreams-operator-init@sha256:9613f33bbf955e50831b55d168cd88ee8e4f10cfc1efa21fdb31da704b744ea0
                 name: init
                 resources:
                   limits:
@@ -981,9 +977,9 @@ spec:
   version: 2.0.0
   relatedImages:
   - name: ibmcom/ibm-eventstreams-operator
-    image: dockerhub.io/ibmcom/ibm-eventstreams-operator@sha256:a4e4d930f59cd26d7f6a46eabff571af6f85fe6877d62f411555e4948914a68f
+    image: dockerhub.io/ibmcom/ibm-eventstreams-operator@sha256:c3ca909d7a1dd1ea55f7694f7a951952aa8dbd1b5da7ab22f6c65f64c2d456df
   - name: ibmcom/ibm-eventstreams-operator-init
-    image: dockerhub.io/ibmcom/ibm-eventstreams-operator-init@sha256:14b5f1e6ec31c6ffd64d17964177f8fa3431287216493ae6878da27384cbf3df
+    image: dockerhub.io/ibmcom/ibm-eventstreams-operator-init@sha256:9613f33bbf955e50831b55d168cd88ee8e4f10cfc1efa21fdb31da704b744ea0
   - name: cp/ibm-eventstreams-rest-producer
     image: cp.icr.io/cp/ibm-eventstreams-rest-producer@sha256:1d205b3022aa6fb199cb00be5fbaa36ae8d23cb6c8518119fdc573311cf7415d
   - name: cp/ibm-eventstreams-admin
@@ -1001,6 +997,6 @@ spec:
   - name: cp/ibm-eventstreams-metrics-collector
     image: cp.icr.io/cp/ibm-eventstreams-metrics-collector@sha256:91e9ce93c30e9a72fbef1968c325bdfbf9bc44a17a026fc8cbcd0a5079ac1071
   - name: cp/ibm-eventstreams-kafka
-    image: cp.icr.io/cp/ibm-eventstreams-kafka@sha256:a8af70a33c4dc8c2d3db5f4bba893f8abda67fffa5c339de42d161b9bdb5f0e5
+    image: cp.icr.io/cp/ibm-eventstreams-kafka@sha256:e107913569be4956adaad6b87f3a605c6381a6e95dd3e4b2b6db8fbf4fef557a
   - name: cp/ibm-eventstreams-jmxtrans
-    image: cp.icr.io/cp/ibm-eventstreams-jmxtrans@sha256:1508a8bb919328db7b4de44a698c89b45af0ff06b1c8d56052f5a86fb56eb323
+    image: cp.icr.io/cp/ibm-eventstreams-jmxtrans@sha256:6596d01ada88dfac0b23cfa630f39598dc4ff7f597595c826da34972a041e6d0

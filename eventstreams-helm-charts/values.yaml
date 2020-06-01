@@ -54,12 +54,12 @@ operator:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: strimzi/operator
-    tag: 2020-05-30-17.04.53-8dd7640
+    tag: 2020-05-31-13.46.01-3176a5a
 operatorInit:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: strimzi/operator-init
-    tag: 2020-05-30-17.04.53-8dd7640
+    tag: 2020-05-31-13.46.01-3176a5a
 
 
 restProducer:
@@ -108,82 +108,82 @@ zookeeper:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: strimzi/kafka
-    tagPrefix: 2020-05-30-17.04.53-8dd7640
+    tagPrefix: 2020-05-31-13.46.01-3176a5a
 kafka:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: strimzi/kafka
-    tagPrefix: 2020-05-30-17.04.53-8dd7640
+    tagPrefix: 2020-05-31-13.46.01-3176a5a
 kafkaConnect:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: strimzi/kafka
-    tagPrefix: 2020-05-30-17.04.53-8dd7640
+    tagPrefix: 2020-05-31-13.46.01-3176a5a
 kafkaConnects2i:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: strimzi/kafka
-    tagPrefix: 2020-05-30-17.04.53-8dd7640
+    tagPrefix: 2020-05-31-13.46.01-3176a5a
 cruiseControl:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: strimzi/kafka
-    tagPrefix: 2020-05-30-17.04.53-8dd7640
+    tagPrefix: 2020-05-31-13.46.01-3176a5a
 topicOperator:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: strimzi/operator
-    tag: 2020-05-30-17.04.53-8dd7640
+    tag: 2020-05-31-13.46.01-3176a5a
 userOperator:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: strimzi/operator
-    tag: 2020-05-30-17.04.53-8dd7640
+    tag: 2020-05-31-13.46.01-3176a5a
 kafkaInit:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: strimzi/operator
-    tag: 2020-05-30-17.04.53-8dd7640
+    tag: 2020-05-31-13.46.01-3176a5a
 tlsSidecarZookeeper:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: strimzi/kafka
-    tagPrefix: 2020-05-30-17.04.53-8dd7640
+    tagPrefix: 2020-05-31-13.46.01-3176a5a
 tlsSidecarKafka:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: strimzi/kafka
-    tagPrefix: 2020-05-30-17.04.53-8dd7640
+    tagPrefix: 2020-05-31-13.46.01-3176a5a
 tlsSidecarEntityOperator:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: strimzi/kafka
-    tagPrefix: 2020-05-30-17.04.53-8dd7640
+    tagPrefix: 2020-05-31-13.46.01-3176a5a
 tlsSidecarCruiseControl:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: strimzi/kafka
-    tagPrefix: 2020-05-30-17.04.53-8dd7640
+    tagPrefix: 2020-05-31-13.46.01-3176a5a
 kafkaMirrorMaker:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: strimzi/kafka
-    tagPrefix: 2020-05-30-17.04.53-8dd7640
+    tagPrefix: 2020-05-31-13.46.01-3176a5a
 kafkaExporter:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: strimzi/kafka
-    tagPrefix: 2020-05-30-17.04.53-8dd7640
+    tagPrefix: 2020-05-31-13.46.01-3176a5a
 jmxTrans:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: strimzi/jmxtrans
-    tag: 2020-05-30-17.04.53-8dd7640
+    tag: 2020-05-31-13.46.01-3176a5a
 kafkaMirrorMaker2:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: strimzi/kafka
-    tagPrefix: 2020-05-30-17.04.53-8dd7640
+    tagPrefix: 2020-05-31-13.46.01-3176a5a
 resources:
   limits:
     memory: 1Gi
