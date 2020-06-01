@@ -1,0 +1,12 @@
+apiVersion: operator.openshift.io/v1alpha1
+kind: ImageContentSourcePolicy
+metadata:
+  name: staging-mirror
+spec:
+  repositoryDigestMirrors:
+  - mirrors:
+    - cp.icr.io/cp
+    source: dockerhub.io/ibmcom
+  - mirrors:
+    - cp.stg.icr.io/cp
+    source: cp.icr.io/cp
