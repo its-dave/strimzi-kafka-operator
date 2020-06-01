@@ -44,6 +44,7 @@ import java.util.regex.Pattern;
 
 import static com.ibm.eventstreams.api.model.AbstractModel.AUTHENTICATION_LABEL_SEPARATOR;
 import static com.ibm.eventstreams.api.model.AbstractModel.KAFKA_USER_SECRET_VOLUME_NAME;
+import static com.ibm.eventstreams.api.model.AbstractSecureEndpointsModel.AUTHORIZATION_ENABLED_ENV_KEY;
 import static com.ibm.eventstreams.api.model.AbstractSecureEndpointsModel.CLIENT_CA_PATH_ENV_KEY;
 import static com.ibm.eventstreams.api.model.AbstractSecureEndpointsModel.SSL_ENABLED_ENV_KEY;
 import static com.ibm.eventstreams.api.model.AbstractSecureEndpointsModel.SSL_KEYSTORE_PASSWORD_PATH_ENV_KEY;
@@ -492,7 +493,7 @@ public class AbstractSecureEndpointsModelTest {
         List<EnvVar> envVars = new ArrayList<>();
         model.configureSecurityEnvVars(envVars);
 
-        assertThat(envVars, hasSize(10));
+        assertThat(envVars, hasSize(11));
 
         EnvVar authenticationEnvVar = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:runas-anonymous,7443:runas-anonymous").build();
         EnvVar endpointsEnvVar = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7443:p2ptls").build();
@@ -504,6 +505,7 @@ public class AbstractSecureEndpointsModelTest {
         EnvVar keystoreEnvVar = new EnvVarBuilder().withName(SSL_KEYSTORE_PATH_ENV_KEY).withValue("/certs/user/user.p12").build();
         EnvVar keystorePassEnvVar = new EnvVarBuilder().withName(SSL_KEYSTORE_PASSWORD_PATH_ENV_KEY).withValue("file:///certs/user/user.password").build();
         EnvVar sslEnabledEnvVar = new EnvVarBuilder().withName(SSL_ENABLED_ENV_KEY).withValue("true").build();
+        EnvVar authorizationEnabledEnv = new EnvVarBuilder().withName(AUTHORIZATION_ENABLED_ENV_KEY).withValue("false").build();
 
         assertThat(envVars, hasItem(authenticationEnvVar));
         assertThat(envVars, hasItem(endpointsEnvVar));
@@ -515,6 +517,7 @@ public class AbstractSecureEndpointsModelTest {
         assertThat(envVars, hasItem(keystoreEnvVar));
         assertThat(envVars, hasItem(keystorePassEnvVar));
         assertThat(envVars, hasItem(sslEnabledEnvVar));
+        assertThat(envVars, hasItem(authorizationEnabledEnv));
     }
 
     @Test
@@ -526,7 +529,7 @@ public class AbstractSecureEndpointsModelTest {
         List<EnvVar> envVars = new ArrayList<>();
         model.configureSecurityEnvVars(envVars);
 
-        assertThat(envVars, hasSize(10));
+        assertThat(envVars, hasSize(11));
 
         EnvVar authenticationEnvVar = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:iam-bearer;tls;scram-sha-512,7443:runas-anonymous").build();
         EnvVar endpointsEnvVar = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:external,7443:p2ptls").build();
@@ -538,6 +541,7 @@ public class AbstractSecureEndpointsModelTest {
         EnvVar keystoreEnvVar = new EnvVarBuilder().withName(SSL_KEYSTORE_PATH_ENV_KEY).withValue("/certs/user/user.p12").build();
         EnvVar keystorePassEnvVar = new EnvVarBuilder().withName(SSL_KEYSTORE_PASSWORD_PATH_ENV_KEY).withValue("file:///certs/user/user.password").build();
         EnvVar sslEnabledEnvVar = new EnvVarBuilder().withName(SSL_ENABLED_ENV_KEY).withValue("true").build();
+        EnvVar authorizationEnabledEnv = new EnvVarBuilder().withName(AUTHORIZATION_ENABLED_ENV_KEY).withValue("false").build();
 
         assertThat(envVars, hasItem(authenticationEnvVar));
         assertThat(envVars, hasItem(endpointsEnvVar));
@@ -549,6 +553,7 @@ public class AbstractSecureEndpointsModelTest {
         assertThat(envVars, hasItem(keystoreEnvVar));
         assertThat(envVars, hasItem(keystorePassEnvVar));
         assertThat(envVars, hasItem(sslEnabledEnvVar));
+        assertThat(envVars, hasItem(authorizationEnabledEnv));
     }
 
     @Test
@@ -564,7 +569,7 @@ public class AbstractSecureEndpointsModelTest {
         List<EnvVar> envVars = new ArrayList<>();
         model.configureSecurityEnvVars(envVars);
 
-        assertThat(envVars, hasSize(10));
+        assertThat(envVars, hasSize(11));
 
         EnvVar authenticationEnvVar = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9443:iam-bearer;tls;scram-sha-512,9444:runas-anonymous,7443:runas-anonymous").build();
         EnvVar endpointsEnvVar = new EnvVarBuilder().withName("ENDPOINTS").withValue("9443:required-field,9444:no-auth,7443:p2ptls").build();
@@ -576,6 +581,7 @@ public class AbstractSecureEndpointsModelTest {
         EnvVar keystoreEnvVar = new EnvVarBuilder().withName(SSL_KEYSTORE_PATH_ENV_KEY).withValue("/certs/user/user.p12").build();
         EnvVar keystorePassEnvVar = new EnvVarBuilder().withName(SSL_KEYSTORE_PASSWORD_PATH_ENV_KEY).withValue("file:///certs/user/user.password").build();
         EnvVar sslEnabledEnvVar = new EnvVarBuilder().withName(SSL_ENABLED_ENV_KEY).withValue("true").build();
+        EnvVar authorizationEnabledEnv = new EnvVarBuilder().withName(AUTHORIZATION_ENABLED_ENV_KEY).withValue("false").build();
 
         assertThat(envVars, hasItem(authenticationEnvVar));
         assertThat(envVars, hasItem(endpointsEnvVar));
@@ -587,6 +593,7 @@ public class AbstractSecureEndpointsModelTest {
         assertThat(envVars, hasItem(keystoreEnvVar));
         assertThat(envVars, hasItem(keystorePassEnvVar));
         assertThat(envVars, hasItem(sslEnabledEnvVar));
+        assertThat(envVars, hasItem(authorizationEnabledEnv));
     }
 
     @Test
@@ -602,7 +609,7 @@ public class AbstractSecureEndpointsModelTest {
         List<EnvVar> envVars = new ArrayList<>();
         model.configureSecurityEnvVars(envVars);
 
-        assertThat(envVars, hasSize(10));
+        assertThat(envVars, hasSize(11));
 
         EnvVar authenticationEnvVar = new EnvVarBuilder().withName("AUTHENTICATION").withValue("9080:iam-bearer;tls;scram-sha-512,8080:TLS,7443:runas-anonymous").build();
         EnvVar endpointsEnvVar = new EnvVarBuilder().withName("ENDPOINTS").withValue("9080,8080:fully-configured,7443:p2ptls").build();
@@ -614,6 +621,7 @@ public class AbstractSecureEndpointsModelTest {
         EnvVar keystoreEnvVar = new EnvVarBuilder().withName(SSL_KEYSTORE_PATH_ENV_KEY).withValue("/certs/user/user.p12").build();
         EnvVar keystorePassEnvVar = new EnvVarBuilder().withName(SSL_KEYSTORE_PASSWORD_PATH_ENV_KEY).withValue("file:///certs/user/user.password").build();
         EnvVar sslEnabledEnvVar = new EnvVarBuilder().withName(SSL_ENABLED_ENV_KEY).withValue("true").build();
+        EnvVar authorizationEnabledEnv = new EnvVarBuilder().withName(AUTHORIZATION_ENABLED_ENV_KEY).withValue("false").build();
 
         assertThat(envVars, hasItem(authenticationEnvVar));
         assertThat(envVars, hasItem(endpointsEnvVar));
@@ -625,6 +633,7 @@ public class AbstractSecureEndpointsModelTest {
         assertThat(envVars, hasItem(keystoreEnvVar));
         assertThat(envVars, hasItem(keystorePassEnvVar));
         assertThat(envVars, hasItem(sslEnabledEnvVar));
+        assertThat(envVars, hasItem(authorizationEnabledEnv));
     }
 
     @Test

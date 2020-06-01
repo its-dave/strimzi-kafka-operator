@@ -212,6 +212,7 @@ public class AdminApiModelTest {
         EnvVar geoRepInternalServerAuthEnv = new EnvVarBuilder().withName("GEOREPLICATION_INTERNAL_SERVER_AUTH_ENABLED").withValue("false").build();
         EnvVar geoRepExternalServerAuthEnv = new EnvVarBuilder().withName("GEOREPLICATION_EXTERNAL_SERVER_AUTH_ENABLED").withValue("false").build();
         EnvVar geoRepInternalClientAuthTypeEnv = new EnvVarBuilder().withName("GEOREPLICATION_INTERNAL_CLIENT_AUTH_TYPE").withValue("NONE").build();
+        EnvVar authorizationEnabledEnv = new EnvVarBuilder().withName("AUTHORIZATION_ENABLED").withValue("false").build();
 
         Container adminApiContainer = adminApiModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0);
         List<EnvVar> defaultEnvVars = adminApiContainer.getEnv();
@@ -231,6 +232,7 @@ public class AdminApiModelTest {
         assertThat(defaultEnvVars, hasItem(geoRepInternalServerAuthEnv));
         assertThat(defaultEnvVars, hasItem(geoRepInternalServerAuthEnv));
         assertThat(defaultEnvVars, hasItem(geoRepInternalClientAuthTypeEnv));
+        assertThat(defaultEnvVars, hasItem(authorizationEnabledEnv));
     }
 
     @Test

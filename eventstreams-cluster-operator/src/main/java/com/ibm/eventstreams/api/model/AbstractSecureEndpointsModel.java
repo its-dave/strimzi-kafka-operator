@@ -74,6 +74,7 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
     public static final String SSL_KEYSTORE_PATH_ENV_KEY = "SSL_KEYSTORE_PATH";
     public static final String SSL_KEYSTORE_PASSWORD_PATH_ENV_KEY = "SSL_KEYSTORE_PASSWORD";
     public static final String SSL_ENABLED_ENV_KEY = "SSL_ENABLED";
+    public static final String AUTHORIZATION_ENABLED_ENV_KEY = "AUTHORIZATION_ENABLED";
 
     private final CertificateSecretModel certificateSecretModel;
 
@@ -85,11 +86,14 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
     private Service nodePortService;
     // private Service loadBalancerService = null;
     // private Service ingressService = null;
+    private final boolean kafkaAuthorizationEnabled;
 
 
     public AbstractSecureEndpointsModel(EventStreams instance, String componentName, String applicationName) {
         super(instance, componentName, applicationName);
         this.certificateSecretModel = new CertificateSecretModel(instance, componentName, applicationName);
+        this.kafkaAuthorizationEnabled = isKafkaAuthorizationEnabled(instance);
+
         this.routes = new HashMap<>();
     }
 
@@ -355,12 +359,13 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
         envVars.addAll(Arrays.asList(
             new EnvVarBuilder().withName(SSL_TRUSTSTORE_P12_PATH_ENV_KEY).withValue(CLUSTER_CERTIFICATE_PATH + File.separator + CA_P12).build(),
             new EnvVarBuilder().withName(SSL_TRUSTSTORE_CRT_PATH_ENV_KEY).withValue(CLUSTER_CERTIFICATE_PATH + File.separator + CA_CERT).build(),
-            new EnvVarBuilder().withName(SSL_TRUSTSTORE_P12_PASSWORD_ENV_KEY).withValue("file://" + CLUSTER_CERTIFICATE_PATH + File.separator +  CA_P12_PASS).build(),
+            new EnvVarBuilder().withName(SSL_TRUSTSTORE_P12_PASSWORD_ENV_KEY).withValue("file://" + CLUSTER_CERTIFICATE_PATH + File.separator + CA_P12_PASS).build(),
             new EnvVarBuilder().withName(CLIENT_CA_PATH_ENV_KEY).withValue(CLIENT_CA_CERTIFICATE_PATH + File.separator + CA_CERT).build(),
             new EnvVarBuilder().withName(SSL_KEYSTORE_PATH_ENV_KEY).withValue(KAFKA_USER_CERTIFICATE_PATH + File.separator + USER_P12).build(),
-            new EnvVarBuilder().withName(SSL_KEYSTORE_PASSWORD_PATH_ENV_KEY).withValue("file://" + KAFKA_USER_CERTIFICATE_PATH + File.separator +  USER_P12_PASS).build(),
-            new EnvVarBuilder().withName(SSL_ENABLED_ENV_KEY).withValue(tlsEnabled().toString()).build()
-            ));
+            new EnvVarBuilder().withName(SSL_KEYSTORE_PASSWORD_PATH_ENV_KEY).withValue("file://" + KAFKA_USER_CERTIFICATE_PATH + File.separator + USER_P12_PASS).build(),
+            new EnvVarBuilder().withName(SSL_ENABLED_ENV_KEY).withValue(tlsEnabled().toString()).build(),
+            new EnvVarBuilder().withName(AUTHORIZATION_ENABLED_ENV_KEY).withValue(Boolean.toString(kafkaAuthorizationEnabled)).build()
+        ));
     }
 
     /**

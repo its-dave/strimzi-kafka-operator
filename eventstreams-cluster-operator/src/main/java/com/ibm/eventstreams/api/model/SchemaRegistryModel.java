@@ -106,8 +106,6 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
     private List<ContainerEnvVar> schemaRegistryProxyEnvVars;
     private ResourceRequirements schemaRegistryProxyResourceRequirements;
     private final String internalKafkaUsername;
-    private final boolean kafkaAuthorizationEnabled;
-
     private List<ListenerStatus> kafkaListeners;
 
     private Storage storage;
@@ -129,7 +127,6 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
         super(instance, COMPONENT_NAME, APPLICATION_NAME);
         this.kafkaListeners = kafkaListeners != null ? new ArrayList<>(kafkaListeners) : new ArrayList<>();
         this.internalKafkaUsername = internalKafkaUsername;
-        this.kafkaAuthorizationEnabled = isKafkaAuthorizationEnabled(instance);
         this.commonServices = commonServices;
 
         Optional<SchemaRegistrySpec> schemaRegistrySpec = Optional.ofNullable(instance.getSpec()).map(EventStreamsSpec::getSchemaRegistry);
@@ -507,7 +504,6 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
             new EnvVarBuilder().withName("RELEASE").withValue(getInstanceName()).build(),
             new EnvVarBuilder().withName("LICENSE").withValue("accept").build(),
             new EnvVarBuilder().withName("NAMESPACE").withValue(getNamespace()).build(),
-            new EnvVarBuilder().withName("AUTHORIZATION_ENABLED").withValue(Boolean.toString(kafkaAuthorizationEnabled)).build(),
             new EnvVarBuilder().withName("TRACE_SPEC").withValue(proxyTraceString).build(),
             new EnvVarBuilder().withName("KAFKA_PRINCIPAL").withValue(internalKafkaUsername).build(),
             hmacSecretEnvVar()
