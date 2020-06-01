@@ -16,8 +16,11 @@ import com.ibm.eventstreams.api.ListenerAuthentication;
 import com.ibm.eventstreams.api.ListenerType;
 import com.ibm.eventstreams.api.model.utils.ModelUtils;
 import com.ibm.eventstreams.api.spec.EventStreams;
+import com.ibm.eventstreams.controller.models.StatusCondition;
 import io.strimzi.api.kafka.model.KafkaSpecBuilder;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
@@ -46,11 +49,11 @@ public class KafkaListenerValidationTest {
             .endSpec()
             .build();
 
-        ReplicatorKafkaListenerValidation validation = new ReplicatorKafkaListenerValidation(test);
+        List<StatusCondition> conditions = new ReplicatorKafkaListenerValidation().validateCr(test);
 
-        assertThat(validation.getConditions(), hasSize(1));
+        assertThat(conditions, hasSize(1));
 
-        assertThat(validation.getConditions().stream()
+        assertThat(conditions.stream()
             .filter(condition -> condition.getReason().equals(ReplicatorKafkaListenerValidation.INVALID_INTERNAL_KAFKA_LISTENER_REASON))
             .findFirst().get().getMessage(), is(String.format(ReplicatorKafkaListenerValidation.INVALID_INTERNAL_KAFKA_LISTENER_MESSAGE, ListenerAuthentication.OAUTH.toValue(), ListenerType.TLS.toValue(), ListenerType.TLS.toValue())));
     }
@@ -76,11 +79,11 @@ public class KafkaListenerValidationTest {
             .endSpec()
             .build();
 
-        ReplicatorKafkaListenerValidation validation = new ReplicatorKafkaListenerValidation(test);
+        List<StatusCondition> conditions = new ReplicatorKafkaListenerValidation().validateCr(test);
 
-        assertThat(validation.getConditions(), hasSize(1));
+        assertThat(conditions, hasSize(1));
 
-        assertThat(validation.getConditions().stream()
+        assertThat(conditions.stream()
             .filter(condition -> condition.getReason().equals(ReplicatorKafkaListenerValidation.INVALID_EXTERNAL_KAFKA_LISTENER_REASON))
             .findFirst().get().getMessage(), is(String.format(ReplicatorKafkaListenerValidation.INVALID_EXTERNAL_KAFKA_LISTENER_MESSAGE, ListenerAuthentication.OAUTH.toValue(), ListenerType.EXTERNAL.toValue(), ListenerType.EXTERNAL.toValue())));
     }
@@ -105,11 +108,11 @@ public class KafkaListenerValidationTest {
             .endSpec()
             .build();
 
-        ReplicatorKafkaListenerValidation validation = new ReplicatorKafkaListenerValidation(test);
+        List<StatusCondition> conditions = new ReplicatorKafkaListenerValidation().validateCr(test);
 
-        assertThat(validation.getConditions(), hasSize(1));
+        assertThat(conditions, hasSize(1));
 
-        assertThat(validation.getConditions().stream()
+        assertThat(conditions.stream()
             .filter(condition -> condition.getReason().equals(ReplicatorKafkaListenerValidation.INVALID_EXTERNAL_KAFKA_LISTENER_REASON))
             .findFirst().get().getMessage(), is(String.format(ReplicatorKafkaListenerValidation.INVALID_EXTERNAL_KAFKA_LISTENER_MESSAGE, ListenerAuthentication.NONE.toValue())));
     }
@@ -132,11 +135,11 @@ public class KafkaListenerValidationTest {
                 .endSpec()
                 .build();
 
-        ReplicatorKafkaListenerValidation validation = new ReplicatorKafkaListenerValidation(test);
+        List<StatusCondition> conditions = new ReplicatorKafkaListenerValidation().validateCr(test);
 
-        assertThat(validation.getConditions(), hasSize(1));
+        assertThat(conditions, hasSize(1));
 
-        assertThat(validation.getConditions().stream()
+        assertThat(conditions.stream()
                 .filter(condition -> condition.getReason().equals(ReplicatorKafkaListenerValidation.INVALID_INTERNAL_KAFKA_LISTENER_REASON))
                 .findFirst().get().getMessage(), is(String.format(ReplicatorKafkaListenerValidation.INVALID_INTERNAL_KAFKA_LISTENER_MESSAGE, ListenerAuthentication.NONE.toValue(), ListenerType.TLS.toValue(), ListenerType.TLS.toValue())));
     }
@@ -160,13 +163,13 @@ public class KafkaListenerValidationTest {
                 .endSpec()
                 .build();
 
-        ReplicatorKafkaListenerValidation validation = new ReplicatorKafkaListenerValidation(test);
+        List<StatusCondition> conditions = new ReplicatorKafkaListenerValidation().validateCr(test);
 
-        assertThat(validation.getConditions(), hasSize(1));
+        assertThat(conditions, hasSize(1));
 
-        assertThat(validation.getConditions().stream()
-                .filter(condition -> condition.getReason().equals(ReplicatorKafkaListenerValidation.INVALID_INTERNAL_KAFKA_LISTENER_REASON))
-                .findFirst().get().getMessage(), is(String.format(ReplicatorKafkaListenerValidation.INVALID_INTERNAL_KAFKA_LISTENER_MESSAGE,  ListenerAuthentication.NONE.toValue(), ListenerType.TLS.toValue(), ListenerType.TLS.toValue())));
+        assertThat(conditions.stream()
+            .filter(condition -> condition.getReason().equals(ReplicatorKafkaListenerValidation.INVALID_INTERNAL_KAFKA_LISTENER_REASON))
+            .findFirst().get().getMessage(), is(String.format(ReplicatorKafkaListenerValidation.INVALID_INTERNAL_KAFKA_LISTENER_MESSAGE, "none", "tls", "tls")));
     }
 
 
@@ -191,11 +194,11 @@ public class KafkaListenerValidationTest {
                 .endSpec()
                 .build();
 
-        ReplicatorKafkaListenerValidation validation = new ReplicatorKafkaListenerValidation(test);
+        List<StatusCondition> conditions = new ReplicatorKafkaListenerValidation().validateCr(test);
 
-        assertThat(validation.getConditions(), hasSize(1));
+        assertThat(conditions, hasSize(1));
 
-        assertThat(validation.getConditions().stream()
+        assertThat(conditions.stream()
                 .filter(condition -> condition.getReason().equals(ReplicatorKafkaListenerValidation.INVALID_INTERNAL_KAFKA_LISTENER_REASON))
                 .findFirst().get().getMessage(), is(String.format(ReplicatorKafkaListenerValidation.INVALID_INTERNAL_KAFKA_LISTENER_MESSAGE,  ListenerAuthentication.NONE.toValue(), ListenerType.TLS.toValue(), ListenerType.TLS.toValue())));
     }

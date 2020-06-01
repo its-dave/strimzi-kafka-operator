@@ -37,12 +37,6 @@ public class ReplicatorKafkaListenerValidation implements Validation {
     private static final List<ListenerAuthentication> VALID_INTERNAL_LISTENER_AUTHENTICATION = Arrays.asList(ListenerAuthentication.SCRAM_SHA_512, ListenerAuthentication.TLS);
     private static final List<ListenerAuthentication> VALID_EXTERNAL_LISTENER_AUTHENTICATION = Arrays.asList(ListenerAuthentication.SCRAM_SHA_512, ListenerAuthentication.TLS);
 
-    private final List<StatusCondition> conditions;
-
-    public ReplicatorKafkaListenerValidation(EventStreams instance) {
-        this.conditions = validateCr(instance);
-    }
-
     public List<StatusCondition> validateCr(EventStreams instance) {
         Map<ListenerType, ListenerAuthentication> listenerAuthentications = ListenerAuthentication.getListenerAuth(instance);
         List<StatusCondition> conditions = new ArrayList<>();
@@ -85,13 +79,4 @@ public class ReplicatorKafkaListenerValidation implements Validation {
         return StatusCondition.createErrorCondition(INVALID_EXTERNAL_KAFKA_LISTENER_REASON,
             String.format(INVALID_EXTERNAL_KAFKA_LISTENER_MESSAGE, authentication));
     }
-
-    public List<StatusCondition> getConditions() {
-        return conditions;
-    }
-
-    public boolean hasInvalidAuthenticationCondition() {
-        return conditions.stream().anyMatch(condition -> condition.getReason().contains(INVALID_INTERNAL_KAFKA_LISTENER_REASON) || condition.getReason().contains(INVALID_EXTERNAL_KAFKA_LISTENER_REASON));
-    }
-
 }

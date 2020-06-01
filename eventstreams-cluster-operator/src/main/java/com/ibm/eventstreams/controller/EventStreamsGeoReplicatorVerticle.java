@@ -20,13 +20,13 @@ import io.fabric8.openshift.client.OpenShiftClient;
 import io.strimzi.operator.PlatformFeaturesAvailability;
 import io.strimzi.operator.common.MetricsProvider;
 import io.strimzi.operator.common.operator.resource.RouteOperator;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
+import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServer;
-import io.vertx.core.Handler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -75,15 +75,14 @@ public class EventStreamsGeoReplicatorVerticle extends AbstractVerticle {
             EventStreamsGeoReplicatorResourceOperator geoReplicatorResourceOperator = new EventStreamsGeoReplicatorResourceOperator(vertx, client, EventStreamsGeoReplicator.RESOURCE_KIND);
             EventStreamsResourceOperator esResourceOperator = new EventStreamsResourceOperator(vertx, client);
             EventStreamsGeoReplicatorOperator eventStreamsGeoReplicatorOperator = new EventStreamsGeoReplicatorOperator(
-                    vertx,
-                    client,
-                    EventStreamsGeoReplicator.RESOURCE_KIND,
-                    pfa,
-                    geoReplicatorResourceOperator,
-                    esResourceOperator,
-                    routeOperator,
-                    metricsProvider,
-                    replicatorStatusReadyTimeoutMilliSecs);
+                vertx,
+                client,
+                EventStreamsGeoReplicator.RESOURCE_KIND,
+                pfa,
+                geoReplicatorResourceOperator,
+                esResourceOperator,
+                new KafkaUserOperator(vertx, client),
+                metricsProvider);
 
             eventStreamsGeoReplicatorOperator.createWatch(namespace, eventStreamsGeoReplicatorOperator.recreateWatch(namespace))
                     .compose(w -> {

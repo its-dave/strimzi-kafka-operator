@@ -258,7 +258,7 @@ public class EventStreamsOperatorTest {
         // setting up a mock Kubernetes client
         Set<Secret> initialSecrets = new HashSet<>();
         ModelUtils.generateClusterCa(NAMESPACE, CLUSTER_NAME, APP_NAME, ModelUtils.Certificates.CLUSTER_CA, ModelUtils.Keys.CLUSTER_CA_KEY).forEach(s -> initialSecrets.add(s));
-        ModelUtils.generateReplicatorConnectSecrets(NAMESPACE, CLUSTER_NAME, APP_NAME, ModelUtils.Certificates.CLUSTER_CA, ModelUtils.Keys.CLUSTER_CA_KEY).forEach(s -> initialSecrets.add(s));
+        ModelUtils.generateGeoReplicatorConnectSourceSecret(NAMESPACE, CLUSTER_NAME, APP_NAME, ModelUtils.Certificates.CLUSTER_CA, ModelUtils.Keys.CLUSTER_CA_KEY).forEach(s -> initialSecrets.add(s));
 
         mockClient = new MockEventStreamsKube()
                 .withInitialSecrets(initialSecrets)

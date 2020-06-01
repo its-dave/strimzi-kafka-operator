@@ -19,6 +19,7 @@ import com.ibm.eventstreams.api.ProductUse;
 import com.ibm.eventstreams.api.TlsVersion;
 import com.ibm.eventstreams.api.model.AbstractSecureEndpointsModel;
 import com.ibm.eventstreams.api.model.EventStreamsKafkaModel;
+import com.ibm.eventstreams.api.model.GeoReplicatorDestinationUsersModel;
 import com.ibm.eventstreams.api.model.GeoReplicatorSourceUsersModel;
 import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
@@ -46,8 +47,8 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.hasKey;
+import static org.hamcrest.Matchers.is;
 
 public class ModelUtils {
 
@@ -197,7 +198,7 @@ public class ModelUtils {
         return initialSecrets;
     }
 
-    public static Set<Secret> generateReplicatorConnectSecrets(String namespace, String clusterName, String appName, Certificates cert, Keys key) {
+    public static Set<Secret> generateGeoReplicatorConnectSourceSecret(String namespace, String clusterName, String appName, Certificates cert, Keys key) {
 
         Map<String, String> labels = Labels.forStrimziCluster(EventStreamsKafkaModel.getKafkaInstanceName(clusterName)).withStrimziKind(Kafka.RESOURCE_KIND).toMap();
         Secret replicatorConnectorSource = new SecretBuilder()
@@ -206,6 +207,27 @@ public class ModelUtils {
                 .withNamespace(namespace)
                 .addToAnnotations(Ca.ANNO_STRIMZI_IO_CA_KEY_GENERATION, "0")
                 .withLabels(labels)
+            .endMetadata()
+            .addToData("user.key", key.toString())
+            .addToData("user.crt", cert.toString())
+            .addToData("user.password", "password2")
+            .build();
+
+        Set<Secret> replicatorConnectSecrets = new HashSet<>();
+        replicatorConnectSecrets.add(replicatorConnectorSource);
+
+        return replicatorConnectSecrets;
+    }
+
+    public static Set<Secret> generateGeoReplicatorConnectSecrets(String namespace, String clusterName, String appName, Certificates cert, Keys key) {
+
+        Map<String, String> labels = Labels.forStrimziCluster(EventStreamsKafkaModel.getKafkaInstanceName(clusterName)).withStrimziKind(Kafka.RESOURCE_KIND).toMap();
+        Secret replicatorConnectorSource = new SecretBuilder()
+            .withNewMetadata()
+            .withName(GeoReplicatorDestinationUsersModel.getConnectKafkaUserName(clusterName))
+            .withNamespace(namespace)
+            .addToAnnotations(Ca.ANNO_STRIMZI_IO_CA_KEY_GENERATION, "0")
+            .withLabels(labels)
             .endMetadata()
             .addToData("user.key", key.toString())
             .addToData("user.crt", cert.toString())
