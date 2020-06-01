@@ -42,7 +42,8 @@ import static java.util.Collections.unmodifiableList;
             kind = EventStreams.RESOURCE_KIND,
             plural = EventStreams.RESOURCE_PLURAL,
             singular = EventStreams.RESOURCE_SINGULAR,
-            shortNames = {EventStreams.SHORT_NAME}),
+            shortNames = {EventStreams.SHORT_NAME},
+            categories = {EventStreams.CP4I_CATEGORY, EventStreams.INTEGRATION_CATEGORY}),
         scope = EventStreams.SCOPE,
         versions = {
             @Crd.Spec.Version(name = EventStreams.V1BETA1, served = true, storage = true)
@@ -93,6 +94,8 @@ public class EventStreams extends CustomResource {
     public static final String CRD_NAME = RESOURCE_PLURAL + "." + RESOURCE_GROUP;
     public static final String SHORT_NAME = "es";
     public static final List<String> RESOURCE_SHORTNAMES = unmodifiableList(singletonList(SHORT_NAME));
+    public static final String INTEGRATION_CATEGORY = "integration";
+    public static final String CP4I_CATEGORY = "cp4i";
 
     private String apiVersion;
     private ObjectMeta metadata;

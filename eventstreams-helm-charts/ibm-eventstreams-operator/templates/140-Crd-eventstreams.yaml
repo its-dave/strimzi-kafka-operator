@@ -19,6 +19,9 @@ spec:
     plural: eventstreams
     shortNames:
     - es
+    categories:
+    - cp4i
+    - integration
   additionalPrinterColumns:
   - name: Status
     description: Status of the Event Streams cluster
