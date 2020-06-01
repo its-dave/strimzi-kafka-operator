@@ -165,6 +165,8 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.core.IsNull.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -2185,6 +2187,42 @@ public class EventStreamsOperatorTest {
                 verifyContainsResources(context, expectedStatefulSets, KubeResourceType.STATEFULSETS, !shouldExist);
                 async.flag();
             }));
+    }
+
+    @Test
+    public void testConditionsNotAddedWhenReady(VertxTestContext context) {
+        esOperator = createDefaultEventStreamsOperator(true);
+
+        EventStreams minimalInstance = createMinimalESInstance();
+        minimalInstance.setStatus(new EventStreamsStatusBuilder()
+                .withPhase(PhaseState.READY)
+                .withConditions(Collections.EMPTY_LIST)
+                .build());
+
+        Checkpoint async = context.checkpoint();
+
+        esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), minimalInstance)
+                .onComplete(context.succeeding(v -> {
+                    ArgumentCaptor<EventStreams> updatedEventStreams = ArgumentCaptor.forClass(EventStreams.class);
+                    verify(esResourceOperator, times(2)).updateEventStreamsStatus(updatedEventStreams.capture());
+
+                    // testing that irrelevant conditions aren't added and then immediately removed
+                    // so we need to review all updates
+                    List<EventStreams> updates = updatedEventStreams.getAllValues();
+                    for (EventStreams update : updates) {
+                        // there should always be some conditions
+                        assertThat(update.getStatus().getConditions(), is(not(empty())));
+                        // the test ES instance was created already in a READY state
+                        //  so should never have been given a 'Creating' condition
+                        assertThat(update.getStatus().getConditions(),
+                                everyItem(hasProperty("reason", not(is("Creating")))));
+                        // but all conditions should have some reason
+                        assertThat(update.getStatus().getConditions(),
+                                everyItem(hasProperty("reason", is(not(empty())))));
+                    }
+
+                    async.flag();
+                }));
     }
 
     @Test

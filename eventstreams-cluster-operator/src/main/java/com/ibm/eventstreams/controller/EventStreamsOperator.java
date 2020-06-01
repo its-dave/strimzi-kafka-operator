@@ -299,14 +299,20 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             });
 
             if (isValidCR.get()) {
-                addCondition(previousConditions
-                        .stream()
-                        // restore any previous readiness condition if this was set, so
-                        // that timestamps remain consistent
-                        .filter(c -> c.getType().equals(PhaseState.PENDING.toValue()))
-                        .findFirst()
-                        // otherwise set a new condition saying that the reconcile loop is running
-                        .orElse(StatusCondition.createPendingCondition(EVENTSTREAMS_CREATING_REASON, "Event Streams is being deployed.").toCondition()));
+                if (status.getPhase() != PhaseState.READY) {
+                    // the spec looks like a valid request, but it isn't ready yet
+                    // so we either restore the previous "pending" condition, or
+                    // (if this the first reconcile loop for this instance) create
+                    // a new one
+                    addCondition(previousConditions
+                            .stream()
+                            // restore any previous readiness condition if this was set, so
+                            // that timestamps remain consistent
+                            .filter(c -> c.getType().equals(PhaseState.PENDING.toValue()))
+                            .findFirst()
+                            // otherwise set a new condition saying that the reconcile loop is running
+                            .orElse(StatusCondition.createPendingCondition(EVENTSTREAMS_CREATING_REASON, "Event Streams is being deployed.").toCondition()));
+                }
             } else {
                 phase = PhaseState.FAILED;
             }
