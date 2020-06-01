@@ -118,6 +118,7 @@
     - list
     - create
     - patch
+    - delete
 - apiGroups:
   - apiextensions.k8s.io
   # The Event Streams Operator requires the "get", "create" and "patch" permissions for custom resource definitions
