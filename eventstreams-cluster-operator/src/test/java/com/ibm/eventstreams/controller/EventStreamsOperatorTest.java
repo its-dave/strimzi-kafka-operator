@@ -72,6 +72,8 @@ import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.apps.DeploymentList;
+import io.fabric8.kubernetes.api.model.apps.StatefulSet;
+import io.fabric8.kubernetes.api.model.apps.StatefulSetList;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation;
@@ -228,6 +230,7 @@ public class EventStreamsOperatorTest {
 
     public enum KubeResourceType {
         DEPLOYMENTS,
+        STATEFULSETS,
         SERVICES,
         CONFIG_MAPS,
         ROUTES,
@@ -395,8 +398,10 @@ public class EventStreamsOperatorTest {
         esOperator = createDefaultEventStreamsOperator(true);
 
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
-        Map<String, Integer> expectedResourcesWithReplicas = getExpectedResourcesWithReplicas(CLUSTER_NAME);
-        Set<String> expectedResources = expectedResourcesWithReplicas.keySet();
+        Map<String, Integer> expectedDeploymentsWithReplicas = getExpectedDeploymentsWithReplicas(CLUSTER_NAME);
+        Set<String> expectedDeployments = expectedDeploymentsWithReplicas.keySet();
+        Map<String, Integer> expectedStatefulSetsWithReplicas = getExpectedStatefulSetsWithReplicas(CLUSTER_NAME);
+        Set<String> expectedStatefulSets = expectedStatefulSetsWithReplicas.keySet();
         Set<String> expectedServices = getExpectedServiceNames(CLUSTER_NAME);
         Set<String> expectedRoutes = getExpectedRouteNames(CLUSTER_NAME);
         Set<String> expectedSecrets = getExpectedSecretNames(CLUSTER_NAME);
@@ -407,8 +412,10 @@ public class EventStreamsOperatorTest {
         Checkpoint async = context.checkpoint();
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster)
             .onComplete(context.succeeding(v -> context.verify(() -> {
-                verifyHasOnlyResources(context, expectedResources, KubeResourceType.DEPLOYMENTS);
-                verifyReplicasInDeployments(context, expectedResourcesWithReplicas);
+                verifyHasOnlyResources(context, expectedDeployments, KubeResourceType.DEPLOYMENTS);
+                verifyReplicasInDeployments(context, expectedDeploymentsWithReplicas);
+                verifyHasOnlyResources(context, expectedStatefulSets, KubeResourceType.STATEFULSETS);
+                verifyReplicasInStatefulSets(context, expectedStatefulSetsWithReplicas);
                 verifyHasOnlyResources(context, expectedServices, KubeResourceType.SERVICES);
                 verifyHasOnlyResources(context, expectedRoutes, KubeResourceType.ROUTES);
                 verifyHasOnlyResources(context, expectedSecrets, KubeResourceType.SECRETS);
@@ -441,8 +448,10 @@ public class EventStreamsOperatorTest {
         esOperator = createDefaultEventStreamsOperator(false);
 
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
-        Map<String, Integer> expectedResourcesWithReplicas = getExpectedResourcesWithReplicas(CLUSTER_NAME);
-        Set<String> expectedResources = expectedResourcesWithReplicas.keySet();
+        Map<String, Integer> expectedDeploymentsWithReplicas = getExpectedDeploymentsWithReplicas(CLUSTER_NAME);
+        Set<String> expectedDeployments = expectedDeploymentsWithReplicas.keySet();
+        Map<String, Integer> expectedStatefulSetsWithReplicas = getExpectedStatefulSetsWithReplicas(CLUSTER_NAME);
+        Set<String> expectedStatefulSets = expectedStatefulSetsWithReplicas.keySet();
         Set<String> expectedServices = getExpectedServiceNames(CLUSTER_NAME);
         Set<String> expectedRoutes = new HashSet<>();
         Set<String> expectedSecrets = getExpectedSecretNames(CLUSTER_NAME);
@@ -451,12 +460,14 @@ public class EventStreamsOperatorTest {
         Checkpoint async = context.checkpoint();
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster)
             .onComplete(context.succeeding(v -> context.verify(() -> {
-                verifyHasOnlyResources(context, expectedResources, KubeResourceType.DEPLOYMENTS);
+                verifyHasOnlyResources(context, expectedDeployments, KubeResourceType.DEPLOYMENTS);
+                verifyReplicasInDeployments(context, expectedDeploymentsWithReplicas);
+                verifyHasOnlyResources(context, expectedStatefulSets, KubeResourceType.STATEFULSETS);
+                verifyReplicasInStatefulSets(context, expectedStatefulSetsWithReplicas);
                 verifyHasOnlyResources(context, expectedServices, KubeResourceType.SERVICES);
                 verifyHasOnlyResources(context, expectedRoutes, KubeResourceType.ROUTES);
                 verifyHasOnlyResources(context, expectedSecrets, KubeResourceType.SECRETS);
                 verifyHasOnlyResources(context, expectedNetworkPolicies, KubeResourceType.NETWORK_POLICYS);
-                verifyReplicasInDeployments(context, expectedResourcesWithReplicas);
                 async.flag();
             })));
     }
@@ -1037,8 +1048,10 @@ public class EventStreamsOperatorTest {
         esOperator = createDefaultEventStreamsOperator(true);
 
         EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
-        Map<String, Integer> expectedResourcesWithReplicas = getExpectedResourcesWithReplicas(CLUSTER_NAME);
-        Set<String> expectedResources = expectedResourcesWithReplicas.keySet();
+        Map<String, Integer> expectedDeploymentsWithReplicas = getExpectedDeploymentsWithReplicas(CLUSTER_NAME);
+        Set<String> expectedDeployments = expectedDeploymentsWithReplicas.keySet();
+        Map<String, Integer> expectedStatefulSetsWithReplicas = getExpectedStatefulSetsWithReplicas(CLUSTER_NAME);
+        Set<String> expectedStatefulSets = expectedStatefulSetsWithReplicas.keySet();
         Set<String> expectedServices = getExpectedServiceNames(CLUSTER_NAME);
         Set<String> expectedRoutes = getExpectedRouteNames(CLUSTER_NAME);
         Set<String> expectedSecrets = getExpectedSecretNames(CLUSTER_NAME);
@@ -1049,22 +1062,26 @@ public class EventStreamsOperatorTest {
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster)
             .onComplete(context.succeeding(v -> {
 //                verifyHasOnlyResources(context, expectedConfigMaps, KubeResourceType.CONFIG_MAPS);
-                verifyHasOnlyResources(context, expectedResources, KubeResourceType.DEPLOYMENTS);
+                verifyHasOnlyResources(context, expectedDeployments, KubeResourceType.DEPLOYMENTS);
+                verifyHasOnlyResources(context, expectedStatefulSets, KubeResourceType.STATEFULSETS);
                 verifyHasOnlyResources(context, expectedServices, KubeResourceType.SERVICES);
                 verifyHasOnlyResources(context, expectedRoutes, KubeResourceType.ROUTES);
                 verifyHasOnlyResources(context, expectedSecrets, KubeResourceType.SECRETS);
-                verifyReplicasInDeployments(context, expectedResourcesWithReplicas);
+                verifyReplicasInDeployments(context, expectedDeploymentsWithReplicas);
+                verifyReplicasInStatefulSets(context, expectedStatefulSetsWithReplicas);
                 LOGGER.debug("Start updating cluster");
             }))
             // update the cluster
             .compose(v -> esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster))
             .onComplete(context.succeeding(v -> {
 //                verifyHasOnlyResources(context, expectedConfigMaps, KubeResourceType.CONFIG_MAPS);
-                verifyHasOnlyResources(context, expectedResources, KubeResourceType.DEPLOYMENTS);
+                verifyHasOnlyResources(context, expectedDeployments, KubeResourceType.DEPLOYMENTS);
+                verifyHasOnlyResources(context, expectedStatefulSets, KubeResourceType.STATEFULSETS);
                 verifyHasOnlyResources(context, expectedServices, KubeResourceType.SERVICES);
                 verifyHasOnlyResources(context, expectedRoutes, KubeResourceType.ROUTES);
                 verifyHasOnlyResources(context, expectedSecrets, KubeResourceType.SECRETS);
-                verifyReplicasInDeployments(context, expectedResourcesWithReplicas);
+                verifyReplicasInDeployments(context, expectedDeploymentsWithReplicas);
+                verifyReplicasInStatefulSets(context, expectedStatefulSetsWithReplicas);
                 async.flag();
             }));
     }
@@ -1135,8 +1152,10 @@ public class EventStreamsOperatorTest {
 
         esCluster.setStatus(status);
 
-        Map<String, Integer> expectedResourcesWithReplicas = getExpectedResourcesWithReplicas(CLUSTER_NAME);
-        Set<String> expectedResources = expectedResourcesWithReplicas.keySet();
+        Map<String, Integer> expectedDeploymentsWithReplicas = getExpectedDeploymentsWithReplicas(CLUSTER_NAME);
+        Set<String> expectedDeployments = expectedDeploymentsWithReplicas.keySet();
+        Map<String, Integer> expectedStatefulSetsWithReplicas = getExpectedStatefulSetsWithReplicas(CLUSTER_NAME);
+        Set<String> expectedStatefulSets = expectedStatefulSetsWithReplicas.keySet();
         Set<String> expectedServices = getExpectedServiceNames(CLUSTER_NAME);
         Set<String> expectedRoutes = getExpectedRouteNames(CLUSTER_NAME);
 
@@ -1149,10 +1168,12 @@ public class EventStreamsOperatorTest {
         Checkpoint async = context.checkpoint();
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster)
             .onComplete(context.succeeding(v -> context.verify(() -> {
-                verifyHasOnlyResources(context, expectedResources, KubeResourceType.DEPLOYMENTS);
+                verifyHasOnlyResources(context, expectedDeployments, KubeResourceType.DEPLOYMENTS);
+                verifyHasOnlyResources(context, expectedStatefulSets, KubeResourceType.STATEFULSETS);
                 verifyHasOnlyResources(context, expectedServices, KubeResourceType.SERVICES);
                 verifyHasOnlyResources(context, expectedRoutes, KubeResourceType.ROUTES);
-                verifyReplicasInDeployments(context, expectedResourcesWithReplicas);
+                verifyReplicasInDeployments(context, expectedDeploymentsWithReplicas);
+                verifyReplicasInStatefulSets(context, expectedStatefulSetsWithReplicas);
 
                 String expectedInternalBootstrap = internalHost + ":" + internalPort;
                 String expectedExternalBootstrap = externalHost + ":" + externalPort;
@@ -2067,15 +2088,20 @@ public class EventStreamsOperatorTest {
                     .compose(v1 -> reconciliationState.createAdminApi(Date::new))
                     .onComplete(context.succeeding(v2 -> context.verify(() -> {
                         List<Deployment> deployments = mockClient.apps().deployments().list().getItems();
-                        assertThat("There are three deployments created", deployments.size(), is(3));
+                        assertThat("There are three deployments created", deployments.size(), is(2));
+                        List<StatefulSet> statefulsets = mockClient.apps().statefulSets().list().getItems();
+                        assertThat("There is one statefulset created", statefulsets.size(), is(1));
                         async.flag();
                         reconciliationState.createRestProducer(Date::new)
                             .compose(v3 -> reconciliationState.createSchemaRegistry(Date::new))
                             .compose(v3 -> reconciliationState.createAdminApi(Date::new))
                             .onComplete(context.succeeding(v3 -> context.verify(() -> {
                                 List<Deployment> deployments2 = mockClient.apps().deployments().list().getItems();
-                                assertThat("There are still only three deployments", deployments2.size(), is(3));
+                                assertThat("There are still only two deployments", deployments2.size(), is(2));
                                 deployments2.forEach(deployment -> assertTrue(deployments.contains(deployment)));
+                                List<StatefulSet> statefulsets2 = mockClient.apps().statefulSets().list().getItems();
+                                assertThat("There is still only one statefulset", statefulsets2.size(), is(1));
+                                statefulsets2.forEach(statefulset -> assertTrue(statefulsets.contains(statefulset)));
                                 async.flag();
                             })));
                     })));
@@ -2140,19 +2166,23 @@ public class EventStreamsOperatorTest {
         Set<String> expectedDeployments = new HashSet<>();
         expectedDeployments.add(CLUSTER_NAME + "-" + APP_NAME + "-" + RestProducerModel.COMPONENT_NAME);
         expectedDeployments.add(CLUSTER_NAME + "-" + APP_NAME + "-" + CollectorModel.COMPONENT_NAME);
-        expectedDeployments.add(CLUSTER_NAME + "-" + APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME);
         expectedDeployments.add(CLUSTER_NAME + "-" + APP_NAME + "-" + AdminUIModel.COMPONENT_NAME);
+
+        Set<String> expectedStatefulSets = new HashSet<>();
+        expectedStatefulSets.add(CLUSTER_NAME + "-" + APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME);
 
         boolean shouldExist = true;
         Checkpoint async = context.checkpoint(2);
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), instance)
             .onComplete(context.succeeding(ar -> {
                 verifyContainsResources(context, expectedDeployments, KubeResourceType.DEPLOYMENTS, shouldExist);
+                verifyContainsResources(context, expectedStatefulSets, KubeResourceType.STATEFULSETS, shouldExist);
                 async.flag();
             }))
             .compose(v -> esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), instanceMinimal))
             .onComplete(context.succeeding(ar -> {
                 verifyContainsResources(context, expectedDeployments, KubeResourceType.DEPLOYMENTS, !shouldExist);
+                verifyContainsResources(context, expectedStatefulSets, KubeResourceType.STATEFULSETS, !shouldExist);
                 async.flag();
             }));
     }
@@ -2804,6 +2834,17 @@ public class EventStreamsOperatorTest {
         }
     }
 
+    private void verifyReplicasInStatefulSets(VertxTestContext context, Map<String, Integer> expectedResourcesWithReplicas) {
+        Set<HasMetadata> capturedStatefulSets = getActualResources(expectedResourcesWithReplicas.keySet(), KubeResourceType.STATEFULSETS);
+        Set<String> capturedStatefulSetNames = capturedStatefulSets.stream().map(sts -> sts.getMetadata().getName()).collect(Collectors.toSet());
+        for (String stsName : capturedStatefulSetNames) {
+            Integer actualReplicas = getActualStsReplicas(stsName, expectedResourcesWithReplicas.get(stsName));
+            LOGGER.debug("STS name {} set {} replicas", stsName, actualReplicas);
+            context.verify(() -> assertThat("For sts " + stsName, mockClient.apps().statefulSets().inNamespace(NAMESPACE).withName(stsName).get().getSpec().getReplicas(),
+                    is(expectedResourcesWithReplicas.get(stsName))));
+        }
+    }
+
     private void verifyHasOnlyResources(VertxTestContext context, Set<String> expectedResources, KubeResourceType type) {
         Set<HasMetadata> actualResources =  getActualResources(expectedResources, type);
         Set<String> actualResourceNames = actualResources.stream().map(res -> res.getMetadata().getName()).collect(Collectors.toSet());
@@ -2876,14 +2917,42 @@ public class EventStreamsOperatorTest {
         return actualReplica;
     }
 
-    private Map<String, Integer> getExpectedResourcesWithReplicas(String clusterName) {
+    private Integer getActualStsReplicas(String stsName, Integer expectedReplica) {
+        int retryCount = 0;
+        int maxRetry = 5;
+        Integer actualReplica = 0;
+        while (retryCount < maxRetry) {
+            actualReplica = mockClient.apps().statefulSets().inNamespace(NAMESPACE).withName(stsName).get().getSpec().getReplicas();
+            LOGGER.debug("Actual replica for " + stsName + " is " + actualReplica);
+            LOGGER.debug("Expected replica for " + stsName + " is " + expectedReplica);
+            if (expectedReplica == actualReplica) {
+                break;
+            } else {
+                retryCount++;
+                try {
+                    LOGGER.debug("Waiting in retry loop " + retryCount);
+                    Thread.sleep(3000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return actualReplica;
+    }
+
+    private Map<String, Integer> getExpectedDeploymentsWithReplicas(String clusterName) {
         Map<String, Integer> expectedDeployments = new HashMap<>();
-        expectedDeployments.put(clusterName + "-" + APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME, EXPECTED_DEFAULT_REPLICAS);
         expectedDeployments.put(clusterName + "-" + APP_NAME + "-" + RestProducerModel.COMPONENT_NAME, EXPECTED_DEFAULT_REPLICAS);
         expectedDeployments.put(clusterName + "-" + APP_NAME + "-" + AdminApiModel.COMPONENT_NAME, EXPECTED_DEFAULT_REPLICAS);
         expectedDeployments.put(clusterName + "-" + APP_NAME + "-" + AdminUIModel.COMPONENT_NAME, EXPECTED_DEFAULT_REPLICAS);
         expectedDeployments.put(clusterName + "-" + APP_NAME + "-" + CollectorModel.COMPONENT_NAME, EXPECTED_DEFAULT_REPLICAS);
         return expectedDeployments;
+    }
+
+    private Map<String, Integer> getExpectedStatefulSetsWithReplicas(String clusterName) {
+        Map<String, Integer> expectedStatefulSets = new HashMap<>();
+        expectedStatefulSets.put(clusterName + "-" + APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME, EXPECTED_DEFAULT_REPLICAS);
+        return expectedStatefulSets;
     }
 
     private Set<String> getExpectedServiceNames(String clusterName) {
@@ -2961,6 +3030,9 @@ public class EventStreamsOperatorTest {
                 break;
             case DEPLOYMENTS:
                 result = new HashSet<>(mockClient.apps().deployments().inNamespace(namespace).list().getItems());
+                break;
+            case STATEFULSETS:
+                result = new HashSet<>(mockClient.apps().statefulSets().inNamespace(namespace).list().getItems());
                 break;
             case ROUTES:
                 result = new HashSet<>(mockClient.adapt(OpenShiftClient.class).routes().inNamespace(namespace).list().getItems());
@@ -3497,12 +3569,12 @@ public class EventStreamsOperatorTest {
         Checkpoint async = context.checkpoint();
         esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster)
             .onComplete(context.succeeding(v -> context.verify(() -> {
-                Optional<Deployment> schemaRegistry = Optional.ofNullable(mockClient.apps().deployments().inNamespace(NAMESPACE).list())
-                    .map(DeploymentList::getItems)
+                Optional<StatefulSet> schemaRegistry = Optional.ofNullable(mockClient.apps().statefulSets().inNamespace(NAMESPACE).list())
+                    .map(StatefulSetList::getItems)
                     .map(list -> list.stream()
-                        .filter(deploy -> deploy.getMetadata().getName().equals(CLUSTER_NAME + "-" + APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME))
+                        .filter(sts -> sts.getMetadata().getName().equals(CLUSTER_NAME + "-" + APP_NAME + "-" + SchemaRegistryModel.COMPONENT_NAME))
                         .findFirst())
-                    .map(deployment -> deployment.get());
+                    .map(sts -> sts.get());
 
                 assertThat(schemaRegistry.isPresent(), is(true));
 

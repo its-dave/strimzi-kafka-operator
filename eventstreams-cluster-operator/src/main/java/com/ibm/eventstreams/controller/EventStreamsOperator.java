@@ -85,6 +85,7 @@ import io.strimzi.operator.common.operator.resource.RouteOperator;
 import io.strimzi.operator.common.operator.resource.SecretOperator;
 import io.strimzi.operator.common.operator.resource.ServiceAccountOperator;
 import io.strimzi.operator.common.operator.resource.ServiceOperator;
+import io.strimzi.operator.common.operator.resource.StatefulSetOperator;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -120,6 +121,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
     private final EventStreamsGeoReplicatorResourceOperator replicatorResourceOperator;
     private final KafkaUserOperator kafkaUserOperator;
     private final DeploymentOperator deploymentOperator;
+    private final StatefulSetOperator statefulSetOperator;
     private final ServiceAccountOperator serviceAccountOperator;
     private final RoleBindingOperator roleBindingOperator;
     private final ConfigMapOperator configMapOperator;
@@ -169,6 +171,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         this.client = client;
         this.pfa = pfa;
         this.deploymentOperator = new DeploymentOperator(vertx, client);
+        this.statefulSetOperator = new StatefulSetOperator(vertx, client);
         this.serviceAccountOperator = new ServiceAccountOperator(vertx, client);
         this.roleBindingOperator = new RoleBindingOperator(vertx, client);
         this.configMapOperator = new ConfigMapOperator(vertx, client);
@@ -744,7 +747,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                         if (secretResult.resourceOpt().isPresent()) {
                             certGenerationID = secretResult.resource().getMetadata().getResourceVersion();
                         }
-                        return deploymentOperator.reconcile(namespace, schemaRegistry.getDefaultResourceName(), schemaRegistry.generateDeployment(certGenerationID, instance));
+                        return statefulSetOperator.reconcile(namespace, schemaRegistry.getDefaultResourceName(), schemaRegistry.generateStatefulSet(certGenerationID, instance));
                     }).map(this));
         }
 

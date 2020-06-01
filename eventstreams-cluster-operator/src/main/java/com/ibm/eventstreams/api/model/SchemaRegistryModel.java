@@ -41,7 +41,7 @@ import io.fabric8.kubernetes.api.model.ResourceRequirements;
 import io.fabric8.kubernetes.api.model.ServiceAccount;
 import io.fabric8.kubernetes.api.model.Volume;
 import io.fabric8.kubernetes.api.model.VolumeBuilder;
-import io.fabric8.kubernetes.api.model.apps.Deployment;
+import io.fabric8.kubernetes.api.model.apps.StatefulSet;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicy;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicyIngressRule;
 import io.strimzi.api.kafka.model.ContainerEnvVar;
@@ -93,7 +93,7 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
     private CommonServices commonServices;
 
     // deployable objects
-    private Deployment deployment;
+    private StatefulSet sts;
     private ServiceAccount serviceAccount;
     private NetworkPolicy networkPolicy;
     private PersistentVolumeClaim pvc;
@@ -189,7 +189,7 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
             setCustomImages(imageConfig.getSchemaRegistryImage(), imageConfig.getSchemaRegistryAvroImage(), imageConfig.getSchemaRegistryProxyImage());
 
             endpoints = createEndpoints(instance, schemaRegistrySpec.orElse(null));
-            deployment = generateDeployment(instance);
+            sts = generateStatefulSet(instance);
 
             createService(EndpointServiceType.INTERNAL, Collections.emptyMap());
             createService(EndpointServiceType.ROUTE, Collections.emptyMap());
@@ -206,26 +206,26 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
         }
     }
 
-    public Deployment generateDeployment(EventStreams instance) {
-        return generateDeployment("", instance);
+    public StatefulSet generateStatefulSet(EventStreams instance) {
+        return generateStatefulSet("", instance);
     }
 
     /**
-     * @return Deployment return the deployment with the specified generation id this is used
+     * @return StatefulSet return the StatefulSet with the specified generation id this is used
      * to control rolling updates, for example when the cert secret changes, and passing instance
      * to fetch the route from ES status which is used in avro container.
      */
-    public Deployment generateDeployment(String certGenerationID, EventStreams instance) {
+    public StatefulSet generateStatefulSet(String certGenerationID, EventStreams instance) {
         Optional<SchemaRegistrySpec> schemaRegistrySpec = Optional.ofNullable(instance.getSpec()).map(EventStreamsSpec::getSchemaRegistry);
 
         if (schemaRegistrySpec.isPresent()) {
-            deployment = createDeployment(getContainers(instance), getVolumes());
-            if (certGenerationID != null && deployment != null) {
-                deployment.getMetadata().getLabels().put(CERT_GENERATION_KEY, certGenerationID);
-                deployment.getSpec().getTemplate().getMetadata().getLabels().put(CERT_GENERATION_KEY, certGenerationID);
+            sts = createStatefulSet(getContainers(instance), getVolumes());
+            if (certGenerationID != null && sts != null) {
+                sts.getMetadata().getLabels().put(CERT_GENERATION_KEY, certGenerationID);
+                sts.getSpec().getTemplate().getMetadata().getLabels().put(CERT_GENERATION_KEY, certGenerationID);
             }
         }
-        return deployment;
+        return sts;
     }
 
 
@@ -639,10 +639,10 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
     }
 
     /**
-     * @return Deployment return the deployment with an empty generation id
+     * @return StatefulSet return the sts with an empty generation id
      */
-    public Deployment getDeployment() {
-        return deployment;
+    public StatefulSet getStatefulSet() {
+        return sts;
     }
 
     /**

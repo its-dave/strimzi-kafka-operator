@@ -38,7 +38,7 @@ import io.fabric8.kubernetes.api.model.ResourceRequirementsBuilder;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.Volume;
 import io.fabric8.kubernetes.api.model.VolumeMount;
-import io.fabric8.kubernetes.api.model.apps.Deployment;
+import io.fabric8.kubernetes.api.model.apps.StatefulSet;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicy;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicyIngressRule;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicyIngressRuleBuilder;
@@ -129,9 +129,9 @@ public class SchemaRegistryModelTest {
     public void testDefaultBuilder() {
         SchemaRegistryModel schemaRegistryModel = createDefaultSchemaRegistryModel();
 
-        Deployment schemaRegistryDeployment = schemaRegistryModel.getDeployment();
-        assertThat(schemaRegistryDeployment.getMetadata().getName(), startsWith(componentPrefix));
-        assertThat(schemaRegistryDeployment.getSpec().getReplicas(), is(defaultReplicas));
+        StatefulSet schemaRegistryStatefulSet = schemaRegistryModel.getStatefulSet();
+        assertThat(schemaRegistryStatefulSet.getMetadata().getName(), startsWith(componentPrefix));
+        assertThat(schemaRegistryStatefulSet.getSpec().getReplicas(), is(defaultReplicas));
 
         Service schemaRegistryInternalService = schemaRegistryModel.getSecurityService(EndpointServiceType.INTERNAL);
         assertThat(schemaRegistryInternalService.getMetadata().getName(), startsWith(componentPrefix));
@@ -185,7 +185,7 @@ public class SchemaRegistryModelTest {
     @Test
     public void testDefaultResourceRequirements() {
         SchemaRegistryModel schemaRegistryModel = createDefaultSchemaRegistryModel();
-        List<Container> containerList = schemaRegistryModel.getDeployment().getSpec().getTemplate().getSpec().getContainers();
+        List<Container> containerList = schemaRegistryModel.getStatefulSet().getSpec().getTemplate().getSpec().getContainers();
         containerList.forEach(container -> {
             assertThat(container.getResources().getRequests().get("cpu").getAmount(), is("500m"));
             assertThat(container.getResources().getLimits().get("cpu").getAmount(), is("500m"));
@@ -230,7 +230,7 @@ public class SchemaRegistryModelTest {
         SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(eventStreamsResource, Mockito.mock(
             EventStreamsOperatorConfig.ImageLookup.class), null, mockCommonServices, kafkaPrincipal);
 
-        List<Container> containerList = schemaRegistryModel.getDeployment().getSpec().getTemplate().getSpec().getContainers();
+        List<Container> containerList = schemaRegistryModel.getStatefulSet().getSpec().getTemplate().getSpec().getContainers();
 
         Map<String, ResourceRequirements> resourceRequirements = containerList.stream()
                 .collect(Collectors.toMap(Container::getName, Container::getResources));
@@ -280,7 +280,7 @@ public class SchemaRegistryModelTest {
         expectedImages.put(SchemaRegistryModel.AVRO_SERVICE_CONTAINER_NAME, avroImage);
         expectedImages.put(SchemaRegistryModel.SCHEMA_REGISTRY_PROXY_CONTAINER_NAME, schemaRegistryProxyImage);
 
-        List<Container> containers = new SchemaRegistryModel(instance, imageConfig, null, mockCommonServices, kafkaPrincipal).getDeployment().getSpec().getTemplate()
+        List<Container> containers = new SchemaRegistryModel(instance, imageConfig, null, mockCommonServices, kafkaPrincipal).getStatefulSet().getSpec().getTemplate()
                 .getSpec().getContainers();
 
         ModelUtils.assertCorrectImageOverridesOnContainers(containers, expectedImages);
@@ -297,7 +297,7 @@ public class SchemaRegistryModelTest {
         when(imageConfig.getSchemaRegistryProxyImage()).thenReturn(Optional.of(proxyImage));
 
         SchemaRegistryModel model = createDefaultSchemaRegistryModel();
-        List<Container> containers = model.getDeployment().getSpec().getTemplate()
+        List<Container> containers = model.getStatefulSet().getSpec().getTemplate()
                 .getSpec().getContainers();
 
         Map<String, String> expectedImages = new HashMap<>();
@@ -335,7 +335,7 @@ public class SchemaRegistryModelTest {
                 .endSpec()
                 .build();
 
-        List<Container> containers = new SchemaRegistryModel(instance, imageConfig, null, mockCommonServices, kafkaPrincipal).getDeployment().getSpec().getTemplate()
+        List<Container> containers = new SchemaRegistryModel(instance, imageConfig, null, mockCommonServices, kafkaPrincipal).getStatefulSet().getSpec().getTemplate()
                 .getSpec().getContainers();
 
         Map<String, String> expectedImages = new HashMap<>();
@@ -441,7 +441,7 @@ public class SchemaRegistryModelTest {
         EnvVar tlsVersion = new EnvVarBuilder().withName("TLS_VERSION").withValue("9443:TLSv1.2,7443:TLSv1.2").build();
         EnvVar authEnabled  = new EnvVarBuilder().withName("AUTHORIZATION_ENABLED").withValue("false").build();
 
-        List<EnvVar> envVars = schemaRegistryModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().stream().filter(container -> SchemaRegistryModel.SCHEMA_REGISTRY_PROXY_CONTAINER_NAME.equals(container.getName())).findFirst().get().getEnv();
+        List<EnvVar> envVars = schemaRegistryModel.getStatefulSet().getSpec().getTemplate().getSpec().getContainers().stream().filter(container -> SchemaRegistryModel.SCHEMA_REGISTRY_PROXY_CONTAINER_NAME.equals(container.getName())).findFirst().get().getEnv();
 
         assertThat(envVars, hasItems(authentication, endpoints, tlsVersion, authEnabled));
     }
@@ -456,7 +456,7 @@ public class SchemaRegistryModelTest {
         EnvVar tlsVersion = new EnvVarBuilder().withName("TLS_VERSION").withValue("9443:TLSv1.2,7443:TLSv1.2").build();
         EnvVar authEnabled  = new EnvVarBuilder().withName("AUTHORIZATION_ENABLED").withValue("true").build();
 
-        List<EnvVar> envVars = schemaRegistryModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().stream().filter(container -> SchemaRegistryModel.SCHEMA_REGISTRY_PROXY_CONTAINER_NAME.equals(container.getName())).findFirst().get().getEnv();
+        List<EnvVar> envVars = schemaRegistryModel.getStatefulSet().getSpec().getTemplate().getSpec().getContainers().stream().filter(container -> SchemaRegistryModel.SCHEMA_REGISTRY_PROXY_CONTAINER_NAME.equals(container.getName())).findFirst().get().getEnv();
 
         assertThat(envVars, hasItems(authentication, endpoints, tlsVersion, authEnabled));
     }
@@ -470,7 +470,7 @@ public class SchemaRegistryModelTest {
                 .withName(SchemaRegistryModel.LOG_LEVEL_ENV_NAME)
                 .withValue("INFO")
                 .build();
-        List<EnvVar> envVars = schemaRegistryModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().stream().filter(container -> SchemaRegistryModel.COMPONENT_NAME.equals(container.getName())).findFirst().get().getEnv();
+        List<EnvVar> envVars = schemaRegistryModel.getStatefulSet().getSpec().getTemplate().getSpec().getContainers().stream().filter(container -> SchemaRegistryModel.COMPONENT_NAME.equals(container.getName())).findFirst().get().getEnv();
 
         assertThat(envVars, hasItem(expectedEnvVar));
     }
@@ -496,7 +496,7 @@ public class SchemaRegistryModelTest {
                 .withName(SchemaRegistryModel.LOG_LEVEL_ENV_NAME)
                 .withValue("DEBUG")
                 .build();
-        List<EnvVar> envVars = schemaRegistryModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().stream().filter(container -> SchemaRegistryModel.COMPONENT_NAME.equals(container.getName())).findFirst().get().getEnv();
+        List<EnvVar> envVars = schemaRegistryModel.getStatefulSet().getSpec().getTemplate().getSpec().getContainers().stream().filter(container -> SchemaRegistryModel.COMPONENT_NAME.equals(container.getName())).findFirst().get().getEnv();
 
         assertThat(envVars, hasItem(expectedEnvVar));
     }
@@ -518,7 +518,7 @@ public class SchemaRegistryModelTest {
                 .withName(SchemaRegistryModel.LOG_LEVEL_ENV_NAME)
                 .withValue("INFO")
                 .build();
-        List<EnvVar> envVars = schemaRegistryModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().stream().filter(container -> SchemaRegistryModel.COMPONENT_NAME.equals(container.getName())).findFirst().get().getEnv();
+        List<EnvVar> envVars = schemaRegistryModel.getStatefulSet().getSpec().getTemplate().getSpec().getContainers().stream().filter(container -> SchemaRegistryModel.COMPONENT_NAME.equals(container.getName())).findFirst().get().getEnv();
 
         assertThat(envVars, hasItem(expectedEnvVar));
     }
@@ -540,7 +540,7 @@ public class SchemaRegistryModelTest {
                 .withName(SchemaRegistryModel.LOG_LEVEL_ENV_NAME)
                 .withValue("INFO")
                 .build();
-        List<EnvVar> envVars = schemaRegistryModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().stream().filter(container -> SchemaRegistryModel.COMPONENT_NAME.equals(container.getName())).findFirst().get().getEnv();
+        List<EnvVar> envVars = schemaRegistryModel.getStatefulSet().getSpec().getTemplate().getSpec().getContainers().stream().filter(container -> SchemaRegistryModel.COMPONENT_NAME.equals(container.getName())).findFirst().get().getEnv();
 
         assertThat(envVars, hasItem(expectedEnvVar));
     }
@@ -554,7 +554,7 @@ public class SchemaRegistryModelTest {
                 .withName(SchemaRegistryModel.AVRO_LOG_LEVEL_ENV_NAME)
                 .withValue("info")
                 .build();
-        List<EnvVar> envVars = schemaRegistryModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().stream().filter(container -> SchemaRegistryModel.AVRO_SERVICE_CONTAINER_NAME.equals(container.getName())).findFirst().get().getEnv();
+        List<EnvVar> envVars = schemaRegistryModel.getStatefulSet().getSpec().getTemplate().getSpec().getContainers().stream().filter(container -> SchemaRegistryModel.AVRO_SERVICE_CONTAINER_NAME.equals(container.getName())).findFirst().get().getEnv();
 
         assertThat(envVars, hasItem(expectedEnvVar));
     }
@@ -582,7 +582,7 @@ public class SchemaRegistryModelTest {
                 .withName(SchemaRegistryModel.AVRO_LOG_LEVEL_ENV_NAME)
                 .withValue("TRACE")
                 .build();
-        List<EnvVar> envVars = schemaRegistryModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().stream().filter(container -> SchemaRegistryModel.AVRO_SERVICE_CONTAINER_NAME.equals(container.getName())).findFirst().get().getEnv();
+        List<EnvVar> envVars = schemaRegistryModel.getStatefulSet().getSpec().getTemplate().getSpec().getContainers().stream().filter(container -> SchemaRegistryModel.AVRO_SERVICE_CONTAINER_NAME.equals(container.getName())).findFirst().get().getEnv();
 
         assertThat(envVars, hasItem(expectedEnvVar));
     }
@@ -606,7 +606,7 @@ public class SchemaRegistryModelTest {
                 .withName(SchemaRegistryModel.AVRO_LOG_LEVEL_ENV_NAME)
                 .withValue("info")
                 .build();
-        List<EnvVar> envVars = schemaRegistryModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().stream().filter(container -> SchemaRegistryModel.AVRO_SERVICE_CONTAINER_NAME.equals(container.getName())).findFirst().get().getEnv();
+        List<EnvVar> envVars = schemaRegistryModel.getStatefulSet().getSpec().getTemplate().getSpec().getContainers().stream().filter(container -> SchemaRegistryModel.AVRO_SERVICE_CONTAINER_NAME.equals(container.getName())).findFirst().get().getEnv();
 
         assertThat(envVars, hasItem(expectedEnvVar));
     }
@@ -630,7 +630,7 @@ public class SchemaRegistryModelTest {
                 .withName(SchemaRegistryModel.AVRO_LOG_LEVEL_ENV_NAME)
                 .withValue("info")
                 .build();
-        List<EnvVar> envVars = schemaRegistryModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().stream().filter(container -> SchemaRegistryModel.AVRO_SERVICE_CONTAINER_NAME.equals(container.getName())).findFirst().get().getEnv();
+        List<EnvVar> envVars = schemaRegistryModel.getStatefulSet().getSpec().getTemplate().getSpec().getContainers().stream().filter(container -> SchemaRegistryModel.AVRO_SERVICE_CONTAINER_NAME.equals(container.getName())).findFirst().get().getEnv();
 
         assertThat(envVars, hasItem(expectedEnvVar));
     }
@@ -649,17 +649,17 @@ public class SchemaRegistryModelTest {
         EventStreams eventStreams = createDefaultEventStreams().build();
         SchemaRegistryModel schemaRegistryModel = new SchemaRegistryModel(eventStreams, imageConfig, null, mockCommonServices, kafkaPrincipal);
 
-        assertThat(schemaRegistryModel.generateDeployment("newID", eventStreams).getMetadata().getLabels().containsKey(AbstractSecureEndpointsModel.CERT_GENERATION_KEY), is(true));
-        assertThat(schemaRegistryModel.generateDeployment("newID", eventStreams).getMetadata().getLabels().get(AbstractSecureEndpointsModel.CERT_GENERATION_KEY), is("newID"));
-        assertThat(schemaRegistryModel.generateDeployment("newID", eventStreams).getSpec().getTemplate().getMetadata().getLabels().containsKey(AbstractSecureEndpointsModel.CERT_GENERATION_KEY), is(true));
-        assertThat(schemaRegistryModel.generateDeployment("newID", eventStreams).getSpec().getTemplate().getMetadata().getLabels().get(AbstractSecureEndpointsModel.CERT_GENERATION_KEY), is("newID"));
+        assertThat(schemaRegistryModel.generateStatefulSet("newID", eventStreams).getMetadata().getLabels().containsKey(AbstractSecureEndpointsModel.CERT_GENERATION_KEY), is(true));
+        assertThat(schemaRegistryModel.generateStatefulSet("newID", eventStreams).getMetadata().getLabels().get(AbstractSecureEndpointsModel.CERT_GENERATION_KEY), is("newID"));
+        assertThat(schemaRegistryModel.generateStatefulSet("newID", eventStreams).getSpec().getTemplate().getMetadata().getLabels().containsKey(AbstractSecureEndpointsModel.CERT_GENERATION_KEY), is(true));
+        assertThat(schemaRegistryModel.generateStatefulSet("newID", eventStreams).getSpec().getTemplate().getMetadata().getLabels().get(AbstractSecureEndpointsModel.CERT_GENERATION_KEY), is("newID"));
     }
 
     @Test
     public void testVolumeMounts() {
         SchemaRegistryModel schemaRegistryModel = createDefaultSchemaRegistryModel();
 
-        List<VolumeMount> volumeMounts = schemaRegistryModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0).getVolumeMounts();
+        List<VolumeMount> volumeMounts = schemaRegistryModel.getStatefulSet().getSpec().getTemplate().getSpec().getContainers().get(0).getVolumeMounts();
 
         assertThat(volumeMounts.size(), is(2));
 
@@ -670,7 +670,7 @@ public class SchemaRegistryModelTest {
         assertThat(volumeMounts.get(1).getMountPath(), is("/var/lib/schemas"));
 
         // Test mounts for proxy
-        List<VolumeMount> volumeMountsProxy = schemaRegistryModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(2).getVolumeMounts();
+        List<VolumeMount> volumeMountsProxy = schemaRegistryModel.getStatefulSet().getSpec().getTemplate().getSpec().getContainers().get(2).getVolumeMounts();
 
         assertThat(volumeMountsProxy.size(), is(7));
 
@@ -707,7 +707,7 @@ public class SchemaRegistryModelTest {
     public void testVolumes() {
         SchemaRegistryModel schemaRegistryModel = createDefaultSchemaRegistryModel();
 
-        List<Volume> volumes = schemaRegistryModel.getDeployment().getSpec().getTemplate().getSpec().getVolumes();
+        List<Volume> volumes = schemaRegistryModel.getStatefulSet().getSpec().getTemplate().getSpec().getVolumes();
 
         assertThat(volumes.size(), is(9));
 
@@ -799,7 +799,7 @@ public class SchemaRegistryModelTest {
         EnvVar expectedEnvVarIAMClusterEndpoint = new EnvVarBuilder().withName("IAM_SERVER_URL").withValue(ingressEndpoint).build();
         EnvVar expectedEnvVarKafkaPrincipal = new EnvVarBuilder().withName("KAFKA_PRINCIPAL").withValue(kafkaPrincipal).build();
 
-        List<EnvVar> actualSchemaProxyEnvVars = schemaRegistryModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(2).getEnv();
+        List<EnvVar> actualSchemaProxyEnvVars = schemaRegistryModel.getStatefulSet().getSpec().getTemplate().getSpec().getContainers().get(2).getEnv();
         System.out.println(actualSchemaProxyEnvVars);
         assertThat(actualSchemaProxyEnvVars, hasItems(expectedEnvVarIAMClusterName, expectedEnvVarIAMClusterEndpoint, expectedEnvVarKafkaPrincipal));
     }
@@ -808,10 +808,10 @@ public class SchemaRegistryModelTest {
     public void testDefaultLabelsAndAnnotations() {
         SchemaRegistryModel schemaRegistry = createDefaultSchemaRegistryModel();
 
-        Map<String, String> computedAnnotations = schemaRegistry.getDeployment().getSpec().getTemplate().getMetadata().getAnnotations();
+        Map<String, String> computedAnnotations = schemaRegistry.getStatefulSet().getSpec().getTemplate().getMetadata().getAnnotations();
         ModelUtils.assertMeteringAnnotationsPresent(computedAnnotations);
 
-        Map<String, String> computedLabels = schemaRegistry.getDeployment().getSpec().getTemplate().getMetadata().getLabels();
+        Map<String, String> computedLabels = schemaRegistry.getStatefulSet().getSpec().getTemplate().getMetadata().getLabels();
         ModelUtils.assertEventStreamsLabelsPresent(computedLabels);
     }
 
@@ -837,7 +837,7 @@ public class SchemaRegistryModelTest {
                 .build();
         SchemaRegistryModel schemaRegistry = new SchemaRegistryModel(defaultEs, imageConfig, null, mockCommonServices, kafkaPrincipal);
 
-        Map<String, String> computedAnnotations = schemaRegistry.getDeployment().getSpec().getTemplate().getMetadata().getAnnotations();
+        Map<String, String> computedAnnotations = schemaRegistry.getStatefulSet().getSpec().getTemplate().getMetadata().getAnnotations();
         ModelUtils.assertMeteringAnnotationsPresent(computedAnnotations);
         assertThat(computedAnnotations, hasEntry("mycustomannotation", "alpha"));
         assertThat(computedAnnotations, hasEntry("multipleannotations", "beta"));
@@ -866,7 +866,7 @@ public class SchemaRegistryModelTest {
                 .build();
         SchemaRegistryModel schemaRegistry = new SchemaRegistryModel(defaultEs, imageConfig, null, mockCommonServices, kafkaPrincipal);
 
-        Map<String, String> computedLabels = schemaRegistry.getDeployment().getSpec().getTemplate().getMetadata().getLabels();
+        Map<String, String> computedLabels = schemaRegistry.getStatefulSet().getSpec().getTemplate().getMetadata().getLabels();
         ModelUtils.assertEventStreamsLabelsPresent(computedLabels);
         assertThat(computedLabels, hasEntry("mycustomlabel", "alpha"));
         assertThat(computedLabels, hasEntry("multiplelabels", "beta"));
@@ -876,7 +876,7 @@ public class SchemaRegistryModelTest {
     @Test
     public void testDefaultAffinity() {
         SchemaRegistryModel schemaRegistry = createDefaultSchemaRegistryModel();
-        Affinity schemaRegistryAffinity = schemaRegistry.getDeployment().getSpec().getTemplate().getSpec().getAffinity();
+        Affinity schemaRegistryAffinity = schemaRegistry.getStatefulSet().getSpec().getTemplate().getSpec().getAffinity();
         assertNull(schemaRegistryAffinity);
     }
 
@@ -907,7 +907,7 @@ public class SchemaRegistryModelTest {
             .build();
         SchemaRegistryModel schemaRegistry = new SchemaRegistryModel(defaultEs, imageConfig, null, mockCommonServices, kafkaPrincipal);
 
-        Affinity schemaRegAffinity = schemaRegistry.getDeployment().getSpec().getTemplate().getSpec().getAffinity();
+        Affinity schemaRegAffinity = schemaRegistry.getStatefulSet().getSpec().getTemplate().getSpec().getAffinity();
         PreferredSchedulingTerm computedNodeSelector = schemaRegAffinity.getNodeAffinity().getPreferredDuringSchedulingIgnoredDuringExecution().get(0);
         NodeSelectorRequirement computedMatchExpression = computedNodeSelector.getPreference().getMatchExpressions().get(0);
         assertThat(computedMatchExpression.getKey(), is("custom-schema-key"));

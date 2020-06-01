@@ -53,6 +53,8 @@ import io.fabric8.kubernetes.api.model.Volume;
 import io.fabric8.kubernetes.api.model.VolumeBuilder;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.apps.DeploymentBuilder;
+import io.fabric8.kubernetes.api.model.apps.StatefulSet;
+import io.fabric8.kubernetes.api.model.apps.StatefulSetBuilder;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicy;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicyBuilder;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicyEgressRule;
@@ -742,6 +744,45 @@ public abstract class AbstractModel {
                     .endSpec()
                 .endTemplate()
             .endSpec()
+            .build();
+    }
+
+    public StatefulSet createStatefulSet(
+            List<Container> containers,
+            List<Volume> volumes) {
+
+        Labels labels = labels();
+        Labels selectorLabels = labels.strimziSelectorLabels();
+
+        return new StatefulSetBuilder()
+                .withNewMetadata()
+                    .withName(getDefaultResourceName())
+                    .withNamespace(namespace)
+                    .withOwnerReferences(getEventStreamsOwnerReference())
+                    .addToAnnotations(getEventStreamsMeteringAnnotations())
+                    .addToLabels(labels.toMap())
+                .endMetadata()
+                .withNewSpec()
+                    .withReplicas(replicas)
+                    .withNewSelector()
+                        .withMatchLabels(selectorLabels.toMap())
+                    .endSelector()
+                    .withNewTemplate()
+                        .withNewMetadata()
+                            .addToAnnotations(getEventStreamsMeteringAnnotations())
+                            .addToAnnotations(getAnnotationOverrides())
+                            .addToLabels(labels.toMap())
+                            .addToLabels(getLabelOverrides())
+                        .endMetadata()
+                        .withNewSpec()
+                            .withAffinity(getAffinity())
+                            .withContainers(containers)
+                            .withVolumes(volumes)
+                            .withSecurityContext(getPodSecurityContext())
+                            .withNewServiceAccount(getDefaultResourceName())
+                        .endSpec()
+                    .endTemplate()
+                .endSpec()
             .build();
     }
 
