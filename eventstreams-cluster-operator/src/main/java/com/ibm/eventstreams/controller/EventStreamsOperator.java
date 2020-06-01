@@ -206,6 +206,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         return log.traceExit(reconcileState.validateCustomResource()
                 .compose(state -> state.createCommonServicesOperandRequest())
                 .compose(state -> state.waitForCommonServicesOperandRequestReady())
+                .compose(state -> state.checkCommonServicesReady())
                 .compose(state -> state.getCommonServices())
                 .compose(state -> state.getCommonServicesClusterCert())
                 .compose(state -> state.createCloudPakClusterCertSecret())
@@ -346,6 +347,37 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                     defaultPollIntervalMs,
                     kafkaStatusReadyTimeoutMs)
                 .map(v -> this));
+        }
+
+        Future<ReconciliationState> checkCommonServicesReady() {
+            log.traceEntry();
+
+            List<String> commonServiceComponents = Collections.singletonList(CommonServices.COMMON_SERVICES_STATUS_IAM);
+
+            return configMapOperator.getAsync(CommonServices.COMMON_SERVICES_STATUS_CM_NAMESPACE, CommonServices.COMMON_SERVICES_STATUS_CM_NAME)
+                .compose(statusCM -> statusCM == null ?
+                    Future.failedFuture("ConfigMap for Common Services status is missing.") :
+                    Future.succeededFuture(statusCM))
+                .compose(statusCM -> {
+                    Map<String, String> commonServicesStatusData = Optional.ofNullable(statusCM.getData())
+                        .orElse(Collections.emptyMap());
+
+                    List<String> unreadyComponents = commonServiceComponents.stream()
+                        .filter(component -> {
+                            String status = Optional.ofNullable(commonServicesStatusData.get(component)).orElse("Missing");
+                            return !status.equals(CommonServices.COMMON_SERVICES_STATUS_READY);
+                        })
+                        .map(component -> {
+                            String status = Optional.ofNullable(commonServicesStatusData.get(component)).orElse("Missing");
+                            return String.format("%s is: %s", component, status);
+                        })
+                        .collect(Collectors.toList());
+
+                    return unreadyComponents.size() != 0 ?
+                        Future.failedFuture(String.format("Common Services must be Ready. Currently: %s ", String.join(", ", unreadyComponents))) :
+                        Future.succeededFuture();
+                })
+                .map(v -> this);
         }
 
         Future<ReconciliationState> getCommonServices() {

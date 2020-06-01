@@ -46,6 +46,11 @@ public class CommonServices {
     public static final String INGRESS_CM_NAME = "management-ingress-ibmcloud-cluster-info";
     public static final String CA_CERT_SECRET_NAME = "management-ingress-ibmcloud-cluster-ca-cert";
 
+    public static final String COMMON_SERVICES_STATUS_CM_NAME = "ibm-common-services-status";
+    public static final String COMMON_SERVICES_STATUS_CM_NAMESPACE = "kube-public";
+    public static final String COMMON_SERVICES_STATUS_READY = "Ready";
+    public static final String COMMON_SERVICES_STATUS_IAM = "iamstatus";
+
     public static final String CLUSTER_NAME_KEY = "cluster_name";
     public static final String CONSOLE_HOST_KEY = "cluster_address";
     public static final String CONSOLE_PORT_KEY = "cluster_router_https_port";

@@ -222,6 +222,8 @@ public class EventStreamsOperatorTest {
     private PlatformFeaturesAvailability pfa;
     private MetricsProvider metricsProvider;
 
+    private Resource<ConfigMap, DoneableConfigMap> mockCommonServicesStatusCMResource;
+
     private long kafkaStatusReadyTimeoutMs = 0;
 
     public enum KubeResourceType {
@@ -337,12 +339,25 @@ public class EventStreamsOperatorTest {
         when(mockNamespaceOperation.withName("management-ingress-ibmcloud-cluster-info")).thenReturn(mockIngressCMResource);
         when(mockIngressCMResource.get()).thenReturn(testIngressConfigMap);
 
+        // mock Common Services status Config Map is present
+        Map<String, String> mockCommonServicesStatusData = new HashMap<>();
+        mockCommonServicesStatusData.put("iamstatus", "Ready");
+        ConfigMap testCommonServicesStatusConfigMap = new ConfigMap();
+        testCommonServicesStatusConfigMap.setData(mockCommonServicesStatusData);
+
+        mockCommonServicesStatusCMResource = mock(Resource.class);
+
+        when(mockClient.configMaps().inNamespace("kube-public")).thenReturn(mockNamespaceOperation);
+        when(mockNamespaceOperation.withName("ibm-common-services-status")).thenReturn(mockCommonServicesStatusCMResource);
+        when(mockCommonServicesStatusCMResource.get()).thenReturn(testCommonServicesStatusConfigMap);
+
         // mock ICP cluster ca cert
         Map<String, String> secretData = new HashMap<>();
         secretData.put("ca.crt", "QnJOY0twdXdjaUxiCg==");
         Secret ibmCloudClusterCaCert = new Secret();
         ibmCloudClusterCaCert.setData(secretData);
         Resource<Secret, DoneableSecret> mockSecret = mock(Resource.class);
+
         when(mockClient.secrets().inNamespace(OPERATOR_NAMESPACE)).thenReturn(mockNamespaceOperation);
         when(mockNamespaceOperation.withName("management-ingress-ibmcloud-cluster-ca-cert")).thenReturn(mockSecret);
         when(mockSecret.get()).thenReturn(ibmCloudClusterCaCert);
@@ -3576,6 +3591,62 @@ public class EventStreamsOperatorTest {
                     assertTrue(endpoint.getUri().startsWith("http://"), endpoint.getUri() + " should be http");
                 });
                 async.flag();
+            })));
+    }
+
+    @Test
+    public void testFailsToReconcileIfIamIsNotReady(VertxTestContext context) {
+        Map<String, String> mockCommonServicesStatusData = new HashMap<>();
+        mockCommonServicesStatusData.put("iamstatus", "NotReady");
+        ConfigMap testCommonServicesStatusConfigMap = new ConfigMap();
+        testCommonServicesStatusConfigMap.setData(mockCommonServicesStatusData);
+
+        when(mockCommonServicesStatusCMResource.get()).thenReturn(testCommonServicesStatusConfigMap);
+
+        esOperator = createDefaultEventStreamsOperator(true);
+        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
+
+        esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster)
+            .onComplete(context.failing(cause -> context.verify(() -> {
+                assertThat(cause.getMessage(), containsString("iamstatus is: NotReady"));
+                context.completeNow();
+            })));
+    }
+
+    @Test
+    public void testFailsToReconcileIfIamIsNotRunning(VertxTestContext context) {
+        Map<String, String> mockCommonServicesStatusData = new HashMap<>();
+        mockCommonServicesStatusData.put("iamstatus", "NotRunning");
+        ConfigMap testCommonServicesStatusConfigMap = new ConfigMap();
+        testCommonServicesStatusConfigMap.setData(mockCommonServicesStatusData);
+
+        when(mockCommonServicesStatusCMResource.get()).thenReturn(testCommonServicesStatusConfigMap);
+
+        esOperator = createDefaultEventStreamsOperator(true);
+        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
+
+        esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster)
+            .onComplete(context.failing(cause -> context.verify(() -> {
+                assertThat(cause.getMessage(), containsString("iamstatus is: NotRunning"));
+                context.completeNow();
+            })));
+    }
+
+    @Test
+    public void testFailsToReconcileIfIamStatusIsMissing(VertxTestContext context) {
+        Map<String, String> mockCommonServicesStatusData = new HashMap<>();
+        ConfigMap testCommonServicesStatusConfigMap = new ConfigMap();
+        testCommonServicesStatusConfigMap.setData(mockCommonServicesStatusData);
+
+        when(mockCommonServicesStatusCMResource.get()).thenReturn(testCommonServicesStatusConfigMap);
+
+        esOperator = createDefaultEventStreamsOperator(true);
+        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
+
+        esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster)
+            .onComplete(context.failing(cause -> context.verify(() -> {
+                assertThat(cause.getMessage(), containsString("iamstatus is: Missing"));
+                context.completeNow();
             })));
     }
 
