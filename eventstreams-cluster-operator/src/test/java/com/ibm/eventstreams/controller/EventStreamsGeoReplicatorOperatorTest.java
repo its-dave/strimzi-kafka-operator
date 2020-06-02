@@ -81,6 +81,8 @@ import java.util.stream.Collectors;
 
 import static com.ibm.eventstreams.api.model.AbstractModel.APP_NAME;
 import static com.ibm.eventstreams.api.model.InternalKafkaUserModel.getInternalKafkaUserName;
+import static com.ibm.eventstreams.controller.EventStreamsGeoReplicatorOperator.DEPLOYMENT_FAILED_REASON;
+import static com.ibm.eventstreams.controller.EventStreamsGeoReplicatorOperator.EVENT_STREAMS_INSTANCE_NOT_FOUND_REASON;
 import static com.ibm.eventstreams.rest.replicator.ReplicatorKafkaListenerValidation.INVALID_EXTERNAL_KAFKA_LISTENER_MESSAGE;
 import static com.ibm.eventstreams.rest.replicator.ReplicatorKafkaListenerValidation.INVALID_EXTERNAL_KAFKA_LISTENER_REASON;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -391,8 +393,49 @@ public class EventStreamsGeoReplicatorOperatorTest {
                 EventStreamsGeoReplicator val = argument.getValue();
                 assertThat(val.getStatus().getPhase(), is(PhaseState.FAILED));
                 List<Condition> conditions = val.getStatus().getConditions();
-                assertThat(conditions.stream().filter(condition -> "DeploymentFailed".equals(condition.getReason())).findFirst().get().getMessage(),
+                assertThat(conditions.stream().filter(condition -> DEPLOYMENT_FAILED_REASON.equals(condition.getReason())).findFirst().get().getMessage(),
                     is("An unexpected exception was encountered: Could not get ES custom resource. More detail can be found in the Event Streams geo-replication operator log."));
+
+                async.flag();
+            })));
+    }
+
+    @Test
+    public void testGeoReplicatorFailsWhenNullEventStreamsInstanceFound(VertxTestContext context) {
+        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
+        EventStreamsGeoReplicator geoReplicatorCluster = createDefaultEventStreamsGeoReplicator(NAMESPACE, CLUSTER_NAME);
+
+        mockGetNullEventStreamsResource(CLUSTER_NAME);
+        mockGetGeoReplicatorResource(CLUSTER_NAME, geoReplicatorCluster);
+        mockUpdateGeoReplicatorStatus(null);
+        EventStreamsGeoReplicatorOperator geoReplicatorOperator = new EventStreamsGeoReplicatorOperator(
+            vertx,
+            mockClient,
+            EventStreamsGeoReplicator.RESOURCE_KIND,
+            pfa,
+            esReplicatorResourceOperator,
+            esResourceOperator,
+            kafkaUserOperator,
+            metricsProvider
+        );
+
+        Checkpoint async = context.checkpoint();
+        geoReplicatorOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), geoReplicatorCluster)
+            .onComplete(context.failing(throwable -> context.verify(() -> {
+                String message = String.format("Could not find Event Streams instance '%s' in namespace '%s'. Geo-replication requires a running Event Streams instance. Create an Event Streams instance before deploying the Event Streams geo-replicator", CLUSTER_NAME, NAMESPACE);
+                assertThat(throwable.getMessage(), is(message));
+                ArgumentCaptor<EventStreamsGeoReplicator> argument = ArgumentCaptor.forClass(EventStreamsGeoReplicator.class);
+                verify(esReplicatorResourceOperator, times(1)).updateEventStreamsGeoReplicatorStatus(argument.capture());
+
+                EventStreamsGeoReplicator val = argument.getValue();
+                assertThat(val.getStatus().getPhase(), is(PhaseState.FAILED));
+                List<Condition> conditions = val.getStatus().getConditions();
+
+                assertThat(conditions.stream().filter(condition -> EVENT_STREAMS_INSTANCE_NOT_FOUND_REASON.equals(condition.getReason())).findFirst().get().getMessage(),
+                    is(message));
+
+                assertThat(conditions.stream().filter(condition -> DEPLOYMENT_FAILED_REASON.equals(condition.getReason())).findFirst().get().getMessage(),
+                    is(String.format("An unexpected exception was encountered: %s. More detail can be found in the Event Streams geo-replication operator log.", message)));
 
                 async.flag();
             })));
@@ -586,6 +629,10 @@ public class EventStreamsGeoReplicatorOperatorTest {
     private void mockGetEventStreamsResource(String name, EventStreams eventStreams) {
         Future<EventStreams> eventStreamsFuture =  eventStreams != null ? Future.succeededFuture(eventStreams) : Future.failedFuture("Could not get ES custom resource");
         when(esResourceOperator.getAsync(NAMESPACE, name)).thenReturn(eventStreamsFuture);
+    }
+
+    private void mockGetNullEventStreamsResource(String name) {
+        when(esResourceOperator.getAsync(NAMESPACE, name)).thenReturn(Future.succeededFuture(null));
     }
 
     private void mockGetGeoReplicatorResource(String name, EventStreamsGeoReplicator geoReplicator) {

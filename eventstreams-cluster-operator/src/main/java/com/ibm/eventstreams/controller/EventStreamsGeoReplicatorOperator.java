@@ -59,6 +59,8 @@ public class EventStreamsGeoReplicatorOperator extends AbstractOperator<EventStr
 
     private static final Logger log = LogManager.getLogger(EventStreamsGeoReplicatorOperator.class.getName());
     public static final String GEOREPLICATOR_BEING_DEPLOYED_REASON = "Creating";
+    public static final String EVENT_STREAMS_INSTANCE_NOT_FOUND_REASON = "EventStreamsInstanceNotFound";
+    public static final String DEPLOYMENT_FAILED_REASON = "DeploymentFailed";
 
     private final KubernetesClient client;
     private final EventStreamsGeoReplicatorResourceOperator replicatorResourceOperator;
@@ -133,70 +135,79 @@ public class EventStreamsGeoReplicatorOperator extends AbstractOperator<EventStr
 
         }
 
-        Future<EventStreams> validateCustomResource(EventStreams instance) {
-            PhaseState phase = Optional.ofNullable(status.getPhase()).orElse(PhaseState.PENDING);
-            AtomicBoolean isValidCR = new AtomicBoolean(true);
+        Future<EventStreams> validateCustomResource(EventStreams instance, String eventStreamsInstanceName) {
+            if (instance != null) {
+                PhaseState phase = Optional.ofNullable(status.getPhase()).orElse(PhaseState.PENDING);
+                AtomicBoolean isValidCR = new AtomicBoolean(true);
 
-            List<StatusCondition> conditions = new ArrayList<>(new VersionValidation().validateCr(replicatorInstance));
+                List<StatusCondition> conditions = new ArrayList<>(new VersionValidation().validateCr(replicatorInstance));
 
-            //the name of the replicator instance doesn't match what has been set in the strimzi cluster label
-            if (!replicatorInstance.getMetadata().getName().equals(replicatorInstance.getMetadata().getLabels().get(Labels.STRIMZI_CLUSTER_LABEL))) {
-                conditions.add(StatusCondition.createErrorCondition("MismatchEventStreamsAndReplictorInstanceNames",
-                    String.format("The name of the Event Streams geo-replicator instance '%s' does not match the Event Streams instance '%s'. ",
-                        replicatorInstance.getMetadata().getName(), replicatorInstance.getMetadata().getLabels().get(Labels.STRIMZI_CLUSTER_LABEL)) +
-                        String.format("Edit spec.metadata.name to provide the value of '%s'. ", replicatorInstance.getMetadata().getLabels().get(Labels.STRIMZI_CLUSTER_LABEL))));
-            }
-            if (!adminAPIInstanceFound(instance)) {
-                String errorMessage = String.format("AdminApi is required to enable geo-replication for Event Streams instance '%s'. ", replicatorInstance.getMetadata().getLabels().get(Labels.STRIMZI_CLUSTER_LABEL))
-                    + "Edit spec.adminApi to provide a valid adminApi value.";
-                conditions.add(StatusCondition.createErrorCondition("AdminApiMissingDependency", errorMessage));
-            }
-            conditions.addAll(new ReplicatorKafkaListenerValidation().validateCr(instance));
-
-            conditions.forEach(condition -> {
-                addCondition(condition.toCondition());
-                if (condition.getType().equals(ConditionType.ERROR)) {
-                    isValidCR.set(false);
+                //the name of the replicator instance doesn't match what has been set in the strimzi cluster label
+                if (!replicatorInstance.getMetadata().getName().equals(replicatorInstance.getMetadata().getLabels().get(Labels.STRIMZI_CLUSTER_LABEL))) {
+                    conditions.add(StatusCondition.createErrorCondition("MismatchEventStreamsAndReplictorInstanceNames",
+                        String.format("The name of the Event Streams geo-replicator instance '%s' does not match the Event Streams instance '%s'. ",
+                            replicatorInstance.getMetadata().getName(), replicatorInstance.getMetadata().getLabels().get(Labels.STRIMZI_CLUSTER_LABEL)) +
+                            String.format("Edit spec.metadata.name to provide the value of '%s'. ", replicatorInstance.getMetadata().getLabels().get(Labels.STRIMZI_CLUSTER_LABEL))));
                 }
-            });
+                if (!adminAPIInstanceFound(instance)) {
+                    String errorMessage = String.format("AdminApi is required to enable geo-replication for Event Streams instance '%s'. ", replicatorInstance.getMetadata().getLabels().get(Labels.STRIMZI_CLUSTER_LABEL))
+                        + "Edit spec.adminApi to provide a valid adminApi value.";
+                    conditions.add(StatusCondition.createErrorCondition("AdminApiMissingDependency", errorMessage));
+                }
+                conditions.addAll(new ReplicatorKafkaListenerValidation().validateCr(instance));
 
-            if (isValidCR.get()) {
-                addCondition(previousConditions
-                    .stream()
-                    // restore any previous readiness condition if this was set, so
-                    // that timestamps remain consistent
-                    .filter(c -> c.getType().equals(PhaseState.PENDING.toValue()))
-                    .findFirst()
-                    // otherwise set a new condition saying that the reconcile loop is running
-                    .orElse(StatusCondition.createPendingCondition(GEOREPLICATOR_BEING_DEPLOYED_REASON, "Event Streams geo-replicator is being deployed").toCondition()));
+                conditions.forEach(condition -> {
+                    addCondition(condition.toCondition());
+                    if (condition.getType().equals(ConditionType.ERROR)) {
+                        isValidCR.set(false);
+                    }
+                });
+
+                if (isValidCR.get()) {
+                    addCondition(previousConditions
+                        .stream()
+                        // restore any previous readiness condition if this was set, so
+                        // that timestamps remain consistent
+                        .filter(c -> c.getType().equals(PhaseState.PENDING.toValue()))
+                        .findFirst()
+                        // otherwise set a new condition saying that the reconcile loop is running
+                        .orElse(StatusCondition.createPendingCondition(GEOREPLICATOR_BEING_DEPLOYED_REASON, "Event Streams geo-replicator is being deployed").toCondition()));
+                } else {
+                    phase = PhaseState.FAILED;
+                }
+
+                EventStreamsGeoReplicatorStatus statusSubresource = status.withPhase(phase).build();
+                replicatorInstance.setStatus(statusSubresource);
+
+                // Update if we need to notify the user of an error, otherwise
+                //  on the first run only, otherwise the user will see status
+                //  warning conditions flicker in and out of the list
+                if (!isValidCR.get() || previousConditions.isEmpty()) {
+                    updateStatus(statusSubresource);
+                }
+
+                if (isValidCR.get()) {
+                    return Future.succeededFuture(instance);
+                } else {
+                    // we don't want the reconcile loop to continue any further if the CR is not valid
+                    return Future.failedFuture("Invalid Event Streams geo-replicator specification: further details in the status conditions");
+                }
             } else {
-                phase = PhaseState.FAILED;
-            }
+                String message = String.format("Could not find Event Streams instance '%s' in namespace '%s'. ", eventStreamsInstanceName, namespace)
+                    + "Geo-replication requires a running Event Streams instance. "
+                    + "Create an Event Streams instance before deploying the Event Streams geo-replicator";
+                addToConditions(StatusCondition.createErrorCondition(EVENT_STREAMS_INSTANCE_NOT_FOUND_REASON,
+                    message).toCondition());
 
-            EventStreamsGeoReplicatorStatus statusSubresource = status.withPhase(phase).build();
-            replicatorInstance.setStatus(statusSubresource);
-
-            // Update if we need to notify the user of an error, otherwise
-            //  on the first run only, otherwise the user will see status
-            //  warning conditions flicker in and out of the list
-            if (!isValidCR.get() || previousConditions.isEmpty()) {
-                updateStatus(statusSubresource);
-            }
-
-            if (isValidCR.get()) {
-                return Future.succeededFuture(instance);
-            } else {
-                // we don't want the reconcile loop to continue any further if the CR is not valid
-                return Future.failedFuture("Invalid Event Streams geo-replicator specification: further details in the status conditions");
+                return Future.failedFuture(message);
             }
         }
-
 
         Future<ReconciliationState> createReplicator() {
             // Get the EventStreams CR name from the replicator CR labels
             String eventStreamsInstanceName = replicatorInstance.getMetadata().getLabels().get(Labels.STRIMZI_CLUSTER_LABEL);
             return resourceOperator.getAsync(namespace, eventStreamsInstanceName)
-                .compose(this::validateCustomResource)
+                .compose(instance -> validateCustomResource(instance, eventStreamsInstanceName))
                 .compose(instance -> {
                     GeoReplicatorCredentials geoReplicatorCredentials = new GeoReplicatorCredentials(instance);
                     GeoReplicatorDestinationUsersModel replicatorUsersModel = new GeoReplicatorDestinationUsersModel(replicatorInstance, instance);
@@ -277,7 +288,7 @@ public class EventStreamsGeoReplicatorOperator extends AbstractOperator<EventStr
 
         void recordFailure(Throwable thr) {
             log.error("Recording reconcile failure", thr);
-            addToConditions(StatusCondition.createErrorCondition("DeploymentFailed",
+            addToConditions(StatusCondition.createErrorCondition(DEPLOYMENT_FAILED_REASON,
                 String.format("An unexpected exception was encountered: %s. More detail can be found in the Event Streams geo-replication operator log.", thr.getMessage())).toCondition());
 
             EventStreamsGeoReplicatorStatus statusSubresource = status.withPhase(PhaseState.FAILED).build();
