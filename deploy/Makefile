@@ -46,7 +46,7 @@ BUNDLE_IMAGE_NAME := olm-bundle:latest
 BUNDLE_LOCATION := $(LOCAL_REPO_ADDR)$(BUNDLE_IMAGE_NAME)
 
 include ../Makefile.os
-.PHONY: all clean build_csv deploy delete_deploy verify docker_build docker_push
+.PHONY: all clean build_csv deploy delete_deploy verify docker_build docker_push create_prepare_rhocp
 
 all: build_csv deploy
 
@@ -131,3 +131,16 @@ deploy: build_bundle docker_push
 
 delete_deploy:
 	$(SED) s/@image@/dummy/ custom-catalog-source.yaml.template | oc delete -f -
+
+create_prepare_rhocp:
+	$(eval CLUSTER_NAME := $(shell read -erp "Cluster name: " x; echo $$x))
+	./prepare-rhocp-scripts/create-fyre-cluster.sh $(CLUSTER_NAME) --add-to-etc-hosts --oc-login --ssh-copy-id
+	./prepare-rhocp-scripts/create-htpasswd.sh admin admin $(CLUSTER_NAME)
+	./prepare-rhocp-scripts/install-docker-on-inf-node.sh $(CLUSTER_NAME)
+	./prepare-rhocp-scripts/create-es-namespace.sh
+	./prepare-rhocp-scripts/create-entitlement-key.sh
+	./prepare-rhocp-scripts/update-pull-secret.sh
+	./prepare-rhocp-scripts/expose-docker-registry.sh
+	./prepare-rhocp-scripts/add-registry-to-local-docker.sh
+	./prepare-rhocp-scripts/add-registry-to-docker-on-inf-node.sh $(CLUSTER_NAME)
+	./prepare-rhocp-scripts/apply-artifactory-mirror.sh

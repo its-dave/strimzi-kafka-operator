@@ -63,14 +63,23 @@ This will generate a docker image for EventStreams.
 
 This will also regenerate the EventStreams CustomResourceDefinition into `install/ibm-eventstreams-operator`
 
+## Creating and preparing a RHOCP 4.X cluster on Fyre
+- Ensure `$FYRE_USERNAME`, `$FYRE_API_KEY`, `$ARTIFACTORY_USERNAME`, and `$ARTIFACTORY_PASSWORD` are exported
+- Run `make -C deploy create_prepare_rhocp` to create a new cluster on Fyre, install RHOCP, and configure the prereqs
+  - You can see what steps are being taken and comment out any that aren't applicable in `strimzi-kafka-operator/deploy/Makefile`
+  - You can also run any of the steps manually with the scripts in `strimzi-kafka-operator/deploy/prepare-rhocp-scripts`
+  - This step also creates an `admin` htpasswd user and sets up the cluster to be used for e2e tests
+
 ## Deploying OLM bundle to your OpenShift environment
 
 ### Log into your OpenShift cluster
+- this step is automatically done by `create_prepare_rhocp`
 1. Click your username in the top right corner, and click **Copy Login Command** to access the API token.
 2. Click **Display Token** and copy the command provided to your terminal.
 3. Run the command in your terminal to log in.
 
 ### Create a new namespace
+- this step is automatically done by `create_prepare_rhocp`, which creates an `es` project
 Use a new namespace, rather than a default one.
 To create a new namespace: `oc create ns <name_of_your_namespace>`
 
@@ -92,11 +101,13 @@ metadata:
 ```
 
 ### Create a secret for your cluster to enable access to Docker registry for operand images:
+- this step is automatically done by `create_prepare_rhocp`
 ```
 oc create secret docker-registry ibm-entitlement-key --docker-server=hyc-qp-stable-docker-local.artifactory.swg-devops.com --docker-username=<your_email> --docker-password=<Artifactory_API> --docker-email=<your_email> -n <name_of_your_namespace>
 ```
 
 ### Update the global pull secret for your cluster to enable access to Docker registry for operator images:
+- this step is automatically done by `create_prepare_rhocp`
 
 Add a docker config json for hyc-qp-stable-docker-local.artifactory.swg-devops.com to the `pull-secret` secret in the `openshift-config` namespace.
 
@@ -112,6 +123,7 @@ where `base64creds` is a base64-encoded version of your Artifactory `username:ap
 [More background here](https://github.ibm.com/mhub/strimzi-kafka-operator/pull/375#issuecomment-20208595)
 
 ### (PreReq) Expose docker registry
+- this step is automatically done by `create_prepare_rhocp`
 Expose your OpenShift Docker registry by running:
 ```
 oc patch configs.imageregistry.operator.openshift.io/cluster --patch '{"spec":{"defaultRoute":true}}' --type=merge
