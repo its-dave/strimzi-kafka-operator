@@ -22,7 +22,7 @@ spec:
   additionalPrinterColumns:
   - name: Ready
     description: The status of the Event Streams geo-replicator cluster
-    JSONPath: .status.phase[?(@.type=="Ready")].status
+    JSONPath: .status.phase
     type: string
   subresources:
     status: {}
