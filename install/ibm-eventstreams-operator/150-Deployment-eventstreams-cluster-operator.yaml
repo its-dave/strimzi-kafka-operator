@@ -149,7 +149,7 @@ spec:
         - name: EVENTSTREAMS_DEFAULT_ADMIN_UI_REDIS_IMAGE
           value: "cp.icr.io/cp/ibm-eventstreams-session-store@sha256:63bbdfe2e4ffc6442346fb59212b436191338fdace7de0bb909cdfd95c823518"
         - name: EVENTSTREAMS_DEFAULT_COLLECTOR_IMAGE
-          value: "cp.icr.io/cp/ibm-eventstreams-metrics-collector@sha256:91e9ce93c30e9a72fbef1968c325bdfbf9bc44a17a026fc8cbcd0a5079ac1071"
+          value: "cp.icr.io/cp/ibm-eventstreams-metrics-collector@sha256:79ac0a08abc544b2a9523368394661ddd0f74b38d8706e029ebec98cefb50898"
         - name: JAVA_OPTS
           value: "-XX:+UseContainerSupport -Xdump:what -Xdump:java+system+snap:events=user
             -Xdump:directory=/tmp/dumps -XX:+HeapDumpOnOutOfMemoryError"
