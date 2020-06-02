@@ -111,13 +111,13 @@ spec:
           description: I accept the product license after reading it at <TBC>
           path: license.accept
           x-descriptors:
-            - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:license'
+            - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:License'
             - 'urn:alm:descriptor:com.tectonic.ui:booleanSwitch'
         - displayName: Product use
           description: Specify if you intend for this installation to be used in a production environment
           path: license.use
           x-descriptors:
-            - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:license'
+            - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:License'
             - 'urn:alm:descriptor:com.tectonic.ui:select:CloudPakForIntegrationProduction'
             - 'urn:alm:descriptor:com.tectonic.ui:select:CloudPakForIntegrationNonProduction'
         - description: Number of Kafka brokers
@@ -133,11 +133,11 @@ spec:
             - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:Kafka'
             - 'urn:alm:descriptor:com.tectonic.ui:select:ephemeral'
             - 'urn:alm:descriptor:com.tectonic.ui:select:persistent-claim'
-            - 'urn:alm:descriptor:com.tectonic.ui:select:jbod'
         - description: Storage class to use for Kafka brokers
           displayName: Kafka storage class
           path: strimziOverrides.kafka.storage.overrides[0].class
           x-descriptors:
+            - 'url:alm:descriptor:com.tectonic.ui:fieldDependency:strimziOverrides.kafka.storage.type:persistent-claim'
             - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:Kafka'
             - 'urn:alm:descriptor:io.kubernetes:StorageClass'
         - displayName: ZooKeeper storage
@@ -151,6 +151,7 @@ spec:
           displayName: ZooKeeper storage class
           path: strimziOverrides.zookeeper.storage.overrides[0].class
           x-descriptors:
+            - 'url:alm:descriptor:com.tectonic.ui:fieldDependency:strimziOverrides.zookeeper.storage.type:persistent-claim'
             - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:ZooKeeper'
             - 'urn:alm:descriptor:io.kubernetes:StorageClass'
         - displayName: Schema registry storage
@@ -164,6 +165,7 @@ spec:
           displayName: Schema registry storage class
           path: schemaRegistry.storage.overrides[0].class
           x-descriptors:
+            - 'url:alm:descriptor:com.tectonic.ui:fieldDependency:schemaRegistry.storage.type:persistent-claim'
             - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:Schema Registry'
             - 'urn:alm:descriptor:io.kubernetes:StorageClass'
 
