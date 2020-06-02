@@ -232,6 +232,7 @@ public class EventStreamsOperatorTest {
     private Resource<ConfigMap, DoneableConfigMap> mockCommonServicesStatusCMResource;
 
     private long kafkaStatusReadyTimeoutMs = 0;
+    private long operationTimeoutMs = 120_000;
 
     public enum KubeResourceType {
         DEPLOYMENTS,
@@ -394,7 +395,8 @@ public class EventStreamsOperatorTest {
                 routeOperator,
                 metricsProvider,
                 OPERATOR_NAMESPACE,
-                kafkaStatusReadyTimeoutMs
+                kafkaStatusReadyTimeoutMs,
+                operationTimeoutMs
         );
     }
 
@@ -1003,7 +1005,8 @@ public class EventStreamsOperatorTest {
                 routeOperator,
                 metricsProvider,
                 OPERATOR_NAMESPACE,
-                kafkaStatusReadyTimeoutMs);
+                kafkaStatusReadyTimeoutMs,
+                operationTimeoutMs);
 
         EndpointSpec endpoint = new EndpointSpecBuilder()
             .withName("ok-name")

@@ -55,6 +55,7 @@ import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.apps.DeploymentBuilder;
 import io.fabric8.kubernetes.api.model.apps.StatefulSet;
 import io.fabric8.kubernetes.api.model.apps.StatefulSetBuilder;
+import io.fabric8.kubernetes.api.model.apps.StatefulSetUpdateStrategyBuilder;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicy;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicyBuilder;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicyEgressRule;
@@ -91,6 +92,7 @@ import io.strimzi.api.kafka.model.listener.KafkaListeners;
 import io.strimzi.api.kafka.model.status.ListenerAddress;
 import io.strimzi.api.kafka.model.status.ListenerStatus;
 import io.strimzi.api.kafka.model.template.MetadataTemplate;
+import io.strimzi.api.kafka.model.template.PodManagementPolicy;
 import io.strimzi.api.kafka.model.template.PodTemplate;
 import io.strimzi.operator.cluster.model.ModelUtils;
 import io.strimzi.operator.common.model.Labels;
@@ -763,6 +765,8 @@ public abstract class AbstractModel {
                     .addToLabels(labels.toMap())
                 .endMetadata()
                 .withNewSpec()
+                    .withPodManagementPolicy(PodManagementPolicy.PARALLEL.toValue())
+                    .withUpdateStrategy(new StatefulSetUpdateStrategyBuilder().withType("OnDelete").build())
                     .withReplicas(replicas)
                     .withNewSelector()
                         .withMatchLabels(selectorLabels.toMap())

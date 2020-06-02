@@ -73,6 +73,7 @@ public class EventStreamsVerticle extends AbstractVerticle {
 
     private final long kafkaStatusReadyTimeoutMilliSecs;
     private final long reconciliationIntervalMilliSecs;
+    private final long operationTimeoutMilliSecs;
     private Watch eventStreamsCRWatcher;
     private long reconcileTimer;
 
@@ -85,6 +86,7 @@ public class EventStreamsVerticle extends AbstractVerticle {
         this.operatorNamespace = config.getOperatorNamespace();
         this.kafkaStatusReadyTimeoutMilliSecs = config.getKafkaStatusReadyTimeoutMs();
         this.reconciliationIntervalMilliSecs = config.getReconciliationIntervalMilliSecs();
+        this.operationTimeoutMilliSecs = config.getOperationTimeoutMilliSecs();
         this.imageConfig = config.getImages();
         this.routeOperator = pfa.hasRoutes() ? new RouteOperator(vertx, client.adapt(OpenShiftClient.class)) : null;
         this.metricsProvider = metricsProvider;
@@ -114,7 +116,8 @@ public class EventStreamsVerticle extends AbstractVerticle {
                     routeOperator,
                     metricsProvider,
                     operatorNamespace,
-                    kafkaStatusReadyTimeoutMilliSecs);
+                    kafkaStatusReadyTimeoutMilliSecs,
+                    operationTimeoutMilliSecs);
             eventStreamsOperator.createWatch(namespace, eventStreamsOperator.recreateWatch(namespace))
                     .compose(w -> {
                         log.info("Started operator for EventStreams kind.");

@@ -54,6 +54,10 @@ public class GeneralValidation implements EventStreamsValidation {
     public static final String EPHEMERAL_SCHEMA_REGISTRY_MESSAGE = "A Schema Registry with ephemeral storage will lose schemas after any restart or rolling update. "
         + "To avoid losing data, edit spec.schemaRegistry.storage to provide a persistent storage class.";
 
+    public static final String SCHEMA_REGISTRY_REPLICAS_REASON = "SchemaRegistryReplicas";
+    public static final String SCHEMA_REGISTRY_REPLICAS_MESSAGE = "A Schema Registry with ephemeral storage cannot support more than 1 replica. " +
+            "Edit spec.schemaRegistry.replicas to 1.";
+
     public final static String UI_REQUIRES_REST_COMPONENTS_REASON = "UIRequiresRestComponents";
     public final static String UI_REQUIRES_REST_COMPONENTS_MESSAGE = "One of the following components have not been enabled: %s. "
         + "The UI requires Schema Registry, Admin API and Rest Producer to be enabled to allow for its capabilities. "
@@ -83,10 +87,16 @@ public class GeneralValidation implements EventStreamsValidation {
             int replicas = schemaRegistrySpec.map(ComponentSpec::getReplicas).orElse(SchemaRegistryModel.DEFAULT_REPLICAS);
             Storage storage = schemaRegistrySpec.map(SchemaRegistrySpec::getStorage).orElseGet(EphemeralStorage::new);
 
-            if (replicas > 0 && StorageUtils.usesEphemeral(storage)) {
-                conditions.add(StatusCondition.createWarningCondition(
-                    EPHEMERAL_SCHEMA_REGISTRY_REASON,
-                    EPHEMERAL_SCHEMA_REGISTRY_MESSAGE));
+            if (StorageUtils.usesEphemeral(storage)) {
+                if (replicas > 1) {
+                    conditions.add(StatusCondition.createErrorCondition(
+                            SCHEMA_REGISTRY_REPLICAS_REASON,
+                            SCHEMA_REGISTRY_REPLICAS_MESSAGE));
+                } else if (replicas == 1) {
+                    conditions.add(StatusCondition.createWarningCondition(
+                        EPHEMERAL_SCHEMA_REGISTRY_REASON,
+                        EPHEMERAL_SCHEMA_REGISTRY_MESSAGE));
+                }
             }
         }
         log.traceExit();

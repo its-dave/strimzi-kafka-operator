@@ -85,7 +85,6 @@ import io.strimzi.operator.common.operator.resource.RouteOperator;
 import io.strimzi.operator.common.operator.resource.SecretOperator;
 import io.strimzi.operator.common.operator.resource.ServiceAccountOperator;
 import io.strimzi.operator.common.operator.resource.ServiceOperator;
-import io.strimzi.operator.common.operator.resource.StatefulSetOperator;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -121,7 +120,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
     private final EventStreamsGeoReplicatorResourceOperator replicatorResourceOperator;
     private final KafkaUserOperator kafkaUserOperator;
     private final DeploymentOperator deploymentOperator;
-    private final StatefulSetOperator statefulSetOperator;
+    private final SchemaRegistrySetOperator statefulSetOperator;
     private final ServiceAccountOperator serviceAccountOperator;
     private final RoleBindingOperator roleBindingOperator;
     private final ConfigMapOperator configMapOperator;
@@ -157,7 +156,8 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                                 RouteOperator routeOperator,
                                 MetricsProvider metricsProvider,
                                 String operatorNamespace,
-                                long kafkaStatusReadyTimeoutMs) {
+                                long kafkaStatusReadyTimeoutMs,
+                                long operationTimeoutMs) {
         super(vertx, kind, esResourceOperator, metricsProvider);
         log.traceEntry(() -> vertx, () -> client, () -> kind, () -> pfa, () -> esResourceOperator,
             () -> cp4iResourceOperator, () -> imageConfig, () -> routeOperator,
@@ -171,7 +171,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         this.client = client;
         this.pfa = pfa;
         this.deploymentOperator = new DeploymentOperator(vertx, client);
-        this.statefulSetOperator = new StatefulSetOperator(vertx, client);
+        this.statefulSetOperator = new SchemaRegistrySetOperator(vertx, client, operationTimeoutMs);
         this.serviceAccountOperator = new ServiceAccountOperator(vertx, client);
         this.roleBindingOperator = new RoleBindingOperator(vertx, client);
         this.configMapOperator = new ConfigMapOperator(vertx, client);

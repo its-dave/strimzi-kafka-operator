@@ -40,6 +40,7 @@ public class EventStreamsOperatorConfig {
 
     public static final String EVENTSTREAMS_KAFKA_STATUS_READY_TIMEOUT_MS = "EVENTSTREAMS_KAFKA_STATUS_READY_TIMEOUT_MS";
     public static final String EVENTSTREAMS_FULL_RECONCILIATION_INTERVAL_MS = "EVENTSTREAMS_FULL_RECONCILIATION_INTERVAL_MS";
+    public static final String EVENTSTREAMS_OPERATION_TIMEOUT_MS = "EVENTSTREAMS_OPERATION_TIMEOUT_MS";
 
     public static final String EVENTSTREAMS_DEFAULT_REST_PRODUCER_IMAGE = "EVENTSTREAMS_DEFAULT_REST_PRODUCER_IMAGE";
     public static final String EVENTSTREAMS_DEFAULT_ADMIN_API_IMAGE = "EVENTSTREAMS_DEFAULT_ADMIN_API_IMAGE";
@@ -53,6 +54,7 @@ public class EventStreamsOperatorConfig {
 
     public static final long DEFAULT_KAFKA_STATUS_READY_TIMEOUT_MS = 600_000;
     public static final long DEFAULT_FULL_RECONCILIATION_INTERVAL_MS = 120_000;
+    public static final long DEFAULT_OPERATION_TIMEOUT_MS = 300_000;
     public static final String DEFAULT_COLLECTOR_IMAGE = "";
 
     // The list of namespaces that the operator is watching, retrieved from the EVENTSTREAMS_NAMESPACE env variable.
@@ -60,13 +62,15 @@ public class EventStreamsOperatorConfig {
     private final String operatorNamespace;
     private final long kafkaStatusReadyTimeoutMilliSecs;
     private final long reconciliationIntervalMilliSecs;
+    private final long operationTimeoutMilliSecs;
     private final ImageLookup images;
 
-    public EventStreamsOperatorConfig(Set<String> namespaces, String operatorNamespace, long kafkaStatusReadyTimeoutMs, long reconciliationIntervalMs, ImageLookup images)  {
+    public EventStreamsOperatorConfig(Set<String> namespaces, String operatorNamespace, long kafkaStatusReadyTimeoutMs, long reconciliationIntervalMs, long operationTimeoutMs, ImageLookup images)  {
         this.namespaces = unmodifiableSet(new HashSet<>(namespaces));
         this.operatorNamespace = operatorNamespace;
         this.kafkaStatusReadyTimeoutMilliSecs = kafkaStatusReadyTimeoutMs;
         this.reconciliationIntervalMilliSecs = reconciliationIntervalMs;
+        this.operationTimeoutMilliSecs = operationTimeoutMs;
         this.images = images;
     }
 
@@ -76,8 +80,9 @@ public class EventStreamsOperatorConfig {
         String operatorNamespace = map.get(EVENTSTREAMS_OPERATOR_NAMESPACE);
         long kafkaStatusTimeout = parseKafkaStatusTimeout(map.get(EventStreamsOperatorConfig.EVENTSTREAMS_KAFKA_STATUS_READY_TIMEOUT_MS));
         long reconciliationInterval = parseReconciliationInterval(map.get(EventStreamsOperatorConfig.EVENTSTREAMS_FULL_RECONCILIATION_INTERVAL_MS));
+        long operationTimeout = parseOperationTimeout(map.get(EventStreamsOperatorConfig.EVENTSTREAMS_OPERATION_TIMEOUT_MS));
         ImageLookup images = parseImageList(map);
-        return new EventStreamsOperatorConfig(namespaces, operatorNamespace, kafkaStatusTimeout, reconciliationInterval, images);
+        return new EventStreamsOperatorConfig(namespaces, operatorNamespace, kafkaStatusTimeout, reconciliationInterval, operationTimeout, images);
     }
 
     private static List<LocalObjectReference> parseImagePullSecrets(String imagePullSecretList) {
@@ -129,6 +134,11 @@ public class EventStreamsOperatorConfig {
         return reconciliationInterval;
     }
 
+    private static long parseOperationTimeout(String operationTimeoutEnvVar) {
+        long operationTimeout = operationTimeoutEnvVar != null ?  Long.parseLong(operationTimeoutEnvVar) : DEFAULT_OPERATION_TIMEOUT_MS;
+        return operationTimeout;
+    }
+
     public Set<String> getNamespaces() {
         return namespaces;
     }
@@ -143,6 +153,10 @@ public class EventStreamsOperatorConfig {
 
     public long getReconciliationIntervalMilliSecs() {
         return reconciliationIntervalMilliSecs;
+    }
+
+    public long getOperationTimeoutMilliSecs() {
+        return operationTimeoutMilliSecs;
     }
 
     public ImageLookup getImages() {

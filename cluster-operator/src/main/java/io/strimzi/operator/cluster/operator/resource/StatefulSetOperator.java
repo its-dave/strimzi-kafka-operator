@@ -44,7 +44,7 @@ import java.util.function.Function;
 public abstract class StatefulSetOperator extends AbstractScalableResourceOperator<KubernetesClient, StatefulSet, StatefulSetList, DoneableStatefulSet, RollableScalableResource<StatefulSet, DoneableStatefulSet>> {
 
     private static final int NO_GENERATION = -1;
-    private static final int INIT_GENERATION = 0;
+    protected static final int INIT_GENERATION = 0;
 
     private static final Logger log = LogManager.getLogger(StatefulSetOperator.class.getName());
     protected final PodOperator podOperations;
@@ -195,7 +195,7 @@ public abstract class StatefulSetOperator extends AbstractScalableResourceOperat
     }
 
     @SuppressWarnings("deprecation")
-    private void setGeneration(StatefulSet desired, int nextGeneration) {
+    protected void setGeneration(StatefulSet desired, int nextGeneration) {
         Map<String, String> annotations = Annotations.annotations(desired.getSpec().getTemplate());
         annotations.remove(ANNO_OP_STRIMZI_IO_GENERATION);
         annotations.put(ANNO_STRIMZI_IO_GENERATION, String.valueOf(nextGeneration));
@@ -271,6 +271,10 @@ public abstract class StatefulSetOperator extends AbstractScalableResourceOperat
         return CompositeFuture.join(waitPodResult);
     }
 
+    protected boolean shouldPreventScale() {
+        return true;
+    }
+
     /**
      * Overridden to not cascade to dependent resources (e.g. pods).
      *
@@ -287,7 +291,9 @@ public abstract class StatefulSetOperator extends AbstractScalableResourceOperat
         }
 
         // Don't scale via patch
-        desired.getSpec().setReplicas(current.getSpec().getReplicas());
+        if (shouldPreventScale()) {
+            desired.getSpec().setReplicas(current.getSpec().getReplicas());
+        }
         if (log.isTraceEnabled()) {
             log.trace("Patching {} {}/{} to match desired state {}", resourceKind, namespace, name, desired);
         } else {
