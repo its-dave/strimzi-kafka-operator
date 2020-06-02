@@ -29,13 +29,13 @@ public class CertificateAuthority implements UnknownPropertyPreserving, Serializ
 
     private static final long serialVersionUID = 1L;
 
-    private int validityDays;
-    private boolean generateCertificateAuthority = true;
-    private int renewalDays;
-    private Map<String, Object> additionalProperties = new HashMap<>(0);
-    private CertificateExpirationPolicy certificateExpirationPolicy;
     public static final int DEFAULT_CERTS_VALIDITY_DAYS = 365;
     public static final int DEFAULT_CERTS_RENEWAL_DAYS = 30;
+    private int validityDays = DEFAULT_CERTS_VALIDITY_DAYS;
+    private boolean generateCertificateAuthority = true;
+    private int renewalDays = DEFAULT_CERTS_RENEWAL_DAYS;
+    private Map<String, Object> additionalProperties = new HashMap<>(0);
+    private CertificateExpirationPolicy certificateExpirationPolicy;
 
     @Description("The number of days generated certificates should be valid for. The default is 365.")
     @Minimum(1)
