@@ -112,8 +112,10 @@ import io.strimzi.operator.common.Reconciliation;
 import io.strimzi.operator.common.model.Labels;
 import io.strimzi.operator.common.operator.resource.ReconcileResult;
 import io.strimzi.operator.common.operator.resource.RouteOperator;
+import io.vertx.core.AsyncResult;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
+import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.junit5.Checkpoint;
 import io.vertx.junit5.VertxExtension;
@@ -145,6 +147,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.ibm.eventstreams.api.model.AbstractModel.APP_NAME;
@@ -3702,6 +3705,53 @@ public class EventStreamsOperatorTest {
                 });
                 async.flag();
             })));
+    }
+
+    @Test
+    public void TestEndpointsDoNotChangeOverTime(VertxTestContext context) {
+        esOperator = createDefaultEventStreamsOperator(true);
+
+        EndpointSpec restProducerRoute1 = new EndpointSpecBuilder()
+            .withName("aaaaa")
+            .withContainerPort(8881)
+            .withType(EndpointServiceType.ROUTE)
+            .build();
+
+        EndpointSpec restProducerRoute2 = new EndpointSpecBuilder()
+            .withName("bbbbb")
+            .withContainerPort(8882)
+            .withType(EndpointServiceType.ROUTE)
+            .build();
+
+        EventStreams instance = new EventStreamsBuilder(createDefaultEventStreams(NAMESPACE, CLUSTER_NAME))
+            .editOrNewSpec()
+            .editRestProducer()
+            .withEndpoints(restProducerRoute1, restProducerRoute2)
+            .endRestProducer()
+            .endSpec()
+            .build();
+        Checkpoint async = context.checkpoint(5);
+
+        Function<Integer, Handler<AsyncResult<Void>>> test = num -> context.succeeding(v -> context.verify(() -> {
+            ArgumentCaptor<EventStreams> updatedEventStreams = ArgumentCaptor.forClass(EventStreams.class);
+            verify(esResourceOperator, times(num)).updateEventStreamsStatus(updatedEventStreams.capture());
+            List<EventStreamsEndpoint> endpoints =  updatedEventStreams.getValue().getStatus().getEndpoints()
+                .stream()
+                .filter(endpoint -> !endpoint.getName().contains(AdminUIModel.COMPONENT_NAME))
+                .filter(endpoint -> endpoint.getName().equals("restproducer"))
+                .collect(Collectors.toList());
+
+            assertThat(endpoints, hasSize(1));
+            assertThat(endpoints.get(0).getUri(), is("https://my-es-ibm-es-recapi-aaaaa.apps.route.test"));
+            async.flag();
+        }));
+
+        // Check always same route for multiple reconciles
+        esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), instance).onComplete(test.apply(2))
+            .compose(v -> esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), instance).onComplete(test.apply(3)))
+            .compose(v -> esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), instance).onComplete(test.apply(4)))
+            .compose(v -> esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), instance).onComplete(test.apply(5)))
+            .compose(v -> esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), instance).onComplete(test.apply(6)));
     }
 
     @Test

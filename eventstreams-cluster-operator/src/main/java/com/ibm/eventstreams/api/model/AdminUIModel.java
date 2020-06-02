@@ -26,6 +26,7 @@ import com.ibm.eventstreams.api.spec.ExternalAccess;
 import com.ibm.eventstreams.api.spec.ExternalAccessBuilder;
 import com.ibm.eventstreams.api.spec.ImagesSpec;
 import com.ibm.eventstreams.api.spec.SecuritySpec;
+import com.ibm.eventstreams.api.status.EventStreamsEndpoint;
 import com.ibm.eventstreams.api.status.EventStreamsStatus;
 import com.ibm.eventstreams.api.status.EventStreamsVersions;
 import com.ibm.eventstreams.controller.EventStreamsOperatorConfig;
@@ -63,7 +64,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import static com.ibm.eventstreams.api.model.AbstractSecureEndpointsModel.getInternalServiceName;
@@ -267,15 +267,15 @@ public class AdminUIModel extends AbstractModel {
         return Arrays.asList(getUIContainer(instance), getRedisContainer());
     }
 
-    private Optional<String> getRouteFromStatus(EventStreams instance, String componentName) {
+    private Optional<String> getRouteURIFromStatus(EventStreams instance, String key) {
         return Optional.of(instance)
             .map(EventStreams::getStatus)
-            .map(EventStreamsStatus::getRoutes)
-            .flatMap(map -> map.entrySet().stream()
-                .filter(entry -> entry.getKey().contains(componentName))
-                .findFirst())
-            .map(Map.Entry::getValue)
-            .map(route -> getUrlProtocol(crTlsVersionValue) + route);
+            .map(EventStreamsStatus::getEndpoints)
+            .flatMap(endpoints -> endpoints.stream()
+                .filter(endpoint -> endpoint.getName().equals(key))
+                .map(EventStreamsEndpoint::getUri)
+                .findFirst()
+            );
     }
 
     /**
@@ -301,8 +301,8 @@ public class AdminUIModel extends AbstractModel {
                 ModelUtils.serviceDnsNameWithoutClusterDomain(getNamespace(),
                         getInternalServiceName(getInstanceName(), SchemaRegistryModel.COMPONENT_NAME)),
                 Endpoint.getPodToPodPort(isSecurityEnabled));
-        Optional<String> externalRestProducerRoute = getRouteFromStatus(instance, RestProducerModel.COMPONENT_NAME);
-        Optional<String> externalSchemaRegistryRoute = getRouteFromStatus(instance, SchemaRegistryModel.COMPONENT_NAME);
+        Optional<String> externalRestProducerRoute = getRouteURIFromStatus(instance, EventStreamsEndpoint.REST_PRODUCER_KEY);
+        Optional<String> externalSchemaRegistryRoute = getRouteURIFromStatus(instance, EventStreamsEndpoint.SCHEMA_REGISTRY_KEY);
 
         List<EnvVar> envVarDefaults = new ArrayList<>();
 

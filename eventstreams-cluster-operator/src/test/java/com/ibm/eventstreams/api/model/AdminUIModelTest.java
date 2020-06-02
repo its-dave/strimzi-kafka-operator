@@ -19,6 +19,7 @@ import com.ibm.eventstreams.api.spec.EventStreams;
 import com.ibm.eventstreams.api.spec.EventStreamsBuilder;
 import com.ibm.eventstreams.api.spec.ExternalAccess;
 import com.ibm.eventstreams.api.spec.ExternalAccessBuilder;
+import com.ibm.eventstreams.api.status.EventStreamsEndpoint;
 import com.ibm.eventstreams.controller.EventStreamsOperatorConfig;
 import io.fabric8.kubernetes.api.model.Affinity;
 import io.fabric8.kubernetes.api.model.AffinityBuilder;
@@ -90,8 +91,8 @@ public class AdminUIModelTest {
     private final CommonServices mockCommonServices = new CommonServices(instanceName, ModelUtils.mockCommonServicesClusterData());
     private final int defaultReplicas = 1;
     private final String namespace = "test-namespace";
-    private final String restProducerHost = "rest-producer.route.os.com";
-    private final String schemaRegistryHost = "schema-registry.route.os.com";
+    private final String restProducerURI = "https://rest-producer.route.os.com";
+    private final String schemaRegistryURI = "https://schema-registry.route.os.com";
     private final String headerURL = "";
 
     @Mock
@@ -109,8 +110,14 @@ public class AdminUIModelTest {
                 .endAdminUI()
             .endSpec()
             .withNewStatus()
-                .addToRoutes(RestProducerModel.COMPONENT_NAME + "-test-route", restProducerHost)
-                .addToRoutes(SchemaRegistryModel.COMPONENT_NAME + "-test-route", schemaRegistryHost)
+                .addNewEndpoint()
+                    .withName(EventStreamsEndpoint.SCHEMA_REGISTRY_KEY)
+                    .withUri(schemaRegistryURI)
+                .endEndpoint()
+                .addNewEndpoint()
+                    .withName(EventStreamsEndpoint.REST_PRODUCER_KEY)
+                    .withUri(restProducerURI)
+                .endEndpoint()
             .endStatus();
     }
 
@@ -252,8 +259,8 @@ public class AdminUIModelTest {
                 new EnvVarBuilder().withName("ICP_USER_MGMT_PORT").withValue("443").build(),
                 new EnvVarBuilder().withName("GEOREPLICATION_ENABLED").withValue("false").build(),
                 new EnvVarBuilder().withName("SCHEMA_REGISTRY_URL").withValue(schemaRegistryService).build(),
-                new EnvVarBuilder().withName("EXTERNAL_REST_PRODUCER_URL").withValue("https://" + restProducerHost).build(),
-                new EnvVarBuilder().withName("EXTERNAL_SCHEMA_REGISTRY_URL").withValue("https://" + schemaRegistryHost).build(),
+                new EnvVarBuilder().withName("EXTERNAL_REST_PRODUCER_URL").withValue(restProducerURI).build(),
+                new EnvVarBuilder().withName("EXTERNAL_SCHEMA_REGISTRY_URL").withValue(schemaRegistryURI).build(),
                 new EnvVarBuilder().withName(AbstractModel.TLS_VERSION_ENV_KEY).withValue("TLSv1.2").build(),
                 new EnvVarBuilder().withName("CLIENT_ID").withValue("file:///env/commonServices/CLIENT_ID").build(),
                 new EnvVarBuilder().withName("CLIENT_SECRET").withValue("file:///env/commonServices/CLIENT_SECRET").build()));

@@ -669,9 +669,8 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             return log.traceExit(CompositeFuture.join(restProducerFutures)
                 .compose(v -> reconcileRoutes(restProducer, restProducer.getRoutes()))
                 .compose(routesMap -> {
-                    for (Route restProducerRoute : routesMap.values()) {
-                        addEndpointToStatus(EventStreamsEndpoint.REST_PRODUCER_KEY, restProducerRoute);
-                    }
+                    Route endpoint = selectEndpointRoute(restProducer, routesMap);
+                    addEndpointToStatus(EventStreamsEndpoint.REST_PRODUCER_KEY, endpoint);
                     return Future.succeededFuture(routesMap);
                 })
                 .compose(routesMap -> reconcileCerts(restProducer, routesMap, dateSupplier))
@@ -703,9 +702,8 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             return log.traceExit(CompositeFuture.join(adminApiFutures)
                     .compose(v -> reconcileRoutes(adminApi, adminApi.getRoutes()))
                     .compose(routesMap -> {
-                        for (Route adminRoute : routesMap.values()) {
-                            addEndpointToStatus(EventStreamsEndpoint.ADMIN_KEY, adminRoute);
-                        }
+                        Route endpoint = selectEndpointRoute(adminApi, routesMap);
+                        addEndpointToStatus(EventStreamsEndpoint.ADMIN_KEY, endpoint);
                         return Future.succeededFuture(routesMap);
                     })
                     .compose(routesMap -> reconcileCerts(adminApi, routesMap, dateSupplier))
@@ -742,9 +740,8 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             return log.traceExit(CompositeFuture.join(schemaRegistryFutures)
                     .compose(v -> reconcileRoutes(schemaRegistry, schemaRegistry.getRoutes()))
                     .compose(routesMap -> {
-                        for (Route schemaRoute : routesMap.values()) {
-                            addEndpointToStatus(EventStreamsEndpoint.SCHEMA_REGISTRY_KEY, schemaRoute);
-                        }
+                        Route endpoint = selectEndpointRoute(schemaRegistry, routesMap);
+                        addEndpointToStatus(EventStreamsEndpoint.SCHEMA_REGISTRY_KEY, endpoint);
                         return Future.succeededFuture(routesMap);
                     })
                     .compose(routesMap -> reconcileCerts(schemaRegistry, routesMap, dateSupplier))
@@ -1232,22 +1229,36 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
             log.traceExit();
         }
 
+        private Route selectEndpointRoute(AbstractSecureEndpointsModel model, Map<String, Route> routeMap) {
+            log.traceEntry(() -> model, () -> routeMap);
+            Optional<Route> defaultRoute = Optional.ofNullable(routeMap.get(model.getRouteName(Endpoint.DEFAULT_EXTERNAL_NAME)));
+            final String firstKey = routeMap.keySet().stream()
+                .sorted()
+                .findFirst()
+                .orElse("");
+            return log.traceExit(defaultRoute.orElse(routeMap.get(firstKey)));
+        }
+
         private void addEndpointToStatus(String key, Route route) {
             log.traceEntry();
-            String routeHost = Optional.ofNullable(route)
+            Optional<String> routeHost = Optional.ofNullable(route)
                 .map(Route::getSpec)
-                .map(RouteSpec::getHost)
-                .orElse("");
-            boolean isTls = Optional.of(route)
+                .map(RouteSpec::getHost);
+            boolean isTls = Optional.ofNullable(route)
                 .map(Route::getSpec)
                 .map(RouteSpec::getTls)
                 .isPresent();
             String protocol = isTls ? "https://" : "http://";
-            String routeUri = protocol + routeHost;
-            log.info("{}: Host: {} Uri: {}", key, routeHost, routeUri);
-            updateEndpoints(new EventStreamsEndpoint(key,
-                EventStreamsEndpoint.EndpointType.API,
-                routeUri));
+
+            if (routeHost.isPresent()) {
+                String uri = protocol + routeHost.get();
+                log.debug("{} endpoint: Host: {} Uri: {}", key, routeHost.get(), uri);
+                updateEndpoints(new EventStreamsEndpoint(key,
+                    EventStreamsEndpoint.EndpointType.API,
+                    uri));
+            } else {
+                log.debug("{} has no external endpoint", key);
+            }
             log.traceExit();
         }
     }
