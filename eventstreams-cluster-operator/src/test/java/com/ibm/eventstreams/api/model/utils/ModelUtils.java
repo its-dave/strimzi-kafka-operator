@@ -243,8 +243,8 @@ public class ModelUtils {
     public static Secret generateSecret(String namespace, String name, Map<String, String> data) {
         return new SecretBuilder()
                 .withNewMetadata()
-                .withName(name)
-                .withNamespace(namespace)
+                    .withName(name)
+                    .withNamespace(namespace)
                 .endMetadata()
                 .addToData(data)
                 .build();

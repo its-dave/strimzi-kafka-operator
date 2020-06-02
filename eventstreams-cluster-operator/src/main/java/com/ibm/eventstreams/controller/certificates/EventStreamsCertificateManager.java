@@ -73,6 +73,9 @@ public class EventStreamsCertificateManager {
     public CertAndKey generateCertificateAndKey(Service service, List<String> additionalHosts, String componentName) throws EventStreamsCertificateException {
         try {
             OpenSslCertManager certManager = new OpenSslCertManager();
+            if (service == null && additionalHosts.isEmpty()) {
+                throw new EventStreamsCertificateException("No hosts provided for certificate generation when service is null");
+            }
             Subject subject = createSubject(service, additionalHosts, componentName);
             File keyFile = File.createTempFile("tls", "temp-key");
             File csrFile = File.createTempFile("tls", "temp-csr");
@@ -205,12 +208,12 @@ public class EventStreamsCertificateManager {
     }
 
     public boolean shouldGenerateOrRenewCertificate(Secret certSecret, String certName, Supplier<Date> dateSupplier, Service service, List<String> additionalHosts, String componentName) {
-
+        log.traceEntry(() -> certSecret, () -> certName, () -> dateSupplier, () -> service, () -> additionalHosts, () -> componentName);
         boolean isCertKeyPresent = Optional.ofNullable(certSecret.getData())
             .map(data -> data.containsKey(CertificateSecretModel.formatCertID(certName)))
             .orElse(false);
         if (!isCertKeyPresent) {
-            return true;
+            return log.traceExit(true);
         }
 
         byte[] certData = getBase64DecodedSecretData(certSecret, CertificateSecretModel.formatCertID(certName));
@@ -221,9 +224,9 @@ public class EventStreamsCertificateManager {
             testCertAndKey(certAndKey, dateSupplier, service, additionalHosts, componentName);
         } catch (EventStreamsCertificateException e) {
             log.debug(e);
-            return true;
+            return log.traceExit(true);
         }
-        return false;
+        return log.traceExit(false);
     }
 
     private void testCertAndKey(CertAndKey certAndKey, Supplier<Date> dateSupplier, Service service, List<String> additionalHosts, String componentName) throws EventStreamsCertificateException {
@@ -255,6 +258,9 @@ public class EventStreamsCertificateManager {
         }
     }
 
+    /**
+     * If retrieved keys do not exist in the secret, fields are empty byte arrays
+     */
     public CertAndKey certificateAndKey(Secret certSecret, String certKey, String keyKey) {
         byte[] keyData = getBase64DecodedSecretData(certSecret, keyKey);
         byte[] certData = getBase64DecodedSecretData(certSecret, certKey);

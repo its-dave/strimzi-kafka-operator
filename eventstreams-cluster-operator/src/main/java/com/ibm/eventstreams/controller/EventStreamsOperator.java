@@ -983,8 +983,9 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                 boolean regenSecret = false;
                 Optional<Secret> certSecret = certificateManager.getSecret(model.getCertificateSecretName());
                 for (Endpoint endpoint : model.getTlsEndpoints()) {
-                    regenSecret = updateCertAndKeyInModel(certSecret, model, endpoint, additionalHosts, dateSupplier) || regenSecret;
+                    regenSecret = maybeUpdateEndpointCertAndKeyInModel(certSecret, model, endpoint, additionalHosts, dateSupplier) || regenSecret;
                 }
+                log.info((regenSecret ? "Change(s) detected regenerating secret " : "No changes detected ") + "for model {}", model.getComponentName());
                 // Create secret if any services are not null
                 List<Service> securityServices = Arrays.stream(EndpointServiceType.values())
                     .map(model::getSecurityService)
@@ -1050,49 +1051,59 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         }
 
         /**
-         * Helper method which updates the cert and key in the model for a given endpoint. Will always set the key and
-         * cert in case a future endpoint requires a regeneration of the secret.
-         * @param certSecret Existing secret that a previous reconcile has created
+         * Helper method which updates the cert and key in the model for a given endpoint.
+         * Will always set the key and cert in case a future endpoint requires a regeneration of the secret.
+         *
+         * @param certificateSecret Optional secret that a previous reconcile may have created
          * @param model the current model to update
          * @param endpoint the current endpoint to configure the cert and key for
          * @param additionalHosts a map of route names to additional hosts
          * @param dateSupplier the date supplier
+         *
          * @return a boolean of whether or not we need to regenerate the secret
          * @throws EventStreamsCertificateException
          */
-        private boolean updateCertAndKeyInModel(Optional<Secret> certSecret, AbstractSecureEndpointsModel model, Endpoint endpoint, Map<String, Route> additionalHosts, Supplier<Date> dateSupplier) throws EventStreamsCertificateException {
-            log.traceEntry(() -> certSecret, () -> model, () -> endpoint, () -> additionalHosts, () -> dateSupplier);
+        private boolean maybeUpdateEndpointCertAndKeyInModel(Optional<Secret> certificateSecret, AbstractSecureEndpointsModel model, Endpoint endpoint, Map<String, Route> additionalHosts, Supplier<Date> dateSupplier) throws EventStreamsCertificateException {
+            log.traceEntry(() -> certificateSecret, () -> model, () -> endpoint, () -> additionalHosts, () -> dateSupplier);
             Route route = additionalHosts.get(model.getRouteName(endpoint.getName()));
-            String host = endpoint.isRoute() ? Optional.ofNullable(route).map(Route::getSpec).map(RouteSpec::getHost).orElse("") : "";
-            List<String> hosts = host.isEmpty() ? Collections.emptyList() : Collections.singletonList(host);
-            Service service = endpoint.isRoute() ? null : model.getSecurityService(endpoint.getType());
 
+            // Routes should not have service information in their certificate SANs
+            Service advertisedService = endpoint.isRoute() ? null : model.getSecurityService(endpoint.getType());
+            String host = endpoint.isRoute()
+                    ? Optional.ofNullable(route).map(Route::getSpec).map(RouteSpec::getHost).orElse("")
+                    : "";
+            List<String> hosts = host.isEmpty() ? Collections.emptyList() : Collections.singletonList(host);
+
+            // User provided certificate and key
             if (endpoint.getCertificateAndKeyOverride() != null) {
                 Optional<CertAndKey> providedCertAndKey = certificateManager.certificateAndKey(endpoint.getCertificateAndKeyOverride());
                 if (!providedCertAndKey.isPresent()) {
-                    throw new EventStreamsCertificateException("Provided broker cert secret: " + endpoint.getCertificateAndKeyOverride().getSecretName() + " could not be found");
+                    throw new EventStreamsCertificateException("Provided endpoint certAndKey secret: " + endpoint.getCertificateAndKeyOverride().getSecretName() + " could not be found");
                 }
-                if (certSecret.isPresent()) {
-                    CertAndKey currentCertAndKey = certificateManager.certificateAndKey(certSecret.get(), model.getCertSecretCertID(endpoint.getName()), model.getCertSecretKeyID(endpoint.getName()));
-                    boolean hasCertOverridesChanged = certificateManager.sameCertAndKey(currentCertAndKey, providedCertAndKey.get());
-                    model.setCertAndKey(endpoint.getName(), hasCertOverridesChanged ? providedCertAndKey.get() : currentCertAndKey);
+                if (certificateSecret.isPresent()) {
+                    CertAndKey currentCertAndKey = certificateManager.certificateAndKey(certificateSecret.get(), model.getCertSecretCertID(endpoint.getName()), model.getCertSecretKeyID(endpoint.getName()));
+                    boolean hasCertOverridesChanged = !certificateManager.sameCertAndKey(currentCertAndKey, providedCertAndKey.get());
+                    model.setCertAndKey(endpoint.getName(), providedCertAndKey.get());
+                    log.info((hasCertOverridesChanged ? "Updating" : "No Updates needed for") + " provided endpoint CertAndKey in Model for {}, with endpoint {}", model.getComponentName(), endpoint.getName());
                     return log.traceExit(hasCertOverridesChanged);
                 }
                 // The secret hasn't been generated yet so create a new entry with the provided cert and key
                 model.setCertAndKey(endpoint.getName(), providedCertAndKey.get());
-                log.debug("Finished Updating Cert and Key in Model for {}, secret needs to be generated", model.getComponentName());
+                log.info("Updating Cert and Key in Model for {}, with provided CertAndKey, with endpoint {}", model.getComponentName(), endpoint.getName());
                 return log.traceExit(true);
-            } else if (!certSecret.isPresent() || certificateManager.shouldGenerateOrRenewCertificate(certSecret.get(), endpoint.getName(), dateSupplier, service, hosts, model.getComponentName())) {
-                CertAndKey certAndKey = certificateManager.generateCertificateAndKey(service, hosts, model.getComponentName());
+            } else if (!certificateSecret.isPresent() || certificateManager.shouldGenerateOrRenewCertificate(certificateSecret.get(), endpoint.getName(), dateSupplier, advertisedService, hosts, model.getComponentName())) {
+                log.info("certificate found for {} : {} : should generate or renew certificate {}", model.getComponentName(), certificateSecret.isPresent(), certificateSecret.isPresent() ? certificateManager.shouldGenerateOrRenewCertificate(certificateSecret.get(), endpoint.getName(), dateSupplier, advertisedService, hosts, model.getComponentName()) : true);
+                CertAndKey certAndKey = certificateManager.generateCertificateAndKey(advertisedService, hosts, model.getComponentName());
                 model.setCertAndKey(endpoint.getName(), certAndKey);
-                log.debug("Finished Updating Cert and Key in Model for {}, secret needs to be regenerated", model.getComponentName());
+                log.info("Updating Cert and Key in Model for {}, with generated CertAndKey, with endpoint {}", model.getComponentName(), endpoint.getName());
                 return log.traceExit(true);
+            } else {
+                // Even if we don't need to regenerate the secret, we need to set the key and cert in case of future reconciliation
+                CertAndKey currentCertAndKey = certificateManager.certificateAndKey(certificateSecret.get(), model.getCertSecretCertID(endpoint.getName()), model.getCertSecretKeyID(endpoint.getName()));
+                model.setCertAndKey(endpoint.getName(), currentCertAndKey);
+                log.info("No updates, CertAndKey in Model for {}, with endpoint {}", model.getComponentName(), endpoint.getName());
+                return log.traceExit(false);
             }
-            // even if we don't need to regenerate the secret, we need to set the key and cert in case of future reconciliation
-            CertAndKey currentCertAndKey = certificateManager.certificateAndKey(certSecret.get(), model.getCertSecretCertID(endpoint.getName()), model.getCertSecretKeyID(endpoint.getName()));
-            model.setCertAndKey(endpoint.getName(), currentCertAndKey);
-            log.info("Finished Updating Cert and Key in Model for {}, secret does not need to be regenerated", model.getComponentName());
-            return log.traceExit(false);
         }
 
         protected Future<Map<String, Route>> reconcileRoutes(AbstractSecureEndpointsModel model, Map<String, Route> routes) {
