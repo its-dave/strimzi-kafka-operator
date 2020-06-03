@@ -45,6 +45,7 @@ spec:
         - name: ibm-commonui-operator
         - name: ibm-platform-api-operator
         - name: ibm-metering-operator
+        - name: ibm-licensing-operator
       registry: common-service
       registryNamespace: ibm-common-services
 EOF

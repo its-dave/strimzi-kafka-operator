@@ -93,6 +93,10 @@ public class OperandRequestResourceOperator extends CrdOperator<KubernetesClient
      *       phase:
      *         operandPhase: Running
      *         operatorPhase: Running
+     *     - name: ibm-licensing-operator
+     *       phase:
+     *         operandPhase: Running
+     *         operatorPhase: Running
      * ```
      *
      * @param namespace The namespace the operand request is present in

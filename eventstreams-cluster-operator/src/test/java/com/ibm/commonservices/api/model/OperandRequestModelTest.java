@@ -63,6 +63,7 @@ public class OperandRequestModelTest {
             - name: ibm-commonui-operator
             - name: ibm-platform-api-operator
             - name: ibm-metering-operator
+            - name: ibm-licensing-operator
           registry: common-service
           registryNamespace: ibm-common-services
      */
@@ -93,7 +94,7 @@ public class OperandRequestModelTest {
 
         JsonArray operands = (JsonArray) request.getValue("operands");
         assertThat(operands, allOf(
-                JsonArrayMatchers.hasSize(8),
+                JsonArrayMatchers.hasSize(9),
                 is(new JsonArray()
                         .add(new JsonObject().put("name", "ibm-management-ingress-operator"))
                         .add(new JsonObject().put("name", "ibm-monitoring-exporters-operator"))
@@ -102,7 +103,8 @@ public class OperandRequestModelTest {
                         .add(new JsonObject().put("name", "ibm-iam-operator"))
                         .add(new JsonObject().put("name", "ibm-commonui-operator"))
                         .add(new JsonObject().put("name", "ibm-platform-api-operator"))
-                        .add(new JsonObject().put("name", "ibm-metering-operator")))
+                        .add(new JsonObject().put("name", "ibm-metering-operator"))
+                        .add(new JsonObject().put("name", "ibm-licensing-operator")))
         ));
         assertThat(request.getString("registry"), is("common-service"));
         assertThat(request.getString("registryNamespace"), is("ibm-common-services"));

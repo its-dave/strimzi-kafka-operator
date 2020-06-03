@@ -44,6 +44,7 @@ spec:
         - name: ibm-commonui-operator
         - name: ibm-platform-api-operator
         - name: ibm-metering-operator
+        - name: ibm-licensing-operator
       registry: common-service
       registryNamespace: ibm-common-services
  */
@@ -59,6 +60,7 @@ public class OperandRequestModel extends AbstractModel {
     public static final String COMMON_SERVICES_UI_OPERATOR_NAME = "ibm-commonui-operator";
     public static final String COMMON_SERVICES_API_OPERATOR_NAME = "ibm-platform-api-operator";
     public static final String METERING_OPERATOR_NAME = "ibm-metering-operator";
+    public static final String LICENSING_OPERATOR_NAME = "ibm-licensing-operator";
 
     // Add all requests to a list to ensure all logic handling them use the exhaustive list
     public static final List<String> REQUESTED_OPERANDS = Collections.unmodifiableList(Arrays.asList(
@@ -69,7 +71,8 @@ public class OperandRequestModel extends AbstractModel {
             IAM_OPERATOR_NAME,
             COMMON_SERVICES_UI_OPERATOR_NAME,
             COMMON_SERVICES_API_OPERATOR_NAME,
-            METERING_OPERATOR_NAME));
+            METERING_OPERATOR_NAME,
+            LICENSING_OPERATOR_NAME));
 
     private OperandRequest operandRequest;
 
