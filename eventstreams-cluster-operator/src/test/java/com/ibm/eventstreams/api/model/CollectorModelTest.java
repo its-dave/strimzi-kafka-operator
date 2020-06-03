@@ -607,7 +607,7 @@ public class CollectorModelTest {
         EnvVar tleEnabled = new EnvVarBuilder().withName("TLS_ENABLED").withValue("true").build();
         EnvVar tlsCert = new EnvVarBuilder().withName("TLS_CERT").withValue("/etc/ssl/certs/p2ptls.crt").build();
         EnvVar tlsKey = new EnvVarBuilder().withName("TLS_KEY").withValue("/etc/ssl/certs/p2ptls.key").build();
-        EnvVar ciphers = new EnvVarBuilder().withName("CIPHER_SUITES").withValue("TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_RSA_WITH_AES_128_GCM_SHA256").build();
+        EnvVar ciphers = new EnvVarBuilder().withName("CIPHER_SUITES").withValue("TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256").build();
         EnvVar tlsVersion = new EnvVarBuilder().withName("TLS_VERSION").withValue("TLSv1.2").build();
 
         Container collectorContainer = collectorModel.getDeployment().getSpec().getTemplate().getSpec().getContainers().get(0);

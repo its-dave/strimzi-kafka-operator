@@ -80,7 +80,7 @@ public class CollectorModel extends AbstractSecureEndpointsModel {
         }
     }
 
-    public static final String DEFAULT_CIPHER_SUITES_NODE = "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_RSA_WITH_AES_128_GCM_SHA256";
+    public static final String DEFAULT_CIPHER_SUITES_NODE = "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256";
     private static final Logger log = LogManager.getLogger(CollectorModel.class.getName());
 
     private ServiceAccount serviceAccount;
