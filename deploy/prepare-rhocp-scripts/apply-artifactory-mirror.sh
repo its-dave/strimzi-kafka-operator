@@ -6,7 +6,7 @@ REV_ON="\033[7m"
 REV_OFF="\033[27m"
 RESET="\033[0m"
 set -ex
-oc apply -f "${0%/*}/../artifactory-mirror.yaml"
+oc apply -f "${0%/*}/../mirror-config.yaml"
 set +x
 SECONDS=0
 echo -e "${FG_CYAN}Waiting for nodes to roll...${RESET}"
