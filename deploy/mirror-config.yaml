@@ -6,11 +6,11 @@ spec:
   repositoryDigestMirrors:
   - mirrors:
     - cp.stg.icr.io/cp/ibm-eventstreams-catalog
-    - hyc-qp-stable-docker-local.artifactory.swg-devops.com/operator-index
+    - hyc-qp-stable-docker-local.artifactory.swg-devops.com/ibm-eventstreams-catalog
     source: docker.io/ibmcom/ibm-eventstreams-catalog
   - mirrors:
     - cp.stg.icr.io/cp/ibm-eventstreams-operator-bundle
-    - hyc-qp-stable-docker-local.artifactory.swg-devops.com/operator-bundle
+    - hyc-qp-stable-docker-local.artifactory.swg-devops.com/ibm-eventstreams-operator-bundle
     source:  docker.io/ibmcom/ibm-eventstreams-operator-bundle
   - mirrors:
     - cp.stg.icr.io/cp/ibm-eventstreams-operator
