@@ -34,27 +34,15 @@ affinity:
           - amd64
 nodeSelector: {}
 imagePullSecrets: ibm-entitlement-key
-operatorIndex:
-  image:
-    repository: dockerhub.io
-    name: ibmcom/ibm-eventstreams-catalog
-    tag: 2020-05-27-20.18.23-dddcbaf
-    digest: e94005266418e74721e00c4118b6552c1bddbca82dc2b871a0051aea88a14fa2
-operatorBundle:
-  image:
-    repository: dockerhub.io
-    name: ibmcom/ibm-eventstreams-operator-bundle
-    tag: 2020-05-27-20.18.23-dddcbaf
-    digest: 89ea3a219f864b40cb89cb3c65070ce583d011ee57ec7971429c89cb7b02e4a0
 operator:
   image:
-    repository: dockerhub.io
+    repository: docker.io
     name: ibmcom/ibm-eventstreams-operator
     tag: 2020-06-02-20.06.24-f4e9c48
     digest: bbe4d3ced130e39cfcbf2bc7529cd341beb34aa778fadf596f7757eb465e00f1
 operatorInit:
   image:
-    repository: dockerhub.io
+    repository: docker.io
     name: ibmcom/ibm-eventstreams-operator-init
     tag: 2020-06-02-20.06.24-f4e9c48
     digest: e99f23cb620218a39c00de3bed2ae4d7c2db41e19dba2546749439aae3556f63
@@ -138,19 +126,19 @@ cruiseControl:
     digest: 2750d2256a6ae2d1b4f6cd1f927beb2c8bb829ca68b832ec6738cde54de0743c
 topicOperator:
   image:
-    repository: dockerhub.io
+    repository: docker.io
     name: ibmcom/ibm-eventstreams-operator
     tag: 2020-06-02-20.06.24-f4e9c48
     digest: bbe4d3ced130e39cfcbf2bc7529cd341beb34aa778fadf596f7757eb465e00f1
 userOperator:
   image:
-    repository: dockerhub.io
+    repository: docker.io
     name: ibmcom/ibm-eventstreams-operator
     tag: 2020-06-02-20.06.24-f4e9c48
     digest: bbe4d3ced130e39cfcbf2bc7529cd341beb34aa778fadf596f7757eb465e00f1
 kafkaInit:
   image:
-    repository: dockerhub.io
+    repository: docker.io
     name: ibmcom/ibm-eventstreams-operator
     tag: 2020-06-02-20.06.24-f4e9c48
     digest: bbe4d3ced130e39cfcbf2bc7529cd341beb34aa778fadf596f7757eb465e00f1

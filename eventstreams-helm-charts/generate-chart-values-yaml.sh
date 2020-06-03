@@ -26,13 +26,11 @@ change_image_values(){
     yq w -i "${CHART_VALUES_YAML_FILE}" "${1}".image.digest "${digest}"
 }
 
-change_image_values operatorIndex dockerhub.io ibmcom/ibm-eventstreams-catalog
-change_image_values operatorBundle dockerhub.io ibmcom/ibm-eventstreams-operator-bundle
-change_image_values operator dockerhub.io ibmcom/ibm-eventstreams-operator
-change_image_values operatorInit dockerhub.io ibmcom/ibm-eventstreams-operator-init
-change_image_values topicOperator dockerhub.io ibmcom/ibm-eventstreams-operator
-change_image_values userOperator dockerhub.io ibmcom/ibm-eventstreams-operator
-change_image_values kafkaInit dockerhub.io ibmcom/ibm-eventstreams-operator
+change_image_values operator docker.io ibmcom/ibm-eventstreams-operator
+change_image_values operatorInit docker.io ibmcom/ibm-eventstreams-operator-init
+change_image_values topicOperator docker.io ibmcom/ibm-eventstreams-operator
+change_image_values userOperator docker.io ibmcom/ibm-eventstreams-operator
+change_image_values kafkaInit docker.io ibmcom/ibm-eventstreams-operator
 
 change_image_values restProducer cp.icr.io cp/ibm-eventstreams-rest-producer
 change_image_values adminApi cp.icr.io cp/ibm-eventstreams-admin

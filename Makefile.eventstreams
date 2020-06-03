@@ -54,11 +54,6 @@ eventstreams_operator_build: check_artifactory_prereq set_eventstreams_kafka_ver
 eventstreams_java_build:
 	$(MAKE) -C ${EVENTSTREAMS_PROJECT_NAME} java_build
 
-eventstreams_operator_catalog: check_artifactory_prereq set_eventstreams_kafka_versions
-	$(MAKE) -C eventstreams-helm-charts docker_build
-	$(MAKE) -C deploy build_bundle
-	$(MAKE) cleanup_eventstreams_unwanted_files
-
 cleanup_eventstreams_unwanted_files: 
 	# cleanup unwanted files
 	rm -rf deploy/temp

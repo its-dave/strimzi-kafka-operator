@@ -137,6 +137,13 @@ Note: If you have a newer version of docker installed, this will need to be adde
 - Export ARTIFACTORY_USERNAME and ARTIFACTORY_PASSWORD as env vars (if not already in your bash profile).
 - Run `make -C deploy get_opm` which downloads `opm` from artifactory and installs it into `/usr/local/bin`
 
+### (PreReq) Apply ImageContentSourcePolicy to mirror images from artifactory
+This step is a one time apply to your box.
+- Run `oc apply -f deploy/mirror-config.yaml`
+
+Once applied wait for all your nodes to roll (`oc get nodes` should report all nodes as ready, if you see SchedulingDisabled then your nodes are not ready).
+Once all your nodes have rolled image references from `docker.io/ibmcom` or `cp.icr.io/cp` will now instead refer to a corresponding location on artifactory.
+
 ### Build operator registry with our operator bundle, push to OpenShift registry
 Run `make -C deploy deploy` this will build and verify the OLM bundle, build a catalog source and push it to your OpenShift
 

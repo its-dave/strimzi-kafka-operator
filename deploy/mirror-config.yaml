@@ -5,44 +5,58 @@ metadata:
 spec:
   repositoryDigestMirrors:
   - mirrors:
+    - cp.stg.icr.io/cp/ibm-eventstreams-catalog
     - hyc-qp-stable-docker-local.artifactory.swg-devops.com/operator-index
-    source: dockerhub.io/ibmcom/ibm-eventstreams-catalog
+    source: docker.io/ibmcom/ibm-eventstreams-catalog
   - mirrors:
+    - cp.stg.icr.io/cp/ibm-eventstreams-operator-bundle
     - hyc-qp-stable-docker-local.artifactory.swg-devops.com/operator-bundle
-    source:  dockerhub.io/ibmcom/ibm-eventstreams-operator-bundle
+    source:  docker.io/ibmcom/ibm-eventstreams-operator-bundle
   - mirrors:
+    - cp.stg.icr.io/cp/ibm-eventstreams-operator
     - hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator
-    source: dockerhub.io/ibmcom/ibm-eventstreams-operator
+    source: docker.io/ibmcom/ibm-eventstreams-operator
   - mirrors:
+    - cp.stg.icr.io/cp/ibm-eventstreams-operator-init
     - hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/operator-init
-    source: dockerhub.io/ibmcom/ibm-eventstreams-operator-init
+    source: docker.io/ibmcom/ibm-eventstreams-operator-init
   - mirrors:
+    - cp.stg.icr.io/cp/ibm-eventstreams-rest-producer
     - hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-rest-producer-v2-icp-linux
     source: cp.icr.io/cp/ibm-eventstreams-rest-producer
   - mirrors:
+    - cp.stg.icr.io/cp/ibm-eventstreams-admin
     - hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-admin-icp-linux
     source: cp.icr.io/cp/ibm-eventstreams-admin
   - mirrors:
+    - cp.stg.icr.io/cp/ibm-eventstreams-schema-registry
     - hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-schema-registry-icp-linux
     source: cp.icr.io/cp/ibm-eventstreams-schema-registry
   - mirrors:
+    - cp.stg.icr.io/cp/ibm-eventstreams-schema-registry-avro
     - hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-schema-registry-avro-icp-linux
     source: cp.icr.io/cp/ibm-eventstreams-schema-registry-avro
   - mirrors:
+    - cp.stg.icr.io/cp/ibm-eventstreams-schema-proxy
     - hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-schema-proxy-icp-linux
     source: cp.icr.io/cp/ibm-eventstreams-schema-proxy
   - mirrors:
+    - cp.stg.icr.io/cp/ibm-eventstreams-admin-ui
     - hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-admin-ui-icp-linux
     source: cp.icr.io/cp/ibm-eventstreams-admin-ui
   - mirrors:
+    - cp.stg.icr.io/cp/ibm-eventstreams-session-store
     - hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-session-store-icp-linux
     source: cp.icr.io/cp/ibm-eventstreams-session-store
   - mirrors:
+    - cp.stg.icr.io/cp/ibm-eventstreams-metrics-collector
     - hyc-qp-stable-docker-local.artifactory.swg-devops.com/eventstreams-metrics-collector-icp-linux
     source: cp.icr.io/cp/ibm-eventstreams-metrics-collector
   - mirrors:
+    - cp.stg.icr.io/cp/ibm-eventstreams-kafka
     - hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/kafka
     source: cp.icr.io/cp/ibm-eventstreams-kafka
   - mirrors:
+    - cp.stg.icr.io/cp/ibm-eventstreams-jmxtrans
     - hyc-qp-stable-docker-local.artifactory.swg-devops.com/strimzi/jmxtrans
     source: cp.icr.io/cp/ibm-eventstreams-jmxtrans

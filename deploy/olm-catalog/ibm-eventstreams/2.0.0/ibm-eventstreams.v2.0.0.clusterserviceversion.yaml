@@ -71,7 +71,7 @@ metadata:
     capabilities: Basic Install
     categories: Streaming & Messaging
     certified: 'false'
-    createdAt: 2020-06-02T23:24:33Z
+    createdAt: 2020-06-03T10:12:54Z
     description: Kafka-based messaging platform for handling real-time data feeds.
     operators.operatorframework.io/internal-objects: '["kafkas.eventstreams.ibm.com"]'
     support: IBM
@@ -841,11 +841,11 @@ spec:
                   value: |
                     2.5.0=cp.icr.io/cp/ibm-eventstreams-kafka@sha256:2750d2256a6ae2d1b4f6cd1f927beb2c8bb829ca68b832ec6738cde54de0743c
                 - name: EVENTSTREAMS_DEFAULT_TOPIC_OPERATOR_IMAGE
-                  value: dockerhub.io/ibmcom/ibm-eventstreams-operator@sha256:bbe4d3ced130e39cfcbf2bc7529cd341beb34aa778fadf596f7757eb465e00f1
+                  value: docker.io/ibmcom/ibm-eventstreams-operator@sha256:bbe4d3ced130e39cfcbf2bc7529cd341beb34aa778fadf596f7757eb465e00f1
                 - name: EVENTSTREAMS_DEFAULT_USER_OPERATOR_IMAGE
-                  value: dockerhub.io/ibmcom/ibm-eventstreams-operator@sha256:bbe4d3ced130e39cfcbf2bc7529cd341beb34aa778fadf596f7757eb465e00f1
+                  value: docker.io/ibmcom/ibm-eventstreams-operator@sha256:bbe4d3ced130e39cfcbf2bc7529cd341beb34aa778fadf596f7757eb465e00f1
                 - name: EVENTSTREAMS_DEFAULT_KAFKA_INIT_IMAGE
-                  value: dockerhub.io/ibmcom/ibm-eventstreams-operator@sha256:bbe4d3ced130e39cfcbf2bc7529cd341beb34aa778fadf596f7757eb465e00f1
+                  value: docker.io/ibmcom/ibm-eventstreams-operator@sha256:bbe4d3ced130e39cfcbf2bc7529cd341beb34aa778fadf596f7757eb465e00f1
                 - name: EVENTSTREAMS_DEFAULT_JMXTRANS_IMAGE
                   value: cp.icr.io/cp/ibm-eventstreams-jmxtrans@sha256:1fe49e180412223c91292a7540abd876ad8fcc182b62c926f768ae2147a69fc7
                 - name: EVENTSTREAMS_DEFAULT_REST_PRODUCER_IMAGE
@@ -867,7 +867,7 @@ spec:
                 - name: JAVA_OPTS
                   value: -XX:+UseContainerSupport -Xdump:what -Xdump:java+system+snap:events=user
                     -Xdump:directory=/tmp/dumps -XX:+HeapDumpOnOutOfMemoryError
-                image: dockerhub.io/ibmcom/ibm-eventstreams-operator@sha256:bbe4d3ced130e39cfcbf2bc7529cd341beb34aa778fadf596f7757eb465e00f1
+                image: docker.io/ibmcom/ibm-eventstreams-operator@sha256:bbe4d3ced130e39cfcbf2bc7529cd341beb34aa778fadf596f7757eb465e00f1
                 livenessProbe:
                   failureThreshold: 3
                   httpGet:
@@ -916,7 +916,7 @@ spec:
                   valueFrom:
                     fieldRef:
                       fieldPath: metadata.uid
-                image: dockerhub.io/ibmcom/ibm-eventstreams-operator-init@sha256:e99f23cb620218a39c00de3bed2ae4d7c2db41e19dba2546749439aae3556f63
+                image: docker.io/ibmcom/ibm-eventstreams-operator-init@sha256:e99f23cb620218a39c00de3bed2ae4d7c2db41e19dba2546749439aae3556f63
                 name: init
                 resources:
                   limits:
@@ -980,9 +980,9 @@ spec:
   version: 2.0.0
   relatedImages:
   - name: ibmcom/ibm-eventstreams-operator
-    image: dockerhub.io/ibmcom/ibm-eventstreams-operator@sha256:bbe4d3ced130e39cfcbf2bc7529cd341beb34aa778fadf596f7757eb465e00f1
+    image: docker.io/ibmcom/ibm-eventstreams-operator@sha256:bbe4d3ced130e39cfcbf2bc7529cd341beb34aa778fadf596f7757eb465e00f1
   - name: ibmcom/ibm-eventstreams-operator-init
-    image: dockerhub.io/ibmcom/ibm-eventstreams-operator-init@sha256:e99f23cb620218a39c00de3bed2ae4d7c2db41e19dba2546749439aae3556f63
+    image: docker.io/ibmcom/ibm-eventstreams-operator-init@sha256:e99f23cb620218a39c00de3bed2ae4d7c2db41e19dba2546749439aae3556f63
   - name: cp/ibm-eventstreams-rest-producer
     image: cp.icr.io/cp/ibm-eventstreams-rest-producer@sha256:dbe60c013ba1656c0a913295295fa376179fad7c3130908f755b57c64c7daeb6
   - name: cp/ibm-eventstreams-admin

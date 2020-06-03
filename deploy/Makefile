@@ -1,6 +1,6 @@
 OPERATOR_NAME := ibm-eventstreams
 CSV_VERSION = 2.0.0
-CHANNELS = "v2.0"
+CHANNELS = v2.0
 DEFAULT_CHANNEL = v2.0
 
 INSTALL_DIR := ../install/ibm-eventstreams-operator
@@ -32,18 +32,19 @@ ROLE_BINDING_FILE := role_binding.yaml
 SERVICE_ACCOUNT_FILE := service_account.yaml
 
 DATE := $(shell date "+%Y-%m-%dT%H:%M:%SZ")
-IMAGE_TAG := latest
-IMAGE_BASE_NAME := local-operator-registry
-IMAGE_NAME := $(IMAGE_BASE_NAME):$(IMAGE_TAG)
 REMOTE_REGISTRY := $(shell oc registry info)
-MARKETPLACE_NAMESPACE := openshift-marketplace
-REPO_ADDR := $(REMOTE_REGISTRY)/$(MARKETPLACE_NAMESPACE)/
+REPO_ADDR := $(REMOTE_REGISTRY)/openshift-marketplace/
 B_OS ?= macos
+DOCKER_CLI_EXPERIMENTAL=enabled
 
+TAG ?= $(shell date "+%Y-%m-%d-%H.%M.%S")
 LOCAL_REPO_PORT := 5000
 LOCAL_REPO_ADDR := localhost:$(LOCAL_REPO_PORT)/
-BUNDLE_IMAGE_NAME := olm-bundle:latest
-BUNDLE_LOCATION := $(LOCAL_REPO_ADDR)$(BUNDLE_IMAGE_NAME)
+ARTIFACTORY_REPO_ADDR := hyc-qp-stable-docker-local.artifactory.swg-devops.com/
+STAGING_REPO_ADDR := cp.stg.icr.io/cp/
+DOCKERHUB_REPO_ADDR := docker.io/ibmcom/
+BUNDLE_IMAGE_NAME := ibm-eventstreams-operator-bundle:$(TAG)
+CATALOG_IMAGE_NAME := ibm-eventstreams-catalog:$(TAG)
 
 include ../Makefile.os
 .PHONY: all clean build_csv deploy delete_deploy verify docker_build docker_push create_prepare_rhocp
@@ -89,31 +90,13 @@ run_scorecard: build_csv
 build_csv: .EXPORT_ALL_VARIABLES clean
 	./build_csv.sh
 
-build_bundle: build_csv start_local_registry
-	# copy to tmp dir as backup for after bundle built as we dont want them to be stored in json format
-	rm -rf tmp
-	$(CP) -R olm-catalog/$(OPERATOR_NAME) tmp/
-	./convertYaml2Json.sh
-	echo "Generating bundle & image"
-	cd .. && opm alpha bundle build --tag $(BUNDLE_IMAGE_NAME) --package $(OPERATOR_NAME) --directory deploy/olm-catalog/$(OPERATOR_NAME)/$(CSV_VERSION) --channels $(CHANNELS) --default $(DEFAULT_CHANNEL)
-	docker tag $(BUNDLE_IMAGE_NAME) $(LOCAL_REPO_ADDR)$(BUNDLE_IMAGE_NAME)
+build_bundle: build_csv start_local_registry yaml_to_json
+
+	cd .. && opm alpha bundle build --tag $(LOCAL_REPO_ADDR)$(BUNDLE_IMAGE_NAME) --package $(OPERATOR_NAME) --directory deploy/olm-catalog/$(OPERATOR_NAME)/$(CSV_VERSION) --channels $(CHANNELS) --default $(DEFAULT_CHANNEL)
 	docker push $(LOCAL_REPO_ADDR)$(BUNDLE_IMAGE_NAME)
-	# push to Dockerhub only if we run on jenkins
-ifeq ($(USER),jenkins)
-	docker login -u $(DOCKERHUB_USERNAME) -p $(DOCKERHUB_PASSWORD)
-	docker tag $(LOCAL_REPO_ADDR)$(BUNDLE_IMAGE_NAME) ibmcom/ibm-eventstreams-operator-bundle:$(TAG)
-	docker push ibmcom/ibm-eventstreams-operator-bundle:$(TAG)
-	$(eval BUNDLE_LOCATION=ibmcom/ibm-eventstreams-operator-bundle)
-endif
-	opm alpha bundle validate --tag $(BUNDLE_LOCATION) --image-builder docker
-	cd .. && opm index add --bundles $(BUNDLE_LOCATION) --container-tool docker --tag $(IMAGE_NAME)
-ifeq ($(USER),jenkins)
-	docker login -u $(DOCKERHUB_USERNAME) -p $(DOCKERHUB_PASSWORD)
-	docker tag $(IMAGE_NAME) ibmcom/ibm-eventstreams-catalog:$(TAG)
-	docker push ibmcom/ibm-eventstreams-catalog:$(TAG)
-endif
-	rm -rf olm-catalog/$(OPERATOR_NAME)
-	$(CP) -R tmp/ olm-catalog/$(OPERATOR_NAME)
+	opm alpha bundle validate --tag $(LOCAL_REPO_ADDR)$(BUNDLE_IMAGE_NAME) --image-builder docker
+	cd .. && opm index add --bundles $(LOCAL_REPO_ADDR)$(BUNDLE_IMAGE_NAME) --container-tool docker --tag $(CATALOG_IMAGE_NAME)
+	$(MAKE) json_to_yaml
 
 
 docker_build: build_csv
@@ -121,17 +104,33 @@ docker_build: build_csv
 docker_push:
 	oc registry login --skip-check
 	docker login -u any -p $(shell oc whoami -t) $(REMOTE_REGISTRY)
-	docker tag $(IMAGE_NAME) $(REPO_ADDR)$(IMAGE_NAME)
-	docker push $(REPO_ADDR)$(IMAGE_NAME)
-	oc set image-lookup $(IMAGE_BASE_NAME) -n $(MARKETPLACE_NAMESPACE)
+	docker tag $(CATALOG_IMAGE_NAME) $(REPO_ADDR)$(CATALOG_IMAGE_NAME)
+	docker push $(REPO_ADDR)$(CATALOG_IMAGE_NAME)
 
 deploy: build_bundle docker_push
 	oc apply -f common-services-operator-source.yaml
-	$(SED) s/@image@/$(IMAGE_NAME)/ custom-catalog-source.yaml.template | oc apply -f -
+	$(SED) s/@image@/$(CATALOG_IMAGE_NAME)/ custom-catalog-source.yaml.template | oc apply -f -
 
 delete_deploy:
 	$(SED) s/@image@/dummy/ custom-catalog-source.yaml.template | oc delete -f -
 
+yaml_to_json: 
+	rm -rf tmp
+	$(CP) -R olm-catalog/$(OPERATOR_NAME) tmp/
+	./convertYaml2Json.sh
+
+json_to_yaml:
+	rm -rf olm-catalog/$(OPERATOR_NAME)
+	$(CP) -R tmp/ olm-catalog/$(OPERATOR_NAME)
+
+build_bundle_staging: .EXPORT_ALL_VARIABLES yaml_to_json
+	./build_bundle.sh $(STAGING_REPO_ADDR) $(STAGING_USERNAME) $(STAGING_PASSWORD)
+	$(MAKE) json_to_yaml
+
+build_bundle_artifactory: .EXPORT_ALL_VARIABLES yaml_to_json
+	./build_bundle.sh $(ARTIFACTORY_REPO_ADDR) $(ARTIFACTORY_USERNAME) $(ARTIFACTORY_PASSWORD)
+	$(MAKE) json_to_yaml
+	
 create_prepare_rhocp:
 	$(eval CLUSTER_NAME := $(shell read -erp "Cluster name: " x; echo $$x))
 	./prepare-rhocp-scripts/create-fyre-cluster.sh $(CLUSTER_NAME) --add-to-etc-hosts --oc-login --ssh-copy-id
