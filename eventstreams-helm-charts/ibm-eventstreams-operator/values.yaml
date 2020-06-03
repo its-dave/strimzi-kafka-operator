@@ -92,8 +92,8 @@ collector:
   image:
     repository: cp.icr.io
     name: cp/ibm-eventstreams-metrics-collector
-    tag: 2020-06-02-09.28.49-9e56b11
-    digest: 79ac0a08abc544b2a9523368394661ddd0f74b38d8706e029ebec98cefb50898
+    tag: 2020-06-03-09.00.33-b99fe20
+    digest: 1612b285d593e428a076f56c5a980a402430d08d748872be7069fe79c4f0be46
 zookeeper:
   image:
     repository: cp.icr.io

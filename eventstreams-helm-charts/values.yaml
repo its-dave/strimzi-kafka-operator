@@ -89,7 +89,7 @@ collector:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: eventstreams-metrics-collector-icp-linux
-    tag: 2020-06-02-09.28.49-9e56b11
+    tag: 2020-06-03-09.00.33-b99fe20
 
 
 zookeeper:
