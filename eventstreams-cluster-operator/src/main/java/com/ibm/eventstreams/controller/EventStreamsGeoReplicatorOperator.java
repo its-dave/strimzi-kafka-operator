@@ -164,14 +164,17 @@ public class EventStreamsGeoReplicatorOperator extends AbstractOperator<EventStr
                 });
 
                 if (isValidCR.get()) {
-                    addCondition(previousConditions
-                        .stream()
-                        // restore any previous readiness condition if this was set, so
-                        // that timestamps remain consistent
-                        .filter(c -> c.getType().equals(PhaseState.PENDING.toValue()))
-                        .findFirst()
-                        // otherwise set a new condition saying that the reconcile loop is running
-                        .orElse(StatusCondition.createPendingCondition(GEOREPLICATOR_BEING_DEPLOYED_REASON, "Event Streams geo-replicator is being deployed").toCondition()));
+                    if (status.getPhase() != PhaseState.READY) {
+                        addCondition(previousConditions
+                                .stream()
+                                // restore any previous readiness condition if this was set, so
+                                // that timestamps remain consistent
+                                .filter(c -> c.getType().equals(PhaseState.PENDING.toValue()))
+                                .findFirst()
+                                // otherwise set a new condition saying that the reconcile loop is running
+                                .orElse(StatusCondition.createPendingCondition(GEOREPLICATOR_BEING_DEPLOYED_REASON,
+                                        "Event Streams geo-replicator is being deployed").toCondition()));
+                    }
                 } else {
                     phase = PhaseState.FAILED;
                 }

@@ -24,6 +24,7 @@ import com.ibm.eventstreams.api.spec.EventStreamsGeoReplicator;
 import com.ibm.eventstreams.api.spec.EventStreamsGeoReplicatorBuilder;
 import com.ibm.eventstreams.api.spec.EventStreamsGeoReplicatorSpec;
 import com.ibm.eventstreams.api.spec.EventStreamsGeoReplicatorSpecBuilder;
+import com.ibm.eventstreams.api.status.EventStreamsGeoReplicatorStatusBuilder;
 import com.ibm.eventstreams.api.status.EventStreamsVersions;
 import com.ibm.eventstreams.controller.models.PhaseState;
 import com.ibm.eventstreams.controller.utils.ConditionUtils;
@@ -89,6 +90,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -308,6 +310,48 @@ public class EventStreamsGeoReplicatorOperatorTest {
                 assertThat(initialCondition.get().getLastTransitionTime(), is(newCondition.getLastTransitionTime()));
                 async.flag();
             })));
+    }
+
+    @Test
+    public void testConditionsAreNotAddedToReadyInstances(VertxTestContext context) {
+        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
+        EventStreamsGeoReplicator geoReplicatorCluster = createDefaultEventStreamsGeoReplicator(NAMESPACE, CLUSTER_NAME);
+        geoReplicatorCluster.setStatus(new EventStreamsGeoReplicatorStatusBuilder()
+                .withPhase(PhaseState.READY)
+                .withConditions(Collections.EMPTY_LIST)
+                .build());
+
+        mockGetEventStreamsResource(CLUSTER_NAME, createDefaultEventStreamsWithAuthentication(NAMESPACE, CLUSTER_NAME));
+        mockGetGeoReplicatorResource(CLUSTER_NAME, geoReplicatorCluster);
+        mockUpdateGeoReplicatorStatus(null);
+        EventStreamsGeoReplicatorOperator geoReplicatorOperator = new EventStreamsGeoReplicatorOperator(
+                vertx,
+                mockClient,
+                EventStreamsGeoReplicator.RESOURCE_KIND,
+                pfa,
+                esReplicatorResourceOperator,
+                esResourceOperator,
+                kafkaUserOperator,
+                metricsProvider
+        );
+
+        Checkpoint async = context.checkpoint();
+
+        geoReplicatorOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreamsGeoReplicator.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), geoReplicatorCluster)
+                .onComplete(context.succeeding(v -> {
+                    ArgumentCaptor<EventStreamsGeoReplicator> argument = ArgumentCaptor.forClass(EventStreamsGeoReplicator.class);
+                    verify(esReplicatorResourceOperator, times(2)).updateEventStreamsGeoReplicatorStatus(argument.capture());
+
+                    List<EventStreamsGeoReplicator> allUpdates = argument.getAllValues();
+                    for (EventStreamsGeoReplicator update : allUpdates) {
+                        // none of the status updates should've added a
+                        // "georep is being deployed" condition as the
+                        // georep instance was already in a ready state
+                        assertThat(update.getStatus().getConditions(), is(empty()));
+                    }
+
+                    async.flag();
+                }));
     }
 
     @Test
