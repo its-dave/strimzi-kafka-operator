@@ -147,7 +147,7 @@ public class EventStreamsGeoReplicatorOperator extends AbstractOperator<EventStr
                     conditions.add(StatusCondition.createErrorCondition("MismatchEventStreamsAndReplictorInstanceNames",
                         String.format("The name of the Event Streams geo-replicator instance '%s' does not match the Event Streams instance '%s'. ",
                             replicatorInstance.getMetadata().getName(), replicatorInstance.getMetadata().getLabels().get(Labels.STRIMZI_CLUSTER_LABEL)) +
-                            String.format("Edit spec.metadata.name to provide the value of '%s'. ", replicatorInstance.getMetadata().getLabels().get(Labels.STRIMZI_CLUSTER_LABEL))));
+                            String.format("Delete this geo-replicator instance and recreate it with spec.metadata.name set to the value of '%s'. ", replicatorInstance.getMetadata().getLabels().get(Labels.STRIMZI_CLUSTER_LABEL))));
                 }
                 if (!adminAPIInstanceFound(instance)) {
                     String errorMessage = String.format("AdminApi is required to enable geo-replication for Event Streams instance '%s'. ", replicatorInstance.getMetadata().getLabels().get(Labels.STRIMZI_CLUSTER_LABEL))
