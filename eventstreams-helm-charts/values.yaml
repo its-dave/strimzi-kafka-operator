@@ -42,12 +42,12 @@ operator:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: strimzi/operator
-    tag: 2020-06-03-11.12.55-36d2140
+    tag: 2020-06-03-14.55.30-4a65a34
 operatorInit:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: strimzi/operator-init
-    tag: 2020-06-03-11.12.55-36d2140
+    tag: 2020-06-03-14.55.30-4a65a34
 
 
 restProducer:
@@ -79,7 +79,7 @@ adminUi:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: eventstreams-admin-ui-icp-linux
-    tag: 2020-06-02-12.05.33-17ddaf5-dev
+    tag: 2020-06-03-18.49.19-2f6e94e-dev
 adminUiDatabase:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
@@ -96,82 +96,82 @@ zookeeper:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: strimzi/kafka
-    tagPrefix: 2020-06-03-11.12.55-36d2140
+    tagPrefix: 2020-06-03-14.55.30-4a65a34
 kafka:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: strimzi/kafka
-    tagPrefix: 2020-06-03-11.12.55-36d2140
+    tagPrefix: 2020-06-03-14.55.30-4a65a34
 kafkaConnect:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: strimzi/kafka
-    tagPrefix: 2020-06-03-11.12.55-36d2140
+    tagPrefix: 2020-06-03-14.55.30-4a65a34
 kafkaConnects2i:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: strimzi/kafka
-    tagPrefix: 2020-06-03-11.12.55-36d2140
+    tagPrefix: 2020-06-03-14.55.30-4a65a34
 cruiseControl:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: strimzi/kafka
-    tagPrefix: 2020-06-03-11.12.55-36d2140
+    tagPrefix: 2020-06-03-14.55.30-4a65a34
 topicOperator:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: strimzi/operator
-    tag: 2020-06-03-11.12.55-36d2140
+    tag: 2020-06-03-14.55.30-4a65a34
 userOperator:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: strimzi/operator
-    tag: 2020-06-03-11.12.55-36d2140
+    tag: 2020-06-03-14.55.30-4a65a34
 kafkaInit:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: strimzi/operator
-    tag: 2020-06-03-11.12.55-36d2140
+    tag: 2020-06-03-14.55.30-4a65a34
 tlsSidecarZookeeper:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: strimzi/kafka
-    tagPrefix: 2020-06-03-11.12.55-36d2140
+    tagPrefix: 2020-06-03-14.55.30-4a65a34
 tlsSidecarKafka:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: strimzi/kafka
-    tagPrefix: 2020-06-03-11.12.55-36d2140
+    tagPrefix: 2020-06-03-14.55.30-4a65a34
 tlsSidecarEntityOperator:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: strimzi/kafka
-    tagPrefix: 2020-06-03-11.12.55-36d2140
+    tagPrefix: 2020-06-03-14.55.30-4a65a34
 tlsSidecarCruiseControl:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: strimzi/kafka
-    tagPrefix: 2020-06-03-11.12.55-36d2140
+    tagPrefix: 2020-06-03-14.55.30-4a65a34
 kafkaMirrorMaker:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: strimzi/kafka
-    tagPrefix: 2020-06-03-11.12.55-36d2140
+    tagPrefix: 2020-06-03-14.55.30-4a65a34
 kafkaExporter:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: strimzi/kafka
-    tagPrefix: 2020-06-03-11.12.55-36d2140
+    tagPrefix: 2020-06-03-14.55.30-4a65a34
 jmxTrans:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: strimzi/jmxtrans
-    tag: 2020-06-03-11.12.55-36d2140
+    tag: 2020-06-03-14.55.30-4a65a34
 kafkaMirrorMaker2:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: strimzi/kafka
-    tagPrefix: 2020-06-03-11.12.55-36d2140
+    tagPrefix: 2020-06-03-14.55.30-4a65a34
 resources:
   limits:
     memory: 1Gi
