@@ -12,7 +12,7 @@ updateGitSubmodule() {
     cd "${REPO}"
 
     echo "Updating submodule..."
-    make -f Makefile.release prepare_case
+    ./scripts/pre-install.sh
     cd "${ROOT}"
 }
 
