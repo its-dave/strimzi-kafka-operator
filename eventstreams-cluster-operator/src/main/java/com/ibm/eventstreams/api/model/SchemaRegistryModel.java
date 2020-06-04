@@ -586,7 +586,12 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
         }
 
         String storageClass = Optional.ofNullable(storage.getStorageClass()).orElse("");
-        
+
+        // CrdGenerator does not generate the required x-kubernetes-preserve-unknown-fields
+        //  annotation needed to allow this work (resulting in getAdditionalProperties()
+        //  always returning an empty list).
+        // deploy/build_csv.sh is modifying the CRD after generation to add the field
+        //  needed for this code to work
         String accessMode = Optional.ofNullable(storage.getAdditionalProperties())
             .map(ap -> ap.get(ACCESS_MODE_KEY))
             .map(Object::toString)

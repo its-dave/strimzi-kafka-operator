@@ -16,10 +16,17 @@ prepare_manifests(){
   ${CP} "${INSTALL_DIR}/049-Crd-kafkarebalance.yaml" "${KAFKA_REBALANCE_CRD_FILE}"
   ${CP} "${INSTALL_DIR}/140-Crd-eventstreams.yaml" "${EVENTSTREAMS_CRD_FILE}"
   ${CP} "${INSTALL_DIR}/143-Crd-eventstreamsgeoreplicator.yaml" "${EVENTSTREAMS_GEOREP_CRD_FILE}"
+
+  # update the ES api versions
   yq w -i "${EVENTSTREAMS_CRD_FILE}" spec.version v1beta1
   yq w -i "${EVENTSTREAMS_GEOREP_CRD_FILE}" spec.version v1beta1
+  # inject an additional attribute that allows additional properties in
+  # the Schema Registry storage definition
+  yq w -i "${EVENTSTREAMS_CRD_FILE}" spec.validation.openAPIV3Schema.properties.spec.properties.schemaRegistry.properties.storage['x-kubernetes-preserve-unknown-fields'] "true"
 
+  # copy the examples so they automatically get packed into alm-examples in the CSV to be built
   ${CP} ../examples/eventstreams/*.yaml "${CRD_DIR}"
+
   LAST_CREATED_DATE="$(yq r "${GENERATED_CSV}" metadata.annotations.createdAt)"
   ${CP} "${INSTALL_DIR}/020-ClusterRole-strimzi-cluster-operator-role.yaml" "${ROLE_FILE}"
   ${CP} "${INSTALL_DIR}/020-RoleBinding-strimzi-cluster-operator.yaml" "${ROLE_BINDING_FILE}"
@@ -44,12 +51,16 @@ generate_csv(){
   cd -
   # cleanup build directory used by operator-sdk
   rm -rf "${BUILD_DIR}"
-  # merge generated csv with manual fields to input es specific metadat
+
+  # merge generated csv with manual fields to input es specific metadata
   yq d -i "${GENERATED_CSV}" spec.customresourcedefinitions.owned.*
   ${SED} -i "s/owned: \[\]/owned:/" "${GENERATED_CSV}"
   yq m -ix "${GENERATED_CSV}" csv_manual_fields.yaml
+
+  # update the created timestamp for this build
   yq w -i "${GENERATED_CSV}" metadata.annotations.createdAt "${DATE}"
 
+  # sort the attributes in alm-examples to match the samples we provide
   yq r "${GENERATED_CSV}" metadata.annotations['alm-examples'] | jq 'map(.)' | jq -c -f reordering.jq > .ordered-examples
   yq w -i "${GENERATED_CSV}" metadata.annotations['alm-examples'] --tag '!!str' "$(cat .ordered-examples)"
   rm .ordered-examples
