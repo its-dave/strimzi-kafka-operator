@@ -1246,7 +1246,7 @@ EOF
 
 
 echo "Verifying Console YAML samples:"
-all_samples=("es-0-light-insecure.eventstreams.ibm.com" "es-1-development.eventstreams.ibm.com" "es-2-minimal-prod.eventstreams.ibm.com" "es-3-broker.eventstreams.ibm.com" "es-6-broker.eventstreams.ibm.com" "es-9-broker.eventstreams.ibm.com" "user-0-consumer.eventstreams.ibm.com" "user-1-producer.eventstreams.ibm.com" "user-2-everything.eventstreams.ibm.com" "kafka-connect-production.eventstreams.ibm.com" "kafka-connect-non-production.eventstreams.ibm.com" "kafka-connect-s2i-production.eventstreams.ibm.com" "kafka-connect-s2i-non-production.eventstreams.ibm.com" "mirror-maker-2-production.eventstreams.ibm.com" "mirror-maker-2-non-production.eventstreams.ibm.com")
+all_samples=("es-0-light-insecure.eventstreams.ibm.com" "es-1-development.eventstreams.ibm.com" "es-2-minimal-prod.eventstreams.ibm.com" "es-3-broker.eventstreams.ibm.com" "user-0-consumer.eventstreams.ibm.com" "user-1-producer.eventstreams.ibm.com" "user-2-everything.eventstreams.ibm.com" "kafka-connect-production.eventstreams.ibm.com" "kafka-connect-non-production.eventstreams.ibm.com" "kafka-connect-s2i-production.eventstreams.ibm.com" "kafka-connect-s2i-non-production.eventstreams.ibm.com" "mirror-maker-2-production.eventstreams.ibm.com" "mirror-maker-2-non-production.eventstreams.ibm.com")
 for sample_to_check in "${all_samples[@]}"
 do
   ! kubectl get ConsoleYAMLSample "$sample_to_check" -o yaml
