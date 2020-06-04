@@ -902,7 +902,6 @@ spec:
               cloudpakName: IBM Cloud Pak for Integration
               cloudpakVersion: 2020.2.1
               productCloudpakRatio: "1:1"
-      replicas: 1
       bootstrapServers: my-cluster-kafka-bootstrap:9093
       tls:
         trustedCertificates:
@@ -913,6 +912,14 @@ spec:
         offset.storage.topic: connect-cluster-offsets
         config.storage.topic: connect-cluster-configs
         status.storage.topic: connect-cluster-status
+      replicas: 1
+      resources:
+        requests:
+          cpu: 1000m
+          memory: 2Gi
+        limits:
+          cpu: 2000m
+          memory: 2Gi
 EOF
 
 echo "Creating the kafka connect non-production sample"
@@ -953,7 +960,6 @@ spec:
               cloudpakName: IBM Cloud Pak for Integration
               cloudpakVersion: 2020.2.1
               productCloudpakRatio: "2:1"
-      replicas: 1
       bootstrapServers: my-cluster-kafka-bootstrap:9093
       tls:
         trustedCertificates:
@@ -964,6 +970,14 @@ spec:
         offset.storage.topic: connect-cluster-offsets
         config.storage.topic: connect-cluster-configs
         status.storage.topic: connect-cluster-status
+      replicas: 1
+      resources:
+        requests:
+          cpu: 1000m
+          memory: 2Gi
+        limits:
+          cpu: 2000m
+          memory: 2Gi
 EOF
 
 echo "Creating the kafka connect Source To Image production sample"
@@ -1004,7 +1018,6 @@ spec:
               cloudpakName: IBM Cloud Pak for Integration
               cloudpakVersion: 2020.2.1
               productCloudpakRatio: "1:1"
-      replicas: 1
       bootstrapServers: my-cluster-kafka-bootstrap:9093
       tls:
         trustedCertificates:
@@ -1015,6 +1028,14 @@ spec:
         offset.storage.topic: connect-cluster-offsets
         config.storage.topic: connect-cluster-configs
         status.storage.topic: connect-cluster-status
+  replicas: 1
+  resources:
+    requests:
+      cpu: 1000m
+      memory: 2Gi
+    limits:
+      cpu: 2000m
+      memory: 2Gi
 EOF
 
 echo "Creating the kafka connect Source To Image non-production sample"
@@ -1055,7 +1076,6 @@ spec:
               cloudpakName: IBM Cloud Pak for Integration
               cloudpakVersion: 2020.2.1
               productCloudpakRatio: "2:1"
-      replicas: 1
       bootstrapServers: my-cluster-kafka-bootstrap:9093
       tls:
         trustedCertificates:
@@ -1066,6 +1086,14 @@ spec:
         offset.storage.topic: connect-cluster-offsets
         config.storage.topic: connect-cluster-configs
         status.storage.topic: connect-cluster-status
+      replicas: 1
+      resources:
+        requests:
+          cpu: 1000m
+          memory: 2Gi
+        limits:
+          cpu: 2000m
+          memory: 2Gi
 EOF
 
 echo "Creating the Mirror Maker 2 production sample"
@@ -1104,10 +1132,8 @@ spec:
               productChargedContainers: <ADD-NAME-OF-MM2-CR>-mirror-maker
               cloudpakId: c8b82d189e7545f0892db9ef2731b90d
               cloudpakName: IBM Cloud Pak for Integration
-              cloudpakVersion: 10.0.0
+              cloudpakVersion: 2020.2.1
               productCloudpakRatio: "1:1"
-      version: 2.5.0
-      replicas: 1
       connectCluster: "my-cluster-target"
       clusters:
         - alias: "my-cluster-source"
@@ -1134,6 +1160,14 @@ spec:
               checkpoints.topic.replication.factor: 1
           topicsPattern: ".*"
           groupsPattern: ".*"
+      replicas: 1
+      resources:
+        requests:
+          cpu: 1000m
+          memory: 2Gi
+        limits:
+          cpu: 2000m
+          memory: 2Gi
 EOF
 
 echo "Creating the Mirror Maker 2 non-production sample"
@@ -1172,10 +1206,8 @@ spec:
               productChargedContainers: <ADD-NAME-OF-MM2-CR>-mirror-maker
               cloudpakId: c8b82d189e7545f0892db9ef2731b90d
               cloudpakName: IBM Cloud Pak for Integration
-              cloudpakVersion: 10.0.0
+              cloudpakVersion: 2020.2.1
               productCloudpakRatio: "2:1"
-      version: 2.5.0
-      replicas: 1
       connectCluster: "my-cluster-target"
       clusters:
         - alias: "my-cluster-source"
@@ -1202,6 +1234,14 @@ spec:
               checkpoints.topic.replication.factor: 1
           topicsPattern: ".*"
           groupsPattern: ".*"
+      replicas: 1
+      resources:
+        requests:
+          cpu: 1000m
+          memory: 2Gi
+        limits:
+          cpu: 2000m
+          memory: 2Gi
 EOF
 
 

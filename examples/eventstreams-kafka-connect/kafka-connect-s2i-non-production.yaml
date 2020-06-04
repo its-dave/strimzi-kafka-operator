@@ -34,7 +34,6 @@ spec:
           cloudpakName: IBM Cloud Pak for Integration
           cloudpakVersion: 2020.2.1
           productCloudpakRatio: "2:1"
-  replicas: 1
   bootstrapServers: my-cluster-kafka-bootstrap:9093
   tls:
     trustedCertificates:
@@ -45,3 +44,11 @@ spec:
     offset.storage.topic: connect-cluster-offsets
     config.storage.topic: connect-cluster-configs
     status.storage.topic: connect-cluster-status
+  replicas: 1
+  resources:
+    requests:
+      cpu: 1000m
+      memory: 2Gi
+    limits:
+      cpu: 2000m
+      memory: 2Gi
