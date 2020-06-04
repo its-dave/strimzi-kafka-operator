@@ -26,10 +26,10 @@ prepare_manifests(){
   ${CP} "${INSTALL_DIR}/010-ServiceAccount-strimzi-cluster-operator.yaml" "${SERVICE_ACCOUNT_FILE}"
   ${CP} "${INSTALL_DIR}/150-Deployment-eventstreams-cluster-operator.yaml" "${OPERATOR_FILE}"
   # Inject the expected service account name (the name of the operator role) into the operator deployment
-  yq r ${ROLE_FILE} metadata.name | xargs yq w -i ${OPERATOR_FILE} spec.template.spec.serviceAccountName
+  yq r "${ROLE_FILE}" metadata.name | xargs yq w -i "${OPERATOR_FILE}" spec.template.spec.serviceAccountName
   # Inject the entity operator delegation ClusterRole rules into the Operator Role
-  yq m -i -a ${ROLE_FILE} "${INSTALL_DIR}/031-ClusterRole-strimzi-entity-operator.yaml"
-  
+  yq m -i -a "${ROLE_FILE}" "${INSTALL_DIR}/031-ClusterRole-strimzi-entity-operator.yaml"
+
   ${SED} -i "/WATCHED_NAMESPACE/,/EVENTSTREAMS_OPERATOR_NAMESPACE/ s/metadata.namespace/metadata.annotations['olm.targetNamespaces']/" "${OPERATOR_FILE}"
 
   ${CP} "${INSTALL_DIR}/031-ClusterRole-strimzi-entity-operator.yaml" "${BUNDLE_DIR}/entityoperator.clusterrole.yaml"
@@ -40,7 +40,7 @@ prepare_manifests(){
 generate_csv(){
   echo "Generating csv"
   cd ..
-  operator-sdk generate csv --csv-version "${CSV_VERSION}" --operator-name ${OPERATOR_NAME} --update-crds --make-manifests=false
+  operator-sdk generate csv --csv-version "${CSV_VERSION}" --operator-name "${OPERATOR_NAME}" --update-crds --make-manifests=false
   cd -
   # cleanup build directory used by operator-sdk
   rm -rf "${BUILD_DIR}"
@@ -48,14 +48,14 @@ generate_csv(){
   yq d -i "${GENERATED_CSV}" spec.customresourcedefinitions.owned.*
   ${SED} -i "s/owned: \[\]/owned:/" "${GENERATED_CSV}"
   yq m -ix "${GENERATED_CSV}" csv_manual_fields.yaml
-  yq w -i "${GENERATED_CSV}" metadata.annotations.createdAt ${DATE}
+  yq w -i "${GENERATED_CSV}" metadata.annotations.createdAt "${DATE}"
 
-  yq r "${GENERATED_CSV}" metadata.annotations['alm-examples'] | jq 'map(.)' | jq -c -f reordering.jq > .ordered-examples	
-  yq w -i "${GENERATED_CSV}" metadata.annotations['alm-examples'] --tag '!!str' `cat .ordered-examples`	
+  yq r "${GENERATED_CSV}" metadata.annotations['alm-examples'] | jq 'map(.)' | jq -c -f reordering.jq > .ordered-examples
+  yq w -i "${GENERATED_CSV}" metadata.annotations['alm-examples'] --tag '!!str' "$(cat .ordered-examples)"
   rm .ordered-examples
 
-  if [ -n "${TRAVIS}" ]; then	
-	  yq w -i "${GENERATED_CSV}" "metadata.annotations.createdAt" "${LAST_CREATED_DATE}"	
+  if [ -n "${TRAVIS}" ]; then
+	  yq w -i "${GENERATED_CSV}" "metadata.annotations.createdAt" "${LAST_CREATED_DATE}"
   fi
 }
 
@@ -72,7 +72,7 @@ add_related_images(){
     repository=$(echo "${image_config}" | yq r - repository)
     image_name=$(echo "${image_config}" | yq r - name)
     digest=$(echo "${image_config}" | yq r - digest)
-    
+
     image="${repository}/${image_name}@sha256:${digest}"
 
     if [[ ! "$(yq r "${GENERATED_CSV}" spec.relatedImages[*].name )" =~ ${image_name} ]] && [[ ! ${image_name} =~ "ibm-eventstreams-catalog" ]] && [[ ! ${image_name} =~ "ibm-eventstreams-operator-bundle" ]]; then

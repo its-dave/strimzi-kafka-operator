@@ -60,14 +60,6 @@ metadata:
             "memory": "79.1 GB",
             "vpc": "36"
           }
-        },
-        "georeplicator": {
-          "name": "georeplicator",
-          "resources": {
-            "cpu": "2",
-            "memory": "2 GB",
-            "vpc": "1"
-          }
         }
       }
   version: 2.0.0
