@@ -33,6 +33,9 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 
 import java.util.HashSet;
 import java.util.Set;
@@ -88,6 +91,15 @@ public class OperandRequestResourceOperatorTest {
         OperandRequestResourceOperator operandRequestResourceOperator = new OperandRequestResourceOperator(vertx, mockedKube);
         operandRequestResourceOperator.waitForReady(NAMESPACE, NAME, 10, 10)
                 .setHandler(context.succeeding(v ->  async.flag()));
+    }
+
+    @Test
+    public void testIsReadyHandlesOperandRequestMissingPhaseInfo() {
+        KubernetesClient mockedKube = initMockKube(createInvalidOperandRequest());
+
+        OperandRequestResourceOperator operandRequestResourceOperator = new OperandRequestResourceOperator(vertx, mockedKube);
+        boolean outcome = operandRequestResourceOperator.isReady(NAMESPACE, NAME);
+        assertThat(outcome, is(false));
     }
 
     @Test
@@ -151,5 +163,21 @@ public class OperandRequestResourceOperatorTest {
         }
 
         return operandRequest;
+    }
+
+    private OperandRequest createInvalidOperandRequest() {
+        JsonObject status = new JsonObject();
+        JsonArray members = new JsonArray();
+        for (String operand : OperandRequestModel.REQUESTED_OPERANDS) {
+            members.add(new JsonObject()
+                    .put("name", operand)
+                    .put("phase", new JsonObject()));
+        }
+        status.put("members", members);
+
+        return new OperandRequestBuilder()
+                .withMetadata(new ObjectMetaBuilder().withName(NAME).withNamespace(NAMESPACE).build())
+                .withStatus(DatabindCodec.mapper().convertValue(status.getMap(), Object.class))
+                .build();
     }
 }

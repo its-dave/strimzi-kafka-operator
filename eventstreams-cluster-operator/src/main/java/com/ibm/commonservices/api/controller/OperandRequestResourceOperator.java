@@ -129,7 +129,7 @@ public class OperandRequestResourceOperator extends CrdOperator<KubernetesClient
             boolean found = false;
             for (Object member : members.getList()) {
                 JsonObject readableMember = JsonObject.mapFrom(member);
-                if (readableMember.getString("name").equals(operand)) {
+                if (operand.equals(readableMember.getString("name"))) {
                     found = true;
                     JsonObject phase = readableMember.getJsonObject("phase");
                     if (phase == null) {
@@ -138,12 +138,13 @@ public class OperandRequestResourceOperator extends CrdOperator<KubernetesClient
                     }
                     String operandPhase = phase.getString("operandPhase");
                     String operatorPhase = phase.getString("operatorPhase");
-                    if (!operatorPhase.equals(desiredPhase)) {
+
+                    if (!desiredPhase.equals(operatorPhase)) {
                         log.warn("isReady warning : OperandRequest with member for {} in status has operatorPhase {}",
                                 operand, operatorPhase);
                     }
 
-                    if (!operandPhase.equals(desiredPhase)) {
+                    if (!desiredPhase.equals(operandPhase)) {
                         log.debug("isReady failed : OperandRequest with member for {} in status. Waiting for {} found {}",
                                 operand, desiredPhase, operandPhase);
                         return false;
