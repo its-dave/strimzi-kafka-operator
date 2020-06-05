@@ -766,7 +766,7 @@ public abstract class AbstractModel {
                 .endMetadata()
                 .withNewSpec()
                     .withPodManagementPolicy(PodManagementPolicy.PARALLEL.toValue())
-                    .withUpdateStrategy(new StatefulSetUpdateStrategyBuilder().withType("OnDelete").build())
+                    .withUpdateStrategy(new StatefulSetUpdateStrategyBuilder().withType("RollingUpdate").build())
                     .withReplicas(replicas)
                     .withNewSelector()
                         .withMatchLabels(selectorLabels.toMap())
