@@ -163,7 +163,8 @@ public class GeoReplicatorModel extends AbstractModel {
                 .build();
         mm2Spec.setTemplate(kafkaMirrorMaker2Template);
 
-        mm2Spec.setResources(getResourceRequirements(DefaultResourceRequirements.MM2));
+        mm2Spec.setResources(Optional.ofNullable(mm2Spec.getResources())
+            .orElse(getResourceRequirements(DefaultResourceRequirements.MM2)));
 
         //if no security set then caCert and clientAuthentication are null and just not set on the connect object
         //if we have an oauth config then the bootstrap will be the TLS port, but the clientAuthentication will be null so the connection will fail (and we log earlier that oauth is unsupported)

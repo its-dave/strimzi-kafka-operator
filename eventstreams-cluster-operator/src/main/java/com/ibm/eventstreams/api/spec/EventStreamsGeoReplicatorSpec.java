@@ -27,7 +27,7 @@ import java.io.Serializable;
 @JsonDeserialize(using = JsonDeserializer.None.class)
 @Buildable(editableEnabled = false, generateBuilderPackage = false, builderPackage = "io.fabric8.kubernetes.api.builder")
 @JsonInclude(JsonInclude.Include.NON_DEFAULT)
-@JsonPropertyOrder({ "replicas", "mirrorMaker2Spec" })
+@JsonPropertyOrder({ "replicas", "version" })
 @EqualsAndHashCode
 public class EventStreamsGeoReplicatorSpec implements Serializable  {
 

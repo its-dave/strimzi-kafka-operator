@@ -20,8 +20,10 @@ import com.ibm.eventstreams.api.spec.EventStreamsGeoReplicator;
 import com.ibm.eventstreams.api.spec.EventStreamsGeoReplicatorBuilder;
 import com.ibm.eventstreams.georeplicator.GeoReplicatorCredentials;
 import com.ibm.eventstreams.rest.common.MeteringAnnotations;
-import io.fabric8.kubernetes.api.model.ResourceRequirements;
 import io.fabric8.kubernetes.api.model.ObjectMetaBuilder;
+import io.fabric8.kubernetes.api.model.Quantity;
+import io.fabric8.kubernetes.api.model.ResourceRequirements;
+import io.fabric8.kubernetes.api.model.ResourceRequirementsBuilder;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.SecretBuilder;
 import io.fabric8.kubernetes.api.model.networking.NetworkPolicy;
@@ -232,11 +234,6 @@ public class GeoReplicatorModelTest {
                 hasEntry(Labels.STRIMZI_KIND_LABEL, "EventStreams")));
     }
 
-    /**
-     * We are not testing custom resource requirements as we do not allow
-     * custom resource requirements to be set for mm2's. This will just test
-     * the defaults.
-     */
     @Test
     public void testResourceRequirements() {
         KafkaMirrorMaker2 kmm2 = createDefaultReplicator();
@@ -246,6 +243,39 @@ public class GeoReplicatorModelTest {
         assertThat(resourceRequirements.getRequests().get("memory").getAmount(), is("2Gi"));
         assertThat(resourceRequirements.getLimits().get("cpu").getAmount(), is("2000m"));
         assertThat(resourceRequirements.getLimits().get("memory").getAmount(), is("2Gi"));
+    }
+
+    @Test
+    public void testResourceRequirementsUpdate() {
+        KafkaMirrorMaker2 kmm2 = createDefaultReplicator();
+
+
+        Map<String, Quantity> requests = kmm2.getSpec().getResources().getRequests();
+        assertThat(requests.get("cpu").getAmount(), is("1000m"));
+        assertThat(requests.get("memory").getAmount(), is("2Gi"));
+        Map<String, Quantity> limits = kmm2.getSpec().getResources().getLimits();
+        assertThat(limits.get("cpu").getAmount(), is("2000m"));
+        assertThat(limits.get("memory").getAmount(), is("2Gi"));
+
+        // Update the requests and limits
+        requests.put("cpu", new Quantity("2000m"));
+        requests.put("memory", new Quantity("4Gi"));
+        limits.put("cpu", new Quantity("4000m"));
+        limits.put("memory", new Quantity("4Gi"));
+
+        kmm2.getSpec().setResources(new ResourceRequirementsBuilder()
+            .withRequests(requests)
+            .withLimits(limits)
+            .build());
+
+        KafkaMirrorMaker2 updatedKmm2 = updateDefaultReplicator(kmm2);
+        Map<String, Quantity> updatedRequests = updatedKmm2.getSpec().getResources().getRequests();
+        assertThat(updatedRequests.get("cpu").getAmount(), is("2000m"));
+        assertThat(updatedRequests.get("memory").getAmount(), is("4Gi"));
+        Map<String, Quantity> updatedLimits = kmm2.getSpec().getResources().getLimits();
+        assertThat(updatedLimits.get("cpu").getAmount(), is("4000m"));
+        assertThat(updatedLimits.get("memory").getAmount(), is("4Gi"));
+
     }
 
     private EventStreamsGeoReplicatorBuilder createDefaultEventStreamsGeoReplicator() {
@@ -326,14 +356,18 @@ public class GeoReplicatorModelTest {
     }
 
     private KafkaMirrorMaker2 createNonDefaultReplicator() {
-        return createReplicatorModel(false).getReplicator();
+        return createReplicatorModel(false, null).getReplicator();
+    }
+
+    private KafkaMirrorMaker2 updateDefaultReplicator(KafkaMirrorMaker2 mm2) {
+        return createReplicatorModel(true, mm2).getReplicator();
     }
 
     private GeoReplicatorModel createDefaultReplicatorModel() {
-        return createReplicatorModel(true);
+        return createReplicatorModel(true, null);
     }
 
-    private GeoReplicatorModel createReplicatorModel(boolean defaults) {
+    private GeoReplicatorModel createReplicatorModel(boolean defaults, KafkaMirrorMaker2 mm2) {
         EventStreams instance = defaults ? createDefaultEventStreams().build() : createNonDefaultEventStreams().build();
 
         EventStreamsGeoReplicator replicatorInstance = defaults ? createDefaultEventStreamsGeoReplicator().build() : createNonDefaultEventStreamsGeoReplicator().build();
@@ -353,7 +387,6 @@ public class GeoReplicatorModelTest {
 
         geoReplicatorCredentials.setGeoReplicatorClientAuth(replicatorConnectSecret);
         geoReplicatorCredentials.setGeoReplicatorTrustStore(replicatorConnectSecret);
-        KafkaMirrorMaker2 mm2 = null;
         return new GeoReplicatorModel(replicatorInstance, instance, geoReplicatorCredentials, mm2);
     }
 
