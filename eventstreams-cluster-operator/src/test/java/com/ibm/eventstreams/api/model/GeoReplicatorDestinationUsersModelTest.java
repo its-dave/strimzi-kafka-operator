@@ -338,7 +338,7 @@ public class GeoReplicatorDestinationUsersModelTest {
         assertThat(replicatorDestinationConnectorUser.getSpec().getAuthorization(), instanceOf(KafkaUserAuthorizationSimple.class));
         KafkaUserAuthorizationSimple kafkaDestUserAuth = (KafkaUserAuthorizationSimple) replicatorDestinationConnectorUser.getSpec().getAuthorization();
         List<AclRule> aclsDest = kafkaDestUserAuth.getAcls();
-        assertThat(aclsDest.size(), is(3));
+        assertThat(aclsDest.size(), is(4));
 
         AclRule rule1destcreate = aclsDest.get(0);
         assertThat(rule1destcreate.getResource(), instanceOf(AclRuleClusterResource.class));
@@ -357,6 +357,14 @@ public class GeoReplicatorDestinationUsersModelTest {
         assertThat(rule1destalterconfigtopic.getPatternType(), is(AclResourcePatternType.LITERAL));
         assertThat(rule1destalterconfig.getOperation(), is(AclOperation.ALTERCONFIGS));
         assertThat(rule1destalterconfig.getHost(), is("*"));
+
+        AclRule rule1destaltertopic = aclsDest.get(3);
+        assertThat(rule1destaltertopic.getResource(), instanceOf(AclRuleTopicResource.class));
+        AclRuleTopicResource rule1desttopicalterresource = (AclRuleTopicResource) rule1destalterconfig.getResource();
+        assertThat(rule1desttopicalterresource.getName(), is("*"));
+        assertThat(rule1desttopicalterresource.getPatternType(), is(AclResourcePatternType.LITERAL));
+        assertThat(rule1destaltertopic.getOperation(), is(AclOperation.ALTER));
+        assertThat(rule1destaltertopic.getHost(), is("*"));
     }
 
     @Test

@@ -319,8 +319,8 @@ public class GeoReplicatorDestinationUsersModel extends AbstractModel {
                     .withHost("*")
                     .build();
 
-            // Need the ability to alter the target topics (eg sourceClusterName.topic1)
-            AclRule clusterResourceAlterConfigs = new AclRuleBuilder()
+            // Need the ability to alter the target topic configs (eg sourceClusterName.topic1)
+            AclRule topicResourceAlterConfigs = new AclRuleBuilder()
                 .withNewAclRuleTopicResource()
                 .withName("*")
                 .withPatternType(AclResourcePatternType.LITERAL)
@@ -329,9 +329,20 @@ public class GeoReplicatorDestinationUsersModel extends AbstractModel {
                 .withHost("*")
                 .build();
 
+            // Need the ability to alter the target topics (eg sourceClusterName.topic1)
+            AclRule topicResourceAlter = new AclRuleBuilder()
+                .withNewAclRuleTopicResource()
+                .withName("*")
+                .withPatternType(AclResourcePatternType.LITERAL)
+                .endAclRuleTopicResource()
+                .withOperation(AclOperation.ALTER)  //createAclPermission
+                .withHost("*")
+                .build();
+
             connectorTargetAcls.add(clusterResourceCreate);
             connectorTargetAcls.add(clusterResourceAlter);
-            connectorTargetAcls.add(clusterResourceAlterConfigs);
+            connectorTargetAcls.add(topicResourceAlterConfigs);
+            connectorTargetAcls.add(topicResourceAlter);
 
             targetConnectorKafkaUser = createKafkaUser(connectorTargetAcls, getTargetConnectorKafkaUserName(), internalClientAuth);
         } else {
