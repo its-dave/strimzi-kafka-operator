@@ -21,6 +21,7 @@ import io.strimzi.api.kafka.model.AclOperation;
 import io.strimzi.api.kafka.model.AclResourcePatternType;
 import io.strimzi.api.kafka.model.AclRule;
 import io.strimzi.api.kafka.model.AclRuleClusterResource;
+import io.strimzi.api.kafka.model.AclRuleGroupResource;
 import io.strimzi.api.kafka.model.AclRuleTopicResource;
 import io.strimzi.api.kafka.model.KafkaSpecBuilder;
 import io.strimzi.api.kafka.model.KafkaUser;
@@ -116,8 +117,8 @@ public class GeoReplicatorSourceUserModelTest {
         assertThat(replicatorSourceConnectorUser.getSpec().getAuthorization(), instanceOf(KafkaUserAuthorizationSimple.class));
         KafkaUserAuthorizationSimple kafkasourceUserAuth = (KafkaUserAuthorizationSimple) replicatorSourceConnectorUser.getSpec().getAuthorization();
         List<AclRule> aclsSource = kafkasourceUserAuth.getAcls();
-        assertThat(aclsSource.size(), is(7));
-
+        assertThat(aclsSource.size(), is(9));
+        
         AclRule rule1sourceread = aclsSource.get(0);
         assertThat(rule1sourceread.getResource(), instanceOf(AclRuleTopicResource.class));
         AclRuleTopicResource rule1sourcereadtopic = (AclRuleTopicResource) rule1sourceread.getResource();
@@ -164,6 +165,23 @@ public class GeoReplicatorSourceUserModelTest {
         assertThat(rule3sourcetopic.getPatternType(), is(AclResourcePatternType.PREFIX));
         assertThat(rule3source.getOperation(), is(AclOperation.WRITE));
         assertThat(rule3source.getHost(), is("*"));
+
+        AclRule rule1groupdescribe = aclsSource.get(7);
+        assertThat(rule1groupdescribe.getResource(), instanceOf(AclRuleGroupResource.class));
+        AclRuleGroupResource rule1groupdescriberesource = (AclRuleGroupResource) rule1groupdescribe.getResource();
+        assertThat(rule1groupdescriberesource.getName(), is("*"));
+        assertThat(rule1groupdescriberesource.getPatternType(), is(AclResourcePatternType.LITERAL));
+        assertThat(rule1groupdescribe.getOperation(), is(AclOperation.DESCRIBE));
+        assertThat(rule1groupdescribe.getHost(), is("*"));
+
+        AclRule rule1groupread = aclsSource.get(8);
+        assertThat(rule1groupread.getResource(), instanceOf(AclRuleGroupResource.class));
+        AclRuleGroupResource rule1groupreadresource = (AclRuleGroupResource) rule1groupread.getResource();
+        assertThat(rule1groupreadresource.getName(), is("*"));
+        assertThat(rule1groupreadresource.getPatternType(), is(AclResourcePatternType.LITERAL));
+        assertThat(rule1groupread.getOperation(), is(AclOperation.READ));
+        assertThat(rule1groupread.getHost(), is("*"));
+
     }
 
 

@@ -122,6 +122,26 @@ public class GeoReplicatorSourceUsersModel extends AbstractModel {
                     .withHost("*")
                     .build();
 
+            // MirrorCheckpointConnector needs the ability to list the source consumer groups
+            AclRule allGroupsDescribe = new AclRuleBuilder()
+                .withNewAclRuleGroupResource()
+                .withName("*")
+                .withPatternType(AclResourcePatternType.LITERAL)
+                .endAclRuleGroupResource()
+                .withOperation(AclOperation.DESCRIBE)
+                .withHost("*")
+                .build();
+
+            // MirrorCheckpointConnector needs the ability to read the offsets for the source consumer groups
+            AclRule allGroupsRead = new AclRuleBuilder()
+                .withNewAclRuleGroupResource()
+                .withName("*")
+                .withPatternType(AclResourcePatternType.LITERAL)
+                .endAclRuleGroupResource()
+                .withOperation(AclOperation.READ)
+                .withHost("*")
+                .build();
+
             connectorSourceAclList.add(allTopicsRead);
             connectorSourceAclList.add(allTopicDescribe);
             connectorSourceAclList.add(allTopicDescribeConfig);
@@ -129,6 +149,8 @@ public class GeoReplicatorSourceUsersModel extends AbstractModel {
             connectorSourceAclList.add(clusterResourceRead);
             connectorSourceAclList.add(clusterResourceDescribe);
             connectorSourceAclList.add(offsetTopicWrite);
+            connectorSourceAclList.add(allGroupsDescribe);
+            connectorSourceAclList.add(allGroupsRead);
 
             sourceConnectorKafkaUser = createKafkaUser(connectorSourceAclList, getSourceConnectorKafkaUserName(), externalClientAuth);
         } else {
