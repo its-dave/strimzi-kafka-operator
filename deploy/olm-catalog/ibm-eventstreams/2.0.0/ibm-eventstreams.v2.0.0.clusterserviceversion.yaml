@@ -127,44 +127,65 @@ spec:
         x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:Kafka'
         - 'urn:alm:descriptor:com.tectonic.ui:number'
-      - displayName: Kafka storage
-        description: Type of storage used by Kafka brokers
+      - description: Type of storage used by Kafka brokers
+        displayName: Storage type
         path: strimziOverrides.kafka.storage.type
         x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:Kafka'
         - 'urn:alm:descriptor:com.tectonic.ui:select:ephemeral'
         - 'urn:alm:descriptor:com.tectonic.ui:select:persistent-claim'
-      - description: Storage class to use for Kafka brokers
-        displayName: Kafka storage class
-        path: strimziOverrides.kafka.storage.overrides[0].class
+      - description: Storage size for the persistent-claim for each Kafka broker
+        displayName: Storage size
+        path: strimziOverrides.kafka.storage.size
+        x-descriptors:
+        - 'url:alm:descriptor:com.tectonic.ui:fieldDependency:strimziOverrides.kafka.storage.type:persistent-claim'
+        - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:Kafka'
+        - 'urn:alm:descriptor:com.tectonic.ui:text'
+      - description: Storage class to use for the persistent-claim for Kafka brokers
+        displayName: Storage class
+        path: strimziOverrides.kafka.storage.class
         x-descriptors:
         - 'url:alm:descriptor:com.tectonic.ui:fieldDependency:strimziOverrides.kafka.storage.type:persistent-claim'
         - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:Kafka'
         - 'urn:alm:descriptor:io.kubernetes:StorageClass'
-      - displayName: ZooKeeper storage
-        description: Type of storage used by ZooKeeper nodes
+      - description: Type of storage used by ZooKeeper nodes
+        displayName: Storage type
         path: strimziOverrides.zookeeper.storage.type
         x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:ZooKeeper'
         - 'urn:alm:descriptor:com.tectonic.ui:select:ephemeral'
         - 'urn:alm:descriptor:com.tectonic.ui:select:persistent-claim'
-      - description: Storage class to use for ZooKeeper nodes
-        displayName: ZooKeeper storage class
-        path: strimziOverrides.zookeeper.storage.overrides[0].class
+      - description: Storage size for the persistent-claim for each ZooKeeper node
+        displayName: Storage size
+        path: strimziOverrides.zookeeper.storage.size
+        x-descriptors:
+        - 'url:alm:descriptor:com.tectonic.ui:fieldDependency:strimziOverrides.zookeeper.storage.type:persistent-claim'
+        - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:ZooKeeper'
+        - 'urn:alm:descriptor:com.tectonic.ui:text'
+      - description: Storage class to use for the persistent-claim for ZooKeeper nodes
+        displayName: Storage class
+        path: strimziOverrides.zookeeper.storage.class
         x-descriptors:
         - 'url:alm:descriptor:com.tectonic.ui:fieldDependency:strimziOverrides.zookeeper.storage.type:persistent-claim'
         - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:ZooKeeper'
         - 'urn:alm:descriptor:io.kubernetes:StorageClass'
-      - displayName: Schema registry storage
-        description: Type of storage used by the schema registry
+      - description: Type of storage used by the schema registry
+        displayName: Storage type
         path: schemaRegistry.storage.type
         x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:Schema Registry'
         - 'urn:alm:descriptor:com.tectonic.ui:select:ephemeral'
         - 'urn:alm:descriptor:com.tectonic.ui:select:persistent-claim'
-      - description: Storage class to use for Schema Registry
-        displayName: Schema registry storage class
-        path: schemaRegistry.storage.overrides[0].class
+      - description: Storage size for the schema registry persistent-claim
+        displayName: Storage size
+        path: schemaRegistry.storage.size
+        x-descriptors:
+        - 'url:alm:descriptor:com.tectonic.ui:fieldDependency:schemaRegistry.storage.type:persistent-claim'
+        - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:Schema Registry'
+        - 'urn:alm:descriptor:com.tectonic.ui:text'
+      - description: Storage class to use for the schema registry persistent-claim
+        displayName: Storage class
+        path: schemaRegistry.storage.class
         x-descriptors:
         - 'url:alm:descriptor:com.tectonic.ui:fieldDependency:schemaRegistry.storage.type:persistent-claim'
         - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:Schema Registry'
