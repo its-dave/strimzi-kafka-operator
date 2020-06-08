@@ -38,26 +38,26 @@ operator:
   image:
     repository: docker.io
     name: ibmcom/ibm-eventstreams-operator
-    tag: 2020-06-08-11.04.11-cdaa092
-    digest: d18a9a49aa7fdfcf58aa4090b32eb5aa1111ea71770dcf0348e667b84901a300
+    tag: 2020-06-08-20.20.00-2f10e64
+    digest: e40931f4a7f2fa5cf27a213a019814d0489af90e3efd3527f468c5555dd41417
 operatorInit:
   image:
     repository: docker.io
     name: ibmcom/ibm-eventstreams-operator-init
-    tag: 2020-06-08-11.04.11-cdaa092
-    digest: 0d9efd9344703a8b72a622e1fc095ba4eb66df9a912c7e1b8dfe246928dedd24
+    tag: 2020-06-08-20.20.00-2f10e64
+    digest: a51709efc4f57cc4253276f72cd8f95e069fa1146f9d67ee953527ed1cc4f631
 restProducer:
   image:
     repository: cp.icr.io
     name: cp/ibm-eventstreams-rest-producer
-    tag: 2020-06-05-15.53.00-1d51a49
-    digest: e8817fe7d2dce0d0f5b365fe27c1cf0bd6032c12609c75c3b02655606f4eade3
+    tag: 2020-06-08-20.24.32-b87e1e7
+    digest: 3095f8a72ebe184aca33ce9c34e5f1318056192aeea3a191c7055a2de1ef1ddb
 adminApi:
   image:
     repository: cp.icr.io
     name: cp/ibm-eventstreams-admin
-    tag: 2020-06-05-15.53.05-1d51a49
-    digest: 701a8884794c054fd9c808e2a6182073f789c88d6b3ad702b0afe9e7721dadea
+    tag: 2020-06-08-20.24.43-b87e1e7
+    digest: 2b5a3bd7001fc179e8ef397cb15a964732095308f335a16e15038b212590c8a8
 schemaRegistry:
   image:
     repository: cp.icr.io
@@ -74,14 +74,14 @@ schemaRegistryProxy:
   image:
     repository: cp.icr.io
     name: cp/ibm-eventstreams-schema-proxy
-    tag: 2020-06-05-15.52.56-1d51a49
-    digest: 57255ab68077d9d970901e8a665ee6cba5e973403c9b9827adc449e513a90d01
+    tag: 2020-06-08-20.24.39-b87e1e7
+    digest: 930064aaae3e3d861d584abde8259d29c78881ebc005166f556780469236ea26
 adminUi:
   image:
     repository: cp.icr.io
     name: cp/ibm-eventstreams-admin-ui
-    tag: 2020-06-05-17.41.54-49bfdcc-dev
-    digest: 608399328b7ca6a332cf7841859ca6536880cf157f3d01a500d87895a2f1881e
+    tag: 2020-06-08-20.09.28-f5ccb95-dev
+    digest: 93928e7f26f2bd7dbca1aceedab107344c8baba5798430318d95a742a5d2fabf
 adminUiDatabase:
   image:
     repository: cp.icr.io
@@ -98,98 +98,98 @@ zookeeper:
   image:
     repository: cp.icr.io
     name: cp/ibm-eventstreams-kafka
-    tagPrefix: 2020-06-08-11.04.11-cdaa092
-    digest: 779aba0434307c1fc08a9d141bcde1a01ebf73c4eed1c14c95bef3c804dfe7cb
+    tagPrefix: 2020-06-08-20.20.00-2f10e64
+    digest: 45ac28454443f7d8529f8cde5d38fa404b22352f96462f6b7b13934e784f9d11
 kafka:
   image:
     repository: cp.icr.io
     name: cp/ibm-eventstreams-kafka
-    tagPrefix: 2020-06-08-11.04.11-cdaa092
-    digest: 779aba0434307c1fc08a9d141bcde1a01ebf73c4eed1c14c95bef3c804dfe7cb
+    tagPrefix: 2020-06-08-20.20.00-2f10e64
+    digest: 45ac28454443f7d8529f8cde5d38fa404b22352f96462f6b7b13934e784f9d11
 kafkaConnect:
   image:
     repository: cp.icr.io
     name: cp/ibm-eventstreams-kafka
-    tagPrefix: 2020-06-08-11.04.11-cdaa092
-    digest: 779aba0434307c1fc08a9d141bcde1a01ebf73c4eed1c14c95bef3c804dfe7cb
+    tagPrefix: 2020-06-08-20.20.00-2f10e64
+    digest: 45ac28454443f7d8529f8cde5d38fa404b22352f96462f6b7b13934e784f9d11
 kafkaConnects2i:
   image:
     repository: cp.icr.io
     name: cp/ibm-eventstreams-kafka
-    tagPrefix: 2020-06-08-11.04.11-cdaa092
-    digest: 779aba0434307c1fc08a9d141bcde1a01ebf73c4eed1c14c95bef3c804dfe7cb
+    tagPrefix: 2020-06-08-20.20.00-2f10e64
+    digest: 45ac28454443f7d8529f8cde5d38fa404b22352f96462f6b7b13934e784f9d11
 cruiseControl:
   image:
     repository: cp.icr.io
     name: cp/ibm-eventstreams-kafka
-    tagPrefix: 2020-06-08-11.04.11-cdaa092
-    digest: 779aba0434307c1fc08a9d141bcde1a01ebf73c4eed1c14c95bef3c804dfe7cb
+    tagPrefix: 2020-06-08-20.20.00-2f10e64
+    digest: 45ac28454443f7d8529f8cde5d38fa404b22352f96462f6b7b13934e784f9d11
 topicOperator:
   image:
     repository: docker.io
     name: ibmcom/ibm-eventstreams-operator
-    tag: 2020-06-08-11.04.11-cdaa092
-    digest: d18a9a49aa7fdfcf58aa4090b32eb5aa1111ea71770dcf0348e667b84901a300
+    tag: 2020-06-08-20.20.00-2f10e64
+    digest: e40931f4a7f2fa5cf27a213a019814d0489af90e3efd3527f468c5555dd41417
 userOperator:
   image:
     repository: docker.io
     name: ibmcom/ibm-eventstreams-operator
-    tag: 2020-06-08-11.04.11-cdaa092
-    digest: d18a9a49aa7fdfcf58aa4090b32eb5aa1111ea71770dcf0348e667b84901a300
+    tag: 2020-06-08-20.20.00-2f10e64
+    digest: e40931f4a7f2fa5cf27a213a019814d0489af90e3efd3527f468c5555dd41417
 kafkaInit:
   image:
     repository: docker.io
     name: ibmcom/ibm-eventstreams-operator
-    tag: 2020-06-08-11.04.11-cdaa092
-    digest: d18a9a49aa7fdfcf58aa4090b32eb5aa1111ea71770dcf0348e667b84901a300
+    tag: 2020-06-08-20.20.00-2f10e64
+    digest: e40931f4a7f2fa5cf27a213a019814d0489af90e3efd3527f468c5555dd41417
 tlsSidecarZookeeper:
   image:
     repository: cp.icr.io
     name: cp/ibm-eventstreams-kafka
-    tagPrefix: 2020-06-08-11.04.11-cdaa092
-    digest: 779aba0434307c1fc08a9d141bcde1a01ebf73c4eed1c14c95bef3c804dfe7cb
+    tagPrefix: 2020-06-08-20.20.00-2f10e64
+    digest: 45ac28454443f7d8529f8cde5d38fa404b22352f96462f6b7b13934e784f9d11
 tlsSidecarKafka:
   image:
     repository: cp.icr.io
     name: cp/ibm-eventstreams-kafka
-    tagPrefix: 2020-06-08-11.04.11-cdaa092
-    digest: 779aba0434307c1fc08a9d141bcde1a01ebf73c4eed1c14c95bef3c804dfe7cb
+    tagPrefix: 2020-06-08-20.20.00-2f10e64
+    digest: 45ac28454443f7d8529f8cde5d38fa404b22352f96462f6b7b13934e784f9d11
 tlsSidecarEntityOperator:
   image:
     repository: cp.icr.io
     name: cp/ibm-eventstreams-kafka
-    tagPrefix: 2020-06-08-11.04.11-cdaa092
-    digest: 779aba0434307c1fc08a9d141bcde1a01ebf73c4eed1c14c95bef3c804dfe7cb
+    tagPrefix: 2020-06-08-20.20.00-2f10e64
+    digest: 45ac28454443f7d8529f8cde5d38fa404b22352f96462f6b7b13934e784f9d11
 tlsSidecarCruiseControl:
   image:
     repository: cp.icr.io
     name: cp/ibm-eventstreams-kafka
-    tagPrefix: 2020-06-08-11.04.11-cdaa092
-    digest: 779aba0434307c1fc08a9d141bcde1a01ebf73c4eed1c14c95bef3c804dfe7cb
+    tagPrefix: 2020-06-08-20.20.00-2f10e64
+    digest: 45ac28454443f7d8529f8cde5d38fa404b22352f96462f6b7b13934e784f9d11
 kafkaMirrorMaker:
   image:
     repository: cp.icr.io
     name: cp/ibm-eventstreams-kafka
-    tagPrefix: 2020-06-08-11.04.11-cdaa092
-    digest: 779aba0434307c1fc08a9d141bcde1a01ebf73c4eed1c14c95bef3c804dfe7cb
+    tagPrefix: 2020-06-08-20.20.00-2f10e64
+    digest: 45ac28454443f7d8529f8cde5d38fa404b22352f96462f6b7b13934e784f9d11
 kafkaExporter:
   image:
     repository: cp.icr.io
     name: cp/ibm-eventstreams-kafka
-    tagPrefix: 2020-06-08-11.04.11-cdaa092
-    digest: 779aba0434307c1fc08a9d141bcde1a01ebf73c4eed1c14c95bef3c804dfe7cb
+    tagPrefix: 2020-06-08-20.20.00-2f10e64
+    digest: 45ac28454443f7d8529f8cde5d38fa404b22352f96462f6b7b13934e784f9d11
 jmxTrans:
   image:
     repository: cp.icr.io
     name: cp/ibm-eventstreams-jmxtrans
-    tag: 2020-06-08-11.04.11-cdaa092
-    digest: 59bf2867646a230e3b4874e9487f363ea5af6537b6901372864e1f84472d20d6
+    tag: 2020-06-08-20.20.00-2f10e64
+    digest: bb8492b3991514d7fe2989078a57a94c8e61f95277a78496f232c024f9b1cb80
 kafkaMirrorMaker2:
   image:
     repository: cp.icr.io
     name: cp/ibm-eventstreams-kafka
-    tagPrefix: 2020-06-08-11.04.11-cdaa092
-    digest: 779aba0434307c1fc08a9d141bcde1a01ebf73c4eed1c14c95bef3c804dfe7cb
+    tagPrefix: 2020-06-08-20.20.00-2f10e64
+    digest: 45ac28454443f7d8529f8cde5d38fa404b22352f96462f6b7b13934e784f9d11
 resources:
   limits:
     memory: 1Gi
