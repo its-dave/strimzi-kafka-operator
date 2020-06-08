@@ -50,6 +50,7 @@ import io.strimzi.api.kafka.model.storage.EphemeralStorage;
 import io.strimzi.api.kafka.model.storage.PersistentClaimStorage;
 import io.strimzi.api.kafka.model.storage.Storage;
 import io.strimzi.api.kafka.model.template.PodTemplate;
+import io.strimzi.operator.cluster.model.ImagePullPolicy;
 import io.strimzi.operator.cluster.model.ModelUtils;
 
 import java.util.ArrayList;
@@ -332,6 +333,7 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
         ContainerBuilder builder = new ContainerBuilder()
             .withName(COMPONENT_NAME)
             .withImage(getImage())
+            .withImagePullPolicy(ImagePullPolicy.IFNOTPRESENT.toString())
             .withEnv(envVars)
             .withSecurityContext(getSecurityContext(false))
             .withResources(getResourceRequirements(DefaultResourceRequirements.SCHEMA_REGISTRY))
@@ -417,6 +419,7 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
         return new ContainerBuilder()
             .withName(AVRO_SERVICE_CONTAINER_NAME)
             .withImage(avroImage)
+            .withImagePullPolicy(ImagePullPolicy.IFNOTPRESENT.toString())
             .withEnv(envVars)
             .withSecurityContext(getSecurityContext(false))
             .withResources(getResourceRequirements(avroResourceRequirements, DefaultResourceRequirements.AVRO_SERVICE))
@@ -477,6 +480,7 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
         ContainerBuilder containerBuilder = new ContainerBuilder()
             .withName(SCHEMA_REGISTRY_PROXY_CONTAINER_NAME)
             .withImage(schemaRegistryProxyImage)
+            .withImagePullPolicy(ImagePullPolicy.IFNOTPRESENT.toString())
             .withEnv(envVars)
             .withSecurityContext(getSecurityContext(false))
             .withResources(getResourceRequirements(schemaRegistryProxyResourceRequirements, DefaultResourceRequirements.SCHEMA_PROXY))

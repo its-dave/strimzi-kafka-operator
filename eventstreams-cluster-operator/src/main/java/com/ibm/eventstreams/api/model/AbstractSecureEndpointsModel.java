@@ -150,6 +150,15 @@ public abstract class AbstractSecureEndpointsModel extends AbstractModel {
     }
 
     /**
+     * Returns the name of the internal service.
+     * @return name of the service
+     */
+    @Override
+    protected String getServiceName() {
+        return getServiceName(EndpointServiceType.INTERNAL);
+    }
+
+    /**
      * Get the specific Endpoint suffix based on the EndpointServiceType. Note that are currently only
      * implementing Routes/NodePort/Regular services so we will only default to creating an internal service when
      * LoadBalancer and Ingress are specified.

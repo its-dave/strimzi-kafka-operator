@@ -767,6 +767,7 @@ public abstract class AbstractModel {
                 .withNewSpec()
                     .withPodManagementPolicy(PodManagementPolicy.PARALLEL.toValue())
                     .withUpdateStrategy(new StatefulSetUpdateStrategyBuilder().withType("RollingUpdate").build())
+                    .withServiceName(getServiceName())
                     .withReplicas(replicas)
                     .withNewSelector()
                         .withMatchLabels(selectorLabels.toMap())
@@ -783,7 +784,9 @@ public abstract class AbstractModel {
                             .withContainers(containers)
                             .withVolumes(volumes)
                             .withSecurityContext(getPodSecurityContext())
-                            .withNewServiceAccount(getDefaultResourceName())
+                            .withServiceAccountName(getDefaultResourceName())
+                            .withTerminationGracePeriodSeconds(Long.valueOf(30))
+                            .withSchedulerName("default-scheduler")
                         .endSpec()
                     .endTemplate()
                 .endSpec()
@@ -873,6 +876,10 @@ public abstract class AbstractModel {
                     .withSelector(selectorLabels.toMap())
                 .endSpec()
                 .build();
+    }
+
+    protected String getServiceName() {
+        return getDefaultResourceName();
     }
 
     /**
