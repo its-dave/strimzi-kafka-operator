@@ -15,10 +15,10 @@ kind: EventStreams
 metadata:
   name: minimal-prod
 spec:
+  version: 10.0.0
   license:
     accept: false
     use: CloudPakForIntegrationProduction
-  version: 10.0.0
   adminApi: {}
   adminUI: {}
   collector: {}
@@ -26,17 +26,20 @@ spec:
   schemaRegistry:
     storage:
       type: persistent-claim
-      size: enter-size-of-pv-here
+      size: 100Mi
       class: enter-storage-class-name-here
   strimziOverrides:
     kafka:
       replicas: 3
+      authorization:
+        type: runas
       config:
         interceptor.class.names: com.ibm.eventstreams.interceptors.metrics.ProducerMetricsInterceptor
-        num.replica.fetchers: 3
+        log.cleaner.threads: 6
         num.io.threads: 24
         num.network.threads: 9
-        log.cleaner.threads: 6
+        num.replica.fetchers: 3
+        offsets.topic.replication.factor: 3
       listeners:
         external:
           type: route
@@ -45,17 +48,15 @@ spec:
         tls:
           authentication:
             type: tls
-      authorization:
-        type: runas
+      metrics: {}
       storage:
         type: persistent-claim
-        size: enter-size-of-pv-here
+        size: 4Gi
         class: enter-storage-class-name-here
-      metrics: {}
     zookeeper:
       replicas: 3
+      metrics: {}
       storage:
         type: persistent-claim
-        size: enter-size-of-pv-here
+        size: 2Gi
         class: enter-storage-class-name-here
-      metrics: {}

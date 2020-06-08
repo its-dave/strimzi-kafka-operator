@@ -15,10 +15,10 @@ kind: EventStreams
 metadata:
   name: development
 spec:
+  version: 10.0.0
   license:
     accept: false
     use: CloudPakForIntegrationNonProduction
-  version: 10.0.0
   adminApi: {}
   adminUI: {}
   collector: {}
@@ -29,27 +29,28 @@ spec:
   strimziOverrides:
     kafka:
       replicas: 3
+      authorization:
+        type: runas
       config:
         interceptor.class.names: com.ibm.eventstreams.interceptors.metrics.ProducerMetricsInterceptor
-        num.replica.fetchers: 3
+        log.cleaner.threads: 6
         num.io.threads: 24
         num.network.threads: 9
-        log.cleaner.threads: 6
+        num.replica.fetchers: 3
+        offsets.topic.replication.factor: 3
       listeners:
         external:
-          type: route
           authentication:
             type: scram-sha-512
+          type: route
         tls:
           authentication:
             type: tls
-      authorization:
-        type: runas
+      metrics: {}
       storage:
         type: ephemeral
-      metrics: {}
     zookeeper:
       replicas: 3
+      metrics: {}
       storage:
         type: ephemeral
-      metrics: {}

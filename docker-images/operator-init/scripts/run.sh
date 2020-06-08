@@ -477,10 +477,7 @@ spec:
                     transaction.state.log.min.isr: 1
                     transaction.state.log.replication.factor: 1
                 listeners:
-                    external:
-                        type: route
                     plain: {}
-                    tls: {}
                 metrics: {}
                 storage:
                     type: ephemeral
@@ -538,11 +535,15 @@ spec:
                     num.io.threads: 24
                     num.network.threads: 9
                     num.replica.fetchers: 3
+                    offsets.topic.replication.factor: 3
                 listeners:
                     external:
                         authentication:
                             type: scram-sha-512
                         type: route
+                    tls:
+                        authentication:
+                            type: tls
                 metrics: {}
                 storage:
                     type: ephemeral
@@ -589,7 +590,7 @@ spec:
         schemaRegistry:
             storage:
                 type: persistent-claim
-                size: enter-size-of-pv-here
+                size: 100Mi
                 class: enter-storage-class-name-here
         strimziOverrides:
             kafka:
@@ -602,6 +603,7 @@ spec:
                     num.io.threads: 24
                     num.network.threads: 9
                     num.replica.fetchers: 3
+                    offsets.topic.replication.factor: 3
                 listeners:
                     external:
                         type: route
@@ -613,14 +615,14 @@ spec:
                 metrics: {}
                 storage:
                     type: persistent-claim
-                    size: enter-size-of-pv-here
+                    size: 4Gi
                     class: enter-storage-class-name-here
             zookeeper:
                 replicas: 3
                 metrics: {}
                 storage:
                     type: persistent-claim
-                    size: enter-size-of-pv-here
+                    size: 2Gi
                     class: enter-storage-class-name-here
 EOF
 
@@ -660,7 +662,7 @@ spec:
         schemaRegistry:
             storage:
                 type: persistent-claim
-                size: enter-size-of-pv-here
+                size: 1Gi
                 class: enter-storage-class-name-here
         strimziOverrides:
             kafka:
@@ -672,7 +674,8 @@ spec:
                     log.cleaner.threads: 6
                     num.io.threads: 24
                     num.network.threads: 9
-                    num.replica.fetchers: 6
+                    num.replica.fetchers: 3
+                    offsets.topic.replication.factor: 3
                 listeners:
                     external:
                         type: route
@@ -684,7 +687,7 @@ spec:
                 metrics: {}
                 storage:
                     type: persistent-claim
-                    size: enter-size-of-pv-here
+                    size: 10Gi
                     class: enter-storage-class-name-here
                 resources:
                     requests:
@@ -698,7 +701,7 @@ spec:
                 metrics: {}
                 storage:
                     type: persistent-claim
-                    size: enter-size-of-pv-here
+                    size: 4Gi
                     class: enter-storage-class-name-here
 EOF
 

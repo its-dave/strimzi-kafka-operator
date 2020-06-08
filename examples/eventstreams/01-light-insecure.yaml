@@ -15,10 +15,10 @@ kind: EventStreams
 metadata:
   name: light-insecure
 spec:
+  version: 10.0.0
   license:
     accept: false
     use: CloudPakForIntegrationNonProduction
-  version: 10.0.0
   adminApi: {}
   adminUI: {}
   collector: {}
@@ -30,9 +30,6 @@ spec:
     internalTls: NONE
   strimziOverrides:
     kafka:
-      #      uncomment to enable security
-      #      authorization:
-      #        type: runas
       replicas: 1
       config:
         interceptor.class.names: com.ibm.eventstreams.interceptors.metrics.ProducerMetricsInterceptor
@@ -40,18 +37,12 @@ spec:
         transaction.state.log.min.isr: 1
         transaction.state.log.replication.factor: 1
       listeners:
-        external:
-          type: route
-          #          uncomment to enable security
-          #          authentication:
-          #            type: scram-sha-512
         plain: {}
-        tls: {}
+      metrics: {}
       storage:
         type: ephemeral
-      metrics: {}
     zookeeper:
       replicas: 1
+      metrics: {}
       storage:
         type: ephemeral
-      metrics: {}
