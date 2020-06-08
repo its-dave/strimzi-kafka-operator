@@ -83,7 +83,7 @@ public class RestProducerModel extends AbstractSecureEndpointsModel {
         if (restProducerSpec.isPresent()) {
             setOwnerReference(instance);
             setReplicas(restProducerSpec.map(ComponentSpec::getReplicas).orElse(DEFAULT_REPLICAS));
-            setEnvVars(restProducerSpec.map(ContainerSpec::getEnvVars).orElseGet(ArrayList::new));
+            setEnvVars(restProducerSpec.map(ContainerSpec::getEnv).orElseGet(ArrayList::new));
             setResourceRequirements(restProducerSpec.map(ComponentSpec::getResources).orElseGet(ResourceRequirements::new));
             setPodTemplate(restProducerSpec.map(ComponentSpec::getTemplate)
                             .map(ComponentTemplate::getPod)

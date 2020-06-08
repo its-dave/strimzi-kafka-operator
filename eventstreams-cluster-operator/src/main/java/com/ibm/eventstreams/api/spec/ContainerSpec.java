@@ -88,11 +88,11 @@ public class ContainerSpec implements Serializable {
     }
 
     @Description("Apply additional custom environment variables to this component")
-    public List<ContainerEnvVar> getEnvVars() {
+    public List<ContainerEnvVar> getEnv() {
         return envVars;
     }
 
-    public void setEnvVars(List<ContainerEnvVar> envVars) {
+    public void setEnv(List<ContainerEnvVar> envVars) {
         this.envVars = envVars;
     }
 }

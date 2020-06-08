@@ -136,7 +136,7 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
             setOwnerReference(instance);
             int replicas = schemaRegistrySpec.map(ComponentSpec::getReplicas).orElse(DEFAULT_REPLICAS);
             setReplicas(replicas);
-            setEnvVars(schemaRegistrySpec.map(ContainerSpec::getEnvVars).orElseGet(ArrayList::new));
+            setEnvVars(schemaRegistrySpec.map(ContainerSpec::getEnv).orElseGet(ArrayList::new));
             setResourceRequirements(schemaRegistrySpec.map(ComponentSpec::getResources).orElseGet(ResourceRequirements::new));
             setPodTemplate(schemaRegistrySpec.map(ComponentSpec::getTemplate)
                         .map(ComponentTemplate::getPod)
@@ -165,7 +165,7 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
 
             avroLogString = getTraceString(avroSpec.map(ContainerSpec::getLogging).orElse(null), DEFAULT_AVRO_LOG_STRING, true);
 
-            avroEnvVars = avroSpec.map(ContainerSpec::getEnvVars).orElseGet(ArrayList::new);
+            avroEnvVars = avroSpec.map(ContainerSpec::getEnv).orElseGet(ArrayList::new);
             avroImage = firstDefinedImage(
                 DEFAULT_IBMCOM_AVRO_IMAGE,
                             avroSpec.map(ContainerSpec::getImage),
@@ -178,7 +178,7 @@ public class SchemaRegistryModel extends AbstractSecureEndpointsModel {
 
             Optional<ContainerSpec> schemaRegistryProxySpec = schemaRegistrySpec.map(SchemaRegistrySpec::getProxy);
             proxyTraceString = getTraceString(schemaRegistryProxySpec.map(ContainerSpec::getLogging).orElse(null), DEFAULT_PROXY_LOG_STRING, false);
-            schemaRegistryProxyEnvVars = schemaRegistryProxySpec.map(ContainerSpec::getEnvVars).orElseGet(ArrayList::new);
+            schemaRegistryProxyEnvVars = schemaRegistryProxySpec.map(ContainerSpec::getEnv).orElseGet(ArrayList::new);
             schemaRegistryProxyImage = firstDefinedImage(
                 DEFAULT_IBMCOM_SCHEMA_REGISTRY_PROXY_IMAGE,
                 schemaRegistryProxySpec.map(ContainerSpec::getImage),

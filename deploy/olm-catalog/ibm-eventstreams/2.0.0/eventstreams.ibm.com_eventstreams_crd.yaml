@@ -146,7 +146,7 @@ spec:
                     with the component. If nothing is specified, a default endpoint
                     is created that is externally accessible via a Route with Bearer
                     Authentication. '
-                envVars:
+                env:
                   type: array
                   items:
                     type: object
@@ -626,7 +626,7 @@ spec:
                           x-kubernetes-preserve-unknown-fields: true
                       description: Modifies the resource limits and requests to apply
                         to this component.
-                    envVars:
+                    env:
                       type: array
                       items:
                         type: object
@@ -702,7 +702,7 @@ spec:
                   description: Defines the DNS name that the route will be created
                     with for a user to connect on. If nothing is specified, then a
                     route will be generated for you.
-                envVars:
+                env:
                   type: array
                   items:
                     type: object
@@ -1482,7 +1482,7 @@ spec:
                       type: string
                   required:
                   - type
-                envVars:
+                env:
                   type: array
                   items:
                     type: object
@@ -1656,7 +1656,7 @@ spec:
                     with the component. If nothing is specified, a default endpoint
                     is created that is externally accessible via a Route with Bearer
                     Authentication. '
-                envVars:
+                env:
                   type: array
                   items:
                     type: object
@@ -2257,7 +2257,7 @@ spec:
                           x-kubernetes-preserve-unknown-fields: true
                       description: Modifies the resource limits and requests to apply
                         to this component.
-                    envVars:
+                    env:
                       type: array
                       items:
                         type: object
@@ -2365,7 +2365,7 @@ spec:
                           x-kubernetes-preserve-unknown-fields: true
                       description: Modifies the resource limits and requests to apply
                         to this component.
-                    envVars:
+                    env:
                       type: array
                       items:
                         type: object
@@ -2502,7 +2502,7 @@ spec:
                     with the component. If nothing is specified, a default endpoint
                     is created that is externally accessible via a Route with Bearer
                     Authentication. '
-                envVars:
+                env:
                   type: array
                   items:
                     type: object

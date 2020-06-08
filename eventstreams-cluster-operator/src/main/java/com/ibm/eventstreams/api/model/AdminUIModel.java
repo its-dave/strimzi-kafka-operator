@@ -132,7 +132,7 @@ public class AdminUIModel extends AbstractModel {
 
         if (userInterfaceSpec.isPresent()) {
             setReplicas(userInterfaceSpec.map(ComponentSpec::getReplicas).orElse(DEFAULT_REPLICAS));
-            setEnvVars(userInterfaceSpec.map(ContainerSpec::getEnvVars).orElseGet(ArrayList::new));
+            setEnvVars(userInterfaceSpec.map(ContainerSpec::getEnv).orElseGet(ArrayList::new));
             setResourceRequirements(userInterfaceSpec.map(ContainerSpec::getResources).orElseGet(ResourceRequirements::new));
             setPodTemplate(userInterfaceSpec.map(ComponentSpec::getTemplate)
                             .map(ComponentTemplate::getPod)
@@ -170,7 +170,7 @@ public class AdminUIModel extends AbstractModel {
                 
             Optional<ContainerSpec> redisSpec = userInterfaceSpec.map(AdminUISpec::getRedis);
 
-            redisEnvVars = redisSpec.map(ContainerSpec::getEnvVars).orElseGet(ArrayList::new);
+            redisEnvVars = redisSpec.map(ContainerSpec::getEnv).orElseGet(ArrayList::new);
             redisImage = firstDefinedImage(
                     DEFAULT_IBMCOM_REDIS_IMAGE, redisSpec.map(ContainerSpec::getImage),
                             imageConfig.getAdminUIRedisImage());

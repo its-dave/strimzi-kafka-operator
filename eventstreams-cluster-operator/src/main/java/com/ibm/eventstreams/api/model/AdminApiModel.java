@@ -109,7 +109,7 @@ public class AdminApiModel extends AbstractSecureEndpointsModel {
         setOwnerReference(instance);
         setReplicas(adminApiSpec.map(ComponentSpec::getReplicas).orElse(DEFAULT_REPLICAS));
         setResourceRequirements(adminApiSpec.map(ContainerSpec::getResources).orElseGet(ResourceRequirements::new));
-        setEnvVars(adminApiSpec.map(ContainerSpec::getEnvVars).orElseGet(ArrayList::new));
+        setEnvVars(adminApiSpec.map(ContainerSpec::getEnv).orElseGet(ArrayList::new));
         setPodTemplate(adminApiSpec.map(ComponentSpec::getTemplate)
                             .map(ComponentTemplate::getPod)
                             .orElseGet(PodTemplate::new));

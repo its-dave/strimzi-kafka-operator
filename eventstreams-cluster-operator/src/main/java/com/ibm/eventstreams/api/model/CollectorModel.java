@@ -104,7 +104,7 @@ public class CollectorModel extends AbstractSecureEndpointsModel {
             setOwnerReference(instance);
             setReplicas(collectorSpec.map(ComponentSpec::getReplicas).orElse(DEFAULT_REPLICAS));
             setResourceRequirements(collectorSpec.map(ComponentSpec::getResources).orElseGet(ResourceRequirements::new));
-            setEnvVars(collectorSpec.map(ContainerSpec::getEnvVars).orElseGet(ArrayList::new));
+            setEnvVars(collectorSpec.map(ContainerSpec::getEnv).orElseGet(ArrayList::new));
             setPodTemplate(collectorSpec.map(ComponentSpec::getTemplate)
                             .map(ComponentTemplate::getPod)
                             .orElseGet(PodTemplate::new));
