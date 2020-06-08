@@ -92,11 +92,11 @@ spec:
                       type:
                         type: string
                         enum:
-                        - Route
-                        - NodePort
-                        - Ingress
-                        - LoadBalancer
-                        - Internal
+                        - route
+                        - nodeport
+                        - ingress
+                        - loadbalancer
+                        - internal
                         description: Defines what type of service/route the operator
                           will lay down for this endpoint.
                       containerPort:
@@ -1602,11 +1602,11 @@ spec:
                       type:
                         type: string
                         enum:
-                        - Route
-                        - NodePort
-                        - Ingress
-                        - LoadBalancer
-                        - Internal
+                        - route
+                        - nodeport
+                        - ingress
+                        - loadbalancer
+                        - internal
                         description: Defines what type of service/route the operator
                           will lay down for this endpoint.
                       containerPort:
@@ -2447,11 +2447,11 @@ spec:
                       type:
                         type: string
                         enum:
-                        - Route
-                        - NodePort
-                        - Ingress
-                        - LoadBalancer
-                        - Internal
+                        - route
+                        - nodeport
+                        - ingress
+                        - loadbalancer
+                        - internal
                         description: Defines what type of service/route the operator
                           will lay down for this endpoint.
                       containerPort:

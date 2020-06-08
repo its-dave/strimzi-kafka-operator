@@ -13,13 +13,17 @@
 package com.ibm.eventstreams.api;
 
 import com.fasterxml.jackson.annotation.JsonValue;
+import io.strimzi.api.kafka.model.listener.KafkaListenerExternalIngress;
+import io.strimzi.api.kafka.model.listener.KafkaListenerExternalLoadBalancer;
+import io.strimzi.api.kafka.model.listener.KafkaListenerExternalNodePort;
+import io.strimzi.api.kafka.model.listener.KafkaListenerExternalRoute;
 
 public enum EndpointServiceType {
-    ROUTE("Route"),
-    NODE_PORT("NodePort"),
-    INGRESS("Ingress"),
-    LOAD_BALANCER("LoadBalancer"),
-    INTERNAL("Internal");
+    ROUTE(KafkaListenerExternalRoute.TYPE_ROUTE),
+    NODE_PORT(KafkaListenerExternalNodePort.TYPE_NODEPORT),
+    INGRESS(KafkaListenerExternalIngress.TYPE_INGRESS),
+    LOAD_BALANCER(KafkaListenerExternalLoadBalancer.TYPE_LOADBALANCER),
+    INTERNAL("internal");
 
     private final String value;
 
