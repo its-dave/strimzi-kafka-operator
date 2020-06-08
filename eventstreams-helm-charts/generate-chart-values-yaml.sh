@@ -9,7 +9,6 @@ change_image_values(){
     name=$(yq r "${VALUES_YAML_FILE}" "${1}".image.name)
     tag=$(yq r "${VALUES_YAML_FILE}" "${1}".image.tag)
 
-
     if [ -z "${tag}" ]; then
         tag=$(yq r "${VALUES_YAML_FILE}" "${1}".image.tagPrefix)
     fi
@@ -21,6 +20,18 @@ change_image_values(){
     digest=$(curl -s -u "${ARTIFACTORY_USERNAME}:${ARTIFACTORY_PASSWORD}" \
         "https://hyc-qp-stable-docker-local.artifactory.swg-devops.com:443/artifactory/api/storage/hyc-qp-stable-docker-local/${name}/${tag}/list.manifest.json" \
         | jq -r .checksums.sha256)
+
+    if [ "${digest}" == "null" ]; then
+        digest=$(curl -s -u "${ARTIFACTORY_USERNAME}:${ARTIFACTORY_PASSWORD}" \
+        "https://hyc-qp-stable-docker-local.artifactory.swg-devops.com:443/artifactory/api/storage/hyc-qp-stable-docker-local/${name}/${tag}/manifest.json" \
+        | jq -r .checksums.sha256)
+    fi
+
+    if [ "${digest}" == "null" ]; then
+        echo "could not find digest of ${name}/${tag}"
+        exit 1
+    fi
+
     yq w -i "${CHART_VALUES_YAML_FILE}" "${1}".image.repository "${2}"
     yq w -i "${CHART_VALUES_YAML_FILE}" "${1}".image.name "${3}"
     yq w -i "${CHART_VALUES_YAML_FILE}" "${1}".image.digest "${digest}"

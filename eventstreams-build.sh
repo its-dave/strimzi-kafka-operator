@@ -35,11 +35,13 @@ else
 fi
 
 sourceImageNameSuffixes=("strimzi/kafka" "strimzi/operator" "strimzi/operator-init" "strimzi/jmxtrans")
-targetImageNameSuffixes=("strimzi/kafka" "strimzi/operator" "strimzi/operator-init" "strimzi/jmxtrans")
 targetImageLatestTagOverride=("latest-kafka-$(get_kafka_versions)" "" "" "")
 for ((i=0; i<${#sourceImageNameSuffixes[*]}; i++)); do
   sourceImage="${sourceImageNameSuffixes[i]}:latest"
-  targetImageName="${destination_registry}/${targetImageNameSuffixes[i]}-${B_ARCH}"
+  targetImageName="${destination_registry}/${sourceImageNameSuffixes[i]}-${B_ARCH}"
+  if [ "${sourceImageNameSuffixes[i]}" == "strimzi/kafka" ]; then
+    targetImageName="${destination_registry}/${sourceImageNameSuffixes[i]}"
+  fi
   echo "Retagging ${sourceImage} and pushing to ${targetImageName}:${TAG}"
   docker tag "${sourceImage}" "${targetImageName}:${TAG}"
   docker push "${targetImageName}:${TAG}"
