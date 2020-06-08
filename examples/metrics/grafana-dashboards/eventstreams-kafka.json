@@ -720,7 +720,7 @@
         }
       ],
       "thresholds": "1,1",
-      "title": "Partitions under mininimum ISR",
+      "title": "Partitions under minimum ISR",
       "type": "singlestat",
       "valueFontSize": "200%",
       "valueMaps": [
@@ -803,7 +803,7 @@
         }
       ],
       "thresholds": "1,5",
-      "title": "Partitions at mininimum ISR",
+      "title": "Partitions at minimum ISR",
       "type": "singlestat",
       "valueFontSize": "200%",
       "valueMaps": [
