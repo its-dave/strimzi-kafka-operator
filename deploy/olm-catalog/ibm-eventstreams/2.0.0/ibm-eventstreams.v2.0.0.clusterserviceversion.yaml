@@ -108,7 +108,7 @@ spec:
         version: v1
       specDescriptors:
       - displayName: License accept
-        description: I accept the product license after reading it at <TBC>
+        description: By installing this product you accept the license terms at https://ibm.biz/es-license
         path: license.accept
         x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:License'

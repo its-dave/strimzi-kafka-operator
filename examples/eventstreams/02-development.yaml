@@ -17,6 +17,7 @@ metadata:
 spec:
   version: 10.0.0
   license:
+    # By installing this product you accept the license terms at https://ibm.biz/es-license
     accept: false
     use: CloudPakForIntegrationNonProduction
   adminApi: {}
