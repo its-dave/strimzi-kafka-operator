@@ -50,14 +50,14 @@ restProducer:
   image:
     repository: cp.icr.io
     name: cp/ibm-eventstreams-rest-producer
-    tag: 2020-06-08-20.24.32-b87e1e7
-    digest: 3095f8a72ebe184aca33ce9c34e5f1318056192aeea3a191c7055a2de1ef1ddb
+    tag: 2020-06-09-09.55.58-e896ea7
+    digest: 192eff76209101d0878a36eb5168ede215913c6467f215800581436f126c0774
 adminApi:
   image:
     repository: cp.icr.io
     name: cp/ibm-eventstreams-admin
-    tag: 2020-06-08-20.24.43-b87e1e7
-    digest: 2b5a3bd7001fc179e8ef397cb15a964732095308f335a16e15038b212590c8a8
+    tag: 2020-06-09-09.55.59-e896ea7
+    digest: 5bd7f5f5b2a9dde1dc3672a128d2b06fbd029fee500b3f0fff9bdd718fd583ef
 schemaRegistry:
   image:
     repository: cp.icr.io
@@ -74,14 +74,14 @@ schemaRegistryProxy:
   image:
     repository: cp.icr.io
     name: cp/ibm-eventstreams-schema-proxy
-    tag: 2020-06-08-20.24.39-b87e1e7
-    digest: 930064aaae3e3d861d584abde8259d29c78881ebc005166f556780469236ea26
+    tag: 2020-06-09-09.56.03-e896ea7
+    digest: 60899198fcdb894e6b30b8f536129ceeb1c1599675d7a529da36a7ed67fb8674
 adminUi:
   image:
     repository: cp.icr.io
     name: cp/ibm-eventstreams-admin-ui
-    tag: 2020-06-08-20.09.28-f5ccb95-dev
-    digest: 93928e7f26f2bd7dbca1aceedab107344c8baba5798430318d95a742a5d2fabf
+    tag: 2020-06-09-10.13.28-f5ccb95
+    digest: 38cc7544edf77089ff16f74c3bdc20a608527e1e1dab6ad4f9b2188d179d242a
 adminUiDatabase:
   image:
     repository: cp.icr.io

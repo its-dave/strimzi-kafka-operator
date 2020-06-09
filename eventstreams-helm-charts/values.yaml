@@ -54,12 +54,12 @@ restProducer:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: eventstreams-rest-producer-v2-icp-linux
-    tag: 2020-06-08-20.24.32-b87e1e7
+    tag: 2020-06-09-09.55.58-e896ea7
 adminApi:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: eventstreams-admin-icp-linux
-    tag: 2020-06-08-20.24.43-b87e1e7
+    tag: 2020-06-09-09.55.59-e896ea7
 schemaRegistry:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
@@ -74,12 +74,12 @@ schemaRegistryProxy:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: eventstreams-schema-proxy-icp-linux
-    tag: 2020-06-08-20.24.39-b87e1e7
+    tag: 2020-06-09-09.56.03-e896ea7
 adminUi:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: eventstreams-admin-ui-icp-linux
-    tag: 2020-06-08-20.09.28-f5ccb95-dev
+    tag: 2020-06-09-10.13.28-f5ccb95
 adminUiDatabase:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com

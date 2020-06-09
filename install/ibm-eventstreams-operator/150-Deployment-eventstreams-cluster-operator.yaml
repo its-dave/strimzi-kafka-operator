@@ -136,17 +136,17 @@ spec:
         - name: EVENTSTREAMS_DEFAULT_JMXTRANS_IMAGE
           value: "cp.icr.io/cp/ibm-eventstreams-jmxtrans@sha256:bb8492b3991514d7fe2989078a57a94c8e61f95277a78496f232c024f9b1cb80"
         - name: EVENTSTREAMS_DEFAULT_REST_PRODUCER_IMAGE # Proprietary images
-          value: "cp.icr.io/cp/ibm-eventstreams-rest-producer@sha256:3095f8a72ebe184aca33ce9c34e5f1318056192aeea3a191c7055a2de1ef1ddb"
+          value: "cp.icr.io/cp/ibm-eventstreams-rest-producer@sha256:192eff76209101d0878a36eb5168ede215913c6467f215800581436f126c0774"
         - name: EVENTSTREAMS_DEFAULT_ADMIN_API_IMAGE
-          value: "cp.icr.io/cp/ibm-eventstreams-admin@sha256:2b5a3bd7001fc179e8ef397cb15a964732095308f335a16e15038b212590c8a8"
+          value: "cp.icr.io/cp/ibm-eventstreams-admin@sha256:5bd7f5f5b2a9dde1dc3672a128d2b06fbd029fee500b3f0fff9bdd718fd583ef"
         - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_IMAGE
           value: "cp.icr.io/cp/ibm-eventstreams-schema-registry@sha256:eb5cc69eedc6a212f461dc1821441e30c25ed485cf8b659570447765628e1510"
         - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_AVRO_IMAGE
           value: "cp.icr.io/cp/ibm-eventstreams-schema-registry-avro@sha256:95430d8b98b401b8fd37f8c2f093e9f77dd48b6ae02b7e9b061891ad6657fe34"
         - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_PROXY_IMAGE
-          value: "cp.icr.io/cp/ibm-eventstreams-schema-proxy@sha256:930064aaae3e3d861d584abde8259d29c78881ebc005166f556780469236ea26"
+          value: "cp.icr.io/cp/ibm-eventstreams-schema-proxy@sha256:60899198fcdb894e6b30b8f536129ceeb1c1599675d7a529da36a7ed67fb8674"
         - name: EVENTSTREAMS_DEFAULT_ADMIN_UI_IMAGE
-          value: "cp.icr.io/cp/ibm-eventstreams-admin-ui@sha256:93928e7f26f2bd7dbca1aceedab107344c8baba5798430318d95a742a5d2fabf"
+          value: "cp.icr.io/cp/ibm-eventstreams-admin-ui@sha256:38cc7544edf77089ff16f74c3bdc20a608527e1e1dab6ad4f9b2188d179d242a"
         - name: EVENTSTREAMS_DEFAULT_ADMIN_UI_REDIS_IMAGE
           value: "cp.icr.io/cp/ibm-eventstreams-session-store@sha256:83986e67b9b9863201cc6754d8757d67712c2e20eb74ece2afe62928687d7a70"
         - name: EVENTSTREAMS_DEFAULT_COLLECTOR_IMAGE
