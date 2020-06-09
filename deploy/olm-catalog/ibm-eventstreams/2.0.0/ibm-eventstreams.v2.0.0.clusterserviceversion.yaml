@@ -42,8 +42,8 @@ metadata:
           "description": "A secured cluster of 3 Kafka brokers licensed for production use, tuned to handle a more demanding workload.",
           "name": "Production 3 brokers",
           "resources": {
-            "cpu": "19",
-            "memory": "30.3 GB",
+            "cpu": "22",
+            "memory": "33.3 GB",
             "vpc": "12"
           }
         },
@@ -51,8 +51,8 @@ metadata:
           "description": "A secured cluster of 6 Kafka brokers licensed for production use, tuned to handle a more demanding workload.",
           "name": "Production 6 brokers",
           "resources": {
-            "cpu": "31.3",
-            "memory": "54.7 GB",
+            "cpu": "34.3",
+            "memory": "57.7 GB",
             "vpc": "24"
           }
         },
@@ -60,8 +60,8 @@ metadata:
           "description": "A secured cluster of 9 Kafka brokers licensed for production use, tuned to handle a more demanding workload.",
           "name": "Production 9 brokers",
           "resources": {
-            "cpu": "43.6",
-            "memory": "79.1 GB",
+            "cpu": "46.6",
+            "memory": "82.1 GB",
             "vpc": "36"
           }
         }
@@ -69,7 +69,7 @@ metadata:
     capabilities: Basic Install
     categories: Streaming & Messaging
     certified: 'false'
-    createdAt: 2020-06-09T11:59:16Z
+    createdAt: 2020-06-09T12:00:46Z
     description: Kafka-based messaging platform for handling real-time data feeds.
     operators.operatorframework.io/internal-objects: '["kafkas.eventstreams.ibm.com"]'
     support: IBM
