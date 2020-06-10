@@ -96,6 +96,6 @@ LABEL name="strimzi-kafka" \
 
 ARG B_ARCH
 ARG ES_IMAGE_TAG
-RUN echo "operator-init-${B_ARCH}:${ES_IMAGE_TAG}" > /image.txt
+RUN echo "kafka-${B_ARCH}:${ES_IMAGE_TAG}" > /image.txt
 
 USER ${user}

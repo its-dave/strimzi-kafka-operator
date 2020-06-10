@@ -20,6 +20,6 @@ LABEL name="eventstreams-cluster-operator" \
 
 ARG B_ARCH
 ARG ES_IMAGE_TAG
-RUN echo "operator-init-${B_ARCH}:${ES_IMAGE_TAG}" > /image.txt
+RUN echo "operator-${B_ARCH}:${ES_IMAGE_TAG}" > /image.txt
 
 USER ${user}
