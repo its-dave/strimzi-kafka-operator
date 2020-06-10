@@ -24,7 +24,7 @@ helm init -c
 docker login -u="${ARTIFACTORY_USERNAME}" -p="${ARTIFACTORY_PASSWORD}" "${destination_registry}"
 
 
-make eventstreams_build
+make eventstreams_build ES_IMAGE_TAG="${TAG}"
 
 
 if [[ $TAG == *exp ]]; then

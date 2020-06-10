@@ -94,4 +94,8 @@ LABEL name="strimzi-kafka" \
       summary="Strimzi Kafka Operator" \
       description="Strimzi Kafka Operator is a high-throughput, fault-tolerant, pub-sub technology for building event-driven applications. It is built on top of Apache Kafka(R)"
 
+ARG B_ARCH
+ARG ES_IMAGE_TAG
+RUN echo "operator-init-${B_ARCH}:${ES_IMAGE_TAG}" > /image.txt
+
 USER ${user}

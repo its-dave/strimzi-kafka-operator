@@ -12,6 +12,10 @@ COPY --from=builder /usr/local/bin/kubectl /usr/bin/
 
 COPY scripts/* ./
 
+ARG B_ARCH
+ARG ES_IMAGE_TAG
+RUN echo "operator-init-${B_ARCH}:${ES_IMAGE_TAG}" > /image.txt
+
 USER ${user}
 
 LABEL name="eventstreams-operator-init"
