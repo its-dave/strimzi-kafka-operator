@@ -69,7 +69,7 @@ metadata:
     capabilities: Basic Install
     categories: Streaming & Messaging
     certified: 'false'
-    createdAt: 2020-06-09T12:00:46Z
+    createdAt: 2020-06-10T13:29:30Z
     description: Kafka-based messaging platform for handling real-time data feeds.
     operators.operatorframework.io/internal-objects: '["kafkas.eventstreams.ibm.com"]'
     support: IBM
@@ -869,9 +869,9 @@ spec:
                 - name: EVENTSTREAMS_DEFAULT_JMXTRANS_IMAGE
                   value: cp.icr.io/cp/ibm-eventstreams-jmxtrans@sha256:bb8492b3991514d7fe2989078a57a94c8e61f95277a78496f232c024f9b1cb80
                 - name: EVENTSTREAMS_DEFAULT_REST_PRODUCER_IMAGE
-                  value: cp.icr.io/cp/ibm-eventstreams-rest-producer@sha256:192eff76209101d0878a36eb5168ede215913c6467f215800581436f126c0774
+                  value: cp.icr.io/cp/ibm-eventstreams-rest-producer@sha256:159b033ffc0c44732651573d71b01f51b8c13bc86c6ae08b587760cbcd2e31a6
                 - name: EVENTSTREAMS_DEFAULT_ADMIN_API_IMAGE
-                  value: cp.icr.io/cp/ibm-eventstreams-admin@sha256:5bd7f5f5b2a9dde1dc3672a128d2b06fbd029fee500b3f0fff9bdd718fd583ef
+                  value: cp.icr.io/cp/ibm-eventstreams-admin@sha256:044336abb00c446c1ff1e8359d2ce1e4163ecbe9097a680349c1db638dbbec37
                 - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_IMAGE
                   value: cp.icr.io/cp/ibm-eventstreams-schema-registry@sha256:eb5cc69eedc6a212f461dc1821441e30c25ed485cf8b659570447765628e1510
                 - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_AVRO_IMAGE
@@ -879,7 +879,7 @@ spec:
                 - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_PROXY_IMAGE
                   value: cp.icr.io/cp/ibm-eventstreams-schema-proxy@sha256:60899198fcdb894e6b30b8f536129ceeb1c1599675d7a529da36a7ed67fb8674
                 - name: EVENTSTREAMS_DEFAULT_ADMIN_UI_IMAGE
-                  value: cp.icr.io/cp/ibm-eventstreams-admin-ui@sha256:38cc7544edf77089ff16f74c3bdc20a608527e1e1dab6ad4f9b2188d179d242a
+                  value: cp.icr.io/cp/ibm-eventstreams-admin-ui@sha256:071bd186d0db116c98a548c9e74bade5400c566d16bdb8e5e60d4593a22e99e3
                 - name: EVENTSTREAMS_DEFAULT_ADMIN_UI_REDIS_IMAGE
                   value: cp.icr.io/cp/ibm-eventstreams-session-store@sha256:83986e67b9b9863201cc6754d8757d67712c2e20eb74ece2afe62928687d7a70
                 - name: EVENTSTREAMS_DEFAULT_COLLECTOR_IMAGE
@@ -1004,9 +1004,9 @@ spec:
   - name: ibmcom/ibm-eventstreams-operator-init
     image: docker.io/ibmcom/ibm-eventstreams-operator-init@sha256:a51709efc4f57cc4253276f72cd8f95e069fa1146f9d67ee953527ed1cc4f631
   - name: cp/ibm-eventstreams-rest-producer
-    image: cp.icr.io/cp/ibm-eventstreams-rest-producer@sha256:192eff76209101d0878a36eb5168ede215913c6467f215800581436f126c0774
+    image: cp.icr.io/cp/ibm-eventstreams-rest-producer@sha256:159b033ffc0c44732651573d71b01f51b8c13bc86c6ae08b587760cbcd2e31a6
   - name: cp/ibm-eventstreams-admin
-    image: cp.icr.io/cp/ibm-eventstreams-admin@sha256:5bd7f5f5b2a9dde1dc3672a128d2b06fbd029fee500b3f0fff9bdd718fd583ef
+    image: cp.icr.io/cp/ibm-eventstreams-admin@sha256:044336abb00c446c1ff1e8359d2ce1e4163ecbe9097a680349c1db638dbbec37
   - name: cp/ibm-eventstreams-schema-registry
     image: cp.icr.io/cp/ibm-eventstreams-schema-registry@sha256:eb5cc69eedc6a212f461dc1821441e30c25ed485cf8b659570447765628e1510
   - name: cp/ibm-eventstreams-schema-registry-avro
@@ -1014,7 +1014,7 @@ spec:
   - name: cp/ibm-eventstreams-schema-proxy
     image: cp.icr.io/cp/ibm-eventstreams-schema-proxy@sha256:60899198fcdb894e6b30b8f536129ceeb1c1599675d7a529da36a7ed67fb8674
   - name: cp/ibm-eventstreams-admin-ui
-    image: cp.icr.io/cp/ibm-eventstreams-admin-ui@sha256:38cc7544edf77089ff16f74c3bdc20a608527e1e1dab6ad4f9b2188d179d242a
+    image: cp.icr.io/cp/ibm-eventstreams-admin-ui@sha256:071bd186d0db116c98a548c9e74bade5400c566d16bdb8e5e60d4593a22e99e3
   - name: cp/ibm-eventstreams-session-store
     image: cp.icr.io/cp/ibm-eventstreams-session-store@sha256:83986e67b9b9863201cc6754d8757d67712c2e20eb74ece2afe62928687d7a70
   - name: cp/ibm-eventstreams-metrics-collector
