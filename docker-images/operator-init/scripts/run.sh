@@ -12,6 +12,10 @@
 
 set -e
 
+# Display the version of the init container this script
+# is running in, if it's available, but don't fail if not
+cat /image.txt || true
+
 #
 # Some resources required by the Event Streams Cluster Operator cannot be created
 # by OLM, so we create/patch these manually in an init container.
