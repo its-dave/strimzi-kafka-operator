@@ -80,8 +80,8 @@ adminUi:
   image:
     repository: cp.icr.io
     name: cp/ibm-eventstreams-admin-ui
-    tag: 2020-06-10-15.07.47-ad56c23-dev
-    digest: 4263dd0482b0c622a1812b56a4fa87b790009b82cc454b83966c3cc8ee54fe87
+    tag: 2020-06-11-10.44.01-ad56c23
+    digest: 8e202916e2153974a3d95b2aca206a5064d8c726eee89b5c6dc418791954a212
 adminUiDatabase:
   image:
     repository: cp.icr.io

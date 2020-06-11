@@ -146,7 +146,7 @@ spec:
         - name: EVENTSTREAMS_DEFAULT_SCHEMA_REGISTRY_PROXY_IMAGE
           value: "cp.icr.io/cp/ibm-eventstreams-schema-proxy@sha256:91cc0cc07b3c567962500375106d31cda6826aa4d907ed93eecd010f93a11565"
         - name: EVENTSTREAMS_DEFAULT_ADMIN_UI_IMAGE
-          value: "cp.icr.io/cp/ibm-eventstreams-admin-ui@sha256:4263dd0482b0c622a1812b56a4fa87b790009b82cc454b83966c3cc8ee54fe87"
+          value: "cp.icr.io/cp/ibm-eventstreams-admin-ui@sha256:8e202916e2153974a3d95b2aca206a5064d8c726eee89b5c6dc418791954a212"
         - name: EVENTSTREAMS_DEFAULT_ADMIN_UI_REDIS_IMAGE
           value: "cp.icr.io/cp/ibm-eventstreams-session-store@sha256:88ac33a06800a94d3a44c86960c6f75918edafd3896517520cacfcbf0c29ee5d"
         - name: EVENTSTREAMS_DEFAULT_COLLECTOR_IMAGE
