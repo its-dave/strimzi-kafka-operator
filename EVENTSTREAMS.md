@@ -147,6 +147,9 @@ Once all your nodes have rolled image references from `docker.io/ibmcom` or `cp.
 ### Build operator registry with our operator bundle, push to OpenShift registry
 Run `make -C deploy deploy` this will build and verify the OLM bundle, build a catalog source and push it to your OpenShift
 
+This will install the stable GA-released version of Common Services.
+If you want the latest beta/dev driver of Common Services, uncomment the beta option in the `deploy` section of `deploy/Makefile`.
+
 To verify that the local-operator and the opencloud-operators catalogsources have been correctly deployed:
 ```
 oc get pods -n openshift-marketplace
@@ -176,7 +179,7 @@ While the Event Streams operator is installing you can check the following:
 6. The configmap called `management-ingress-ibmcloud-cluster-info` in the Event Streams operator namespace has been created
 7. The progress of the init container by running `oc logs <eventstreams-operator-pod-name> -c init`
 
-Note: The Event Streams operator might report it has timed out in the UI but if you check the pod status it will still be running the init 
+Note: The Event Streams operator might report it has timed out in the UI but if you check the pod status it will still be running the init
 
 ## Producing and Consuming to Event Streams
 ### Get your cluster CA certificate & import it into the Java KeyStore file

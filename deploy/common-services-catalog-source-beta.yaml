@@ -1,0 +1,22 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: CatalogSource
+metadata:
+  name: opencloud-operators
+  namespace: openshift-marketplace
+spec:
+  displayName: IBMCS Operators
+  publisher: IBM
+  sourceType: grpc
+  image: quay.io/opencloudio/ibm-common-service-catalog:latest
+
+  #
+  # 'updateStrategy' is only supported on OpenShift 4.4
+  #  The section below is how you can setup CS to refresh the latest
+  #  dev driver every hour.
+  #  For OpenShift 4.3, you need to delete the catalog source and
+  #  recreate it manually.
+  #
+
+  # updateStrategy:
+  #   registryPoll:
+  #     interval: 60m

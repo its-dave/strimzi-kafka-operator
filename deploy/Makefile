@@ -108,13 +108,15 @@ docker_push:
 	docker push $(REPO_ADDR)$(CATALOG_IMAGE_NAME)
 
 deploy: build_bundle docker_push
-	oc apply -f common-services-operator-source.yaml
+	oc apply -f common-services-catalog-source-stable.yaml
+    # uncomment this if you need latest beta CS drivers
+	# oc apply -f common-services-catalog-source-beta.yaml
 	$(SED) s/@image@/$(CATALOG_IMAGE_NAME)/ custom-catalog-source.yaml.template | oc apply -f -
 
 delete_deploy:
 	$(SED) s/@image@/dummy/ custom-catalog-source.yaml.template | oc delete -f -
 
-yaml_to_json: 
+yaml_to_json:
 	rm -rf tmp
 	$(CP) -R olm-catalog/$(OPERATOR_NAME) tmp/
 	./convertYaml2Json.sh
@@ -130,7 +132,7 @@ build_bundle_staging: .EXPORT_ALL_VARIABLES yaml_to_json
 build_bundle_artifactory: .EXPORT_ALL_VARIABLES yaml_to_json
 	./build_bundle.sh $(ARTIFACTORY_REPO_ADDR) $(ARTIFACTORY_USERNAME) $(ARTIFACTORY_PASSWORD)
 	$(MAKE) json_to_yaml
-	
+
 create_prepare_rhocp:
 	$(eval CLUSTER_NAME := $(shell read -erp "Cluster name: " x; echo $$x))
 	./prepare-rhocp-scripts/create-fyre-cluster.sh $(CLUSTER_NAME) --add-to-etc-hosts --oc-login --ssh-copy-id
