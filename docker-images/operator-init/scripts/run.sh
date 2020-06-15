@@ -476,7 +476,9 @@ spec:
             kafka:
                 replicas: 1
                 config:
+                    inter.broker.protocol.version: "2.5"
                     interceptor.class.names: com.ibm.eventstreams.interceptors.metrics.ProducerMetricsInterceptor
+                    log.message.format.version: "2.5"
                     offsets.topic.replication.factor: 1
                     transaction.state.log.min.isr: 1
                     transaction.state.log.replication.factor: 1
@@ -534,8 +536,10 @@ spec:
                 authorization:
                     type: runas
                 config:
+                    inter.broker.protocol.version: "2.5"
                     interceptor.class.names: com.ibm.eventstreams.interceptors.metrics.ProducerMetricsInterceptor
                     log.cleaner.threads: 6
+                    log.message.format.version: "2.5"
                     num.io.threads: 24
                     num.network.threads: 9
                     num.replica.fetchers: 3
@@ -602,8 +606,10 @@ spec:
                 authorization:
                     type: runas
                 config:
+                    inter.broker.protocol.version: "2.5"
                     interceptor.class.names: com.ibm.eventstreams.interceptors.metrics.ProducerMetricsInterceptor
                     log.cleaner.threads: 6
+                    log.message.format.version: "2.5"
                     num.io.threads: 24
                     num.network.threads: 9
                     num.replica.fetchers: 3
@@ -674,8 +680,10 @@ spec:
                 authorization:
                     type: runas
                 config:
+                    inter.broker.protocol.version: "2.5"
                     interceptor.class.names: com.ibm.eventstreams.interceptors.metrics.ProducerMetricsInterceptor
                     log.cleaner.threads: 6
+                    log.message.format.version: "2.5"
                     num.io.threads: 24
                     num.network.threads: 9
                     num.replica.fetchers: 3
