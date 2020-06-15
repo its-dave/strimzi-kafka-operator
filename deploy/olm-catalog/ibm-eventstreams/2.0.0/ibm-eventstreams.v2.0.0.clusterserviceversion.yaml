@@ -69,7 +69,7 @@ metadata:
     capabilities: Basic Install
     categories: Streaming & Messaging
     certified: 'false'
-    createdAt: 2020-06-11T12:37:57Z
+    createdAt: 2020-06-15T11:12:04Z
     description: Kafka-based messaging platform for handling real-time data feeds.
     operators.operatorframework.io/internal-objects: '["kafkas.eventstreams.ibm.com"]'
     support: IBM
@@ -836,38 +836,38 @@ spec:
                     fieldRef:
                       fieldPath: metadata.name
                 - name: EVENTSTREAMS_DEFAULT_TLS_SIDECAR_ENTITY_OPERATOR_IMAGE
-                  value: cp.icr.io/cp/ibm-eventstreams-kafka@sha256:a53ed0ebaa26e6101d2b805481d4cad0b5e043e2c6a4a71fd76ac678167778f4
+                  value: cp.icr.io/cp/ibm-eventstreams-kafka@sha256:bc985ce30c4ea306ea8385510fd9cc0ed60f415c9dbedf18e16fd4bb27697083
                 - name: EVENTSTREAMS_DEFAULT_TLS_SIDECAR_KAFKA_IMAGE
-                  value: cp.icr.io/cp/ibm-eventstreams-kafka@sha256:a53ed0ebaa26e6101d2b805481d4cad0b5e043e2c6a4a71fd76ac678167778f4
+                  value: cp.icr.io/cp/ibm-eventstreams-kafka@sha256:bc985ce30c4ea306ea8385510fd9cc0ed60f415c9dbedf18e16fd4bb27697083
                 - name: EVENTSTREAMS_DEFAULT_KAFKA_EXPORTER_IMAGE
-                  value: cp.icr.io/cp/ibm-eventstreams-kafka@sha256:a53ed0ebaa26e6101d2b805481d4cad0b5e043e2c6a4a71fd76ac678167778f4
+                  value: cp.icr.io/cp/ibm-eventstreams-kafka@sha256:bc985ce30c4ea306ea8385510fd9cc0ed60f415c9dbedf18e16fd4bb27697083
                 - name: EVENTSTREAMS_DEFAULT_CRUISE_CONTROL_IMAGE
-                  value: cp.icr.io/cp/ibm-eventstreams-kafka@sha256:a53ed0ebaa26e6101d2b805481d4cad0b5e043e2c6a4a71fd76ac678167778f4
+                  value: cp.icr.io/cp/ibm-eventstreams-kafka@sha256:bc985ce30c4ea306ea8385510fd9cc0ed60f415c9dbedf18e16fd4bb27697083
                 - name: EVENTSTREAMS_DEFAULT_TLS_SIDECAR_CRUISE_CONTROL_IMAGE
-                  value: cp.icr.io/cp/ibm-eventstreams-kafka@sha256:a53ed0ebaa26e6101d2b805481d4cad0b5e043e2c6a4a71fd76ac678167778f4
+                  value: cp.icr.io/cp/ibm-eventstreams-kafka@sha256:bc985ce30c4ea306ea8385510fd9cc0ed60f415c9dbedf18e16fd4bb27697083
                 - name: EVENTSTREAMS_KAFKA_IMAGES
                   value: |
-                    2.5.0=cp.icr.io/cp/ibm-eventstreams-kafka@sha256:a53ed0ebaa26e6101d2b805481d4cad0b5e043e2c6a4a71fd76ac678167778f4
+                    2.5.0=cp.icr.io/cp/ibm-eventstreams-kafka@sha256:bc985ce30c4ea306ea8385510fd9cc0ed60f415c9dbedf18e16fd4bb27697083
                 - name: EVENTSTREAMS_KAFKA_CONNECT_IMAGES
                   value: |
-                    2.5.0=cp.icr.io/cp/ibm-eventstreams-kafka@sha256:a53ed0ebaa26e6101d2b805481d4cad0b5e043e2c6a4a71fd76ac678167778f4
+                    2.5.0=cp.icr.io/cp/ibm-eventstreams-kafka@sha256:bc985ce30c4ea306ea8385510fd9cc0ed60f415c9dbedf18e16fd4bb27697083
                 - name: EVENTSTREAMS_KAFKA_CONNECT_S2I_IMAGES
                   value: |
-                    2.5.0=cp.icr.io/cp/ibm-eventstreams-kafka@sha256:a53ed0ebaa26e6101d2b805481d4cad0b5e043e2c6a4a71fd76ac678167778f4
+                    2.5.0=cp.icr.io/cp/ibm-eventstreams-kafka@sha256:bc985ce30c4ea306ea8385510fd9cc0ed60f415c9dbedf18e16fd4bb27697083
                 - name: EVENTSTREAMS_KAFKA_MIRROR_MAKER_IMAGES
                   value: |
-                    2.5.0=cp.icr.io/cp/ibm-eventstreams-kafka@sha256:a53ed0ebaa26e6101d2b805481d4cad0b5e043e2c6a4a71fd76ac678167778f4
+                    2.5.0=cp.icr.io/cp/ibm-eventstreams-kafka@sha256:bc985ce30c4ea306ea8385510fd9cc0ed60f415c9dbedf18e16fd4bb27697083
                 - name: EVENTSTREAMS_KAFKA_MIRROR_MAKER_2_IMAGES
                   value: |
-                    2.5.0=cp.icr.io/cp/ibm-eventstreams-kafka@sha256:a53ed0ebaa26e6101d2b805481d4cad0b5e043e2c6a4a71fd76ac678167778f4
+                    2.5.0=cp.icr.io/cp/ibm-eventstreams-kafka@sha256:bc985ce30c4ea306ea8385510fd9cc0ed60f415c9dbedf18e16fd4bb27697083
                 - name: EVENTSTREAMS_DEFAULT_TOPIC_OPERATOR_IMAGE
-                  value: docker.io/ibmcom/ibm-eventstreams-operator@sha256:deb9829dd9a00f097c8e224aaf25ea43c0b895efbb9862017e34afd4075a8d44
+                  value: docker.io/ibmcom/ibm-eventstreams-operator@sha256:283a4298688ca201fa6b4fbc261a936c8afacb0052424403522f0b5fa2ccbf49
                 - name: EVENTSTREAMS_DEFAULT_USER_OPERATOR_IMAGE
-                  value: docker.io/ibmcom/ibm-eventstreams-operator@sha256:deb9829dd9a00f097c8e224aaf25ea43c0b895efbb9862017e34afd4075a8d44
+                  value: docker.io/ibmcom/ibm-eventstreams-operator@sha256:283a4298688ca201fa6b4fbc261a936c8afacb0052424403522f0b5fa2ccbf49
                 - name: EVENTSTREAMS_DEFAULT_KAFKA_INIT_IMAGE
-                  value: docker.io/ibmcom/ibm-eventstreams-operator@sha256:deb9829dd9a00f097c8e224aaf25ea43c0b895efbb9862017e34afd4075a8d44
+                  value: docker.io/ibmcom/ibm-eventstreams-operator@sha256:283a4298688ca201fa6b4fbc261a936c8afacb0052424403522f0b5fa2ccbf49
                 - name: EVENTSTREAMS_DEFAULT_JMXTRANS_IMAGE
-                  value: cp.icr.io/cp/ibm-eventstreams-jmxtrans@sha256:83b77f438e2d7d9005d7edd33130233e4ab3c3b604a2679e23a7396eacf69449
+                  value: cp.icr.io/cp/ibm-eventstreams-jmxtrans@sha256:f5924ae3da849f47d28f6a7396a2f4137e440f7d6b6e176408fed322b119447a
                 - name: EVENTSTREAMS_DEFAULT_REST_PRODUCER_IMAGE
                   value: cp.icr.io/cp/ibm-eventstreams-rest-producer@sha256:1a4236d0aeaaba181d4d12a274fc449d01a65223ea356b83a8ffd166dd8231e0
                 - name: EVENTSTREAMS_DEFAULT_ADMIN_API_IMAGE
@@ -887,7 +887,7 @@ spec:
                 - name: JAVA_OPTS
                   value: -XX:+UseContainerSupport -Xdump:what -Xdump:java+system+snap:events=user
                     -Xdump:directory=/tmp/dumps -XX:+HeapDumpOnOutOfMemoryError
-                image: docker.io/ibmcom/ibm-eventstreams-operator@sha256:deb9829dd9a00f097c8e224aaf25ea43c0b895efbb9862017e34afd4075a8d44
+                image: docker.io/ibmcom/ibm-eventstreams-operator@sha256:283a4298688ca201fa6b4fbc261a936c8afacb0052424403522f0b5fa2ccbf49
                 livenessProbe:
                   failureThreshold: 3
                   httpGet:
@@ -936,7 +936,7 @@ spec:
                   valueFrom:
                     fieldRef:
                       fieldPath: metadata.uid
-                image: docker.io/ibmcom/ibm-eventstreams-operator-init@sha256:5781c9a9ca9f49cb63be32c5acf969ab0425a83415b0c0e001dc860eddb2d650
+                image: docker.io/ibmcom/ibm-eventstreams-operator-init@sha256:227918419cd715ed97ad14475a0b3abcca7112e197ac339a722450ee3bbc3d53
                 name: init
                 resources:
                   limits:
@@ -1000,9 +1000,9 @@ spec:
   version: 2.0.0
   relatedImages:
   - name: ibmcom/ibm-eventstreams-operator
-    image: docker.io/ibmcom/ibm-eventstreams-operator@sha256:deb9829dd9a00f097c8e224aaf25ea43c0b895efbb9862017e34afd4075a8d44
+    image: docker.io/ibmcom/ibm-eventstreams-operator@sha256:283a4298688ca201fa6b4fbc261a936c8afacb0052424403522f0b5fa2ccbf49
   - name: ibmcom/ibm-eventstreams-operator-init
-    image: docker.io/ibmcom/ibm-eventstreams-operator-init@sha256:5781c9a9ca9f49cb63be32c5acf969ab0425a83415b0c0e001dc860eddb2d650
+    image: docker.io/ibmcom/ibm-eventstreams-operator-init@sha256:227918419cd715ed97ad14475a0b3abcca7112e197ac339a722450ee3bbc3d53
   - name: cp/ibm-eventstreams-rest-producer
     image: cp.icr.io/cp/ibm-eventstreams-rest-producer@sha256:1a4236d0aeaaba181d4d12a274fc449d01a65223ea356b83a8ffd166dd8231e0
   - name: cp/ibm-eventstreams-admin
@@ -1020,6 +1020,6 @@ spec:
   - name: cp/ibm-eventstreams-metrics-collector
     image: cp.icr.io/cp/ibm-eventstreams-metrics-collector@sha256:b9e2c6820ba10585e32111c4c4038df53fece0f1d43859817be633d1bc26b7fe
   - name: cp/ibm-eventstreams-kafka
-    image: cp.icr.io/cp/ibm-eventstreams-kafka@sha256:a53ed0ebaa26e6101d2b805481d4cad0b5e043e2c6a4a71fd76ac678167778f4
+    image: cp.icr.io/cp/ibm-eventstreams-kafka@sha256:bc985ce30c4ea306ea8385510fd9cc0ed60f415c9dbedf18e16fd4bb27697083
   - name: cp/ibm-eventstreams-jmxtrans
-    image: cp.icr.io/cp/ibm-eventstreams-jmxtrans@sha256:83b77f438e2d7d9005d7edd33130233e4ab3c3b604a2679e23a7396eacf69449
+    image: cp.icr.io/cp/ibm-eventstreams-jmxtrans@sha256:f5924ae3da849f47d28f6a7396a2f4137e440f7d6b6e176408fed322b119447a

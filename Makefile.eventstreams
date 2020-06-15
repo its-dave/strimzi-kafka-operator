@@ -53,7 +53,11 @@ eventstreams_operator_build: check_artifactory_prereq set_eventstreams_kafka_ver
 	DOCKER_BUILD_ARGS="${DOCKER_BUILD_ARGS} -f ${ALTERNATE_BASE}/Dockerfile" $(MAKE) -C docker-images/operator docker_build
 	$(MAKE) cleanup_eventstreams_unwanted_files
 
-
+eventstreams_update_images: set_eventstreams_kafka_versions
+	$(MAKE) -C eventstreams-helm-charts docker_build
+	$(MAKE) -C deploy build_csv
+	$(MAKE) cleanup_eventstreams_unwanted_files
+	
 eventstreams_java_build:
 	$(MAKE) -C ${EVENTSTREAMS_PROJECT_NAME} java_build
 
