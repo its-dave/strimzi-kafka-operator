@@ -69,7 +69,7 @@ metadata:
     capabilities: Basic Install
     categories: Streaming & Messaging
     certified: 'false'
-    createdAt: 2020-06-15T11:12:04Z
+    createdAt: 2020-06-16T15:49:40Z
     description: Kafka-based messaging platform for handling real-time data feeds.
     operators.operatorframework.io/internal-objects: '["kafkas.eventstreams.ibm.com"]'
     support: IBM
@@ -651,6 +651,13 @@ spec:
         - apiGroups:
           - ""
           resources:
+          - nodes
+          verbs:
+          - list
+          - get
+        - apiGroups:
+          - ""
+          resources:
           - pods
           verbs:
           - patch
@@ -671,6 +678,8 @@ spec:
           verbs:
           - get
           - list
+          - create
+          - patch
         - apiGroups:
           - console.openshift.io
           resources:

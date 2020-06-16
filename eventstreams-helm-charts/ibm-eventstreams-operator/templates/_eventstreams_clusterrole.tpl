@@ -10,6 +10,15 @@
     - get
     - list
 
+- apiGroups:
+  # The Event Streams Operator requires the "get" and "list" permissions for nodes
+  # This is to allow the operator to label Kafka brokers in a rack-aware installation
+    - ""
+  resources:
+    - nodes
+  verbs:
+    - list
+    - get
 
 - apiGroups:
     - ""
@@ -35,7 +44,7 @@
 
 - apiGroups:
     - rbac.authorization.k8s.io
-  # The Event Streams Operator requires the "get" and "list" permissions for clusterroles and clusterrolebindings
+  # The Event Streams Operator requires the "get", "list", "create" and "patch" permissions for clusterroles and clusterrolebindings
   # This is to allow the operator to create and manage rolebindings that bind to clusterroles required for components of Event Streams
   resources:
     - clusterroles
@@ -43,6 +52,8 @@
   verbs:
     - get
     - list
+    - create
+    - patch
 
 - apiGroups:
     - console.openshift.io
