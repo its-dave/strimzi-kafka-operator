@@ -2,6 +2,7 @@ OPERATOR_NAME := ibm-eventstreams
 CSV_VERSION = 2.0.0
 CHANNELS = v2.0
 DEFAULT_CHANNEL = v2.0
+OPERATOR_VERSION = v2.0.0
 
 INSTALL_DIR := ../install/ibm-eventstreams-operator
 
@@ -132,6 +133,13 @@ build_bundle_staging: .EXPORT_ALL_VARIABLES yaml_to_json
 build_bundle_artifactory: .EXPORT_ALL_VARIABLES yaml_to_json
 	./build_bundle.sh $(ARTIFACTORY_REPO_ADDR) $(ARTIFACTORY_USERNAME) $(ARTIFACTORY_PASSWORD)
 	$(MAKE) json_to_yaml
+
+build_bundle_dockerhub: .EXPORT_ALL_VARIABLES yaml_to_json
+	$(eval BUNDLE_IMAGE_NAME = $(shell echo $(BUNDLE_IMAGE_NAME) |  $(SED) 's/:.*/:$(OPERATOR_VERSION)/g'))
+	$(eval CATALOG_IMAGE_NAME = $(shell echo $(CATALOG_IMAGE_NAME) |  $(SED) 's/:.*/:$(OPERATOR_VERSION)/g'))
+	./build_bundle.sh $(DOCKERHUB_REPO_ADDR) $(DOCKERHUB_USERNAME) $(DOCKERHUB_PASSWORD)
+	$(MAKE) json_to_yaml
+
 
 create_prepare_rhocp:
 	$(eval CLUSTER_NAME := $(shell read -erp "Cluster name: " x; echo $$x))

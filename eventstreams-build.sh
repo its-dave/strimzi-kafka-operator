@@ -59,6 +59,8 @@ done
 make -C deploy get_opm
 make -C deploy build_bundle_staging
 make -C deploy build_bundle_artifactory
+# Uncommenting the following line will build an image to dockerhub
+# make -C deploy build_bundle_dockerhub
 
 
 skopeo_image_to_staging(){

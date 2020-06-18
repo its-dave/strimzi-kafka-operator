@@ -6,12 +6,19 @@ REPO_PASSWORD=$3
 
 set -e
 
-echo docker login "${REPO_ADDR}" -u "${REPO_USERNAME}" -p "${REPO_PASSWORD}"
-docker login "${REPO_ADDR}" -u "${REPO_USERNAME}" -p "${REPO_PASSWORD}"
+docker logout
+if [ "${REPO_ADDR}" == "docker.io/ibmcom/" ]; then
+    echo docker login -u "${REPO_USERNAME}" -p "${REPO_PASSWORD}"
+    docker login -u "${REPO_USERNAME}" -p "${REPO_PASSWORD}"
+else
+    echo docker login "${REPO_ADDR}" -u "${REPO_USERNAME}" -p "${REPO_PASSWORD}"
+    docker login "${REPO_ADDR}" -u "${REPO_USERNAME}" -p "${REPO_PASSWORD}"
+fi
 
 cd ..
 opm alpha bundle build --tag "${REPO_ADDR}""${BUNDLE_IMAGE_NAME}"-"${B_ARCH}" --package "${OPERATOR_NAME}" --directory deploy/olm-catalog/"${OPERATOR_NAME}"/"${CSV_VERSION}" --channels "${CHANNELS}" --default "${DEFAULT_CHANNEL}"
 cd -
+
 docker push "${REPO_ADDR}""${BUNDLE_IMAGE_NAME}"-"${B_ARCH}"
 docker manifest create --amend "${REPO_ADDR}""${BUNDLE_IMAGE_NAME}" "${REPO_ADDR}""${BUNDLE_IMAGE_NAME}"-"${B_ARCH}"
 docker manifest push "${REPO_ADDR}""${BUNDLE_IMAGE_NAME}"
