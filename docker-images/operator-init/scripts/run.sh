@@ -140,6 +140,10 @@ apiVersion: v1
 kind: Service
 metadata:
   name: eventstreams-cluster-operator
+  labels:
+    app.kubernetes.io/instance: eventstreams-operator
+    app.kubernetes.io/managed-by: eventstreams-cluster-operator
+    app.kubernetes.io/name: eventstreams-operator-service
   annotations:
     service.beta.openshift.io/serving-cert-secret-name: eventstreams-cluster-operator
   ownerReferences:
@@ -181,6 +185,10 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: eventstreams-cluster-operator
+  labels:
+    app.kubernetes.io/instance: eventstreams-operator
+    app.kubernetes.io/managed-by: eventstreams-cluster-operator
+    app.kubernetes.io/name: eventstreams-operator-networkpolicy
   ownerReferences:
   - apiVersion: $OWNER_APIVERSION
     kind: $OWNER_KIND
@@ -218,6 +226,10 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: eventstreams-cluster-operator
+  labels:
+    app.kubernetes.io/instance: eventstreams-operator
+    app.kubernetes.io/managed-by: eventstreams-cluster-operator
+    app.kubernetes.io/name: eventstreams-operator-configmap
   annotations:
     service.beta.openshift.io/inject-cabundle: "true"
   ownerReferences:
@@ -264,6 +276,10 @@ apiVersion: admissionregistration.k8s.io/v1beta1
 kind: ValidatingWebhookConfiguration
 metadata:
   name: validate-eventstreams-$EVENTSTREAMS_OPERATOR_NAMESPACE
+  labels:
+    app.kubernetes.io/instance: eventstreams-operator
+    app.kubernetes.io/managed-by: eventstreams-cluster-operator
+    app.kubernetes.io/name: eventstreams-operator-validatingwebhookconfiguration
   ownerReferences:
   - apiVersion: $OWNER_APIVERSION
     kind: $OWNER_KIND
@@ -440,6 +456,10 @@ apiVersion: console.openshift.io/v1
 kind: ConsoleYAMLSample
 metadata:
   name: es-0-light-insecure.eventstreams.ibm.com
+  labels:
+    app.kubernetes.io/instance: eventstreams-operator
+    app.kubernetes.io/managed-by: eventstreams-cluster-operator
+    app.kubernetes.io/name: eventstreams-operator-sample-es-light-insecure
   ownerReferences:
   - apiVersion: $CRD_APIVERSION
     kind: $CRD_KIND
@@ -500,6 +520,10 @@ apiVersion: console.openshift.io/v1
 kind: ConsoleYAMLSample
 metadata:
   name: es-1-development.eventstreams.ibm.com
+  labels:
+    app.kubernetes.io/instance: eventstreams-operator
+    app.kubernetes.io/managed-by: eventstreams-cluster-operator
+    app.kubernetes.io/name: eventstreams-operator-sample-es-development
   ownerReferences:
   - apiVersion: $CRD_APIVERSION
     kind: $CRD_KIND
@@ -568,6 +592,10 @@ apiVersion: console.openshift.io/v1
 kind: ConsoleYAMLSample
 metadata:
   name: es-2-minimal-prod.eventstreams.ibm.com
+  labels:
+    app.kubernetes.io/instance: eventstreams-operator
+    app.kubernetes.io/managed-by: eventstreams-cluster-operator
+    app.kubernetes.io/name: eventstreams-operator-sample-es-minimal-prod
   ownerReferences:
   - apiVersion: $CRD_APIVERSION
     kind: $CRD_KIND
@@ -642,6 +670,10 @@ apiVersion: console.openshift.io/v1
 kind: ConsoleYAMLSample
 metadata:
   name: es-3-broker.eventstreams.ibm.com
+  labels:
+    app.kubernetes.io/instance: eventstreams-operator
+    app.kubernetes.io/managed-by: eventstreams-cluster-operator
+    app.kubernetes.io/name: eventstreams-operator-sample-es-3-broker
   ownerReferences:
   - apiVersion: $CRD_APIVERSION
     kind: $CRD_KIND
@@ -723,6 +755,10 @@ apiVersion: console.openshift.io/v1
 kind: ConsoleYAMLSample
 metadata:
   name: user-0-consumer.eventstreams.ibm.com
+  labels:
+    app.kubernetes.io/instance: eventstreams-operator
+    app.kubernetes.io/managed-by: eventstreams-cluster-operator
+    app.kubernetes.io/name: eventstreams-operator-sample-kafkauser-consumer
   ownerReferences:
   - apiVersion: $CRD_APIVERSION
     kind: $CRD_KIND
@@ -772,6 +808,10 @@ apiVersion: console.openshift.io/v1
 kind: ConsoleYAMLSample
 metadata:
   name: user-1-producer.eventstreams.ibm.com
+  labels:
+    app.kubernetes.io/instance: eventstreams-operator
+    app.kubernetes.io/managed-by: eventstreams-cluster-operator
+    app.kubernetes.io/name: eventstreams-operator-sample-kafkauser-producer
   ownerReferences:
   - apiVersion: $CRD_APIVERSION
     kind: $CRD_KIND
@@ -816,6 +856,10 @@ apiVersion: console.openshift.io/v1
 kind: ConsoleYAMLSample
 metadata:
   name: user-2-everything.eventstreams.ibm.com
+  labels:
+    app.kubernetes.io/instance: eventstreams-operator
+    app.kubernetes.io/managed-by: eventstreams-cluster-operator
+    app.kubernetes.io/name: eventstreams-operator-sample-kafkauser-everything
   ownerReferences:
   - apiVersion: $CRD_APIVERSION
     kind: $CRD_KIND
@@ -885,6 +929,10 @@ apiVersion: console.openshift.io/v1
 kind: ConsoleYAMLSample
 metadata:
   name: kafka-connect-production.eventstreams.ibm.com
+  labels:
+    app.kubernetes.io/instance: eventstreams-operator
+    app.kubernetes.io/managed-by: eventstreams-cluster-operator
+    app.kubernetes.io/name: eventstreams-operator-sample-kafkaconnect-production
   ownerReferences:
   - apiVersion: $CRD_APIVERSION
     kind: $CRD_KIND
@@ -943,6 +991,10 @@ apiVersion: console.openshift.io/v1
 kind: ConsoleYAMLSample
 metadata:
   name: kafka-connect-non-production.eventstreams.ibm.com
+  labels:
+    app.kubernetes.io/instance: eventstreams-operator
+    app.kubernetes.io/managed-by: eventstreams-cluster-operator
+    app.kubernetes.io/name: eventstreams-operator-sample-kafkaconnect-non-production
   ownerReferences:
   - apiVersion: $CRD_APIVERSION
     kind: $CRD_KIND
@@ -1001,6 +1053,10 @@ apiVersion: console.openshift.io/v1
 kind: ConsoleYAMLSample
 metadata:
   name: kafka-connect-s2i-production.eventstreams.ibm.com
+  labels:
+    app.kubernetes.io/instance: eventstreams-operator
+    app.kubernetes.io/managed-by: eventstreams-cluster-operator
+    app.kubernetes.io/name: eventstreams-operator-sample-kafkaconnects2i-production
   ownerReferences:
   - apiVersion: $CRD_APIVERSION
     kind: $CRD_KIND
@@ -1059,6 +1115,10 @@ apiVersion: console.openshift.io/v1
 kind: ConsoleYAMLSample
 metadata:
   name: kafka-connect-s2i-non-production.eventstreams.ibm.com
+  labels:
+    app.kubernetes.io/instance: eventstreams-operator
+    app.kubernetes.io/managed-by: eventstreams-cluster-operator
+    app.kubernetes.io/name: eventstreams-operator-sample-kafkaconnects2i-non-production
   ownerReferences:
   - apiVersion: $CRD_APIVERSION
     kind: $CRD_KIND
@@ -1117,6 +1177,10 @@ apiVersion: console.openshift.io/v1
 kind: ConsoleYAMLSample
 metadata:
   name: mirror-maker-2-production.eventstreams.ibm.com
+  labels:
+    app.kubernetes.io/instance: eventstreams-operator
+    app.kubernetes.io/managed-by: eventstreams-cluster-operator
+    app.kubernetes.io/name: eventstreams-operator-sample-kafkamirrormaker2-production
   ownerReferences:
   - apiVersion: $CRD_APIVERSION
     kind: $CRD_KIND
@@ -1191,6 +1255,10 @@ apiVersion: console.openshift.io/v1
 kind: ConsoleYAMLSample
 metadata:
   name: mirror-maker-2-non-production.eventstreams.ibm.com
+  labels:
+    app.kubernetes.io/instance: eventstreams-operator
+    app.kubernetes.io/managed-by: eventstreams-cluster-operator
+    app.kubernetes.io/name: eventstreams-operator-sample-kafkamirrormaker2-non-production
   ownerReferences:
   - apiVersion: $CRD_APIVERSION
     kind: $CRD_KIND

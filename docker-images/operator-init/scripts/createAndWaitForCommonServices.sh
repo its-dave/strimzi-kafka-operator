@@ -28,7 +28,11 @@ apiVersion: operator.ibm.com/v1alpha1
 kind: OperandRequest
 metadata:
   name: eventstreams-cluster-operator
-  namespace: $EVENTSTREAMS_OPERATOR_NAMESPACE  
+  namespace: $EVENTSTREAMS_OPERATOR_NAMESPACE
+  labels:
+    app.kubernetes.io/instance: eventstreams-operator
+    app.kubernetes.io/managed-by: eventstreams-cluster-operator
+    app.kubernetes.io/name: eventstreams-operator-operandrequest
   ownerReferences:
   - apiVersion: $OWNER_APIVERSION
     kind: $OWNER_KIND
