@@ -2,7 +2,7 @@ metadata:
   annotations:
     categories: Streaming & Messaging
     certified: 'false'
-    description: Kafka-based messaging platform for handling real-time data feeds.
+    description: Kafka-based messaging platform for handling real-time data feeds. This operator is also available as part of IBM Cloud Pak for Integration (CP4I)
     support: IBM
     operators.operatorframework.io/internal-objects: '["kafkas.eventstreams.ibm.com"]'
     alm-examples-metadata: |-

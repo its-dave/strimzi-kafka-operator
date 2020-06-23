@@ -69,8 +69,9 @@ metadata:
     capabilities: Basic Install
     categories: Streaming & Messaging
     certified: 'false'
-    createdAt: 2020-06-23T10:18:41Z
+    createdAt: 2020-06-23T15:16:19Z
     description: Kafka-based messaging platform for handling real-time data feeds.
+      This operator is also available as part of IBM Cloud Pak for Integration (CP4I)
     operators.operatorframework.io/internal-objects: '["kafkas.eventstreams.ibm.com"]'
     support: IBM
   name: ibm-eventstreams.v2.0.0
