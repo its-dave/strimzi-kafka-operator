@@ -228,6 +228,7 @@ public class EventStreamsOperatorTest {
     private RouteOperator routeOperator;
     private PlatformFeaturesAvailability pfa;
     private MetricsProvider metricsProvider;
+    private EventStreamsOperatorConfig operatorConfig;
 
     private Resource<ConfigMap, DoneableConfigMap> mockCommonServicesStatusCMResource;
     // Namespaced operation mock used for mocking gets on some objects
@@ -374,6 +375,15 @@ public class EventStreamsOperatorTest {
         when(mockSecret.get()).thenReturn(ibmCloudClusterCaCert);
 
         mockRoutes();
+        operatorConfig = new EventStreamsOperatorConfig(
+            Collections.singleton(NAMESPACE),
+            OPERATOR_NAMESPACE,
+            kafkaStatusReadyTimeoutMs,
+            1000,
+            operationTimeoutMs,
+            imageConfig,
+            Collections.singletonList(CommonServices.COMMON_SERVICES_STATUS_IAM)
+        );
     }
 
     @AfterEach
@@ -393,12 +403,9 @@ public class EventStreamsOperatorTest {
                 cp4iResourceOperator,
                 esReplicatorResourceOperator,
                 kafkaUserOperator,
-                imageConfig,
                 routeOperator,
                 metricsProvider,
-                OPERATOR_NAMESPACE,
-                kafkaStatusReadyTimeoutMs,
-                operationTimeoutMs
+                operatorConfig
         );
     }
 
@@ -450,6 +457,24 @@ public class EventStreamsOperatorTest {
 
                 async.flag();
             })));
+    }
+
+    private EventStreamsOperator createEventStreamsOperatorCustomConfig(EventStreamsOperatorConfig config) {
+        PlatformFeaturesAvailability pfa = new PlatformFeaturesAvailability(true, KubernetesVersion.V1_9);
+        return new EventStreamsOperator(
+            vertx,
+            mockClient,
+            EventStreams.RESOURCE_KIND,
+            pfa,
+            esResourceOperator,
+            operandRequestResourceOperator,
+            cp4iResourceOperator,
+            esReplicatorResourceOperator,
+            kafkaUserOperator,
+            routeOperator,
+            metricsProvider,
+            config
+        );
     }
 
 // TODO uncomment, we only support openshift at the moment due to endpoint and security assumptions about routes being available
@@ -1005,12 +1030,9 @@ public class EventStreamsOperatorTest {
                 cp4iResourceOperator,
                 esReplicatorResourceOperator,
                 kafkaUserOperator,
-                imageConfig,
                 routeOperator,
                 metricsProvider,
-                OPERATOR_NAMESPACE,
-                kafkaStatusReadyTimeoutMs,
-                operationTimeoutMs);
+                operatorConfig);
 
         EndpointSpec endpoint = new EndpointSpecBuilder()
             .withName("ok-name")
@@ -3889,6 +3911,32 @@ public class EventStreamsOperatorTest {
                 assertThat(cause.getMessage(), containsString("iamstatus is: Missing"));
                 context.completeNow();
             })));
+    }
+
+    @Test
+    public void testSkipsIAMReadyCheckIfEnvVarUnset(VertxTestContext context) {
+        Map<String, String> mockCommonServicesStatusData = new HashMap<>();
+        mockCommonServicesStatusData.put("iamstatus", "NotReady");
+        ConfigMap testCommonServicesStatusConfigMap = new ConfigMap();
+        testCommonServicesStatusConfigMap.setData(mockCommonServicesStatusData);
+
+        when(mockCommonServicesStatusCMResource.get()).thenReturn(testCommonServicesStatusConfigMap);
+
+        EventStreamsOperatorConfig customConfig = new EventStreamsOperatorConfig(
+            Collections.singleton(NAMESPACE),
+            OPERATOR_NAMESPACE,
+            kafkaStatusReadyTimeoutMs,
+            1000,
+            operationTimeoutMs,
+            imageConfig,
+            Collections.emptyList()
+        );
+
+        esOperator = createEventStreamsOperatorCustomConfig(customConfig);
+        EventStreams esCluster = createDefaultEventStreams(NAMESPACE, CLUSTER_NAME);
+
+        esOperator.createOrUpdate(new Reconciliation("test-trigger", EventStreams.RESOURCE_KIND, NAMESPACE, CLUSTER_NAME), esCluster)
+            .onComplete(context.succeeding(cause -> context.verify(context::completeNow)));
     }
 
     private Route buildRouteHost(String host) {

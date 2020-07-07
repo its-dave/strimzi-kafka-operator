@@ -138,7 +138,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
 
     private long defaultPollIntervalMs = 1000;
     private long kafkaStatusReadyTimeoutMs;
-
+    private final List<String> dependencyStatusChecks;
     private int customImageCount = 0;
 
     public static final String COMMON_SERVICES_NOT_FOUND_REASON = "CommonServicesNotFound";
@@ -152,16 +152,12 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                                 Cp4iServicesBindingResourceOperator cp4iResourceOperator,
                                 EventStreamsGeoReplicatorResourceOperator replicatorResourceOperator,
                                 KafkaUserOperator kafkaUserOperator,
-                                EventStreamsOperatorConfig.ImageLookup imageConfig,
                                 RouteOperator routeOperator,
                                 MetricsProvider metricsProvider,
-                                String operatorNamespace,
-                                long kafkaStatusReadyTimeoutMs,
-                                long operationTimeoutMs) {
+                                EventStreamsOperatorConfig config) {
         super(vertx, kind, esResourceOperator, metricsProvider);
         log.traceEntry(() -> vertx, () -> client, () -> kind, () -> pfa, () -> esResourceOperator,
-            () -> cp4iResourceOperator, () -> imageConfig, () -> routeOperator,
-            () -> kafkaStatusReadyTimeoutMs);
+            () -> cp4iResourceOperator, () -> routeOperator);
         log.info("Creating EventStreamsOperator");
         this.esResourceOperator = esResourceOperator;
         this.kafkaUserOperator = kafkaUserOperator;
@@ -171,7 +167,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         this.client = client;
         this.pfa = pfa;
         this.deploymentOperator = new DeploymentOperator(vertx, client);
-        this.statefulSetOperator = new SchemaRegistrySetOperator(vertx, client, operationTimeoutMs);
+        this.statefulSetOperator = new SchemaRegistrySetOperator(vertx, client, config.getOperationTimeoutMilliSecs());
         this.serviceAccountOperator = new ServiceAccountOperator(vertx, client);
         this.roleBindingOperator = new RoleBindingOperator(vertx, client);
         this.configMapOperator = new ConfigMapOperator(vertx, client);
@@ -179,13 +175,12 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         this.secretOperator = new SecretOperator(vertx, client);
         this.routeOperator = routeOperator;
         this.pvcOperator = new PvcOperator(vertx, client);
-        this.imageConfig = imageConfig;
+        this.imageConfig = config.getImages();
         this.networkPolicyOperator = new NetworkPolicyOperator(vertx, client);
         this.metricsProvider = metricsProvider;
-
-        this.operatorNamespace = operatorNamespace;
-
-        this.kafkaStatusReadyTimeoutMs = kafkaStatusReadyTimeoutMs;
+        this.operatorNamespace = config.getOperatorNamespace();
+        this.kafkaStatusReadyTimeoutMs = config.getKafkaStatusReadyTimeoutMs();
+        this.dependencyStatusChecks = config.getDependencyStatusChecks();
 
         log.traceExit();
     }
@@ -361,7 +356,10 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
         Future<ReconciliationState> checkCommonServicesReady() {
             log.traceEntry();
 
-            List<String> commonServiceComponents = Collections.singletonList(CommonServices.COMMON_SERVICES_STATUS_IAM);
+            if (dependencyStatusChecks.size() == 0) {
+                log.warn("Not performing any dependency status checks");
+                return Future.succeededFuture().map(v -> this);
+            }
 
             return configMapOperator.getAsync(CommonServices.COMMON_SERVICES_STATUS_CM_NAMESPACE, CommonServices.COMMON_SERVICES_STATUS_CM_NAME)
                 .compose(statusCM -> statusCM == null ?
@@ -371,7 +369,7 @@ public class EventStreamsOperator extends AbstractOperator<EventStreams, EventSt
                     Map<String, String> commonServicesStatusData = Optional.ofNullable(statusCM.getData())
                         .orElse(Collections.emptyMap());
 
-                    List<String> unreadyComponents = commonServiceComponents.stream()
+                    List<String> unreadyComponents = dependencyStatusChecks.stream()
                         .filter(component -> {
                             String status = Optional.ofNullable(commonServicesStatusData.get(component)).orElse("Missing");
                             return !status.equals(CommonServices.COMMON_SERVICES_STATUS_READY);

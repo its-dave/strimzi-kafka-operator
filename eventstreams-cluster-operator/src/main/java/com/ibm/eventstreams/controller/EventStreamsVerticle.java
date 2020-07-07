@@ -55,7 +55,6 @@ import java.io.File;
 public class EventStreamsVerticle extends AbstractVerticle {
 
     private static final Logger log = LogManager.getLogger(EventStreamsVerticle.class);
-    private final EventStreamsOperatorConfig.ImageLookup imageConfig;
     private RouteOperator routeOperator;
     private final MetricsProvider metricsProvider;
 
@@ -63,7 +62,6 @@ public class EventStreamsVerticle extends AbstractVerticle {
     private Vertx vertx;
 
     private final String namespace;
-    private final String operatorNamespace;
     private PlatformFeaturesAvailability pfa;
 
     public static final int API_SERVER_PORT = 8081;
@@ -71,11 +69,9 @@ public class EventStreamsVerticle extends AbstractVerticle {
     private static final String API_SSL_CERT_PATH = "/etc/eventstreams/tls.crt";
     private static final String API_SSL_KEY_PATH = "/etc/eventstreams/tls.key";
 
-    private final long kafkaStatusReadyTimeoutMilliSecs;
-    private final long reconciliationIntervalMilliSecs;
-    private final long operationTimeoutMilliSecs;
     private Watch eventStreamsCRWatcher;
     private long reconcileTimer;
+    private EventStreamsOperatorConfig config;
 
     public EventStreamsVerticle(Vertx vertx, KubernetesClient client, String namespace, MetricsProvider metricsProvider, PlatformFeaturesAvailability pfa, EventStreamsOperatorConfig config) {
         log.info("Creating EventStreamsVerticle for namespace {}", namespace);
@@ -83,11 +79,7 @@ public class EventStreamsVerticle extends AbstractVerticle {
         this.client = client;
         this.pfa = pfa;
         this.namespace = namespace;
-        this.operatorNamespace = config.getOperatorNamespace();
-        this.kafkaStatusReadyTimeoutMilliSecs = config.getKafkaStatusReadyTimeoutMs();
-        this.reconciliationIntervalMilliSecs = config.getReconciliationIntervalMilliSecs();
-        this.operationTimeoutMilliSecs = config.getOperationTimeoutMilliSecs();
-        this.imageConfig = config.getImages();
+        this.config = config;
         this.routeOperator = pfa.hasRoutes() ? new RouteOperator(vertx, client.adapt(OpenShiftClient.class)) : null;
         this.metricsProvider = metricsProvider;
     }
@@ -112,18 +104,15 @@ public class EventStreamsVerticle extends AbstractVerticle {
                     cp4iResourceOperator,
                     replicatorResourceOperator,
                     kafkaUserOperator,
-                    imageConfig,
                     routeOperator,
                     metricsProvider,
-                    operatorNamespace,
-                    kafkaStatusReadyTimeoutMilliSecs,
-                    operationTimeoutMilliSecs);
+                    config);
             eventStreamsOperator.createWatch(namespace, eventStreamsOperator.recreateWatch(namespace))
                     .compose(w -> {
                         log.info("Started operator for EventStreams kind.");
                         eventStreamsCRWatcher = w;
                         log.info("Setting up periodic reconciliation for namespace {}", namespace);
-                        reconcileTimer = vertx.setPeriodic(reconciliationIntervalMilliSecs, handler -> {
+                        reconcileTimer = vertx.setPeriodic(config.getReconciliationIntervalMilliSecs(), handler -> {
                             Handler<AsyncResult<Void>> asyncHandler = ignoredHandler -> { };
                             log.info("Triggering periodic reconciliation for namespace {}...", namespace);
                             eventStreamsOperator.reconcileAll("timer", namespace, asyncHandler);
