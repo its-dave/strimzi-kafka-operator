@@ -42,12 +42,12 @@ operator:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: strimzi/operator
-    tag: 2020-06-15-09.35.15-b05151a
+    tag: 2020-07-07-10.29.42-2caf62a
 operatorInit:
   image:
     repository: hyc-qp-stable-docker-local.artifactory.swg-devops.com
     name: strimzi/operator-init
-    tag: 2020-06-15-09.35.15-b05151a
+    tag: 2020-07-07-10.29.42-2caf62a
 
 
 restProducer:

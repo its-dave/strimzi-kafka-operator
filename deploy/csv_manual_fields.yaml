@@ -62,7 +62,6 @@ metadata:
           }
         }
       }
-  version: 2.0.0
 spec:
   customresourcedefinitions:
     required:

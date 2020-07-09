@@ -57,6 +57,12 @@ generate_csv(){
   ${SED} -i "s/owned: \[\]/owned:/" "${GENERATED_CSV}"
   yq m -ix "${GENERATED_CSV}" csv_manual_fields.yaml
 
+  #add version metadata
+  yq w -i "${GENERATED_CSV}" metadata.version "${CSV_VERSION}"
+
+  #add skip range annotation
+  yq w -i "${GENERATED_CSV}" metadata.annotations["olm.skipRange"] "${OLM_SKIPRANGE}"
+
   # update the created timestamp for this build
   yq w -i "${GENERATED_CSV}" metadata.annotations.createdAt "${DATE}"
 

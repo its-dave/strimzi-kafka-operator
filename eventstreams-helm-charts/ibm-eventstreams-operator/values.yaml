@@ -38,14 +38,14 @@ operator:
   image:
     repository: docker.io
     name: ibmcom/ibm-eventstreams-operator
-    tag: 2020-06-15-09.35.15-b05151a
-    digest: 283a4298688ca201fa6b4fbc261a936c8afacb0052424403522f0b5fa2ccbf49
+    tag: 2020-07-07-10.29.42-2caf62a
+    digest: 39ad2886f05e4a0b035e69c8be1e671685863fa0737cc3e52d0790262860dc1a
 operatorInit:
   image:
     repository: docker.io
     name: ibmcom/ibm-eventstreams-operator-init
-    tag: 2020-06-15-09.35.15-b05151a
-    digest: 227918419cd715ed97ad14475a0b3abcca7112e197ac339a722450ee3bbc3d53
+    tag: 2020-07-07-10.29.42-2caf62a
+    digest: 2b453f49557623294b3307b2e1d7abf0ca5d720b8cb77f2ec1708ea47c347bc8
 restProducer:
   image:
     repository: cp.icr.io

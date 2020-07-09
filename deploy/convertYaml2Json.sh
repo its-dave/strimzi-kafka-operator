@@ -19,7 +19,7 @@ echo "curl -LJ -H 'Accept: application/octet-stream' \"${asset_url}\" -o ./${bin
 curl -LJ -H 'Accept: application/octet-stream' "${asset_url}" -o "./${binary_name}"
 chmod +x "./${binary_name}"
 
-for yamlfile in olm-catalog/ibm-eventstreams/2.0.0/*.yaml
+for yamlfile in olm-catalog/"${OPERATOR_NAME}"/"${CSV_VERSION}"/*.yaml
 do
     ./${binary_name} < "${yamlfile}" > "${yamlfile//.yaml/.json}"
     rm -f "${yamlfile}"

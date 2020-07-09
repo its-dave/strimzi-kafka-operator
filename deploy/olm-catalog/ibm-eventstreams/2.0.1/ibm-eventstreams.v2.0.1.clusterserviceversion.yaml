@@ -69,14 +69,15 @@ metadata:
     capabilities: Basic Install
     categories: Streaming & Messaging
     certified: 'false'
-    createdAt: 2020-07-08T14:24:16Z
+    createdAt: 2020-07-08T17:26:23Z
     description: Kafka-based messaging platform for handling real-time data feeds.
       This operator is also available as part of IBM Cloud Pak for Integration (CP4I)
+    olm.skipRange: '>=2.0.0 <2.0.1'
     operators.operatorframework.io/internal-objects: '["kafkas.eventstreams.ibm.com"]'
     support: IBM
-  name: ibm-eventstreams.v2.0.0
+  name: ibm-eventstreams.v2.0.1
   namespace: placeholder
-  version: 2.0.0
+  version: 2.0.1
 spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
@@ -1004,10 +1005,11 @@ spec:
   maturity: stable
   provider:
     name: IBM
+  replaces: ibm-eventstreams.v2.0.0
   selector:
     matchLabels:
       name: ibm-eventstreams
-  version: 2.0.0
+  version: 2.0.1
   relatedImages:
   - name: ibmcom/ibm-eventstreams-operator
     image: docker.io/ibmcom/ibm-eventstreams-operator@sha256:39ad2886f05e4a0b035e69c8be1e671685863fa0737cc3e52d0790262860dc1a

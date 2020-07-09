@@ -26,7 +26,7 @@ docker manifest push "${REPO_ADDR}""${BUNDLE_IMAGE_NAME}"
 opm alpha bundle validate --tag "${REPO_ADDR}""${BUNDLE_IMAGE_NAME}" --image-builder docker
 
 cd ..
-opm index add --bundles "${REPO_ADDR}""${BUNDLE_IMAGE_NAME}" --container-tool docker --tag "${REPO_ADDR}""${CATALOG_IMAGE_NAME}"-"${B_ARCH}"
+opm index add --bundles "${REPO_ADDR}${BUNDLE_IMAGE_NAME}${RELEASED_BUNDLES}" --container-tool docker --tag "${REPO_ADDR}""${CATALOG_IMAGE_NAME}"-"${B_ARCH}"
 cd -
 docker push "${REPO_ADDR}""${CATALOG_IMAGE_NAME}"-"${B_ARCH}"
 docker manifest create --amend "${REPO_ADDR}""${CATALOG_IMAGE_NAME}" "${REPO_ADDR}""${CATALOG_IMAGE_NAME}"-"${B_ARCH}"

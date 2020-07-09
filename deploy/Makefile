@@ -1,8 +1,9 @@
 OPERATOR_NAME := ibm-eventstreams
-CSV_VERSION = 2.0.0
+CSV_VERSION = 2.0.1
 CHANNELS = v2.0
 DEFAULT_CHANNEL = v2.0
-OPERATOR_VERSION = v2.0.0
+OPERATOR_VERSION = v2.0.1
+OLM_SKIPRANGE= >=2.0.0 <$(CSV_VERSION)
 
 INSTALL_DIR := ../install/ibm-eventstreams-operator
 
@@ -46,7 +47,7 @@ STAGING_REPO_ADDR := cp.stg.icr.io/cp/
 DOCKERHUB_REPO_ADDR := docker.io/ibmcom/
 BUNDLE_IMAGE_NAME := ibm-eventstreams-operator-bundle:$(TAG)
 CATALOG_IMAGE_NAME := ibm-eventstreams-catalog:$(TAG)
-
+RELEASED_BUNDLES := ,docker.io/ibmcom/ibm-eventstreams-operator-bundle:v2.0.0
 include ../Makefile.os
 .PHONY: all clean build_csv deploy delete_deploy verify docker_build docker_push create_prepare_rhocp
 
@@ -64,6 +65,8 @@ clean:
 	rm -f $(ROLE_FILE)
 	rm -f $(ROLE_BINDING_FILE)
 	rm -f $(SERVICE_ACCOUNT_FILE)
+	rm -f ../bundle.Dockerfile
+	rm -rf olm-catalog/$(OPERATOR_NAME)/metadata
 
 get_opm:
 	# utility function for pulling patched version of OPM for build
@@ -96,7 +99,7 @@ build_bundle: build_csv start_local_registry yaml_to_json
 	cd .. && opm alpha bundle build --tag $(LOCAL_REPO_ADDR)$(BUNDLE_IMAGE_NAME) --package $(OPERATOR_NAME) --directory deploy/olm-catalog/$(OPERATOR_NAME)/$(CSV_VERSION) --channels $(CHANNELS) --default $(DEFAULT_CHANNEL)
 	docker push $(LOCAL_REPO_ADDR)$(BUNDLE_IMAGE_NAME)
 	opm alpha bundle validate --tag $(LOCAL_REPO_ADDR)$(BUNDLE_IMAGE_NAME) --image-builder docker
-	cd .. && opm index add --bundles $(LOCAL_REPO_ADDR)$(BUNDLE_IMAGE_NAME) --container-tool docker --tag $(CATALOG_IMAGE_NAME)
+	cd .. && opm index add --bundles $(LOCAL_REPO_ADDR)$(BUNDLE_IMAGE_NAME)$(RELEASED_BUNDLES) --container-tool docker --tag $(CATALOG_IMAGE_NAME)
 	$(MAKE) json_to_yaml
 
 
@@ -117,7 +120,7 @@ deploy: build_bundle docker_push
 delete_deploy:
 	$(SED) s/@image@/dummy/ custom-catalog-source.yaml.template | oc delete -f -
 
-yaml_to_json:
+yaml_to_json: .EXPORT_ALL_VARIABLES
 	rm -rf tmp
 	$(CP) -R olm-catalog/$(OPERATOR_NAME) tmp/
 	./convertYaml2Json.sh

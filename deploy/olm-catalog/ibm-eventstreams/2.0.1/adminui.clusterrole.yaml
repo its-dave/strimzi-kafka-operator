@@ -1,0 +1,28 @@
+###############################################################################
+#
+# Licensed Materials - Property of IBM
+#
+# 5737-H33
+#
+# (C) Copyright IBM Corp. 2020  All Rights Reserved.
+#
+# US Government Users Restricted Rights - Use, duplication or
+# disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+#
+###############################################################################
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: eventstreams-ui-clusterrole
+  labels:
+    app: eventstreams
+rules:
+- apiGroups:
+  - ""
+  # The Event Streams UI requires the "get" and "list" permissions for pods
+  # This is for the rendering of the pod statuses in the system health status bar
+  resources:
+  - pods
+  verbs:
+  - get
+  - list
